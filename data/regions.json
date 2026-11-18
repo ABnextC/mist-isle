@@ -7,7 +7,7 @@
     "spawn": [149, 6],
     "terrain": {
       "shore": 26, "shoreWobble": 12, "seaFloor": -9, "beach": 1.4, "inland": 9,
-      "hills": 9, "ridge": 22, "townHeight": 1.8, "wadeDepth": -1.1
+      "hills": 9, "ridge": 22, "townHeight": 1.8, "wadeDepth": -1.1, "edge": 20
     },
     "settlement": {
       "id": "s_lighthouse", "name": "등대 마을", "x": 200, "z": 60, "radius": 30,

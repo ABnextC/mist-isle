@@ -1,5 +1,5 @@
 {
-  "dataVersion": 2,
+  "dataVersion": 3,
   "skillCap": 30,
   "time": { "secondsPerGameDay": 3600, "dayFraction": 0.75, "hz": 30, "startPhase": 0.15 },
   "move": { "speed": 5, "radius": 0.35 },

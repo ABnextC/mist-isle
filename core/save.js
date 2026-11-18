@@ -54,6 +54,37 @@ const MIGRATIONS = [
       }
     },
   },
+  {
+    // v0.1.1 → v0.1.2: 섬 가장자리 20m가 숲이 됐다. 그 안에 있던 노드와 캐릭터를 안쪽으로 옮긴다.
+    from: 2,
+    to: 3,
+    run(st, data) {
+      st.meta.engine = '0.1.2';
+      const region = data.lists.regions[0];
+      const terrain = makeTerrain(region, st.meta.worldSeed);
+      for (const v of Object.values(st.veins)) {
+        const type = data.nodes[v.node];
+        const rng = makeRng(seedState((st.meta.worldSeed ^ hashStr(v.id + ':edge')) >>> 0));
+        for (const id of v.nodes) {
+          const n = st.nodes[id];
+          if (!n || fitsHabitat(terrain, region, type, n.x, n.z)) continue;
+          const spot = pickNodeSpot(rng, terrain, region, type, v.common ? null : v.center, v.radius);
+          if (spot) {
+            n.x = spot[0];
+            n.z = spot[1];
+          }
+        }
+      }
+      const home = spawnPoint(region, terrain);
+      for (const a of Object.values(st.actors)) {
+        if (terrain.walkable(a.x, a.z)) continue;
+        a.x = home[0];
+        a.z = home[1];
+        a.dest = null;
+        a.nav = null;
+      }
+    },
+  },
 ];
 
 export function serialize(state) {

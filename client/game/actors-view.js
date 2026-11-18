@@ -1,59 +1,9 @@
-// 캐릭터: 로우폴리 개척자. 걷기와 채집(휘두르기) 동작.
+// 캐릭터 그리기와 동작: 걷기(무릎·팔꿈치까지), 숨쉬기, 도끼·곡괭이 내려찍기, 낫질, 귀환 시전.
 
 import * as THREE from 'three';
-import { part, merge, flatMat } from './geo.js';
+import { makeActorModel } from './models/actor.js';
 
-const C = THREE;
-
-function toolMesh(kind, mat) {
-  const parts = [part(new C.CylinderGeometry(0.03, 0.035, 0.75, 5), 0x7a5a3a, { y: -0.3 })];
-  if (kind === 'logging') parts.push(part(new C.BoxGeometry(0.06, 0.2, 0.26), 0xb8bec4, { y: -0.62, z: 0.1 }));
-  if (kind === 'mining') parts.push(part(new C.BoxGeometry(0.05, 0.06, 0.6), 0x9a9fa5, { y: -0.64, rx: 0.15 }));
-  if (kind === 'harvesting') parts.push(part(new C.TorusGeometry(0.17, 0.025, 3, 8, Math.PI * 1.2), 0xc8ccd0, { y: -0.6, z: 0.14, ry: Math.PI / 2 }));
-  const m = new THREE.Mesh(merge(parts), mat);
-  m.visible = false;
-  return m;
-}
-
-function limb(mat, color, r, len) {
-  const pivot = new THREE.Group();
-  const m = new THREE.Mesh(merge([part(new C.CapsuleGeometry(r, len, 2, 6), color, { y: -len / 2 - r })]), mat);
-  m.castShadow = true;
-  pivot.add(m);
-  return pivot;
-}
-
-function makeActor(a, mat) {
-  const tunic = a.kind === 'player' ? 0x2f8f83 : 0x8a5a9e;
-  const g = new THREE.Group();
-  const body = new THREE.Mesh(merge([
-    part(new C.CapsuleGeometry(0.26, 0.5, 2, 8), tunic, { y: 1.08 }),
-    part(new C.CylinderGeometry(0.28, 0.28, 0.1, 8), 0x5a4330, { y: 0.86 }),
-    part(new C.IcosahedronGeometry(0.23, 1), 0xe8c4a0, { y: 1.68 }),
-    part(new C.SphereGeometry(0.25, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), 0x4a3426, { y: 1.74 }),
-    part(new C.BoxGeometry(0.42, 0.5, 0.22), 0x8b6a45, { y: 1.12, z: -0.26 }),
-    part(new C.CylinderGeometry(0.1, 0.1, 0.42, 6), 0xd8c89a, { y: 1.42, z: -0.26, rz: Math.PI / 2 }),
-  ]), mat);
-  body.castShadow = true;
-  g.add(body);
-  const legL = limb(mat, 0x3d4650, 0.09, 0.38);
-  const legR = limb(mat, 0x3d4650, 0.09, 0.38);
-  legL.position.set(-0.12, 0.72, 0);
-  legR.position.set(0.12, 0.72, 0);
-  const armL = limb(mat, tunic, 0.075, 0.42);
-  const armR = limb(mat, tunic, 0.075, 0.42);
-  armL.position.set(-0.34, 1.36, 0);
-  armR.position.set(0.34, 1.36, 0);
-  const tools = {};
-  for (const k of ['logging', 'mining', 'harvesting']) {
-    tools[k] = toolMesh(k, mat);
-    tools[k].position.set(0, -0.55, 0.08);
-    tools[k].rotation.x = Math.PI / 2;
-    armR.add(tools[k]);
-  }
-  g.add(legL, legR, armL, armR);
-  return { g, legL, legR, armL, armR, tools, pos: new THREE.Vector3(a.x, 0, a.z), yaw: a.yaw || 0, phase: 0, swing: 0 };
-}
+const TUNICS = [0x8a4f6e, 0x6e5a2e, 0x2e5a8a, 0x7a3a2a];
 
 function lerpAngle(a, b, k) {
   let d = b - a;
@@ -62,53 +12,108 @@ function lerpAngle(a, b, k) {
   return a + d * k;
 }
 
-export function createActorsView(scene, game, terrain) {
-  const mat = flatMat();
-  const views = new Map();
+const damp = (cur, want, k) => cur + (want - cur) * k;
 
-  function update(dt) {
+export function createActorsView(scene, game, hf) {
+  const views = new Map();
+  let botIdx = 0;
+
+  function make(a) {
+    const player = a.kind === 'player';
+    const model = makeActorModel({
+      tunic: player ? 0x2a6e68 : TUNICS[botIdx++ % TUNICS.length],
+      trousers: player ? 0x3b3f4a : 0x4a4238,
+      seed: player ? 2 : 3 + botIdx,
+    });
+    scene.add(model.root);
+    return { m: model, pos: new THREE.Vector3(a.x, hf.height(a.x, a.z), a.z), yaw: a.yaw || 0, phase: 0, swing: 0, speed: 0, breathe: Math.random() * 6 };
+  }
+
+  function pose(v, p) {
+    const m = v.m;
+    m.legL.th.rotation.x = p.thL;
+    m.legR.th.rotation.x = p.thR;
+    m.legL.kn.rotation.x = p.knL;
+    m.legR.kn.rotation.x = p.knR;
+    m.legL.ft.rotation.x = p.ftL;
+    m.legR.ft.rotation.x = p.ftR;
+    m.armL.sh.rotation.set(p.shLx, 0, p.shLz);
+    m.armR.sh.rotation.set(p.shRx, p.shRy || 0, p.shRz);
+    m.armL.el.rotation.x = p.elL;
+    m.armR.el.rotation.x = p.elR;
+    m.spine.rotation.set(p.spX, p.spY, 0);
+    m.hips.position.y = 0.96 + p.bob;
+    m.neck.rotation.x = p.nk;
+  }
+
+  function update(dt, t) {
     const { state, data } = game;
     for (const a of Object.values(state.actors)) {
       let v = views.get(a.id);
       if (!v) {
-        v = makeActor(a, mat);
-        v.pos.set(a.x, terrain.height(a.x, a.z), a.z);
+        v = make(a);
         views.set(a.id, v);
-        scene.add(v.g);
       }
       const px = v.pos.x;
       const pz = v.pos.z;
       const k = 1 - Math.exp(-dt * 16);
       v.pos.x += (a.x - v.pos.x) * k;
       v.pos.z += (a.z - v.pos.z) * k;
-      v.pos.y = terrain.height(v.pos.x, v.pos.z);
-      const speed = Math.hypot(v.pos.x - px, v.pos.z - pz) / Math.max(dt, 1e-3);
+      v.pos.y = hf.height(v.pos.x, v.pos.z);
+      const sp = Math.hypot(v.pos.x - px, v.pos.z - pz) / Math.max(dt, 1e-3);
+      v.speed = damp(v.speed, Math.min(sp, 7), 1 - Math.exp(-dt * 10));
       let yaw = a.yaw || 0;
       const node = a.action?.type === 'gather' ? state.nodes[a.action.node] : null;
+      const casting = a.action?.type === 'recall';
       if (node) yaw = Math.atan2(node.x - a.x, node.z - a.z);
       v.yaw = lerpAngle(v.yaw, yaw, 1 - Math.exp(-dt * 12));
-      v.g.position.copy(v.pos);
-      v.g.rotation.y = v.yaw;
+      v.m.root.position.copy(v.pos);
+      v.m.root.rotation.y = v.yaw;
 
-      if (speed > 0.4 && !node) {
-        v.phase += dt * Math.min(speed, 7) * 2.4;
-        const s = Math.sin(v.phase);
-        v.legL.rotation.x = s * 0.7;
-        v.legR.rotation.x = -s * 0.7;
-        v.armL.rotation.x = -s * 0.5;
-        v.armR.rotation.x = s * 0.5;
-        v.g.position.y += Math.abs(Math.cos(v.phase)) * 0.06;
-      } else {
-        for (const l of [v.legL, v.legR, v.armL]) l.rotation.x *= 0.85;
-        if (!node) v.armR.rotation.x *= 0.85;
-      }
       const skill = node ? data.nodes[node.type].skill : null;
-      for (const [kname, m] of Object.entries(v.tools)) m.visible = kname === skill;
+      for (const [kname, tool] of Object.entries(v.m.tools)) tool.visible = kname === skill;
+
+      const walk = Math.min(1, v.speed / 1.2);
+      v.phase += dt * v.speed * (Math.PI * 2 / 1.45);
+      v.breathe += dt * 1.7;
+      const s = Math.sin(v.phase);
+      const c = Math.cos(v.phase);
+      const br = Math.sin(v.breathe);
+      const p = {
+        thL: s * 0.55 * walk, thR: -s * 0.55 * walk,
+        knL: Math.max(0, -c) * 0.95 * walk + 0.04, knR: Math.max(0, c) * 0.95 * walk + 0.04,
+        ftL: -Math.max(0, s) * 0.3 * walk, ftR: -Math.max(0, -s) * 0.3 * walk,
+        shLx: -s * 0.45 * walk, shRx: s * 0.45 * walk, shLz: -0.08, shRz: 0.08,
+        elL: -(0.25 + 0.25 * Math.max(0, s)) * walk - 0.12, elR: -(0.25 + 0.25 * Math.max(0, -s)) * walk - 0.12,
+        spX: 0.06 * walk + br * 0.012, spY: s * 0.08 * walk, bob: -Math.abs(c) * 0.035 * walk + br * 0.004, nk: -0.04 * walk,
+      };
       if (node) {
-        v.swing += dt * (skill === 'harvesting' ? 9 : 6.5);
-        v.armR.rotation.x = -1.7 + Math.sin(v.swing) * 0.85;
-        v.armL.rotation.x = -0.4 + Math.sin(v.swing) * 0.2;
+        // 채집: 도끼·곡괭이는 위에서 내려찍고, 낫은 옆으로 벤다
+        v.swing += dt * (skill === 'harvesting' ? 5.5 : 4.2);
+        const w = v.swing % (Math.PI * 2);
+        const strike = w < 4.4 ? Math.sin((w / 4.4) * Math.PI * 0.5) : 1 - (w - 4.4) / (Math.PI * 2 - 4.4);
+        if (skill === 'harvesting') {
+          const sw = Math.sin(v.swing);
+          Object.assign(p, {
+            thL: -0.35, thR: 0.2, knL: 0.75, knR: 0.55, ftL: 0, ftR: 0,
+            spX: 0.42, spY: sw * 0.35, bob: -0.14, nk: 0.15,
+            shRx: -0.9, shRy: sw * 0.9, shRz: 0.25, elR: -0.5,
+            shLx: -0.6, shLz: -0.15, elL: -0.9,
+          });
+        } else {
+          const up = 1 - strike;
+          Object.assign(p, {
+            thL: -0.25, thR: 0.18, knL: 0.3, knR: 0.25, ftL: 0, ftR: 0,
+            spX: 0.1 + strike * 0.38, spY: -0.15, bob: -0.04 - strike * 0.05, nk: 0.1,
+            shRx: -2.6 * up - 0.5 * strike, shRz: 0.1, elR: -0.9 * up - 0.15,
+            shLx: -2.3 * up - 0.6 * strike, shLz: 0.25, elL: -0.8 * up - 0.2,
+          });
+        }
+      } else if (casting) {
+        const f = Math.sin(t * 3) * 0.05;
+        Object.assign(p, { shLx: -1.3 + f, shRx: -1.3 - f, shLz: 0.35, shRz: -0.35, elL: -0.6, elR: -0.6, nk: 0.25, spX: 0.05 });
       }
+      pose(v, p);
     }
   }
 

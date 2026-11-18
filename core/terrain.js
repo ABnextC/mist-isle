@@ -81,7 +81,9 @@ export function makeTerrain(region, worldSeed) {
     return h;
   }
 
-  const walkable = (x, z) => x >= x0 + 1 && x <= x1 - 1 && z >= z0 + 1 && z <= z1 - 1 && height(x, z) > T.wadeDepth;
+  // 섬 가장자리(edge m)는 빽빽한 숲이라 들어갈 수 없다. 남쪽은 바다라 열어 둔다.
+  const E = T.edge ?? 1;
+  const walkable = (x, z) => x >= x0 + E && x <= x1 - E && z >= z0 + 1 && z <= z1 - E && height(x, z) > T.wadeDepth;
 
   return {
     height,
@@ -97,7 +99,7 @@ export function makeTerrain(region, worldSeed) {
 export function fitsHabitat(terrain, region, nodeType, x, z) {
   const hab = nodeType.habitat;
   const [x0, z0, x1, z1] = region.bounds;
-  const m = 14;
+  const m = Math.max(14, (region.terrain.edge ?? 0) + 2);
   if (x < x0 + m || x > x1 - m || z < z0 + 2 || z > z1 - m) return false;
   const t = region.settlement;
   if (Math.hypot(x - t.x, z - t.z) < t.radius + 6) return false;

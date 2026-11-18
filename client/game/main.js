@@ -9,12 +9,18 @@ import { avgProps } from '../../core/inventory.js';
 import { starOf } from '../../core/formulas.js';
 import { stars } from '../../core/text.js';
 import { createScene } from './scene.js';
-import { createTerrainMesh } from './terrain-mesh.js';
+import { startTier, createAutoTuner, chosenTier, setChosenTier, TIERS } from './gfx/quality.js';
+import { bakeMaterials, makeCanvasTextures } from './gfx/texgen.js';
+import { createTerrain } from './gfx/terrain.js';
+import { createWater } from './gfx/water.js';
+import { createGrass } from './gfx/grass.js';
+import { createFlora } from './gfx/flora.js';
+import { makeMaterials, G } from './gfx/materials.js';
 import { createNodesView } from './nodes-view.js';
 import { createTownView } from './town-view.js';
 import { createActorsView } from './actors-view.js';
 import { createFx } from './fx.js';
-import { NODE_CHIP } from './props.js';
+import { NODE_CHIP } from './models/nodes.js';
 import { createCamera } from './camera.js';
 import { createInput } from './input.js';
 import { createHud } from './hud.js';
@@ -51,20 +57,39 @@ function restore(data) {
 
 async function boot() {
   const data = await loadData();
-  const game = restore(data) || createGame({ data, seed: Date.now() % 1_000_000_007 });
+  // 시험용: ?seed=숫자&fresh 로 정해진 섬을 새로 연다
+  const params = new URLSearchParams(window.location.search);
+  const fixedSeed = Number(params.get('seed')) || null;
+  const game = (!params.has('fresh') && restore(data)) || createGame({ data, seed: fixedSeed ?? Date.now() % 1_000_000_007 });
   window.__mist = { game };
 
   const canvas = document.getElementById('view');
-  const view = createScene(canvas, { touch });
+  const tier = startTier(touch);
+  const say = async (msg) => {
+    bootEl.textContent = msg;
+    await new Promise((r) => setTimeout(r, 30));
+  };
+  const ctex = makeCanvasTextures();
+  const view = createScene(canvas, { tier, textures: ctex });
   const region = data.lists.regions[0];
-  view.scene.add(createTerrainMesh(game.terrain, { town: region.settlement }));
-  const lantern = new THREE.PointLight(0xffd59a, 0, 10, 1.4); // 밤에 들고 다니는 등불
+  await say('🌫️ 땅과 돌의 결을 굽는 중…');
+  const tex = bakeMaterials(view.renderer, { terrainSize: tier.texTerrain, objectSize: tier.texObject });
+  const mats = makeMaterials(tex, ctex);
+  await say('🌫️ 섬의 지형을 그리는 중…');
+  const ground = createTerrain(view.scene, { terrain: game.terrain, region, tier, tex });
+  const water = createWater(view.scene, { hf: ground.hf, tex, tier });
+  const grass = createGrass(view.scene, { hf: ground.hf, paths: ground.paths, tier });
+  const flora = createFlora(view.scene, { hf: ground.hf, paths: ground.paths, region, tier, mats, ctex, game });
+  window.__mist.gfx = { view, tier, tex, mats, ground, flora };
+  const lantern = new THREE.PointLight(0xffd59a, 0, 11, 1.4); // 밤에 들고 다니는 등불
   view.scene.add(lantern);
-  const nodesView = createNodesView(view.scene, game, game.terrain);
-  const townView = createTownView(view.scene, game, game.terrain);
-  const actorsView = createActorsView(view.scene, game, game.terrain);
-  const fx = createFx(view.scene);
-  const cam = createCamera(view.camera, game.terrain);
+  await say('🌫️ 마을과 숲을 세우는 중…');
+  const nodesView = createNodesView(view.scene, game, ground.hf, { mats, ctex });
+  const townView = createTownView(view.scene, game, ground.hf, { mats, terrain: game.terrain, region });
+  const actorsView = createActorsView(view.scene, game, ground.hf);
+  const fx = createFx(view.scene, { textures: ctex, hf: ground.hf, town: townView, terrain: game.terrain, region });
+  const cam = createCamera(view.camera, ground.hf);
+  window.__mist.cam = cam;
   {
     // 새 게임은 첫 목표(표류목·돌) 무리 쪽을 바라보고 시작한다. 이어 하기는 캐릭터가 보던 쪽.
     const a = game.state.actors[PID];
@@ -151,6 +176,12 @@ async function boot() {
       case 'take': game.dispatch({ type: 'TAKE', actor: PID, key: v }); break;
       case 'speed': hud.settings.speed = Number(v); break;
       case 'focus-toggle': hud.settings.focus = !hud.settings.focus; break;
+      case 'gfx': {
+        setChosenTier(v);
+        applyTier(v === 'auto' ? startTier(touch) : TIERS[v]);
+        hud.settings.gfx = v;
+        break;
+      }
       case 'auto':
         ui.gather = null;
         game.dispatch({ type: 'SET_AUTOPILOT', actor: PID, on: !a.ai?.on });
@@ -170,12 +201,25 @@ async function boot() {
   }
 
   const hud = createHud(document.getElementById('hud'), game, { touch, onAct });
+  let liveTier = tier;
+  function applyTier(t) {
+    liveTier = t;
+    view.applyTier(t);
+    grass.applyTier(t);
+    hud.settings.gfxNow = `${t.label} 화질`;
+  }
+  hud.settings.gfx = chosenTier();
+  hud.settings.gfxNow = `${tier.label} 화질`;
+  const tuner = createAutoTuner((next, fps) => {
+    applyTier(next);
+    hud.toast(`화면이 버거워 보여(${Math.round(fps)}fps) 화질을 '${next.label}'으로 낮췄다. 설정에서 바꿀 수 있다.`, 'info');
+  });
   const input = createInput(canvas, { joyEl: hud.joyEl, knobEl: hud.knobEl });
   const minimap = createMinimap(hud.minimapCanvas, game, game.terrain);
 
   game.on('gather.done', (ev) => {
     const node = game.state.nodes[ev.node];
-    if (node) fx.burst(node.x, game.terrain.height(node.x, node.z), node.z, NODE_CHIP[ev.nodeType]);
+    if (node) fx.burst(node.x, ground.hf.height(node.x, node.z), node.z, NODE_CHIP[ev.nodeType]);
   });
 
   // 가까운 상호작용 대상: 앞쪽에 있는 것을 조금 더 쳐준다
@@ -289,28 +333,36 @@ async function boot() {
 
     // 3) 시뮬레이션
     game.advance(dt * hud.settings.speed);
+    tuner.tick(dt, liveTier);
 
     // 4) 화면
-    actorsView.update(dt);
+    actorsView.update(dt, now / 1000);
     const p = actorsView.positionOf(PID);
     cam.update(dt, p.x, p.y, p.z);
     focusVec.set(p.x, p.y, p.z);
     const t = game.state.t;
-    const nightK = view.setTime(game.clock.phase(t), game.clock.dayFrac, focusVec, t);
+    const sec = now / 1000;
+    G.uTime.value = sec;
+    G.uWind.value = 0.75 + 0.35 * Math.sin(sec * 0.13) * Math.sin(sec * 0.051 + 1.3);
+    const sky = view.setTime(game.clock.phase(t), game.clock.dayFrac, focusVec, sec, now);
+    const nightK = sky.night;
+    G.uDay.value = sky.day;
+    water.update(sec, view.camera);
+    grass.update(sec, focusVec, G.uWind.value, firstFrame ? 999 : 3);
     lantern.position.set(p.x, p.y + 1.9, p.z);
     lantern.intensity = 7 * nightK;
     nodesView.update();
-    townView.update(t, nightK);
+    townView.update(sec, nightK, dt);
     ui.target = a.ai?.on ? null : findTarget(a);
     const tg = ui.target;
-    fx.setTarget(tg ? tg.x : null, tg ? game.terrain.height(tg.x, tg.z) : 0, tg?.z, tg && !tg.why && !tg.idle, tg?.radius);
-    fx.update(dt, now / 1000);
+    fx.setTarget(tg ? tg.x : null, tg ? ground.hf.height(tg.x, tg.z) : 0, tg?.z, tg && !tg.why && !tg.idle, tg?.radius);
+    fx.update(dt, sec, { night: nightK, day: sky.day, player: focusVec });
     hud.update(dt, { target: ui.target, gathering: !!ui.gather });
     if (now - lastMap > 200) {
       minimap.draw(PID, cam.st.yaw);
       lastMap = now;
     }
-    view.renderer.render(view.scene, view.camera);
+    view.render();
 
     if (now - lastSave > 30000) {
       save(false);

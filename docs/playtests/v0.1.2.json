@@ -1,0 +1,806 @@
+{
+ "version": "v0.1.2",
+ "seed": 2026,
+ "days": 7,
+ "note": "tools/personas.js 결과. 봇 플레이이며 사람 플레이가 아니다. 이 패치는 화면 위주라 수치는 가장자리 숲(이동 가능 구역 축소)의 영향만 본다.",
+ "results": [
+  {
+   "id": "persona_sol",
+   "name": "솔",
+   "role": "느긋한 채집러",
+   "grade": "보통",
+   "ms": 1188,
+   "firsts": {
+    "stoneTool": 208,
+    "copperTool": 1957.8,
+    "food": 460,
+    "masterwork": 460
+   },
+   "reach": {
+    "logging": {
+     "10": 2156.5333333333333,
+     "20": 7447.133333333333,
+     "30": 18837.066666666666
+    },
+    "mining": {
+     "10": 2359.4333333333334,
+     "20": 7633.766666666666,
+     "30": 18814.133333333335
+    },
+    "harvesting": {
+     "10": 2211.4666666666667,
+     "20": 7677,
+     "30": 19018.9
+    }
+   },
+   "levels": {
+    "logging": 30,
+    "mining": 30,
+    "harvesting": 30,
+    "sawing": 30,
+    "smelting": 25,
+    "weaving": 16,
+    "smithing": 10,
+    "carpentry": 3,
+    "cooking": 6
+   },
+   "time": {
+    "gather": 36.8,
+    "move": 46.1,
+    "wait": 15.5,
+    "idle": 1.5
+   },
+   "distKm": 58.9,
+   "gathers": 2861,
+   "gathersPerHour": 409,
+   "crafts": {
+    "rc_axe_stone": 3,
+    "rc_pick_stone": 3,
+    "rc_sickle_stone": 3,
+    "rc_lumber_drift": 464,
+    "rc_cloth_reed": 134,
+    "rc_dried_berry": 10,
+    "rc_stake_wood": 10,
+    "rc_ingot_copper": 296,
+    "rc_nails_copper": 6,
+    "rc_axe_copper": 3,
+    "rc_pick_copper": 3,
+    "rc_lumber_birch": 205,
+    "rc_sickle_copper": 3,
+    "rc_soup": 6
+   },
+   "eat": 26,
+   "focusUsed": 0,
+   "masterwork": 2,
+   "lotsUsed": 17,
+   "rotatingLots": 9,
+   "rotatingShare": 10,
+   "tools": {
+    "logging": {
+     "item": "tool_axe_copper",
+     "star": 3,
+     "speed": 1.17,
+     "yield": 0.12
+    },
+    "mining": {
+     "item": "tool_pick_copper",
+     "star": 3,
+     "speed": 1.18,
+     "yield": 0.121
+    },
+    "harvesting": {
+     "item": "tool_sickle_copper",
+     "star": 2,
+     "speed": 1.19,
+     "yield": 0.104
+    }
+   },
+   "toolStars": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    3,
+    2,
+    3,
+    2,
+    2,
+    2
+   ],
+   "fails": {},
+   "rejects": {},
+   "blocked": 0,
+   "recalls": 24,
+   "bestLot": "소금 웅덩이 자작나무 산지"
+  },
+  {
+   "id": "persona_moru",
+   "name": "모루",
+   "role": "수치 최적화 장인",
+   "grade": "고수",
+   "ms": 1759,
+   "firsts": {
+    "stoneTool": 148,
+    "copperTool": 2165,
+    "food": 336.4,
+    "masterwork": null
+   },
+   "reach": {
+    "logging": {
+     "10": 2489.766666666667,
+     "20": 7977.566666666667,
+     "30": 19899.433333333334
+    },
+    "mining": {
+     "10": 2334.9,
+     "20": 7904.3,
+     "30": 20225.833333333332
+    },
+    "harvesting": {
+     "10": 2548.8333333333335,
+     "20": 8178.833333333333,
+     "30": 20069.433333333334
+    }
+   },
+   "levels": {
+    "logging": 30,
+    "mining": 30,
+    "harvesting": 30,
+    "sawing": 29,
+    "smelting": 26,
+    "weaving": 11,
+    "smithing": 8,
+    "carpentry": 3,
+    "cooking": 5
+   },
+   "time": {
+    "gather": 32.6,
+    "move": 53.5,
+    "wait": 13.7,
+    "idle": 0.2
+   },
+   "distKm": 67.9,
+   "gathers": 2446,
+   "gathersPerHour": 349,
+   "crafts": {
+    "rc_axe_stone": 2,
+    "rc_pick_stone": 2,
+    "rc_sickle_stone": 2,
+    "rc_lumber_drift": 359,
+    "rc_cloth_reed": 71,
+    "rc_dried_berry": 9,
+    "rc_stake_wood": 10,
+    "rc_ingot_copper": 325,
+    "rc_nails_copper": 6,
+    "rc_lumber_birch": 237,
+    "rc_axe_copper": 2,
+    "rc_pick_copper": 2,
+    "rc_sickle_copper": 2,
+    "rc_soup": 5
+   },
+   "eat": 25,
+   "focusUsed": 1040,
+   "masterwork": 0,
+   "lotsUsed": 20,
+   "rotatingLots": 12,
+   "rotatingShare": 31,
+   "tools": {
+    "logging": {
+     "item": "tool_axe_copper",
+     "star": 3,
+     "speed": 1.24,
+     "yield": 0.137
+    },
+    "mining": {
+     "item": "tool_pick_copper",
+     "star": 3,
+     "speed": 1.24,
+     "yield": 0.137
+    },
+    "harvesting": {
+     "item": "tool_sickle_copper",
+     "star": 3,
+     "speed": 1.24,
+     "yield": 0.14
+    }
+   },
+   "toolStars": [
+    2,
+    2,
+    2,
+    3,
+    2,
+    2,
+    3,
+    2,
+    3,
+    3,
+    3,
+    2
+   ],
+   "fails": {},
+   "rejects": {},
+   "blocked": 0,
+   "recalls": 25,
+   "bestLot": "소금 웅덩이 자작나무 산지"
+  },
+  {
+   "id": "persona_harang",
+   "name": "하랑",
+   "role": "시세 차익 상인",
+   "grade": "숙련",
+   "ms": 958,
+   "firsts": {
+    "stoneTool": 229.4,
+    "copperTool": 2301,
+    "food": 1839.8,
+    "masterwork": 18447.6
+   },
+   "reach": {
+    "logging": {
+     "10": 2097.3,
+     "20": 7060.066666666667,
+     "30": 16609.566666666666
+    },
+    "mining": {
+     "10": 2016.4,
+     "20": 6992.9,
+     "30": 16548.733333333334
+    },
+    "harvesting": {
+     "10": 2201.0666666666666,
+     "20": 6914.766666666666,
+     "30": 16776.966666666667
+    }
+   },
+   "levels": {
+    "logging": 30,
+    "mining": 30,
+    "harvesting": 30,
+    "sawing": 30,
+    "smelting": 26,
+    "weaving": 11,
+    "smithing": 10,
+    "carpentry": 3,
+    "cooking": 6
+   },
+   "time": {
+    "gather": 39.3,
+    "move": 43.5,
+    "wait": 16.8,
+    "idle": 0.5
+   },
+   "distKm": 55.6,
+   "gathers": 3216,
+   "gathersPerHour": 459,
+   "crafts": {
+    "rc_axe_stone": 3,
+    "rc_pick_stone": 3,
+    "rc_sickle_stone": 3,
+    "rc_lumber_drift": 603,
+    "rc_cloth_reed": 69,
+    "rc_stake_wood": 10,
+    "rc_ingot_copper": 326,
+    "rc_nails_copper": 5,
+    "rc_dried_berry": 12,
+    "rc_lumber_birch": 193,
+    "rc_axe_copper": 3,
+    "rc_pick_copper": 3,
+    "rc_sickle_copper": 3,
+    "rc_soup": 5
+   },
+   "eat": 28,
+   "focusUsed": 1040,
+   "masterwork": 2,
+   "lotsUsed": 19,
+   "rotatingLots": 11,
+   "rotatingShare": 28,
+   "tools": {
+    "logging": {
+     "item": "tool_axe_copper",
+     "star": 4,
+     "speed": 1.28,
+     "yield": 0.158
+    },
+    "mining": {
+     "item": "tool_pick_copper",
+     "star": 4,
+     "speed": 1.29,
+     "yield": 0.158
+    },
+    "harvesting": {
+     "item": "tool_sickle_copper",
+     "star": 3,
+     "speed": 1.24,
+     "yield": 0.138
+    }
+   },
+   "toolStars": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    3,
+    2,
+    3,
+    2,
+    3,
+    2,
+    4,
+    2,
+    4,
+    2,
+    3,
+    2
+   ],
+   "fails": {},
+   "rejects": {},
+   "blocked": 0,
+   "recalls": 25,
+   "bestLot": "소금 웅덩이 자작나무 산지"
+  },
+  {
+   "id": "persona_saebyeok",
+   "name": "새벽",
+   "role": "탐험·수집가",
+   "grade": "보통",
+   "ms": 1512,
+   "firsts": {
+    "stoneTool": 133.4,
+    "copperTool": 1850,
+    "food": 750.4,
+    "masterwork": 133.4
+   },
+   "reach": {
+    "logging": {
+     "10": 2631.633333333333,
+     "20": 8784.933333333332,
+     "30": 20970.833333333332
+    },
+    "mining": {
+     "10": 2791.1,
+     "20": 8637.166666666666,
+     "30": 20843.266666666666
+    },
+    "harvesting": {
+     "10": 2648.1666666666665,
+     "20": 8723.966666666667,
+     "30": 20774.966666666667
+    }
+   },
+   "levels": {
+    "logging": 30,
+    "mining": 30,
+    "harvesting": 30,
+    "sawing": 29,
+    "smelting": 24,
+    "weaving": 15,
+    "smithing": 9,
+    "carpentry": 3,
+    "cooking": 5
+   },
+   "time": {
+    "gather": 33.4,
+    "move": 51,
+    "wait": 14.2,
+    "idle": 1.4
+   },
+   "distKm": 64.7,
+   "gathers": 2624,
+   "gathersPerHour": 375,
+   "crafts": {
+    "rc_axe_stone": 3,
+    "rc_pick_stone": 2,
+    "rc_sickle_stone": 2,
+    "rc_lumber_drift": 520,
+    "rc_stake_wood": 10,
+    "rc_cloth_reed": 119,
+    "rc_dried_berry": 11,
+    "rc_ingot_copper": 282,
+    "rc_nails_copper": 7,
+    "rc_axe_copper": 3,
+    "rc_lumber_birch": 136,
+    "rc_pick_copper": 2,
+    "rc_sickle_copper": 2,
+    "rc_soup": 4
+   },
+   "eat": 26,
+   "focusUsed": 1040,
+   "masterwork": 1,
+   "lotsUsed": 22,
+   "rotatingLots": 14,
+   "rotatingShare": 11,
+   "tools": {
+    "logging": {
+     "item": "tool_axe_copper",
+     "star": 3,
+     "speed": 1.15,
+     "yield": 0.12
+    },
+    "mining": {
+     "item": "tool_pick_copper",
+     "star": 3,
+     "speed": 1.18,
+     "yield": 0.12
+    },
+    "harvesting": {
+     "item": "tool_sickle_copper",
+     "star": 3,
+     "speed": 1.18,
+     "yield": 0.12
+    }
+   },
+   "toolStars": [
+    2,
+    2,
+    2,
+    2,
+    3,
+    3,
+    3,
+    2,
+    3,
+    2,
+    3,
+    2,
+    3,
+    2
+   ],
+   "fails": {},
+   "rejects": {},
+   "blocked": 0,
+   "recalls": 26,
+   "bestLot": "소금 웅덩이 자작나무 산지"
+  },
+  {
+   "id": "persona_mujin",
+   "name": "무진",
+   "role": "PvP·영지전 전투광",
+   "grade": "숙련",
+   "ms": 1156,
+   "firsts": {
+    "stoneTool": 143.8,
+    "copperTool": 1785.4,
+    "food": 327,
+    "masterwork": 5278.8
+   },
+   "reach": {
+    "logging": {
+     "10": 2389.733333333333,
+     "20": 8377.333333333334,
+     "30": 20977.9
+    },
+    "mining": {
+     "10": 2247.1666666666665,
+     "20": 8110.366666666667,
+     "30": 20684.4
+    },
+    "harvesting": {
+     "10": 2415,
+     "20": 8280.633333333333,
+     "30": 20870.766666666666
+    }
+   },
+   "levels": {
+    "logging": 30,
+    "mining": 30,
+    "harvesting": 30,
+    "sawing": 29,
+    "smelting": 21,
+    "weaving": 18,
+    "smithing": 10,
+    "carpentry": 3,
+    "cooking": 6
+   },
+   "time": {
+    "gather": 34.4,
+    "move": 50.5,
+    "wait": 14.4,
+    "idle": 0.7
+   },
+   "distKm": 63.6,
+   "gathers": 2805,
+   "gathersPerHour": 401,
+   "crafts": {
+    "rc_pick_stone": 3,
+    "rc_axe_stone": 3,
+    "rc_sickle_stone": 3,
+    "rc_lumber_drift": 594,
+    "rc_cloth_reed": 175,
+    "rc_dried_berry": 11,
+    "rc_stake_wood": 10,
+    "rc_ingot_copper": 211,
+    "rc_nails_copper": 7,
+    "rc_lumber_birch": 87,
+    "rc_pick_copper": 3,
+    "rc_axe_copper": 3,
+    "rc_sickle_copper": 3,
+    "rc_soup": 5
+   },
+   "eat": 26,
+   "focusUsed": 1040,
+   "masterwork": 1,
+   "lotsUsed": 16,
+   "rotatingLots": 8,
+   "rotatingShare": 9,
+   "tools": {
+    "mining": {
+     "item": "tool_pick_copper",
+     "star": 2,
+     "speed": 1.19,
+     "yield": 0.08
+    },
+    "logging": {
+     "item": "tool_axe_copper",
+     "star": 2,
+     "speed": 1.21,
+     "yield": 0.084
+    },
+    "harvesting": {
+     "item": "tool_sickle_copper",
+     "star": 2,
+     "speed": 1.17,
+     "yield": 0.076
+    }
+   },
+   "toolStars": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "fails": {},
+   "rejects": {},
+   "blocked": 0,
+   "recalls": 25,
+   "bestLot": "난파선 뒤편 자작나무 산지"
+  },
+  {
+   "id": "persona_ren",
+   "name": "렌",
+   "role": "뉴월드 경력자",
+   "grade": "숙련",
+   "ms": 1305,
+   "firsts": {
+    "stoneTool": 138.2,
+    "copperTool": 2538.2,
+    "food": 308.6,
+    "masterwork": null
+   },
+   "reach": {
+    "logging": {
+     "10": 2644.9,
+     "20": 8249.1,
+     "30": 20803.166666666668
+    },
+    "mining": {
+     "10": 2349.2,
+     "20": 8094.933333333333,
+     "30": 20503.333333333332
+    },
+    "harvesting": {
+     "10": 2462.0666666666666,
+     "20": 8412.333333333334,
+     "30": 20662.766666666666
+    }
+   },
+   "levels": {
+    "logging": 30,
+    "mining": 30,
+    "harvesting": 30,
+    "sawing": 29,
+    "smelting": 26,
+    "weaving": 19,
+    "smithing": 9,
+    "carpentry": 3,
+    "cooking": 6
+   },
+   "time": {
+    "gather": 32.3,
+    "move": 51.4,
+    "wait": 15.7,
+    "idle": 0.6
+   },
+   "distKm": 65.5,
+   "gathers": 2553,
+   "gathersPerHour": 365,
+   "crafts": {
+    "rc_axe_stone": 3,
+    "rc_pick_stone": 2,
+    "rc_sickle_stone": 2,
+    "rc_lumber_drift": 415,
+    "rc_stake_wood": 10,
+    "rc_cloth_reed": 189,
+    "rc_dried_berry": 11,
+    "rc_ingot_copper": 328,
+    "rc_nails_copper": 6,
+    "rc_axe_copper": 3,
+    "rc_pick_copper": 2,
+    "rc_sickle_copper": 2,
+    "rc_lumber_birch": 188,
+    "rc_soup": 5
+   },
+   "eat": 28,
+   "focusUsed": 1040,
+   "masterwork": 0,
+   "lotsUsed": 18,
+   "rotatingLots": 10,
+   "rotatingShare": 31,
+   "tools": {
+    "logging": {
+     "item": "tool_axe_copper",
+     "star": 3,
+     "speed": 1.28,
+     "yield": 0.123
+    },
+    "mining": {
+     "item": "tool_pick_copper",
+     "star": 3,
+     "speed": 1.28,
+     "yield": 0.124
+    },
+    "harvesting": {
+     "item": "tool_sickle_copper",
+     "star": 3,
+     "speed": 1.27,
+     "yield": 0.118
+    }
+   },
+   "toolStars": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    3,
+    2,
+    3,
+    2,
+    3,
+    2,
+    3,
+    2
+   ],
+   "fails": {},
+   "rejects": {},
+   "blocked": 0,
+   "recalls": 25,
+   "bestLot": "파도 굴 구리 산지"
+  },
+  {
+   "id": "persona_kongi",
+   "name": "콩이",
+   "role": "입문자(모바일 겸용)",
+   "grade": "뉴비",
+   "ms": 1087,
+   "firsts": {
+    "stoneTool": 185.6,
+    "copperTool": 1920.2,
+    "food": null,
+    "masterwork": null
+   },
+   "reach": {
+    "logging": {
+     "10": 2595.733333333333,
+     "20": 8803.733333333334,
+     "30": 21450.8
+    },
+    "mining": {
+     "10": 2527.366666666667,
+     "20": 8728.366666666667,
+     "30": 21422.033333333333
+    },
+    "harvesting": {
+     "10": 2303.6666666666665,
+     "20": 8963.8,
+     "30": 21637.433333333334
+    }
+   },
+   "levels": {
+    "logging": 30,
+    "mining": 30,
+    "harvesting": 30,
+    "sawing": 27,
+    "smelting": 25,
+    "weaving": 16,
+    "smithing": 9,
+    "carpentry": 3
+   },
+   "time": {
+    "gather": 31.5,
+    "move": 51.9,
+    "wait": 13.5,
+    "idle": 3.1
+   },
+   "distKm": 66.2,
+   "gathers": 2453,
+   "gathersPerHour": 350,
+   "crafts": {
+    "rc_axe_stone": 3,
+    "rc_pick_stone": 2,
+    "rc_sickle_stone": 2,
+    "rc_lumber_drift": 388,
+    "rc_stake_wood": 10,
+    "rc_cloth_reed": 146,
+    "rc_ingot_copper": 300,
+    "rc_nails_copper": 5,
+    "rc_axe_copper": 3,
+    "rc_lumber_birch": 158,
+    "rc_pick_copper": 2,
+    "rc_sickle_copper": 2
+   },
+   "eat": 0,
+   "focusUsed": 0,
+   "masterwork": 0,
+   "lotsUsed": 20,
+   "rotatingLots": 12,
+   "rotatingShare": 15,
+   "tools": {
+    "logging": {
+     "item": "tool_axe_copper",
+     "star": 4,
+     "speed": 1.29,
+     "yield": 0.155
+    },
+    "mining": {
+     "item": "tool_pick_copper",
+     "star": 3,
+     "speed": 1.24,
+     "yield": 0.123
+    },
+    "harvesting": {
+     "item": "tool_sickle_copper",
+     "star": 3,
+     "speed": 1.24,
+     "yield": 0.137
+    }
+   },
+   "toolStars": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    3,
+    2,
+    3,
+    2,
+    3,
+    2,
+    4,
+    2
+   ],
+   "fails": {},
+   "rejects": {},
+   "blocked": 0,
+   "recalls": 25,
+   "bestLot": "소금 웅덩이 자작나무 산지"
+  }
+ ]
+}

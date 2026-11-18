@@ -4,7 +4,7 @@ import { seedState } from './rng.js';
 import { openVein } from './systems/veins.js';
 import { stationLayout } from './world.js';
 
-export const ENGINE_VERSION = '0.1.1';
+export const ENGINE_VERSION = '0.1.2';
 
 export function spawnPoint(region, terrain) {
   const [x, inland] = region.spawn;

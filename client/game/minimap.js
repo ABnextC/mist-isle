@@ -1,6 +1,6 @@
 // 미니맵: 위가 북쪽(z가 큰 쪽). 산지 소문은 점선 고리, 가까운 노드는 점으로.
 
-import { paintMinimap } from './terrain-mesh.js';
+import { valueNoise } from '../../core/terrain.js';
 
 const DOT = { logging: '#f2ead2', mining: '#ff9a4a', harvesting: '#a6ec74' };
 
@@ -72,4 +72,31 @@ export function createMinimap(canvas, game, terrain) {
   }
 
   return { draw };
+}
+
+// 미니맵 바탕 그림(위가 북쪽 = z가 큰 쪽)
+export function paintMinimap(ctx2d, terrain, bounds, px) {
+  const [x0, z0, x1, z1] = bounds;
+  const img = ctx2d.createImageData(px, px);
+  for (let j = 0; j < px; j++) {
+    for (let i = 0; i < px; i++) {
+      const x = x0 + ((i + 0.5) / px) * (x1 - x0);
+      const z = z1 - ((j + 0.5) / px) * (z1 - z0);
+      const h = terrain.height(x, z);
+      let c;
+      if (h < -0.3) c = [52, 112, 132];
+      else if (h < 1.3) c = [214, 196, 146];
+      else if (h > 17) c = [128, 122, 112];
+      else {
+        const g = 0.85 + 0.15 * valueNoise(x / 12, z / 12, 9);
+        c = [106 * g + h * 2, 150 * g - h * 1.5, 84 * g];
+      }
+      const k = (j * px + i) * 4;
+      img.data[k] = c[0];
+      img.data[k + 1] = c[1];
+      img.data[k + 2] = c[2];
+      img.data[k + 3] = 255;
+    }
+  }
+  ctx2d.putImageData(img, 0, 0);
 }

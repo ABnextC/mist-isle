@@ -1,69 +1,90 @@
-// 노드 그리기: 종류마다 InstancedMesh 하나. 산지가 바뀌면 배치를 다시 짠다.
+// 노드 그리기: 종류·변형·조각마다 InstancedMesh 하나. 산지가 바뀌면 배치를 다시 짠다.
+// 다 캔 노드는 잎·열매가 사라지거나(나무는 그루터기) 작아지고 어두워진다.
 
 import * as THREE from 'three';
-import { NODE_GEOS } from './props.js';
-import { flatMat, rand01 } from './geo.js';
+import { buildNodeModels } from './models/nodes.js';
+import { rand01 } from './geo.js';
 
-const CAP = 160;
+const CAP = 96;
 
-export function createNodesView(scene, game, terrain) {
-  const mat = flatMat();
-  const meshes = {};
-  for (const [type, make] of Object.entries(NODE_GEOS)) {
-    const m = new THREE.InstancedMesh(make(), mat, CAP);
-    m.count = 0;
-    m.castShadow = true;
-    m.receiveShadow = true;
-    m.frustumCulled = false;
-    m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    scene.add(m);
-    meshes[type] = m;
+export function createNodesView(scene, game, hf, { mats, ctex }) {
+  const models = buildNodeModels();
+  const groups = {}; // type → [variant → [{ part, mesh }]]
+  for (const [type, variants] of Object.entries(models)) {
+    groups[type] = variants.map((parts) => parts.map((part) => {
+      const mesh = new THREE.InstancedMesh(part.geo, mats[part.mat], CAP);
+      mesh.count = 0;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.frustumCulled = false;
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      if (part.leaves) {
+        mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: ctex[part.leaves], alphaTest: 0.45 });
+      }
+      scene.add(mesh);
+      return { part, mesh };
+    }));
   }
-  const index = new Map(); // nodeId → { type, i, ry, s, y }
+  const index = new Map(); // nodeId → { type, v, i, ry, s, y }
   let dirty = true;
   game.on('vein.opened', () => { dirty = true; });
   game.on('vein.closed', () => { dirty = true; });
 
   const dummy = new THREE.Object3D();
-  const live = new THREE.Color(1, 1, 1);
-  const dim = new THREE.Color(0.55, 0.55, 0.52);
+  const white = new THREE.Color(1, 1, 1);
+  const dim = new THREE.Color(0.62, 0.6, 0.56);
 
   function rebuild() {
     index.clear();
     const counts = {};
     for (const n of Object.values(game.state.nodes)) {
-      const i = counts[n.type] || 0;
+      const variants = groups[n.type];
+      if (!variants) continue;
+      const v = Math.floor(rand01(n.id, 3) * variants.length);
+      const key = n.type + v;
+      const i = counts[key] || 0;
       if (i >= CAP) continue;
-      counts[n.type] = i + 1;
+      counts[key] = i + 1;
       index.set(n.id, {
-        type: n.type, i,
+        type: n.type, v, i,
         ry: rand01(n.id, 1) * Math.PI * 2,
-        s: 0.85 + rand01(n.id, 2) * 0.35,
-        y: terrain.height(n.x, n.z),
+        s: 0.88 + rand01(n.id, 2) * 0.3,
+        y: hf.height(n.x, n.z),
+        tilt: (rand01(n.id, 4) - 0.5) * 0.06,
       });
     }
-    for (const [type, m] of Object.entries(meshes)) m.count = counts[type] || 0;
+    for (const [type, variants] of Object.entries(groups)) {
+      variants.forEach((parts, v) => {
+        for (const { mesh } of parts) mesh.count = counts[type + v] || 0;
+      });
+    }
     dirty = false;
   }
 
   function update() {
     if (dirty) rebuild();
-    for (const [id, v] of index) {
+    for (const [id, e] of index) {
       const n = game.state.nodes[id];
       if (!n) continue;
       const empty = n.charges <= 0;
-      dummy.position.set(n.x, v.y - 0.05, n.z);
-      dummy.rotation.set(0, v.ry, 0);
-      const s = empty ? v.s * 0.35 : v.s;
-      dummy.scale.set(s, s, s);
-      dummy.updateMatrix();
-      const m = meshes[v.type];
-      m.setMatrixAt(v.i, dummy.matrix);
-      m.setColorAt(v.i, empty ? dim : live);
+      for (const { part, mesh } of groups[e.type][e.v]) {
+        const show = part.when === 'both' || (part.when === 'live') !== empty;
+        const s = show ? e.s * (empty ? part.shrink ?? 1 : 1) : 0;
+        dummy.position.set(n.x, e.y - 0.03, n.z);
+        dummy.rotation.set(e.tilt, e.ry, e.tilt * 0.7);
+        dummy.scale.set(s, s, s);
+        dummy.updateMatrix();
+        mesh.setMatrixAt(e.i, dummy.matrix);
+        mesh.setColorAt(e.i, empty && part.when === 'both' ? dim : white);
+      }
     }
-    for (const m of Object.values(meshes)) {
-      m.instanceMatrix.needsUpdate = true;
-      if (m.instanceColor) m.instanceColor.needsUpdate = true;
+    for (const variants of Object.values(groups)) {
+      for (const parts of variants) {
+        for (const { mesh } of parts) {
+          mesh.instanceMatrix.needsUpdate = true;
+          if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        }
+      }
     }
   }
 

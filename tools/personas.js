@@ -37,6 +37,27 @@ export function runPersona(data, prof, { days, seed }) {
   game.on('cmd.rejected', (ev) => { rejects[ev.reason] = (rejects[ev.reason] || 0) + 1; });
   game.on('move.blocked', () => { blocked++; });
   game.on('recall.done', () => { recalls++; });
+  const money = { orders: 0, ordersQty: 0, ordersN: 0, sold: 0, soldQty: 0, spent: 0, boughtQty: 0, npc: 0, npcQty: 0, deliveredStars: [] };
+  game.on('order.delivered', (ev) => {
+    if (ev.owner !== 'b1') return;
+    money.orders += ev.pay;
+    money.ordersQty += ev.qty;
+    money.ordersN++;
+  });
+  game.on('market.trade', (ev) => {
+    if (ev.seller === 'b1') { money.sold += ev.qty * ev.price; money.soldQty += ev.qty; }
+    if (ev.buyer === 'b1') { money.spent += ev.qty * ev.price; money.boughtQty += ev.qty; }
+  });
+  game.on('repair', (ev) => {
+    if (ev.actor !== 'b1') return;
+    money.repairs = (money.repairs || 0) + 1;
+    money.repairSpent = (money.repairSpent || 0) + ev.cost;
+  });
+  game.on('market.npc', (ev) => {
+    if (ev.owner !== 'b1') return;
+    money.npc += ev.qty * ev.price;
+    money.npcQty += ev.qty;
+  });
   game.on('gather.done', (ev) => {
     gathers++;
     lots.add(ev.lot);
@@ -87,6 +108,8 @@ export function runPersona(data, prof, { days, seed }) {
     lotsUsed: lots.size, rotatingLots: rotLots.size, rotatingShare: Math.round((rotGathers / Math.max(1, gathers)) * 100),
     tools, toolStars: toolStars.map((x) => x.star),
     fails, rejects, blocked, recalls,
+    silver: a.silver, money,
+    openOrders: game.state.market.asks.filter((o) => o.owner === 'b1').length + game.state.market.bids.filter((o) => o.owner === 'b1').length,
     bestLot: [...lots].map((id) => game.state.lots[id]).filter(Boolean).reduce((b, l) => (!b || avgProps(l.props) > avgProps(b.props) ? l : b), null)?.name || null,
   };
 }
@@ -111,6 +134,8 @@ if (isMain) {
       console.log(`  10/20/30 도달: ${Object.entries(r.reach).map(([k, v]) => `${data.skills[k].name} ${f(v[10])}/${f(v[20])}/${f(v[30])}`).join(' · ')}`);
       console.log(`  도구: ${Object.entries(r.tools).map(([k, v]) => (v ? `${data.items[v.item].name}★${v.star}(×${v.speed}, +${Math.round(v.yield * 100)}%)` : `${data.skills[k].name} 없음`)).join(' · ')} · 만든 도구 별 ${JSON.stringify(r.toolStars)}`);
       console.log(`  귀환 ${r.recalls}번 · 실패 ${JSON.stringify(r.fails)} · 거절 ${JSON.stringify(r.rejects)} · 막힘 ${r.blocked} · 가장 좋은 산지 ${r.bestLot}`);
+      const mo = r.money;
+      console.log(`  은화 ${r.silver} · 주문 ${mo.ordersN}건 ${mo.ordersQty}개 ${mo.orders}은화 · 거래소 판매 ${mo.soldQty}개 ${mo.sold}은화 · 구매 ${mo.boughtQty}개 ${mo.spent}은화 · 상인 ${mo.npcQty}개 ${mo.npc}은화 · 수리 ${mo.repairs || 0}번 ${mo.repairSpent || 0}은화 · 걸린 주문 ${r.openOrders}`);
     }
   }
 }

@@ -17,6 +17,9 @@ import { craftingTick } from './systems/crafting.js';
 import { nodesTick, densityHourly } from './systems/nodes.js';
 import { focusTick } from './systems/focus.js';
 import { dailyVeins } from './systems/veins.js';
+import { econHourly, econDaily } from './systems/economy.js';
+import { expireOrders, townDaily } from './market.js';
+import { dailyOrders } from './orders.js';
 import { agentsTick } from './systems/agents.js';
 
 const DEFAULT_ACTORS = [{ id: 'p1', name: '개척자', kind: 'player' }];
@@ -72,11 +75,16 @@ function wrap(ctx, bus) {
       if (h !== state.clock.hour) {
         state.clock.hour = h;
         densityHourly(ctx);
+        econHourly(ctx);
       }
       const d = ctx.clock.day(state.t);
       if (d !== state.clock.day) {
         state.clock.day = d;
         dailyVeins(ctx);
+        expireOrders(ctx);
+        townDaily(ctx);
+        dailyOrders(ctx);
+        econDaily(ctx);
         ctx.emit('day.start', { day: d + 1 });
       }
     }

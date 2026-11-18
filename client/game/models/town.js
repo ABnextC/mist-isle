@@ -1,4 +1,4 @@
-// 등대 마을 모형: 집·등대·게시판·모닥불·작업대 7종·난파선·부두.
+// 등대 마을 모형: 집·등대·게시판·거래소·모닥불·작업대 7종·난파선·부두.
 // 각 함수는 { 재질이름: [조각...] }과 불·연기·불빛 자리(물체 공간)를 돌려준다. 원점은 바닥 가운데, 앞은 +z.
 
 import * as THREE from 'three';
@@ -177,6 +177,55 @@ export function campfire() {
   fx.fires.push({ p: V(0, 0.18, 0), s: 1.0 });
   fx.lights.push({ kind: 'fire', p: V(0, 0.9, 0) });
   fx.smokes.push(V(0, 1.1, 0));
+  return { parts, fx };
+}
+
+// 거래소: 줄무늬 차양을 친 좌판. 저울과 주괴·자루·바구니를 늘어놓는다.
+export function market() {
+  const { parts, fx, add } = kit();
+  const R = rng(31);
+  for (const [x, z, h] of [[-1.35, 0.85, 2.6], [1.35, 0.85, 2.6], [-1.35, -0.85, 2.2], [1.35, -0.85, 2.2]]) {
+    add('barkDark', taperTube([V(x, -0.2, z), V(x, h, z)], [0.08, 0.07], { radial: 7, vScale: 1.2 }));
+  }
+  // 차양: 앞이 높게 기운 줄무늬 천, 앞자락은 짧게 늘어뜨린다
+  const slope = Math.atan2(0.4, 1.7);
+  for (let i = 0; i < 7; i++) {
+    const x = -1.35 + 0.2 + i * 0.383;
+    const mat = i % 2 ? 'cloth' : 'clothDyed';
+    add(mat, box(0.385, 0.025, 2.05, { x, y: 2.44, rx: -slope }));
+    add(mat, box(0.37, 0.24, 0.012, { x, y: 2.5, z: 1.03 }));
+  }
+  add('planksDark', box(2.85, 0.1, 0.1, { y: 2.6, z: 0.85 }));
+  add('planksDark', box(2.85, 0.1, 0.1, { y: 2.2, z: -0.85 }));
+  // 계산대
+  add('planks', box(2.5, 0.84, 0.55, { y: 0.42, z: 0.55 }));
+  add('planksDark', box(2.66, 0.07, 0.72, { y: 0.875, z: 0.55 }));
+  add('planksDark', box(2.5, 0.12, 0.05, { y: 0.1, z: 0.84 }));
+  // 주괴 더미
+  for (let i = 0; i < 5; i++) {
+    const row = i < 3 ? 0 : 1;
+    const x = -0.95 + (row ? 0.12 : 0) + (i % 3) * 0.24;
+    add('copperMetal', box(0.21, 0.07, 0.11, { x, y: 0.945 + row * 0.07, z: 0.6, ry: (R() - 0.5) * 0.1 }));
+  }
+  // 저울
+  add('iron', cyl(0.016, 0.02, 0.46, 6, { x: 0.72, y: 1.14, z: 0.5 }));
+  add('iron', box(0.56, 0.02, 0.02, { x: 0.72, y: 1.36, z: 0.5 }));
+  for (const dx of [-0.26, 0.26]) {
+    add('iron', cyl(0.004, 0.004, 0.2, 3, { x: 0.72 + dx, y: 1.26, z: 0.5 }));
+    add('iron', cyl(0.1, 0.075, 0.025, 14, { x: 0.72 + dx, y: 1.155, z: 0.5 }));
+  }
+  // 산딸기 바구니
+  add('sack', lathe([[0, 0], [0.14, 0], [0.18, 0.05], [0.2, 0.14], [0.19, 0.15]], 12).translate(0.05, 0.91, 0.62));
+  for (let i = 0; i < 9; i++) add('berry', P(new THREE.SphereGeometry(0.035, 6, 5), 0xa3182f, { x: 0.05 + (R() - 0.5) * 0.2, y: 1.05 + R() * 0.03, z: 0.62 + (R() - 0.5) * 0.2 }));
+  // 뒤쪽 짐: 상자·통·자루
+  crate(add, 0.6, { x: -0.85, y: 0.3, z: -0.45 });
+  crate(add, 0.45, { x: -0.8, y: 0.83, z: -0.45, ry: 0.4 });
+  barrel(add, { x: 0.25, z: -0.5 }, R);
+  for (let i = 0; i < 2; i++) add('sack', lathe([[0, 0], [0.2, 0.02], [0.24, 0.2], [0.2, 0.42], [0.08, 0.52], [0.0, 0.53]], 10).translate(0.95, 0, -0.4 + i * 0.42));
+  // 앞에 세운 작은 간판
+  add('planksDark', box(0.06, 1.1, 0.06, { x: 1.75, y: 0.55, z: 1.05 }));
+  add('planks', box(0.62, 0.42, 0.05, { x: 1.75, y: 1.0, z: 1.08 }));
+  add('paper', box(0.48, 0.3, 0.01, { x: 1.75, y: 1.0, z: 1.11 }));
   return { parts, fx };
 }
 

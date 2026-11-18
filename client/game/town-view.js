@@ -2,7 +2,7 @@
 // 밤이 되면 창문과 불이 켜지고 등대 불빛이 돈다. 불·연기 자리는 fx에 넘긴다.
 
 import * as THREE from 'three';
-import { STATIONS, house, lighthouse, board, campfire, wreck, pier, lampPost, fence, bake } from './models/town.js';
+import { STATIONS, house, lighthouse, board, market, campfire, wreck, pier, lampPost, fence, bake } from './models/town.js';
 
 const BEAM_V = `
 varying float vAlong;
@@ -86,6 +86,7 @@ export function createTownView(scene, game, hf, { mats, terrain, region }) {
     if (o.kind === 'house') place(house(houseSeed++ * 97), o.x, o.z, o.rot);
     else if (o.kind === 'lighthouse') place(lighthouse(), o.x, o.z, o.rot);
     else if (o.kind === 'board') place(board(), o.x, o.z, o.rot || 0.2);
+    else if (o.kind === 'market') place(market(), o.x, o.z, o.rot || 0);
     else if (o.kind === 'campfire') place(campfire(), o.x, o.z, 0);
     else if (o.kind === 'wreck') place(wreck(), o.x, o.z, o.rot, { dy: -0.55, tilt: [0.05, 0.16] });
   }

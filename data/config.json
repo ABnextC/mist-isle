@@ -1,15 +1,34 @@
 {
-  "dataVersion": 3,
+  "dataVersion": 4,
   "skillCap": 30,
-  "time": { "secondsPerGameDay": 3600, "dayFraction": 0.75, "hz": 30, "startPhase": 0.15 },
-  "move": { "speed": 5, "radius": 0.35 },
-  "ai": { "thinkTicks": 6 },
-  "recall": { "castSec": 6, "cooldownSec": 900 },
-  "bag": { "slots": 48 },
+  "time": {
+    "secondsPerGameDay": 3600,
+    "dayFraction": 0.75,
+    "hz": 30,
+    "startPhase": 0.15
+  },
+  "move": {
+    "speed": 5,
+    "radius": 0.35
+  },
+  "ai": {
+    "thinkTicks": 6
+  },
+  "recall": {
+    "castSec": 6,
+    "cooldownSec": 900
+  },
+  "bag": {
+    "slots": 48
+  },
   "focus": {
     "max": 1000,
     "regenPerHour": 50,
-    "cost": { "gather": 10, "refine": 20, "tune": 30 }
+    "cost": {
+      "gather": 10,
+      "refine": 20,
+      "tune": 30
+    }
   },
   "gather": {
     "rangeM": 3,
@@ -25,30 +44,444 @@
     "stationTierBonus": 2,
     "queueMax": 10,
     "refineReturn": 0.15,
-    "tune": { "min": 5, "max": 10 },
-    "masterwork": { "base": 0.02, "perLevel": 0.001, "maxFromLevel": 0.05, "tuneBonus": 0.02, "statBonus": 10 }
+    "tune": {
+      "min": 5,
+      "max": 10
+    },
+    "masterwork": {
+      "base": 0.02,
+      "perLevel": 0.001,
+      "maxFromLevel": 0.05,
+      "tuneBonus": 0.02,
+      "statBonus": 10
+    }
   },
   "refine": {
-    "steps": [{ "skill": 30, "add": 5 }, { "skill": 70, "add": 5 }],
+    "steps": [
+      {
+        "skill": 30,
+        "add": 5
+      },
+      {
+        "skill": 70,
+        "add": 5
+      }
+    ],
     "catalystAdd": 5,
     "maxStep": 15
   },
-  "density": { "perGather": 0.002, "regenPerHour": 0.015, "minFactor": 0.25, "floor": 0.05 },
-  "stars": [30, 50, 70, 85],
+  "density": {
+    "perGather": 0.002,
+    "regenPerHour": 0.015,
+    "minFactor": 0.25,
+    "floor": 0.05
+  },
+  "stars": [
+    30,
+    50,
+    70,
+    85
+  ],
   "families": {
-    "wood": ["strength", "flex"],
-    "metal": ["hardness", "toughness"],
-    "stone": ["density", "grain"],
-    "fiber": ["tenacity", "softness"],
-    "food": ["nutrition", "flavor"],
-    "herb": ["potency", "duration"]
+    "wood": [
+      "strength",
+      "flex"
+    ],
+    "metal": [
+      "hardness",
+      "toughness"
+    ],
+    "stone": [
+      "density",
+      "grain"
+    ],
+    "fiber": [
+      "tenacity",
+      "softness"
+    ],
+    "food": [
+      "nutrition",
+      "flavor"
+    ],
+    "herb": [
+      "potency",
+      "duration"
+    ]
   },
   "propNames": {
-    "strength": "강도", "flex": "탄성",
-    "hardness": "경도", "toughness": "인성",
-    "density": "밀도", "grain": "결",
-    "tenacity": "질김", "softness": "부드러움",
-    "nutrition": "영양", "flavor": "풍미",
-    "potency": "약효", "duration": "지속"
+    "strength": "강도",
+    "flex": "탄성",
+    "hardness": "경도",
+    "toughness": "인성",
+    "density": "밀도",
+    "grain": "결",
+    "tenacity": "질김",
+    "softness": "부드러움",
+    "nutrition": "영양",
+    "flavor": "풍미",
+    "potency": "약효",
+    "duration": "지속"
+  },
+  "market": {
+    "startSilver": 40,
+    "listingFee": 0.01,
+    "salesTax": 0.04,
+    "orderDays": 3,
+    "npcBuy": 0.15,
+    "starMult": [
+      1.0,
+      0.7,
+      1.0,
+      1.45,
+      2.1,
+      3.0
+    ],
+    "refEma": 0.2,
+    "maxOrdersPerOwner": 24,
+    "toolMinDur": 0.95
+  },
+  "orders": {
+    "open": 5,
+    "lifeDays": [
+      2,
+      3
+    ],
+    "agentDelayDays": 1,
+    "agentShare": 0.5,
+    "templates": [
+      {
+        "item": "nails_copper",
+        "qty": [
+          30,
+          60
+        ],
+        "minStar": 0,
+        "premium": 1.36,
+        "w": 3
+      },
+      {
+        "item": "stake_wood",
+        "qty": [
+          8,
+          16
+        ],
+        "minStar": 0,
+        "premium": 1.36,
+        "w": 3
+      },
+      {
+        "item": "lumber_drift",
+        "qty": [
+          6,
+          12
+        ],
+        "minStar": 2,
+        "premium": 1.19,
+        "w": 2
+      },
+      {
+        "item": "lumber_birch",
+        "qty": [
+          4,
+          8
+        ],
+        "minStar": 3,
+        "premium": 1.27,
+        "w": 2
+      },
+      {
+        "item": "ingot_copper",
+        "qty": [
+          4,
+          8
+        ],
+        "minStar": 3,
+        "premium": 1.27,
+        "w": 2
+      },
+      {
+        "item": "cloth_reed",
+        "qty": [
+          3,
+          6
+        ],
+        "minStar": 3,
+        "premium": 1.44,
+        "w": 2
+      },
+      {
+        "item": "crate_wood",
+        "qty": [
+          1,
+          3
+        ],
+        "minStar": 0,
+        "premium": 1.27,
+        "w": 2
+      },
+      {
+        "item": "food_soup",
+        "qty": [
+          2,
+          4
+        ],
+        "minStar": 0,
+        "premium": 1.36,
+        "w": 2
+      },
+      {
+        "item": "food_berry",
+        "qty": [
+          4,
+          8
+        ],
+        "minStar": 0,
+        "premium": 1.27,
+        "w": 2
+      },
+      {
+        "item": "sand_fine",
+        "qty": [
+          3,
+          6
+        ],
+        "minStar": 0,
+        "premium": 1.27,
+        "w": 1
+      },
+      {
+        "item": "tool_axe_copper",
+        "qty": [
+          1,
+          2
+        ],
+        "minStar": 3,
+        "premium": 1.15,
+        "w": 1
+      },
+      {
+        "item": "tool_pick_copper",
+        "qty": [
+          1,
+          2
+        ],
+        "minStar": 3,
+        "premium": 1.15,
+        "w": 1
+      },
+      {
+        "item": "tool_sickle_copper",
+        "qty": [
+          1,
+          2
+        ],
+        "minStar": 3,
+        "premium": 1.15,
+        "w": 1
+      }
+    ],
+    "perDay": 3
+  },
+  "econ": {
+    "agents": [
+      {
+        "id": "e1",
+        "name": "도윤",
+        "role": "gatherer",
+        "item": "log_drift"
+      },
+      {
+        "id": "e2",
+        "name": "서연",
+        "role": "gatherer",
+        "item": "log_birch"
+      },
+      {
+        "id": "e3",
+        "name": "민준",
+        "role": "gatherer",
+        "item": "log_birch"
+      },
+      {
+        "id": "e4",
+        "name": "하은",
+        "role": "gatherer",
+        "item": "stone"
+      },
+      {
+        "id": "e5",
+        "name": "지호",
+        "role": "gatherer",
+        "item": "ore_copper"
+      },
+      {
+        "id": "e6",
+        "name": "수아",
+        "role": "gatherer",
+        "item": "ore_copper"
+      },
+      {
+        "id": "e7",
+        "name": "예준",
+        "role": "gatherer",
+        "item": "fiber_reed"
+      },
+      {
+        "id": "e8",
+        "name": "지우",
+        "role": "gatherer",
+        "item": "berry"
+      },
+      {
+        "id": "e9",
+        "name": "은우",
+        "role": "gatherer",
+        "item": "seaweed"
+      },
+      {
+        "id": "e10",
+        "name": "서윤",
+        "role": "gatherer",
+        "item": "mushroom"
+      },
+      {
+        "id": "e11",
+        "name": "시우",
+        "role": "crafter",
+        "recipe": "rc_lumber_birch"
+      },
+      {
+        "id": "e12",
+        "name": "하린",
+        "role": "crafter",
+        "recipe": "rc_lumber_drift"
+      },
+      {
+        "id": "e13",
+        "name": "주원",
+        "role": "crafter",
+        "recipe": "rc_ingot_copper"
+      },
+      {
+        "id": "e14",
+        "name": "다은",
+        "role": "crafter",
+        "recipe": "rc_cloth_reed"
+      },
+      {
+        "id": "e15",
+        "name": "건우",
+        "role": "crafter",
+        "recipe": "rc_nails_copper"
+      },
+      {
+        "id": "e16",
+        "name": "채원",
+        "role": "crafter",
+        "recipe": "rc_soup"
+      },
+      {
+        "id": "e17",
+        "name": "태윤",
+        "role": "crafter",
+        "recipe": "rc_stake_wood"
+      },
+      {
+        "id": "e18",
+        "name": "현우",
+        "role": "trader"
+      },
+      {
+        "id": "e19",
+        "name": "지안",
+        "role": "trader"
+      },
+      {
+        "id": "e20",
+        "name": "유나",
+        "role": "crafter",
+        "recipe": "rc_dried_berry"
+      }
+    ],
+    "rate": {
+      "log_drift": 5,
+      "log_birch": 4,
+      "stone": 5,
+      "ore_copper": 3,
+      "fiber_reed": 6,
+      "berry": 5,
+      "seaweed": 3,
+      "mushroom": 2.5
+    },
+    "craftBatches": 2,
+    "startSilver": [
+      80,
+      200
+    ],
+    "upkeep": 0.05,
+    "upkeepFloor": 150,
+    "eatPerDay": 1,
+    "rotatingShare": 0.2,
+    "markup": 0.08,
+    "stockCap": 150,
+    "staleHours": 4,
+    "workHours": [
+      7,
+      18
+    ],
+    "elastic": 1.5,
+    "pf": {
+      "min": 0.55,
+      "max": 1.6,
+      "stale": 0.94,
+      "hit": 1.02,
+      "fill": 1.03,
+      "buyStale": 1.06,
+      "buyDone": 0.99
+    },
+    "craftMargin": 0.92,
+    "trader": {
+      "budget": 0.3,
+      "buyBelow": 0.75,
+      "margin": 0.1,
+      "orderGap": 0.85,
+      "startSilver": [
+        600,
+        900
+      ],
+      "minValue": 6,
+      "minGain": 2,
+      "upkeepFloor": 700
+    }
+  },
+  "town": {
+    "purse": 1000000000,
+    "priceFactor": 0.9,
+    "demand": {
+      "lumber_birch": 16,
+      "lumber_drift": 16,
+      "ingot_copper": 8,
+      "cloth_reed": 10,
+      "nails_copper": 60,
+      "stake_wood": 16,
+      "food_berry": 16,
+      "food_soup": 8,
+      "stone": 20,
+      "log_drift": 20,
+      "fiber_reed": 20
+    },
+    "grow": {
+      "full": 0.95,
+      "up": 1.08,
+      "low": 0.5,
+      "down": 0.95,
+      "max": 3
+    }
+  },
+  "repair": {
+    "rate": 0.35,
+    "maxLoss": 0.02,
+    "xp": 0.5,
+    "minMaxShare": 0.8
   }
 }

@@ -9,8 +9,10 @@
 //   detour      가장 좋은 노드 대신 엉뚱한 노드를 고를 확률(실수)
 //   tune        도구를 만들 때 집중력으로 조율하는가
 
-import { keyOf, avgProps, countItem } from '../inventory.js';
+import { keyOf, avgProps, countItem, qtyOf } from '../inventory.js';
 import { dist, settlementAt, nearestSettlement, nearestStation, bestTool, toolTier } from '../world.js';
+import { entryStar, tradable, baseValue, bestBid, bestAsk, npcPrice, repairCost, refPrice } from '../market.js';
+import { countDeliverable } from '../orders.js';
 
 const REFINES = ['rc_ingot_copper', 'rc_lumber_birch', 'rc_lumber_drift', 'rc_cloth_reed'];
 
@@ -203,6 +205,9 @@ function returnStep(ctx, actor, mem) {
     if (!def.tool) continue;
     if (e.broken || bestTool(ctx, actor, def.tool.skill) !== e) ctx.command({ type: 'STORE', actor: actor.id, key: e.uid });
   }
+  const prof = ctx.data.agents[actor.ai.profile] || ctx.data.agents.settler;
+  deliverOrders(ctx, actor);
+  marketRound(ctx, actor, prof, mem);
   mem.mode = 'craft';
   mem.rounds = 0;
   mem.plan = null;
@@ -215,9 +220,20 @@ function makePlan(ctx, actor, prof) {
   const count = (id) => countItem(lists, id);
   const plan = [];
   for (const skill of prof.skills) {
-    const tier = toolTier(ctx, bestTool(ctx, actor, skill));
+    const cur = bestTool(ctx, actor, skill);
+    const tier = toolTier(ctx, cur);
     const [stone, copper] = prof.tools[skill];
-    if (tier < 1) plan.push({ recipe: copper, n: 1, tune: 'gatherSpeed' });
+    // 수리(v0.2.1): 쓰던 구리 도구가 많이 닳았거나 부서졌으면, 새로 만들기 전에 은화로 고친다.
+    // ★3 이상만 고친다(그보다 못하면 새로 만드는 게 낫다). 기다리기 싫은 무진은 다 고친다.
+    // 최대 내구가 처음의 80% 아래로 줄면 고치지 않고 새로 만든다.
+    const worn = prof.market === 'quality' ? 0.5 : 0.3;
+    const minStar = prof.market === 'dump' ? 0 : 3;
+    const fix = (e) => e.uid && (e.star ?? 0) >= minStar && data.items[e.item].tool?.skill === skill && data.items[e.item].tool.tier >= 1
+      && (e.broken || e.dur <= e.maxDur * worn) && e.maxDur >= (e.stats?.durability ?? e.maxDur) * ctx.cfg.repair.minMaxShare;
+    const want = cur && tier >= 1 ? (fix(cur) ? cur : null)
+      : [...actor.bag, ...actor.storage].filter(fix).sort((x, y) => (y.star ?? 0) - (x.star ?? 0) || y.maxDur - x.maxDur)[0];
+    if (want && actor.silver >= repairCost(ctx, want) + 40) plan.push({ repair: want.uid });
+    if (tier < 1) plan.push({ recipe: copper, n: 1, tune: 'gatherSpeed', skipIfTier: [skill, 1] });
     if (tier < 0) plan.push({ recipe: stone, n: 1, skipIfTool: skill });
   }
   for (const id of REFINES) {
@@ -234,13 +250,168 @@ function makePlan(ctx, actor, prof) {
   else if (count('ingot_copper') > 9 && count('nails_copper') < 12) plan.push({ recipe: 'rc_nails_copper', n: 1 });
   if (count('lumber_drift') >= 4 && count('stake_wood') < 40) plan.push({ recipe: 'rc_stake_wood', n: 1, auto: 'cheap' });
   if (count('nails_copper') >= 6 && count('crate_wood') < 4) plan.push({ recipe: 'rc_crate', n: 1 });
+  // 주문 게시판: 만들 수 있는 의뢰는 계획에 넣는다(입문자는 게시판만 보고 만들지는 않는다)
+  if (prof.market !== 'ordersOnly') {
+    for (const o of ctx.state.orders) {
+      if (o.left <= 0) continue;
+      const r = Object.values(data.recipes).find((x) => x.output.item === o.item);
+      if (!r || actor.skills[r.skill].level < r.level) continue;
+      const have = countDeliverable(ctx, [actor.bag, actor.storage], o);
+      if (have >= o.left) continue;
+      const def = data.items[o.item];
+      const n = def.tool ? 1 : Math.min(6, Math.ceil((o.left - have) / r.output.qty));
+      plan.push({ recipe: r.id, n, tune: def.tool ? 'gatherSpeed' : null, forOrder: o.id, catalyst: r.type === 'refine', focus: r.type === 'refine' });
+    }
+  }
   return plan;
+}
+
+// 주문 게시판에 넘길 수 있는 것은 넘긴다
+function deliverOrders(ctx, actor) {
+  for (const o of ctx.state.orders) {
+    if (o.left <= 0) continue;
+    if (countDeliverable(ctx, [actor.bag, actor.storage], o) > 0) ctx.command({ type: 'ORDER_DELIVER', actor: actor.id, order: o.id });
+  }
+}
+
+// 남는 것 팔기. 성향(prof.market)에 따라 다르다.
+//  normal: 좋은 사자 주문엔 바로 넘기고, 아니면 남들 최저가보다 조금 싸게 내놓는다(기본값 55% 아래로는 안 판다)
+//  quality: ★3 이상은 아껴 두고 나머지만 판다. 도구 재료는 ★3 이상으로 사 온다
+//  trader: 주문 게시판에 넘길 물건을 거래소에서 사 오고, 한참 싸게 나온 물건은 사 뒀다가 산 값보다 비싸게 판다
+//  dump: 기다리기 싫어한다. '한꺼번에 팔기'로 좋은 사자엔 넘기고 나머지는 시세 95%로 건다(걸 자리가 없으면 상인에게)
+//  orders / ordersOnly: 주문만 하고 거래소는 안 쓴다
+const KEEP = { ingot_copper: 12, lumber_birch: 12, lumber_drift: 12, nails_copper: 30, sand_fine: 6, sap_birch: 6, food_soup: 6, food_berry: 6 };
+
+function surplusOf(ctx, actor, e) {
+  const def = ctx.data.items[e.item];
+  const have = countItem([actor.bag, actor.storage], e.item);
+  if (def.stage === 'raw') return Math.max(0, Math.min(qtyOf(e), have - 60));
+  return Math.max(0, Math.min(qtyOf(e), have - (KEEP[e.item] ?? 0)));
+}
+
+function myMarket(ctx, actor) {
+  const m = ctx.state.market;
+  return [...m.asks, ...m.bids].filter((o) => o.kind === 'actor' && o.owner === actor.id);
+}
+
+function noteCost(mem, item, star, price) {
+  mem.cost = mem.cost || {};
+  const k = item + '|' + star;
+  mem.cost[k] = mem.cost[k] ? Math.round((mem.cost[k] * 0.7 + price * 0.3) * 100) / 100 : price;
+}
+
+// 사 와서 주문에 넘기기(시세 차익). 주문 보상이 거래소 값보다 넉넉할 때만 산다.
+function buyForOrders(ctx, actor, mem) {
+  const m = ctx.state.market;
+  let budget = Math.floor(actor.silver * 0.6);
+  for (const o of ctx.state.orders) {
+    if (o.left <= 0) continue;
+    let need = o.left - countDeliverable(ctx, [actor.bag, actor.storage], o);
+    for (const a of m.asks.filter((x) => x.item === o.item && x.star >= o.minStar && x.owner !== actor.id).sort((x, y) => x.price - y.price)) {
+      if (need <= 0 || a.price > o.reward * 0.8 || budget < a.price) break;
+      const q = Math.min(a.qty, need, Math.floor(budget / a.price));
+      const r = ctx.command({ type: 'MARKET_BUY', actor: actor.id, item: a.item, minStar: a.star, qty: q, price: a.price, ioc: true });
+      if (!r.ok) break;
+      budget -= q * a.price;
+      need -= q;
+      noteCost(mem, a.item, a.star, a.price);
+    }
+  }
+  deliverOrders(ctx, actor);
+}
+
+function marketRound(ctx, actor, prof, mem) {
+  const style = prof.market || 'normal';
+  if (style === 'orders' || style === 'ordersOnly') return;
+  const m = ctx.state.market;
+  const cap = ctx.cfg.market.maxOrdersPerOwner;
+  // 반나절 넘게 안 팔린 내 팔자는 거둬서 다시 값을 매긴다
+  for (const o of myMarket(ctx, actor)) {
+    if (o.entry && ctx.state.t - o.t >= ctx.clock.hourLen * 12) ctx.command({ type: 'MARKET_CANCEL', actor: actor.id, id: o.id });
+  }
+  if (style === 'trader') buyForOrders(ctx, actor, mem);
+  let open = myMarket(ctx, actor).length;
+  for (const e of [...actor.storage]) {
+    if (!tradable(ctx, e)) continue;
+    const q = surplusOf(ctx, actor, e);
+    if (q <= 0) continue;
+    const star = entryStar(ctx, e);
+    if (style === 'quality' && star >= 3) continue;
+    const base = baseValue(ctx, e.item, star);
+    const bid = bestBid(ctx, e.item, star);
+    const key = keyOf(e);
+    const cost = mem.cost?.[e.item + '|' + star];
+    if (style === 'dump') {
+      // v0.2.1부터 '한꺼번에 팔기'를 쓴다: 시세 85% 이상 사자엔 넘기고, 나머지는 시세 95%로 건다.
+      // 걸 자리가 없을 때만 상인에게 넘긴다.
+      const ref = refPrice(ctx, e.item, star);
+      if (bid && bid.price >= ref * 0.85) {
+        ctx.command({ type: 'MARKET_SELL', actor: actor.id, key, qty: Math.min(q, bid.qty), price: bid.price, ioc: true });
+        continue;
+      }
+      if (myMarket(ctx, actor).some((o) => o.entry && o.item === e.item && o.star === star)) continue;
+      if (open < cap - 2) {
+        if (ctx.command({ type: 'MARKET_SELL', actor: actor.id, key, qty: q, price: Math.max(npcPrice(ctx, e.item, star) + 1, Math.round(ref * 0.95)) }).ok) open++;
+        continue;
+      }
+      ctx.command({ type: 'MARKET_DUMP', actor: actor.id, key, qty: q });
+      continue;
+    }
+    const floor = Math.max(npcPrice(ctx, e.item, star) + 1, Math.round(cost ? Math.max(cost * 1.12, cost + 2) : base * 0.55));
+    if (bid && bid.price >= Math.max(floor, base * 0.85)) {
+      ctx.command({ type: 'MARKET_SELL', actor: actor.id, key, qty: Math.min(q, bid.qty), price: bid.price, ioc: true });
+      continue;
+    }
+    if (open >= cap - 2) continue;
+    if (myMarket(ctx, actor).some((o) => o.entry && o.item === e.item && o.star === star)) continue;
+    // 남들 최저가보다 1 싸게, 그러나 바닥값 아래로는 안 내린다
+    const low = m.asks.filter((x) => x.item === e.item && x.star === star && x.owner !== actor.id).reduce((p, x) => Math.min(p, x.price), Infinity);
+    const price = Math.max(floor, Math.min(Math.round(base * 0.95), low - 1));
+    if (ctx.command({ type: 'MARKET_SELL', actor: actor.id, key, qty: q, price }).ok) open++;
+  }
+  if (style === 'trader') {
+    // 한참 싸게 나온 물건 사 두기: 최근 체결가가 넉넉히 높을 때만
+    let budget = Math.floor(actor.silver * 0.3);
+    for (const a of [...m.asks]) {
+      if (budget <= 0) break;
+      if (a.owner === actor.id || baseValue(ctx, a.item, a.star) < 6) continue;
+      if (a.price > baseValue(ctx, a.item, a.star) * 0.75) continue;
+      if ((m.ref[a.item + '|' + a.star] ?? 0) < a.price * 1.15 + 2) continue;
+      const q = Math.min(a.qty, Math.floor(budget / a.price), Math.max(0, 40 - countItem([actor.storage], a.item)));
+      if (q <= 0) continue;
+      if (ctx.command({ type: 'MARKET_BUY', actor: actor.id, item: a.item, minStar: a.star, qty: q, price: a.price, ioc: true }).ok) {
+        budget -= q * a.price;
+        noteCost(mem, a.item, a.star, a.price);
+      }
+    }
+  }
+  // 도구 재료가 모자라면 산다(구리주괴). 장인 성향은 ★3 이상만
+  const need = 6 - countItem([actor.bag, actor.storage], 'ingot_copper');
+  if (need > 0 && actor.skills.smithing.level >= 4) {
+    const minStar = style === 'quality' ? 3 : 2;
+    const ask = bestAsk(ctx, 'ingot_copper', minStar);
+    if (ask && ask.price <= baseValue(ctx, 'ingot_copper', ask.star) * 1.1 && actor.silver >= ask.price * Math.min(need, ask.qty)) {
+      ctx.command({ type: 'MARKET_BUY', actor: actor.id, item: 'ingot_copper', minStar, qty: Math.min(need, ask.qty), price: ask.price, ioc: true });
+    }
+  }
 }
 
 function craftStep(ctx, actor, prof, mem) {
   const { data, cfg } = ctx;
   if (!mem.plan) {
-    if (actor.queue.length) return; // 대기열이 빌 때까지 기다린다
+    if (actor.queue.length) {
+      // 곧 끝나는 대기열만 기다린다. 길면 걸어 두고 채집하러 간다(설계 7.4).
+      // 다음 단계 제작과 주문 납품은 다음 귀환 때 한다.
+      const left = actor.queue[actor.queue.length - 1].endsAt - ctx.state.t;
+      if (left <= 12) return;
+      mem.mode = 'gather';
+      mem.rounds = 0;
+      return;
+    }
+    if (mem.orderCraft) {
+      deliverOrders(ctx, actor);
+      mem.orderCraft = false;
+    }
     if (mem.rounds >= 3) {
       mem.mode = 'gather';
       mem.rounds = 0;
@@ -252,7 +423,32 @@ function craftStep(ctx, actor, prof, mem) {
   }
   while (mem.plan.length) {
     const step = mem.plan[0];
+    if (step.repair) {
+      const st = nearestStation(ctx, actor, 'forge');
+      if (!st) {
+        mem.plan.shift();
+        continue;
+      }
+      if (dist(actor, st) > cfg.craft.rangeM - 0.5) {
+        if (step.walked) {
+          mem.plan.shift();
+          continue;
+        }
+        step.walked = true;
+        moveNear(ctx, actor, st, (data.stations[st.type].r || 0.8) + 1.2);
+        return;
+      }
+      if (ctx.command({ type: 'REPAIR', actor: actor.id, uid: step.repair }).ok && actor.storage.some((e) => e.uid === step.repair)) {
+        ctx.command({ type: 'TAKE', actor: actor.id, key: step.repair });
+      }
+      mem.plan.shift();
+      continue;
+    }
     const r = data.recipes[step.recipe];
+    if (step.skipIfTier && toolTier(ctx, bestTool(ctx, actor, step.skipIfTier[0])) >= step.skipIfTier[1]) {
+      mem.plan.shift();
+      continue;
+    }
     if (step.skipIfTool && bestTool(ctx, actor, step.skipIfTool)) {
       mem.plan.shift();
       continue;
@@ -283,11 +479,12 @@ function craftStep(ctx, actor, prof, mem) {
       const cmd = { type: 'CRAFT', actor: actor.id, recipe: step.recipe, auto: step.auto || 'best' };
       if (step.catalyst) cmd.catalyst = 'auto';
       if (step.focus && prof.useFocus && actor.focus >= prof.focusReserve + cfg.focus.cost.refine) cmd.focus = true;
-      if (step.tune && prof.tune && actor.focus >= prof.focusReserve + cfg.focus.cost.tune) cmd.tune = step.tune;
+      if (step.tune && (prof.tune || step.forOrder) && actor.focus >= prof.focusReserve + cfg.focus.cost.tune) cmd.tune = step.tune;
       if (!ctx.check(cmd).ok) break;
       ctx.command(cmd);
       done++;
       mem.queued++;
+      if (step.forOrder) mem.orderCraft = true;
     }
     mem.plan.shift();
   }

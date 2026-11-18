@@ -6,6 +6,8 @@ import { makeTerrain, fitsHabitat, hashStr } from './terrain.js';
 import { stationLayout } from './world.js';
 import { pickCenter, pickNodeSpot } from './systems/veins.js';
 import { spawnPoint } from './state.js';
+import { emptyMarket } from './market.js';
+import { initEcon } from './systems/economy.js';
 
 export const SAVE_FORMAT = 'mist-isle-save';
 
@@ -83,6 +85,19 @@ const MIGRATIONS = [
         a.dest = null;
         a.nav = null;
       }
+    },
+  },
+  {
+    // v0.1.2 → v0.2: 은화·거래소·주문 게시판·AI 개척민 경제
+    from: 3,
+    to: 4,
+    run(st, data) {
+      st.meta.engine = '0.2.0';
+      for (const a of Object.values(st.actors)) a.silver = a.silver ?? data.config.market.startSilver;
+      st.market = st.market || emptyMarket();
+      st.orders = st.orders || [];
+      const rng = makeRng(seedState((st.meta.worldSeed ^ 0x2e5bf271) >>> 0));
+      st.econ = st.econ || initEcon({ cfg: data.config, rng });
     },
   },
 ];

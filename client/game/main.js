@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { DATA_FILES, buildData } from '../../core/data.js';
 import { createGame, loadGame } from '../../core/game.js';
 import { dist, settlementAt } from '../../core/world.js';
-import { avgProps } from '../../core/inventory.js';
+import { avgProps, keyOf } from '../../core/inventory.js';
 import { starOf } from '../../core/formulas.js';
 import { stars } from '../../core/text.js';
 import { createScene } from './scene.js';
@@ -23,7 +23,8 @@ import { createFx } from './fx.js';
 import { NODE_CHIP } from './models/nodes.js';
 import { createCamera } from './camera.js';
 import { createInput } from './input.js';
-import { createHud } from './hud.js';
+import { createHud, BULK_KEEP } from './hud.js';
+import { refPrice, npcPrice, bestBid, entryStar as marketStar } from '../../core/market.js';
 import { createMinimap } from './minimap.js';
 
 const SAVE_KEY = 'mist-isle:v1';
@@ -149,6 +150,46 @@ async function boot() {
       if (t.id === 'storage') hud.open('bag');
       else hud.open('craft', { station: t.id });
     } else if (t.kind === 'board') hud.open('board');
+    else if (t.kind === 'market') hud.open('market');
+  }
+
+  // 거래소 명령: 가방에 같은 묶음이 있으면 창고로 먼저 옮겨 하나로 판다
+  function stash(key) {
+    if (me().bag.some((e) => keyOf(e) === key)) game.dispatch({ type: 'STORE', actor: PID, key });
+  }
+  // 원자재 한꺼번에 팔기(v0.2.1): 시세 85% 이상 사자 주문엔 바로 넘기고, 나머지는 시세 95%로 건다
+  function bulkSell() {
+    const ctx = { state: game.state, data, cfg: data.config };
+    const keys = new Set([...me().bag, ...me().storage].filter((e) => !e.uid && data.items[e.item].stage === 'raw').map((e) => keyOf(e)));
+    for (const key of keys) {
+      stash(key);
+      const e = me().storage.find((x) => keyOf(x) === key);
+      if (!e || e.qty <= BULK_KEEP) continue;
+      const star = marketStar(ctx, e);
+      const ref = refPrice(ctx, e.item, star);
+      const bid = bestBid(ctx, e.item, star);
+      let q = e.qty - BULK_KEEP;
+      if (bid && bid.price >= ref * 0.85) {
+        const sell = Math.min(q, bid.qty);
+        game.dispatch({ type: 'MARKET_SELL', actor: PID, key, qty: sell, price: bid.price, ioc: true });
+        q -= sell;
+      }
+      if (q > 0) game.dispatch({ type: 'MARKET_SELL', actor: PID, key, qty: q, price: Math.max(npcPrice(ctx, e.item, star) + 1, Math.round(ref * 0.95)) });
+    }
+  }
+
+  function buyUpTo(item, star, qty) {
+    // 싼 팔자부터 qty개를 채우는 데 필요한 최고 단가까지 사자(체결은 팔자 값으로, 차액은 돌려받는다)
+    const asks = game.state.market.asks.filter((o) => o.item === item && o.star === star && !(o.kind === 'actor' && o.owner === PID)).sort((x, y) => x.price - y.price);
+    let left = qty;
+    let cap = 0;
+    for (const o of asks) {
+      if (left <= 0) break;
+      cap = o.price;
+      left -= o.qty;
+    }
+    if (!cap) return;
+    game.dispatch({ type: 'MARKET_BUY', actor: PID, item, minStar: star, qty, price: cap, ioc: true });
   }
 
   function onAct(act, v, n) {
@@ -172,6 +213,24 @@ async function boot() {
         }
         break;
       case 'eat': game.dispatch({ type: 'EAT', actor: PID, key: v }); break;
+      case 'mk-sell': stash(v); game.dispatch({ type: 'MARKET_SELL', actor: PID, key: v, price: Number(n), ioc: true }); break;
+      case 'mk-list': stash(v); game.dispatch({ type: 'MARKET_SELL', actor: PID, key: v, price: Number(n) }); break;
+      case 'mk-dump': stash(v); game.dispatch({ type: 'MARKET_DUMP', actor: PID, key: v }); break;
+      case 'mk-buy': {
+        const [item, star] = v.split('|');
+        buyUpTo(item, Number(star), Number(n));
+        break;
+      }
+      case 'mk-bid': {
+        const [item, star] = v.split('|');
+        const minStar = Number(star);
+        game.dispatch({ type: 'MARKET_BUY', actor: PID, item, minStar, qty: minStar >= 3 ? 5 : 10, price: Number(n) });
+        break;
+      }
+      case 'mk-cancel': game.dispatch({ type: 'MARKET_CANCEL', actor: PID, id: Number(v) }); break;
+      case 'mk-bulk': bulkSell(); break;
+      case 'repair': game.dispatch({ type: 'REPAIR', actor: PID, uid: v }); break;
+      case 'ord-deliver': game.dispatch({ type: 'ORDER_DELIVER', actor: PID, order: v }); break;
       case 'store-all': game.dispatch({ type: 'STORE', actor: PID, all: true }); break;
       case 'take': game.dispatch({ type: 'TAKE', actor: PID, key: v }); break;
       case 'speed': hud.settings.speed = Number(v); break;
@@ -255,11 +314,11 @@ async function boot() {
       }
     }
     for (const o of game.statics) {
-      if (o.kind !== 'board') continue;
+      if (o.kind !== 'board' && o.kind !== 'market') continue;
       const dx = o.x - a.x;
       const dz = o.z - a.z;
       const d = Math.hypot(dx, dz);
-      if (d <= 3.2) consider(d, dx, dz, { kind: 'board', id: 'board', x: o.x, z: o.z });
+      if (d <= (o.kind === 'market' ? 3.8 : 3.2)) consider(d, dx, dz, { kind: o.kind, id: o.kind, x: o.x, z: o.z });
     }
     if (!best) return null;
     if (best.kind === 'node') {
@@ -282,8 +341,12 @@ async function boot() {
       best.label = st.name;
       best.verb = best.id === 'storage' ? '창고 열기' : '작업대 열기';
       best.radius = (st.r || 0.8) + 0.7;
+    } else if (best.kind === 'market') {
+      best.label = '거래소';
+      best.verb = '사고팔기';
+      best.radius = 2.0;
     } else {
-      best.label = '산지 소문 게시판';
+      best.label = '마을 게시판 — 주문·산지 소문';
       best.verb = '보기';
       best.radius = 1.2;
     }

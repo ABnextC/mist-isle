@@ -219,6 +219,7 @@ export function makeMaterials(tex, ctex) {
     plantSolid: foliageMaterial({ color: 0xffffff, sway: 0.06, translucency: 0.1, vertexColors: true, roughness: 0.6 }),
     metal: plainMaterial(0x8d9399, { roughness: 0.38, metalness: 0.9 }),
     iron: plainMaterial(0x3a3c40, { roughness: 0.55, metalness: 0.85 }),
+    copperMetal: plainMaterial(0xb4643a, { roughness: 0.32, metalness: 0.95 }),
     rope: plainMaterial(0x9d8460, { roughness: 0.95 }),
     cloth: plainMaterial(0xd8cfb8, { roughness: 0.95, side: THREE.DoubleSide }),
     painted: plainMaterial(0xffffff, { roughness: 0.6, vertexColors: true }),

@@ -321,6 +321,9 @@ test('v0.0 세이브를 불러오면 지형에 맞게 옮겨지고 이어서 돈
   ok(bad <= 2, `서식지 밖 노드 ${bad}개`);
   eq(JSON.stringify(g.state.actors.p1.skills), JSON.stringify(before.actors.p1.skills), '스킬이 보존되지 않음');
   eq(g.state.actors.p1.storage.length, before.actors.p1.storage.length, '창고가 보존되지 않음');
+  eq(g.state.actors.p1.silver, data.config.market.startSilver, '은화(v0.2)');
+  eq(g.state.econ.agents.length, data.config.econ.agents.length, 'AI 개척민(v0.2)');
+  ok(Array.isArray(g.state.market.asks) && Array.isArray(g.state.orders), '거래소·주문(v0.2)');
   g.advance(600);
   const again = loadGame({ data, save: old });
   again.advance(600);
@@ -335,6 +338,122 @@ test('상태는 그대로 JSON이 된다 (NaN·undefined 없음)', () => {
   const again = loadGame({ data, save: text });
   eq(again.hash(), g.hash());
   ok(keyOf(again.state.actors.b1.bag[0] || { item: 'x', lot: null, bonus: null }).length > 0);
+});
+
+console.log('거래소·주문 (v0.2)');
+// 시험용 섬: AI 개척민과 마을 수요를 꺼서 손으로 건 주문만 남긴다
+function marketGame(seed = 5) {
+  const g = createGame({ data, seed, actors: [{ id: 'p1', kind: 'player' }, { id: 'p2', kind: 'player' }] });
+  g.state.econ = null;
+  g.state.market.asks = [];
+  g.state.market.bids = [];
+  const town = Object.values(g.state.settlements)[0];
+  for (const id of ['p1', 'p2']) {
+    g.state.actors[id].x = town.x + 3;
+    g.state.actors[id].z = town.z + 3;
+  }
+  return g;
+}
+
+test('팔자와 사자가 만나면 먼저 걸린 값으로 체결되고, 수수료 1%·판매세 4%가 빠진다', () => {
+  const g = marketGame();
+  const p1 = g.state.actors.p1;
+  const p2 = g.state.actors.p2;
+  p2.silver = 1000;
+  const start = p1.silver;
+  p1.storage.push({ item: 'ingot_copper', lot: null, bonus: null, qty: 5 });
+  const key = keyOf(p1.storage[p1.storage.length - 1]);
+  ok(g.dispatch({ type: 'MARKET_SELL', actor: 'p1', key, qty: 5, price: 50 }).ok, '팔자 거절');
+  eq(p1.silver, start - 3, '수수료(5×50×1%)');
+  ok(g.dispatch({ type: 'MARKET_BUY', actor: 'p2', item: 'ingot_copper', minStar: 0, qty: 3, price: 60 }).ok, '사자 거절');
+  eq(p2.silver, 1000 - 150, '산 쪽은 걸린 값(50)으로 내고 차액을 돌려받는다');
+  eq(p1.silver, start - 3 + 150 - 6, '판 쪽은 판매세 4%를 뺀 값을 받는다');
+  eq(p2.storage.filter((e) => e.item === 'ingot_copper').reduce((x, e) => x + e.qty, 0), 3, '산 물건은 창고로');
+  eq(g.state.market.asks[0].qty, 2, '남은 팔자');
+  eq(g.dispatch({ type: 'MARKET_SELL', actor: 'p1', key, qty: 1, price: 50 }).error, 'no_item', '없는 물건');
+});
+
+test('★ 조건 사자는 그 별 이상만 사고, 기한이 지나면 물건·은화를 돌려받는다', () => {
+  const g = marketGame();
+  const p1 = g.state.actors.p1;
+  const p2 = g.state.actors.p2;
+  p2.silver = 500;
+  p1.storage.push({ item: 'sap_birch', lot: null, bonus: null, qty: 4 });
+  const key = keyOf(p1.storage[p1.storage.length - 1]);
+  g.dispatch({ type: 'MARKET_SELL', actor: 'p1', key, price: 10 });
+  g.dispatch({ type: 'MARKET_BUY', actor: 'p2', item: 'sap_birch', minStar: 3, qty: 4, price: 20 });
+  eq(g.state.market.asks.length + g.state.market.bids.length, 2, '★0 팔자와 ★3 사자는 맞지 않는다');
+  eq(p2.silver, 500 - 80, '사자는 은화를 맡긴다');
+  g.advance(3600 * (cfg.market.orderDays + 1));
+  eq(g.state.market.asks.filter((o) => o.kind === 'actor').length + g.state.market.bids.filter((o) => o.kind === 'actor').length, 0, '기한 지난 주문');
+  eq(p2.silver, 500, '맡긴 은화를 돌려받는다');
+  eq(p1.storage.filter((e) => e.item === 'sap_birch').reduce((x, e) => x + e.qty, 0), 4, '물건을 돌려받는다');
+});
+
+test('주문 게시판: 조건(★·내구도)에 맞는 것만 넘기고 넘긴 만큼 은화를 받는다', () => {
+  const g = marketGame();
+  const p1 = g.state.actors.p1;
+  const day = g.clock.day(g.state.t);
+  g.state.orders = [
+    { id: 'O_a', item: 'nails_copper', minStar: 0, qty: 20, left: 20, reward: 7, postedDay: day, expiresDay: day + 3 },
+    { id: 'O_b', item: 'ingot_copper', minStar: 3, qty: 5, left: 5, reward: 90, postedDay: day, expiresDay: day + 3 },
+    { id: 'O_c', item: 'tool_axe_copper', minStar: 0, qty: 1, left: 1, reward: 300, postedDay: day, expiresDay: day + 3 },
+  ];
+  p1.storage.push({ item: 'nails_copper', lot: null, bonus: null, qty: 12 });
+  p1.storage.push({ item: 'ingot_copper', lot: null, bonus: null, qty: 5 });
+  p1.storage.push({ uid: 'u_t1', item: 'tool_axe_copper', star: 2, dur: 100, stats: { durability: 400 } });
+  const s0 = p1.silver;
+  ok(g.dispatch({ type: 'ORDER_DELIVER', actor: 'p1', order: 'O_a' }).ok, '못 납품');
+  eq(g.state.orders[0].left, 8, '남은 수량');
+  eq(p1.silver, s0 + 12 * 7, '보상');
+  eq(p1.stats.orders, 12, '납품 기록');
+  eq(g.dispatch({ type: 'ORDER_DELIVER', actor: 'p1', order: 'O_b' }).error, 'nothing_to_deliver', '★0 주괴는 ★3 주문에 못 낸다');
+  eq(g.dispatch({ type: 'ORDER_DELIVER', actor: 'p1', order: 'O_c' }).error, 'nothing_to_deliver', '닳은 도구는 못 낸다');
+  p1.storage.find((e) => e.uid === 'u_t1').dur = 400;
+  ok(g.dispatch({ type: 'ORDER_DELIVER', actor: 'p1', order: 'O_c' }).ok, '새 도구는 낸다');
+  eq(p1.silver, s0 + 84 + 300);
+});
+
+test('수리(v0.2.1): 대장간 앞에서 은화를 내고 고친다. 최대 내구가 2% 줄고, 고친 도구는 주문에 못 낸다', () => {
+  const g = marketGame();
+  const p1 = g.state.actors.p1;
+  const forge = Object.values(g.state.settlements)[0].stations.find((x) => x.type === 'forge');
+  p1.silver = 500;
+  p1.bag.push({ uid: 'u_r1', item: 'tool_axe_copper', star: 3, dur: 0, maxDur: 400, broken: true, stats: { durability: 400, gatherSpeed: 1.2 } });
+  eq(g.dispatch({ type: 'REPAIR', actor: 'p1', uid: 'u_r1' }).error, 'no_station', '대장간에서 멀면');
+  p1.x = forge.x - 2.2;
+  p1.z = forge.z;
+  const xp0 = p1.skills.smithing.xp;
+  const cost = Math.ceil(Math.round(210 * cfg.market.starMult[3]) * cfg.repair.rate);
+  ok(g.dispatch({ type: 'REPAIR', actor: 'p1', uid: 'u_r1' }).ok, '수리 거절');
+  const t = p1.bag.find((e) => e.uid === 'u_r1');
+  eq(t.broken, false);
+  eq(t.maxDur, 392, '최대 내구 2% 감소');
+  eq(t.dur, 392);
+  eq(p1.silver, 500 - cost, '수리비');
+  ok(p1.skills.smithing.xp > xp0, '대장 경험치');
+  eq(g.dispatch({ type: 'REPAIR', actor: 'p1', uid: 'u_r1' }).error, 'not_damaged', '멀쩡한 도구');
+  const day = g.clock.day(g.state.t);
+  g.state.orders = [{ id: 'O_r', item: 'tool_axe_copper', minStar: 0, qty: 1, left: 1, reward: 300, postedDay: day, expiresDay: day + 3 }];
+  p1.x = Object.values(g.state.settlements)[0].x + 3;
+  p1.z = Object.values(g.state.settlements)[0].z + 3;
+  eq(g.dispatch({ type: 'ORDER_DELIVER', actor: 'p1', order: 'O_r' }).error, 'nothing_to_deliver', '고친 도구');
+});
+
+test('AI 개척민 경제: 게임 30일을 돌려도 은화가 폭주하지 않고 물가가 버틴다', () => {
+  const g = createGame({ data, seed: 9, actors: [{ id: 'p1', kind: 'player' }] });
+  const total = () => g.state.econ.agents.reduce((x, a) => x + a.silver, 0) + g.state.market.bids.filter((b) => b.kind === 'agent').reduce((x, b) => x + b.escrow, 0);
+  g.advance(3600 * 20);
+  const mid = total();
+  g.advance(3600 * 10);
+  const end = total();
+  ok(g.state.econ.agents.every((a) => a.silver >= 0 && Number.isFinite(a.silver)), '음수 은화');
+  ok(end < mid * 1.25, `20~30일 은화 ${mid} → ${end}`);
+  const ctx = { state: g.state, data, cfg };
+  const basket = ['log_birch', 'ore_copper', 'lumber_birch', 'ingot_copper', 'cloth_reed', 'food_berry'];
+  const idx = basket.reduce((x, it) => x + (g.state.market.ref[it + '|2'] ?? 1) / Math.round(data.items[it].value * cfg.market.starMult[2]), 0) / basket.length;
+  ok(idx > 0.6 && idx < 1.3, `물가 지수 ${idx.toFixed(2)}`);
+  ok(g.state.orders.length > 0, '주문 게시판이 비었다');
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

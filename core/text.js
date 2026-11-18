@@ -33,7 +33,19 @@ export const ERR = {
   not_in_town: '정착지 밖',
   moved: '움직여서 멈춤',
   recall_cooldown: '귀환은 아직 쓸 수 없음',
+  not_tradable: '사고팔 수 없는 물건',
+  bad_price: '값이 맞지 않음',
+  bad_qty: '수량이 맞지 않음',
+  no_silver: '은화가 모자람',
+  too_many_orders: '걸어 둘 수 있는 주문이 꽉 참',
+  no_order: '없는 주문',
+  nothing_to_deliver: '넘길 물건이 없음(별·내구도 확인)',
+  not_repairable: '고칠 수 없는 물건',
+  not_damaged: '고칠 데가 없음',
 };
+
+// 은화 표기: 1,234
+export const silver = (n) => `${Math.floor(n).toLocaleString('ko-KR')}은화`;
 
 export const STAT_NAMES = {
   gatherSpeed: '속도', yield: '산출', durability: '내구', comfort: '쾌적', buff: '효과', minutes: '지속',
@@ -125,6 +137,25 @@ export function describeEvent(ev, game) {
       return ev.on ? '🤖 봇이 대신 움직인다' : '🤖 봇 끔';
     case 'milestone':
       return null;
+    case 'market.trade': {
+      const nm = (id) => state.actors[id]?.name;
+      const st = ev.star ? ` ${stars(ev.star)}` : '';
+      if (nm(ev.seller)) return `${Object.keys(state.actors).length > 1 ? `[${nm(ev.seller)}] ` : ''}💰 ${itemName(data, ev.item)}${st} ${ev.qty}개 팔림 · 개당 ${ev.price}은화`;
+      if (nm(ev.buyer)) return `${Object.keys(state.actors).length > 1 ? `[${nm(ev.buyer)}] ` : ''}🛒 ${itemName(data, ev.item)}${st} ${ev.qty}개 삼 · 개당 ${ev.price}은화`;
+      return null;
+    }
+    case 'market.npc': {
+      const nm = state.actors[ev.owner]?.name;
+      return nm ? `🪙 상인에게 ${itemName(data, ev.item)} ${ev.qty}개 · ${ev.qty * ev.price}은화` : null;
+    }
+    case 'repair':
+      return `${p}🔧 ${itemName(data, ev.item)} 수리 · ${ev.cost}은화 · 최대 내구 ${ev.maxDur}`;
+    case 'order.posted':
+      return `📋 새 주문: ${itemName(data, ev.item)}${ev.minStar ? ` ★${ev.minStar} 이상` : ''} ${ev.qty}개 · 개당 ${ev.reward}은화`;
+    case 'order.delivered': {
+      const nm = state.actors[ev.owner]?.name;
+      return nm ? `📋 주문 납품: ${itemName(data, ev.item)} ${ev.qty}개 · ${ev.pay}은화${ev.done ? ' · 주문 끝' : ''}` : null;
+    }
     default:
       return null;
   }

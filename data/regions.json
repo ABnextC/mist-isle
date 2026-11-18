@@ -26,7 +26,8 @@
         { "kind": "house", "dx": 19, "dz": 15, "r": 2.8, "rot": -0.5 },
         { "kind": "house", "dx": 22, "dz": -2, "r": 2.8, "rot": -1.4 },
         { "kind": "board", "dx": 3, "dz": -2, "r": 0.5 },
-        { "kind": "campfire", "dx": 0, "dz": 3, "r": 0.7 }
+        { "kind": "campfire", "dx": 0, "dz": 3, "r": 0.7 },
+        { "kind": "market", "dx": -6, "dz": -3, "r": 1.5, "rot": 0.6 }
       ]
     },
     "decor": [
@@ -34,7 +35,7 @@
     ],
     "places": ["붉은절벽", "갈매기 바위", "소금 웅덩이", "난파선 뒤편", "등대 언덕", "검은 모래톱",
                "파도 굴", "안개 여울", "조개 무덤", "바람 고개", "부서진 돛대", "물새 습지"],
-    "propDist": { "mean": 45, "sd": 15, "luckyChance": 0.04, "luckyBonus": [20, 35], "common": [30, 40] },
+    "propDist": { "mean": 50, "sd": 14, "luckyChance": 0.06, "luckyBonus": [20, 35], "common": [30, 40] },
     "veins": [
       { "node": "node_driftwood", "common": 28, "cluster": [4, 10], "start": 25, "rotating": 0 },
       { "node": "node_stone", "common": 24, "cluster": [4, 10], "start": 30, "rotating": 0 },

@@ -3,8 +3,11 @@
 import { seedState } from './rng.js';
 import { openVein } from './systems/veins.js';
 import { stationLayout } from './world.js';
+import { emptyMarket, townDaily } from './market.js';
+import { initEcon } from './systems/economy.js';
+import { dailyOrders } from './orders.js';
 
-export const ENGINE_VERSION = '0.1.2';
+export const ENGINE_VERSION = '0.2.1';
 
 export function spawnPoint(region, terrain) {
   const [x, inland] = region.spawn;
@@ -22,6 +25,7 @@ export function newActor(data, spec, at) {
     x, z, yaw: 0, move: null, dest: null, nav: null, stuck: 0, action: null, recallReadyAt: 0,
     skills,
     focus: data.config.focus.max,
+    silver: data.config.market.startSilver,
     buffs: [],
     bag: [], storage: [], queue: [],
     ai: spec.ai ? { on: true, profile: spec.ai, mem: {} } : null,
@@ -40,6 +44,7 @@ export function createState(data, seed) {
     rng: seedState(seed),
     nextId: 1,
     regions: {}, lots: {}, veins: {}, nodes: {}, settlements: {}, actors: {},
+    market: emptyMarket(), orders: [], econ: null,
   };
 }
 
@@ -64,4 +69,7 @@ export function populate(ctx, actorSpecs) {
   const home = data.lists.regions[0];
   const at = spawnPoint(home, ctx.terrain);
   for (const spec of actorSpecs) state.actors[spec.id] = newActor(data, spec, at);
+  state.econ = initEcon(ctx);
+  townDaily(ctx);
+  dailyOrders(ctx);
 }

@@ -2,6 +2,8 @@
 // 버튼은 data-act로 main.js에 넘긴다. HUD는 상태를 직접 고치지 않는다.
 
 import { ERR, fmtProps, fmtStats, stars, itemName, entryStar, describeEvent } from '../../core/text.js';
+import { tradable, refPrice, npcPrice, bestBid, repairCost, entryStar as marketStar } from '../../core/market.js';
+import { countDeliverable } from '../../core/orders.js';
 import { xpProgress, starOf } from '../../core/formulas.js';
 import { keyOf, effectiveProps, avgProps, countItem, qtyOf } from '../../core/inventory.js';
 import { settlementAt } from '../../core/world.js';
@@ -12,6 +14,7 @@ const FAMILY = { wood: '나무', metal: '금속', stone: '돌', fiber: '섬유',
 const STAGE = { raw: '원자재', refined: '정제품', component: '부품' };
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const DIRS = ['북', '북동', '동', '남동', '남', '남서', '서', '북서'];
+export const BULK_KEEP = 20; // 한꺼번에 팔 때 종류마다 남길 개수
 
 function direction(dx, dz) {
   const ang = Math.atan2(dx, dz); // 북(+z) = 0
@@ -33,6 +36,7 @@ export function createHud(root, game, { touch, onAct }) {
     <div class="tl">
       <div class="clock" data-k="clock"></div>
       <div class="focus"><span data-k="focusbar"></span><em data-k="focus"></em></div>
+      <div class="silver" data-k="silver"></div>
       <div class="buffs" data-k="buffs"></div>
       <div class="quest" data-k="quest"></div>
     </div>
@@ -59,7 +63,7 @@ export function createHud(root, game, { touch, onAct }) {
 
   const $ = (k) => root.querySelector(`[data-k="${k}"]`);
   const el = {
-    clock: $('clock'), focus: $('focus'), focusbar: $('focusbar'), buffs: $('buffs'), quest: $('quest'),
+    clock: $('clock'), silver: $('silver'), focus: $('focus'), focusbar: $('focusbar'), buffs: $('buffs'), quest: $('quest'),
     where: $('where'), feed: $('feed'), banner: $('banner'), progress: $('progress'), prompt: $('prompt'),
     actbtn: $('actbtn'), ptitle: $('ptitle'), pbody: $('pbody'), toast: $('toast'), recall: $('recall'),
   };
@@ -77,7 +81,8 @@ export function createHud(root, game, { touch, onAct }) {
     }
   };
 
-  let panel = null; // { kind, station }
+  let panel = null; // { kind, station, tab }
+  const prices = {}; // 거래소에 내놓을 값(묶음 키별)
   let holding = false;
   let lastPanel = 0;
   const feed = [];
@@ -92,7 +97,17 @@ export function createHud(root, game, { touch, onAct }) {
     const b = e.target.closest('[data-act]');
     if (!b || b.disabled) return;
     e.stopPropagation();
-    onAct(b.dataset.act, b.dataset.v, b.dataset.n);
+    if (b.dataset.act === 'ui-tab') {
+      if (panel) panel.tab = b.dataset.v;
+    } else if (b.dataset.act === 'ui-price') {
+      // 내놓을 값 조정: 한 번에 시세의 약 5%씩
+      const key = b.dataset.v;
+      const cur = Number(b.dataset.cur);
+      const step = Math.max(1, Math.round(cur * 0.05));
+      prices[key] = Math.max(1, cur + Number(b.dataset.n) * step);
+    } else {
+      onAct(b.dataset.act, b.dataset.v, b.dataset.n);
+    }
     renderPanel(true);
   });
 
@@ -137,6 +152,14 @@ export function createHud(root, game, { touch, onAct }) {
       pushFeed(`🍽️ 채집량 +${Math.round(ev.value * 100)}% · ${ev.minutes}분`);
     } else if (ev.type === 'store' && ev.moved) {
       pushFeed(`📦 창고에 ${ev.moved}개`);
+    } else if (ev.type === 'market.trade' && ev.seller === PID) {
+      pushFeed(`💰 ${itemName(data, ev.item)} ${ev.qty}개 팔림 · +${ev.qty * ev.price - Math.floor(ev.qty * ev.price * data.config.market.salesTax)}은화`);
+    } else if (ev.type === 'market.trade' && ev.buyer === PID) {
+      pushFeed(`🛒 ${itemName(data, ev.item)} ${ev.qty}개 → 창고`);
+    } else if (ev.type === 'market.npc' && ev.owner === PID) {
+      pushFeed(`🪙 상인에게 ${ev.qty}개 · +${ev.qty * ev.price}은화`);
+    } else if (ev.type === 'order.delivered' && ev.owner === PID) {
+      toast(`📋 주문 납품 ${itemName(data, ev.item)} ${ev.qty}개 · +${ev.pay}은화${ev.done ? ' · 주문 끝' : ''}`, 'good');
     } else if (ev.type === 'recall.done') {
       toast('🏠 등대 마을 창고 앞으로 돌아왔다', 'good');
     }
@@ -152,7 +175,8 @@ export function createHud(root, game, { touch, onAct }) {
       { done: m.tool_t0 != null, text: '돌 도구 만들기 — 제작(C) → 맨손 제작' },
       { done: (a.stats.craft.rc_ingot_copper || 0) > 0, text: '구리광석을 캐서 등대 마을 제련로에서 주괴로' },
       { done: m.tool_t1 != null, text: '대장간에서 구리 도구 만들기 (대장 4)' },
-      { done: a.stats.eat > 0, text: '조리대에서 음식을 만들어 먹기' },
+      { done: a.stats.eat > 0, text: '조리대에서 음식을 만들어 먹기 — 먹으면 한동안 채집량이 는다' },
+      { done: (a.stats.orders || 0) > 0, text: '마을 게시판의 주문을 하나 채워 은화 받기' },
       { done: Object.values(game.state.veins).some((v) => !v.common && a.storage.concat(a.bag).some((e) => e.lot === v.lot)), text: '게시판의 산지 소문을 따라가 좋은 재료 캐기' },
     ];
     const next = steps.find((s) => !s.done);
@@ -169,7 +193,8 @@ export function createHud(root, game, { touch, onAct }) {
     const max = data.config.focus.max;
     el.focusbar.style.width = `${(a.focus / max) * 100}%`;
     set(el.focus, `집중력 ${Math.floor(a.focus)}${settings.focus ? ' · 쓰는 중' : ''}`);
-    set(el.buffs, a.buffs.map((b) => `🍽️ +${Math.round(b.value * 100)}% ${Math.ceil((b.endsAt - game.state.t) / 60)}분`).join('  '));
+    set(el.silver, `🪙 ${Math.floor(a.silver ?? 0).toLocaleString('ko-KR')}`);
+    set(el.buffs, a.buffs.map((b) => `🍽️ 채집량 +${Math.round(b.value * 100)}% · ${Math.ceil((b.endsAt - game.state.t) / 60)}분`).join('  '));
     set(el.quest, quest(a));
     const town = settlementAt({ state: game.state }, a);
     set(el.where, town ? `🏘️ ${town.name}` : '🌫️ 난파 해안');
@@ -304,10 +329,23 @@ export function createHud(root, game, { touch, onAct }) {
         <div class="btns"><button data-act="craft-do" data-v="${r.id}" data-n="1" ${pv.ok ? '' : 'disabled'}>만들기</button>
         <button data-act="craft-do" data-v="${r.id}" data-n="5" ${pv.ok ? '' : 'disabled'}>×5</button></div></li>`;
     }).join('');
+    // 수리(v0.2.1): 대장간에서만
+    let repair = '';
+    if (station === 'forge') {
+      const tools = pools.flat().filter((e) => e.uid && data.items[e.item].tool && e.maxDur != null && (e.broken || e.dur < e.maxDur));
+      const rr = tools.map((e) => {
+        const def = data.items[e.item];
+        const cost = repairCost({ data, cfg: data.config }, e);
+        return `<li><div><b>${def.icon || ''} ${def.name}</b> <span class="stars">${stars(e.star ?? 0)}</span>
+          <small>${e.broken ? '<em class="no">부서짐</em>' : `내구 ${e.dur}/${e.maxDur}`}${e.repairs ? ` · ${e.repairs}번 고침` : ''} · 고치면 최대 내구 ${Math.max(1, Math.round(e.maxDur * (1 - data.config.repair.maxLoss)))}</small></div>
+          <button data-act="repair" data-v="${e.uid}" ${a.silver >= cost ? '' : 'disabled'}>수리 ${cost}은화</button></li>`;
+      }).join('');
+      if (rr) repair = `<h3>수리</h3><ul class="list">${rr}</ul><p class="muted">고칠 때마다 최대 내구가 ${data.config.repair.maxLoss * 100}%씩 준다. 고친 도구는 주문에 낼 수 없다.</p>`;
+    }
     const note = station === 'hand'
       ? '<p class="muted">작업대가 필요한 제작은 등대 마을의 각 작업대 앞에서 E로 연다.</p>'
       : '<p class="muted">재료는 ‘최고 품질’부터 자동으로 고른다. 대기열을 걸어 두고 채집하러 가도 된다.</p>';
-    return `${queue ? `<h3>대기열 ${a.queue.length}/${data.config.craft.queueMax}</h3><ul class="list">${queue}</ul>` : ''}<ul class="list">${rows}</ul>${note}`;
+    return `${queue ? `<h3>대기열 ${a.queue.length}/${data.config.craft.queueMax}</h3><ul class="list">${queue}</ul>` : ''}${repair}<ul class="list">${rows}</ul>${note}`;
   }
 
   function skillsHtml(a) {
@@ -331,7 +369,30 @@ export function createHud(root, game, { touch, onAct }) {
     return `<ul class="list log">${rows || '<li><small>아직 없다</small></li>'}</ul>`;
   }
 
-  function boardHtml(a) {
+  const mctx = () => ({ state: game.state, data, cfg: data.config, clock: game.clock });
+
+  function tabsHtml(list, cur) {
+    return `<div class="row tabs">${list.map(([k, l]) => `<button data-act="ui-tab" data-v="${k}" class="${cur === k ? 'on' : ''}">${l}</button>`).join('')}</div>`;
+  }
+
+  function ordersHtml(a) {
+    const ctx = mctx();
+    const town = settlementAt({ state: game.state }, a);
+    const day = game.clock.day(game.state.t);
+    const rows = game.state.orders.filter((o) => o.left > 0).map((o) => {
+      const def = data.items[o.item];
+      const have = countDeliverable(ctx, [a.bag, a.storage], o);
+      const cond = [o.minStar ? `★${o.minStar} 이상` : '', def.tool ? '내구도 95% 이상' : ''].filter(Boolean).join(' · ');
+      const fresh = day - o.postedDay < data.config.orders.agentDelayDays ? ' · 오늘 붙음' : '';
+      return `<li><div><b>${def.icon || ''} ${def.name}</b> ×${o.left}<small>개당 <b class="ok">${o.reward}은화</b>${cond ? ` · ${cond}` : ''} · ${o.expiresDay + 1}일차 아침까지${fresh}</small>
+        <small class="${have ? 'ok' : ''}">${have ? `넘길 수 있는 것 ${Math.min(have, o.left)}개 → ${Math.min(have, o.left) * o.reward}은화` : '조건에 맞는 물건이 없다'}</small></div>
+        <button data-act="ord-deliver" data-v="${o.id}" ${have && town ? '' : 'disabled'}>넘기기</button></li>`;
+    }).join('');
+    return `<ul class="list">${rows || '<li><small>지금 붙은 주문이 없다. 아침마다 새로 붙는다.</small></li>'}</ul>
+      <p class="muted">마을 창고와 가방에서 조건에 맞는 것부터 넘긴다(별이 낮은 것부터). AI 개척민은 하루 지난 주문부터 남은 양의 절반까지 채운다.</p>`;
+  }
+
+  function veinsHtml(a) {
     const list = Object.values(game.state.veins).filter((v) => !v.common && v.center)
       .sort((x, y) => avgProps(game.state.lots[y.lot].props) - avgProps(game.state.lots[x.lot].props));
     const rows = list.map((v) => {
@@ -343,6 +404,115 @@ export function createHud(root, game, { touch, onAct }) {
         <small>${fmtProps(lot.props, data)} · ${direction(dx, dz)}쪽 약 ${d}m · ${v.closesOnDay + 1}일차 아침에 사라짐</small></div></li>`;
     }).join('');
     return `<p class="muted">영맥이 옮겨 가면 산지도 바뀐다. 미니맵의 점선 고리가 소문난 자리다.</p><ul class="list">${rows}</ul>`;
+  }
+
+  function boardHtml(a) {
+    const tab = panel.tab || 'orders';
+    return tabsHtml([['orders', '주문'], ['veins', '산지 소문']], tab) + (tab === 'orders' ? ordersHtml(a) : veinsHtml(a));
+  }
+
+  // ── 거래소 ─────────────────────────────────────────
+  function lowestAsk(item, star) {
+    let low = null;
+    for (const o of game.state.market.asks) {
+      if (o.item !== item || o.star !== star || (o.kind === 'actor' && o.owner === PID)) continue;
+      if (!low || o.price < low.price) low = o;
+    }
+    return low;
+  }
+
+  function sellHtml(a) {
+    const ctx = mctx();
+    const merged = new Map();
+    for (const e of [...a.bag, ...a.storage]) {
+      if (!tradable(ctx, e)) continue;
+      const k = keyOf(e);
+      if (merged.has(k)) merged.get(k).qty += e.qty;
+      else merged.set(k, { ...e });
+    }
+    const rows = sortEntries([...merged.values()]).map((e) => {
+      const def = data.items[e.item];
+      const st = marketStar(ctx, e);
+      const key = keyOf(e);
+      const ref = Math.max(1, Math.round(refPrice(ctx, e.item, st)));
+      const bid = bestBid(ctx, e.item, st);
+      const low = lowestAsk(e.item, st);
+      const npc = npcPrice(ctx, e.item, st);
+      const suggest = low ? Math.max(1, Math.min(ref, low.price - 1)) : ref;
+      const price = prices[key] ?? suggest;
+      const lot = e.lot ? game.state.lots[e.lot] : null;
+      return `<li class="mk"><div><b>${def.icon || ''} ${def.name}</b> ×${e.qty} <span class="stars">${stars(st)}</span>
+        <small>${lot ? `${esc(lot.name)} · ` : ''}시세 ${ref} · 사자 ${bid ? `${bid.price}(${bid.qty}개)` : '없음'} · 팔자 최저 ${low ? low.price : '없음'}</small></div>
+        <div class="btns">
+          ${bid ? `<button data-act="mk-sell" data-v="${esc(key)}" data-n="${bid.price}">바로 팔기 ${bid.price}</button>` : ''}
+          <div class="step"><button data-act="ui-price" data-v="${esc(key)}" data-cur="${price}" data-n="-1">−</button><b>${price}</b><button data-act="ui-price" data-v="${esc(key)}" data-cur="${price}" data-n="1">+</button></div>
+          <button data-act="mk-list" data-v="${esc(key)}" data-n="${price}">내놓기 (수수료 ${Math.round(e.qty * price * data.config.market.listingFee)})</button>
+          <button class="mini" data-act="mk-dump" data-v="${esc(key)}">상인에게 ${npc * e.qty}</button>
+        </div></li>`;
+    }).join('');
+    const bulk = [...merged.values()].filter((e) => data.items[e.item].stage === 'raw' && e.qty > BULK_KEEP).length;
+    const top = bulk ? `<div class="row"><button data-act="mk-bulk">원자재 한꺼번에 팔기 (${bulk}묶음 · 종류마다 ${BULK_KEEP}개는 남김)</button></div>` : '';
+    return `${top}<ul class="list">${rows || '<li><small>팔 물건이 없다. 장비·도구는 아직 사고팔 수 없다.</small></li>'}</ul>
+      <p class="muted">바로 팔기는 걸려 있는 사자 주문에 넘긴다. 내놓기는 값을 걸어 두고 기다린다(${data.config.market.orderDays}일). 상인은 언제든 사지만 값이 아주 낮다.</p>`;
+  }
+
+  function buyHtml(a) {
+    const ctx = mctx();
+    const groups = new Map();
+    for (const o of game.state.market.asks) {
+      if (o.kind === 'actor' && o.owner === PID) continue;
+      const k = o.item + '|' + o.star;
+      const g = groups.get(k) || { item: o.item, star: o.star, qty: 0, best: Infinity };
+      g.qty += o.qty;
+      g.best = Math.min(g.best, o.price);
+      groups.set(k, g);
+    }
+    const order = new Map(data.lists.items.map((it, i) => [it.id, i]));
+    const rows = [...groups.values()].sort((x, y) => (order.get(x.item) - order.get(y.item)) || y.star - x.star).map((g) => {
+      const def = data.items[g.item];
+      const ref = Math.max(1, Math.round(refPrice(ctx, g.item, g.star)));
+      const btn = (n) => {
+        const q = Math.min(n, g.qty);
+        return `<button data-act="mk-buy" data-v="${g.item}|${g.star}" data-n="${q}" ${a.silver >= q * g.best ? '' : 'disabled'}>${n >= g.qty ? '다' : `${q}개`}</button>`;
+      };
+      return `<li class="mk"><div><b>${def.icon || ''} ${def.name}</b> <span class="stars">${stars(g.star)}</span>
+        <small>최저 <b>${g.best}</b>은화 · ${g.qty}개 걸림 · 시세 ${ref}</small></div>
+        <div class="btns row">${btn(1)}${g.qty > 5 ? btn(10) : ''}${btn(g.qty)}</div></li>`;
+    }).join('');
+    const wants = data.lists.items.filter((it) => (it.kind === 'material' || it.kind === 'consumable') && it.value).map((it) => {
+      const p2 = Math.max(1, Math.round(refPrice(ctx, it.id, 2)));
+      const p3 = Math.max(1, Math.round(refPrice(ctx, it.id, 3)));
+      return `<li><div><b>${it.icon || ''} ${it.name}</b><small>시세 ★2 ${p2} · ★3 ${p3}</small></div>
+        <div class="btns row"><button class="mini" data-act="mk-bid" data-v="${it.id}|0" data-n="${p2}">10개 사자</button><button class="mini" data-act="mk-bid" data-v="${it.id}|3" data-n="${p3}">★3+ 5개</button></div></li>`;
+    }).join('');
+    return `<ul class="list">${rows || '<li><small>지금 걸린 팔자 주문이 없다.</small></li>'}</ul>
+      <h3>사자 주문 걸기</h3><p class="muted">시세에 사자 주문을 걸어 둔다. 은화는 맡겨 두고, 조건에 맞는 물건이 나오면 바로 산다.</p>
+      <ul class="list">${wants}</ul>`;
+  }
+
+  function mineHtml(a) {
+    const rows = [...game.state.market.asks, ...game.state.market.bids].filter((o) => o.kind === 'actor' && o.owner === PID).map((o) => {
+      const def = data.items[o.item];
+      const side = o.entry ? '팔자' : '사자';
+      const st = o.entry ? stars(o.star) : (o.minStar ? `★${o.minStar} 이상` : '');
+      return `<li><div><b>${side} · ${def.icon || ''} ${def.name}</b> <span class="stars">${st}</span><small>${o.qty}개 · 개당 ${o.price}은화 · ${o.expiresDay + 1}일차 아침에 내려감</small></div>
+        <button data-act="mk-cancel" data-v="${o.id}">거두기</button></li>`;
+    }).join('');
+    const sold = game.tele.log.filter((ev) => ev.type === 'market.trade' && (ev.seller === PID || ev.buyer === PID)).slice(-8).reverse()
+      .map((ev) => `<li><small>${ev.seller === PID ? '팔림' : '삼'} · ${itemName(data, ev.item)} ${ev.qty}개 · 개당 ${ev.price}</small></li>`).join('');
+    return `<ul class="list">${rows || '<li><small>걸어 둔 주문이 없다.</small></li>'}</ul>
+      <p class="muted">주문은 ${data.config.market.maxOrdersPerOwner}개까지 걸 수 있다. 거두면 물건·은화를 돌려받는다(수수료는 돌려받지 못한다).</p>
+      ${sold ? `<h3>최근 거래</h3><ul class="list log">${sold}</ul>` : ''}`;
+  }
+
+  function marketHtml(a) {
+    const town = settlementAt({ state: game.state }, a);
+    if (!town) return '<p class="muted">거래소는 등대 마을 안에서 열린다.</p>';
+    const tab = panel.tab || 'sell';
+    const escrow = game.state.market.bids.filter((o) => o.kind === 'actor' && o.owner === PID).reduce((x, o) => x + o.escrow, 0);
+    const head = `<p class="muted">🪙 ${Math.floor(a.silver).toLocaleString('ko-KR')}은화${escrow ? ` · 맡긴 은화 ${escrow}` : ''} · 내놓을 때 수수료 ${data.config.market.listingFee * 100}% · 팔릴 때 판매세 ${data.config.market.salesTax * 100}% · 산 물건은 마을 창고로 간다.</p>`;
+    const body = tab === 'buy' ? buyHtml(a) : tab === 'mine' ? mineHtml(a) : sellHtml(a);
+    return tabsHtml([['sell', '팔기'], ['buy', '사기'], ['mine', '내 주문']], tab) + head + body;
   }
 
   function menuHtml(a) {
@@ -363,7 +533,7 @@ export function createHud(root, game, { touch, onAct }) {
       <div class="row"><a href="patchnotes.html">패치노트</a><a href="debug.html">엔진 점검판</a><span class="muted">v${ENGINE_VERSION}</span></div>`;
   }
 
-  const TITLES = { bag: '🎒 가방', skills: '📈 생활 스킬', log: '📜 기록', board: '📋 산지 소문 게시판', menu: '⚙️ 설정' };
+  const TITLES = { bag: '🎒 가방', skills: '📈 생활 스킬', log: '📜 기록', board: '📋 마을 게시판', market: '⚖️ 등대 마을 거래소', menu: '⚙️ 설정' };
 
   function renderPanel(force) {
     if (!panel) return;
@@ -380,6 +550,7 @@ export function createHud(root, game, { touch, onAct }) {
     } else if (panel.kind === 'skills') html = skillsHtml(a);
     else if (panel.kind === 'log') html = logHtml();
     else if (panel.kind === 'board') html = boardHtml(a);
+    else if (panel.kind === 'market') html = marketHtml(a);
     else if (panel.kind === 'menu') html = menuHtml(a);
     set(el.ptitle, title);
     setHtml(el.pbody, html);

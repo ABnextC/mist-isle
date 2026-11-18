@@ -3,7 +3,10 @@
 // 싱글에서는 로컬 코어가, 멀티에서는 서버가 같은 함수를 돌린다.
 
 import { keyOf, findEntry, takeQty, addEntry, slotsNeeded, effectiveProps, avgProps, bonusKey, qtyOf } from './inventory.js';
-import { toolSpeed, gatherSeconds, refineStep, weightedProps, round2 } from './formulas.js';
+import {
+  toolSpeed, gatherSeconds, refineStep, weightedProps, round2, round3,
+  craftScores, convertStats, starOf, masterworkChance, avg,
+} from './formulas.js';
 import { dist, settlementAt, stationFor, bestTool } from './world.js';
 
 // ── 도우미 ─────────────────────────────────────────────
@@ -65,6 +68,11 @@ function weakestProp(props, names) {
 
 function cancelGather(ctx, a, reason) {
   if (!a.action) return;
+  if (a.action.type === 'recall') {
+    ctx.emit('recall.cancelled', { actor: a.id });
+    a.action = null;
+    return;
+  }
   if (a.action.focus) a.focus += ctx.cfg.focus.cost.gather;
   ctx.emit('gather.failed', { actor: a.id, node: a.action.node, reason });
   a.action = null;
@@ -80,7 +88,35 @@ const MOVE = {
   },
   execute(ctx, a, c) {
     cancelGather(ctx, a, 'moved');
+    a.move = null;
+    a.stuck = 0;
+    a.nav = null;
     a.dest = [round2(c.x), round2(c.z)];
+  },
+};
+
+// 조작 입력: 월드 기준 방향 벡터(길이 1 이하). 0이면 멈춘다.
+const MOVE_INPUT = {
+  validate(ctx, a, c) {
+    if (!Number.isFinite(c.dx) || !Number.isFinite(c.dz)) return 'bad_args';
+    return {};
+  },
+  execute(ctx, a, c) {
+    let dx = c.dx;
+    let dz = c.dz;
+    const m = Math.hypot(dx, dz);
+    if (m < 0.05) {
+      a.move = null;
+      return;
+    }
+    if (m > 1) {
+      dx /= m;
+      dz /= m;
+    }
+    cancelGather(ctx, a, 'moved');
+    a.dest = null;
+    a.nav = null;
+    a.move = [round3(dx), round3(dz)];
   },
 };
 
@@ -88,7 +124,7 @@ const GATHER = {
   validate(ctx, a, c) {
     const { state, data, cfg } = ctx;
     if (a.action) return 'busy';
-    if (a.dest) return 'moving';
+    if (a.dest || a.move) return 'moving';
     const node = state.nodes[c.node];
     if (!node) return 'no_node';
     if (node.charges <= 0) return 'node_empty';
@@ -329,11 +365,30 @@ const SET_AUTOPILOT = {
     a.ai.on = !!c.on;
     a.ai.profile = p.profile;
     a.ai.mem = {};
+    a.move = null;
     ctx.emit('autopilot', { actor: a.id, on: a.ai.on });
   },
 };
 
-const HANDLERS = { MOVE, GATHER, CRAFT, EAT, STORE, TAKE, SET_AUTOPILOT };
+// 등대로 귀환(뉴월드의 여관 귀환과 같은 역할). 시전 중에 움직이면 취소된다.
+const RECALL = {
+  validate(ctx, a) {
+    if (a.action) return 'busy';
+    if ((a.recallReadyAt || 0) > ctx.state.t) return 'recall_cooldown';
+    const s = Object.values(ctx.state.settlements)[0];
+    if (!s) return 'bad_args';
+    return { s };
+  },
+  execute(ctx, a, c, p) {
+    a.dest = null;
+    a.nav = null;
+    a.move = null;
+    a.action = { type: 'recall', settlement: p.s.id, startedAt: ctx.state.t, endsAt: round2(ctx.state.t + ctx.cfg.recall.castSec) };
+    ctx.emit('recall.started', { actor: a.id });
+  },
+};
+
+const HANDLERS = { MOVE, MOVE_INPUT, GATHER, CRAFT, EAT, STORE, TAKE, SET_AUTOPILOT, RECALL };
 
 export function makeCommands(ctx) {
   function validate(cmd) {
@@ -361,5 +416,29 @@ export function makeCommands(ctx) {
     return v.ok ? { ok: true } : { ok: false, error: v.error };
   }
 
-  return { dispatch, check };
+  // 제작 결과 미리보기: 걸작·조율을 뺀 예상 수치. 상태는 바꾸지 않는다.
+  function preview(cmd) {
+    const v = validate(cmd);
+    if (!v.ok) return { ok: false, error: v.error };
+    if (cmd.type !== 'CRAFT') return { ok: true };
+    const p = v.plan;
+    const r = p.r;
+    const a = ctx.state.actors[cmd.actor];
+    const level = a.skills[r.skill].level;
+    if (r.type === 'craft') {
+      const scores = craftScores(r, p.slotProps, { skillLevel: level, stationTier: p.station.tier }, ctx.cfg);
+      const out = ctx.data.items[r.output.item];
+      return {
+        ok: true,
+        scores,
+        stats: convertStats(out.statConvert, scores),
+        star: starOf(avg(Object.values(scores)), ctx.cfg.stars),
+        masterwork: masterworkChance(Math.max(0, level - r.level), !!cmd.tune, ctx.cfg),
+      };
+    }
+    const step = r.refineStep === false ? 0 : refineStep(level, !!p.catalyst, ctx.cfg);
+    return { ok: true, props: p.slotProps[r.slots[0].key], step };
+  }
+
+  return { dispatch, check, preview };
 }

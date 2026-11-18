@@ -1,0 +1,116 @@
+// 페르소나 자동 플레이 (3단계).
+//   node tools/personas.js --days 7 --seed 2026 [--json]
+// 페르소나마다 같은 섬(같은 시드)에서 혼자 게임 N일을 산다. 사람 플레이가 아니다.
+// 성향·실력 값은 data/agents.json의 persona 항목에 있다. 결과 수치를 근거로 후기를 쓴다.
+
+import { performance } from 'node:perf_hooks';
+import { loadData } from './load-data.js';
+import { createGame } from '../core/game.js';
+import { bestTool } from '../core/world.js';
+import { fmtPlay } from '../core/clock.js';
+import { avgProps } from '../core/inventory.js';
+
+function parseArgs(argv) {
+  const out = { days: 7, seed: 2026, json: false };
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === '--json') out.json = true;
+    else if (argv[i].startsWith('--')) out[argv[i].slice(2)] = Number(argv[++i]);
+  }
+  return out;
+}
+
+export function runPersona(data, prof, { days, seed }) {
+  const game = createGame({ data, seed, actors: [{ id: 'b1', name: prof.name, kind: 'bot', ai: prof.id }] });
+  const a = game.state.actors.b1;
+  const time = { gather: 0, move: 0, wait: 0, idle: 0 };
+  const fails = {};
+  const rejects = {};
+  let blocked = 0;
+  let recalls = 0;
+  let dist = 0;
+  const lots = new Set();
+  const rotLots = new Set();
+  let rotGathers = 0;
+  let gathers = 0;
+  const toolStars = [];
+  game.on('gather.failed', (ev) => { fails[ev.reason] = (fails[ev.reason] || 0) + 1; });
+  game.on('cmd.rejected', (ev) => { rejects[ev.reason] = (rejects[ev.reason] || 0) + 1; });
+  game.on('move.blocked', () => { blocked++; });
+  game.on('recall.done', () => { recalls++; });
+  game.on('gather.done', (ev) => {
+    gathers++;
+    lots.add(ev.lot);
+    const lot = game.state.lots[ev.lot];
+    const vein = lot && game.state.veins[lot.vein];
+    if (vein && !vein.common) {
+      rotGathers++;
+      rotLots.add(ev.lot);
+    }
+  });
+  game.on('craft.done', (ev) => {
+    if (data.items[ev.item].tool) toolStars.push({ t: game.state.t, item: ev.item, star: ev.star, mw: ev.masterwork });
+  });
+
+  const total = days * data.config.time.secondsPerGameDay;
+  let px = a.x;
+  let pz = a.z;
+  const t0 = performance.now();
+  for (let s = 0; s < total; s++) {
+    game.advance(1);
+    if (a.action) time.gather++;
+    else if (a.dest || a.move) time.move++;
+    else if (a.queue.length) time.wait++;
+    else time.idle++;
+    dist += Math.hypot(a.x - px, a.z - pz);
+    px = a.x;
+    pz = a.z;
+  }
+  const ms = performance.now() - t0;
+
+  const tools = {};
+  for (const skill of prof.skills) {
+    const t = bestTool({ state: game.state, data }, a, skill);
+    tools[skill] = t ? { item: t.item, star: t.star, speed: t.stats.gatherSpeed, yield: t.stats.yield ?? 0 } : null;
+  }
+  const m = a.milestones;
+  const pct = (v) => Math.round((v / total) * 1000) / 10;
+  return {
+    id: prof.id, name: prof.name, role: prof.role, grade: prof.grade,
+    ms: Math.round(ms),
+    firsts: { stoneTool: m.tool_t0 ?? null, copperTool: m.tool_t1 ?? null, food: m.first_food ?? null, masterwork: m.first_masterwork ?? null },
+    reach: Object.fromEntries(['logging', 'mining', 'harvesting'].map((s) => [s, { 10: m[`${s}_10`] ?? null, 20: m[`${s}_20`] ?? null, 30: m[`${s}_30`] ?? null }])),
+    levels: Object.fromEntries(Object.entries(a.skills).filter(([, s]) => s.xp > 0).map(([k, s]) => [k, s.level])),
+    time: { gather: pct(time.gather), move: pct(time.move), wait: pct(time.wait), idle: pct(time.idle) },
+    distKm: Math.round(dist / 100) / 10,
+    gathers, gathersPerHour: Math.round(gathers / days),
+    crafts: a.stats.craft, eat: a.stats.eat, focusUsed: Math.round(a.stats.focusUsed), masterwork: a.stats.masterwork,
+    lotsUsed: lots.size, rotatingLots: rotLots.size, rotatingShare: Math.round((rotGathers / Math.max(1, gathers)) * 100),
+    tools, toolStars: toolStars.map((x) => x.star),
+    fails, rejects, blocked, recalls,
+    bestLot: [...lots].map((id) => game.state.lots[id]).filter(Boolean).reduce((b, l) => (!b || avgProps(l.props) > avgProps(b.props) ? l : b), null)?.name || null,
+  };
+}
+
+const isMain = process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop());
+if (isMain) {
+  const args = parseArgs(process.argv.slice(2));
+  const data = loadData();
+  const list = Object.values(data.agents).filter((p) => p.persona);
+  const results = list.map((p) => runPersona(data, p, args));
+  if (args.json) {
+    console.log(JSON.stringify(results, null, 1));
+  } else {
+    const f = (t) => (t == null ? '—' : fmtPlay(t));
+    console.log(`페르소나 자동 플레이 — 시드 ${args.seed}, 각자 게임 ${args.days}일`);
+    for (const r of results) {
+      console.log(`\n[${r.name} · ${r.role} · ${r.grade}] ${r.ms}ms`);
+      console.log(`  첫 돌 도구 ${f(r.firsts.stoneTool)} · 첫 구리 도구 ${f(r.firsts.copperTool)} · 첫 음식 ${f(r.firsts.food)} · 첫 걸작 ${f(r.firsts.masterwork)}`);
+      console.log(`  시간: 채집 ${r.time.gather}% · 이동 ${r.time.move}% · 제작 대기 ${r.time.wait}% · 그 밖 ${r.time.idle}% · 걸은 거리 ${r.distKm}km`);
+      console.log(`  채집 ${r.gathers}회(시간당 ${r.gathersPerHour}) · 산지 ${r.lotsUsed}곳(순환 ${r.rotatingLots}, 채집의 ${r.rotatingShare}%) · 걸작 ${r.masterwork} · 음식 ${r.eat}`);
+      console.log(`  레벨: ${Object.entries(r.levels).map(([k, v]) => `${data.skills[k].name} ${v}`).join(' · ')}`);
+      console.log(`  10/20/30 도달: ${Object.entries(r.reach).map(([k, v]) => `${data.skills[k].name} ${f(v[10])}/${f(v[20])}/${f(v[30])}`).join(' · ')}`);
+      console.log(`  도구: ${Object.entries(r.tools).map(([k, v]) => (v ? `${data.items[v.item].name}★${v.star}(×${v.speed}, +${Math.round(v.yield * 100)}%)` : `${data.skills[k].name} 없음`)).join(' · ')} · 만든 도구 별 ${JSON.stringify(r.toolStars)}`);
+      console.log(`  귀환 ${r.recalls}번 · 실패 ${JSON.stringify(r.fails)} · 거절 ${JSON.stringify(r.rejects)} · 막힘 ${r.blocked} · 가장 좋은 산지 ${r.bestLot}`);
+    }
+  }
+}

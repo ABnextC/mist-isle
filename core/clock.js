@@ -6,17 +6,21 @@ export function makeClock(cfg) {
   const dayLen = cfg.time.secondsPerGameDay;
   const hourLen = dayLen / 24;
   const dayFrac = cfg.time.dayFraction;
+  const off = (cfg.time.startPhase || 0) * dayLen; // 첫날을 새벽이 아니라 아침에서 시작
+  const phase = (t) => ((t + off) % dayLen) / dayLen;
   return {
     dayLen,
     hourLen,
-    day: (t) => Math.floor(t / dayLen),
-    hour: (t) => Math.floor(t / hourLen),
-    isNight: (t) => (t % dayLen) / dayLen >= dayFrac,
+    dayFrac,
+    phase,
+    day: (t) => Math.floor((t + off) / dayLen),
+    hour: (t) => Math.floor((t + off) / hourLen),
+    isNight: (t) => phase(t) >= dayFrac,
     describe(t) {
-      const f = (t % dayLen) / dayLen;
+      const f = phase(t);
       const night = f >= dayFrac;
       const left = night ? (1 - f) * dayLen : (dayFrac - f) * dayLen;
-      return { day: Math.floor(t / dayLen) + 1, night, minutesLeft: Math.ceil(left / 60) };
+      return { day: Math.floor((t + off) / dayLen) + 1, night, minutesLeft: Math.ceil(left / 60) };
     },
   };
 }

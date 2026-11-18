@@ -1,8 +1,10 @@
 {
-  "dataVersion": 1,
+  "dataVersion": 2,
   "skillCap": 30,
-  "time": { "secondsPerGameDay": 3600, "dayFraction": 0.75 },
-  "move": { "speed": 5 },
+  "time": { "secondsPerGameDay": 3600, "dayFraction": 0.75, "hz": 30, "startPhase": 0.15 },
+  "move": { "speed": 5, "radius": 0.35 },
+  "ai": { "thinkTicks": 6 },
+  "recall": { "castSec": 6, "cooldownSec": 900 },
   "bag": { "slots": 48 },
   "focus": {
     "max": 1000,
@@ -17,6 +19,7 @@
     "skillBonusMax": 0.25
   },
   "craft": {
+    "rangeM": 4,
     "skillBonusPerLevel": 0.2,
     "skillBonusMax": 8,
     "stationTierBonus": 2,

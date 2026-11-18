@@ -7,6 +7,8 @@ import {
   craftScores, convertStats, starOf, masterworkChance, avg, refineStep, xpToNext, levelFromXp,
 } from '../core/formulas.js';
 import { keyOf, effectiveProps } from '../core/inventory.js';
+import { fitsHabitat } from '../core/terrain.js';
+import { readFileSync } from 'node:fs';
 
 let pass = 0;
 let fail = 0;
@@ -129,8 +131,9 @@ test('정제: 한 산지면 같은 묶음 + 단계 보너스, 섞으면 가중 �
   const g = createGame({ data, seed: 9 });
   const a = g.state.actors.p1;
   const town = Object.values(g.state.settlements)[0];
-  a.x = town.x;
-  a.z = town.z;
+  const smelter = town.stations.find((s) => s.type === 'smelter');
+  a.x = smelter.x + 2;
+  a.z = smelter.z;
   a.skills.smelting.level = 30;
   const lots = Object.values(g.state.lots).filter((l) => l.item === 'ore_copper');
   ok(lots.length >= 2, '구리 산지가 둘 이상 필요');
@@ -155,6 +158,113 @@ test('정제: 한 산지면 같은 묶음 + 단계 보너스, 섞으면 가중 �
   ok(mixed, '섞은 묶음이 없음');
   const want = Math.round(((L1.props.hardness * 1 + L2.props.hardness * 2) / 3) * 10) / 10;
   eq(g.state.lots[mixed.lot].props.hardness, want, '가중 평균 경도');
+});
+
+test('작업대 앞이 아니면 제작이 거절된다', () => {
+  const g = createGame({ data, seed: 9 });
+  const a = g.state.actors.p1;
+  const town = Object.values(g.state.settlements)[0];
+  a.x = town.x;
+  a.z = town.z - 25;
+  a.bag.push({ item: 'ore_copper', lot: Object.values(g.state.lots).find((l) => l.item === 'ore_copper').id, bonus: null, qty: 3 });
+  eq(g.dispatch({ type: 'CRAFT', actor: 'p1', recipe: 'rc_ingot_copper' }).error, 'no_station');
+  const smelter = town.stations.find((s) => s.type === 'smelter');
+  a.x = smelter.x + 2.5;
+  a.z = smelter.z;
+  ok(g.dispatch({ type: 'CRAFT', actor: 'p1', recipe: 'rc_ingot_copper' }).ok, '작업대 앞인데 거절됨');
+});
+
+test('미리보기는 걸작이 아니면 실제 결과와 같다', () => {
+  const g = createGame({ data, seed: 12 });
+  const a = g.state.actors.p1;
+  const lot = (item) => Object.values(g.state.lots).find((l) => l.item === item).id;
+  a.bag.push({ item: 'stone', lot: lot('stone'), bonus: null, qty: 3 });
+  a.bag.push({ item: 'log_drift', lot: lot('log_drift'), bonus: null, qty: 2 });
+  const cmd = { type: 'CRAFT', actor: 'p1', recipe: 'rc_axe_stone' };
+  const pv = g.preview(cmd);
+  ok(pv.ok && pv.stats.gatherSpeed > 0, '미리보기 실패');
+  g.dispatch(cmd);
+  g.advance(10);
+  const axe = a.bag.find((e) => e.item === 'tool_axe_stone');
+  if (!axe.masterwork) eq(JSON.stringify(axe.stats), JSON.stringify(pv.stats), '미리보기와 결과');
+});
+
+console.log('이동');
+test('입력 방향으로 걷고, 나무에 막힌다', () => {
+  const g = createGame({ data, seed: 4 });
+  const a = g.state.actors.p1;
+  const tree = Object.values(g.state.nodes).find((n) => n.type === 'node_birch');
+  const R = data.config.move.radius + data.nodes.node_birch.solid;
+  a.x = tree.x;
+  a.z = tree.z - 4;
+  g.dispatch({ type: 'MOVE_INPUT', actor: 'p1', dx: 0, dz: 1 });
+  g.advance(2);
+  ok(a.z < tree.z, '나무를 뚫고 지나감');
+  ok(Math.hypot(a.x - tree.x, a.z - tree.z) >= R - 1e-3, `나무 안으로 들어감 (${Math.hypot(a.x - tree.x, a.z - tree.z).toFixed(3)})`);
+  g.dispatch({ type: 'MOVE_INPUT', actor: 'p1', dx: 0, dz: 0 });
+  const z = a.z;
+  g.advance(1);
+  eq(a.z, z, '멈춘 뒤에도 움직임');
+});
+
+test('목적지로 갈 때 작업대를 돌아서 가고, 막혔다고 멈추지 않는다', () => {
+  const g = createGame({ data, seed: 4 });
+  const a = g.state.actors.p1;
+  let blocked = 0;
+  g.on('move.blocked', () => blocked++);
+  const st = Object.values(g.state.settlements)[0].stations.find((x) => x.type === 'kitchen');
+  // 곧장 가는 길이 작업대 한가운데를 지난다
+  a.x = st.x;
+  a.z = st.z - 5;
+  g.dispatch({ type: 'MOVE', actor: 'p1', x: st.x, z: st.z + 5 });
+  g.advance(5);
+  ok(!a.dest, `도착하지 못함 (${a.x}, ${a.z})`);
+  ok(Math.hypot(a.x - st.x, a.z - st.z - 5) < 0.2, '목적지가 아닌 곳에서 멈춤');
+  eq(blocked, 0, '막힘 이벤트');
+});
+
+test('단단한 노드끼리는 지나갈 틈을 두고 놓인다 (처음과 게임 10일 뒤)', () => {
+  const g = createGame({ data, seed: 11 });
+  const need = 2 * data.config.move.radius + 0.4 - 1e-6;
+  const minGap = () => {
+    const solids = Object.values(g.state.nodes).filter((n) => data.nodes[n.type].solid > 0);
+    let min = Infinity;
+    for (let i = 0; i < solids.length; i++) {
+      for (let j = i + 1; j < solids.length; j++) {
+        const p = solids[i];
+        const q = solids[j];
+        min = Math.min(min, Math.hypot(p.x - q.x, p.z - q.z) - data.nodes[p.type].solid - data.nodes[q.type].solid);
+      }
+    }
+    return min;
+  };
+  ok(minGap() >= need, `처음 틈 ${minGap().toFixed(2)}m`);
+  g.advance(10 * data.config.time.secondsPerGameDay);
+  ok(minGap() >= need, `10일 뒤 틈 ${minGap().toFixed(2)}m`);
+});
+
+test('깊은 바다로는 걸어 들어갈 수 없다', () => {
+  const g = createGame({ data, seed: 4 });
+  const a = g.state.actors.p1;
+  g.dispatch({ type: 'MOVE_INPUT', actor: 'p1', dx: 0, dz: -1 }); // 남쪽 = 바다
+  g.advance(30);
+  ok(g.terrain.height(a.x, a.z) > data.lists.regions[0].terrain.wadeDepth, '물속으로 들어감');
+});
+
+test('등대로 귀환: 6초 뒤 창고 앞으로, 움직이면 취소, 15분 재사용 대기', () => {
+  const g = createGame({ data, seed: 4 });
+  const a = g.state.actors.p1;
+  a.x = 300;
+  a.z = 250;
+  ok(g.dispatch({ type: 'RECALL', actor: 'p1' }).ok, '귀환 시작 실패');
+  g.dispatch({ type: 'MOVE_INPUT', actor: 'p1', dx: 1, dz: 0 });
+  eq(a.action, null, '움직였는데 귀환이 안 취소됨');
+  g.dispatch({ type: 'MOVE_INPUT', actor: 'p1', dx: 0, dz: 0 });
+  ok(g.dispatch({ type: 'RECALL', actor: 'p1' }).ok, '다시 시작 실패');
+  g.advance(7);
+  const town = Object.values(g.state.settlements)[0];
+  ok(Math.hypot(a.x - town.x, a.z - town.z) < town.radius, '마을로 안 옮겨짐');
+  eq(g.dispatch({ type: 'RECALL', actor: 'p1' }).error, 'recall_cooldown');
 });
 
 console.log('재현성');
@@ -196,6 +306,25 @@ test('산지가 돌아간다: 게임 10일 동안 닫히고 열린다', () => {
       eq(n, vc.rotating, `${vc.node} 순환 산지 수`);
     }
   }
+});
+
+test('v0.0 세이브를 불러오면 지형에 맞게 옮겨지고 이어서 돈다', () => {
+  const old = readFileSync(new URL('./fixtures/save-v0.0.json', import.meta.url), 'utf8');
+  const g = loadGame({ data, save: old });
+  const region = data.lists.regions[0];
+  const before = JSON.parse(old).state;
+  eq(g.state.meta.dataVersion, data.config.dataVersion, '데이터 버전');
+  eq(g.state.tick, before.t * data.config.time.hz, '틱 환산');
+  eq(Object.keys(g.state.nodes).length, Object.keys(before.nodes).length, '노드 수');
+  let bad = 0;
+  for (const n of Object.values(g.state.nodes)) if (!fitsHabitat(g.terrain, region, data.nodes[n.type], n.x, n.z)) bad++;
+  ok(bad <= 2, `서식지 밖 노드 ${bad}개`);
+  eq(JSON.stringify(g.state.actors.p1.skills), JSON.stringify(before.actors.p1.skills), '스킬이 보존되지 않음');
+  eq(g.state.actors.p1.storage.length, before.actors.p1.storage.length, '창고가 보존되지 않음');
+  g.advance(600);
+  const again = loadGame({ data, save: old });
+  again.advance(600);
+  eq(again.hash(), g.hash(), '같은 세이브에서 이어 돌린 결과');
 });
 
 test('상태는 그대로 JSON이 된다 (NaN·undefined 없음)', () => {

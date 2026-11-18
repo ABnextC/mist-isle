@@ -13,6 +13,40 @@
     "useFocus": true,
     "focusReserve": 300,
     "foodTarget": 4,
-    "keep": { "log_drift": 4 }
+    "keep": { "log_drift": 4 },
+    "thinkEvery": 0.4,
+    "quality": 1.0,
+    "explore": 0,
+    "detour": 0.05,
+    "tune": false
+  },
+
+  "persona_sol": {
+    "extends": "settler", "persona": true, "name": "솔", "role": "느긋한 채집러", "grade": "보통",
+    "thinkEvery": 0.9, "quality": 0.3, "detour": 0.12, "trip": 48, "useFocus": false
+  },
+  "persona_moru": {
+    "extends": "settler", "persona": true, "name": "모루", "role": "수치 최적화 장인", "grade": "고수",
+    "thinkEvery": 0.2, "quality": 3.0, "detour": 0, "tune": true
+  },
+  "persona_harang": {
+    "extends": "settler", "persona": true, "name": "하랑", "role": "시세 차익 상인", "grade": "숙련",
+    "thinkEvery": 0.4, "quality": 1.5, "detour": 0.04, "trip": 60
+  },
+  "persona_saebyeok": {
+    "extends": "settler", "persona": true, "name": "새벽", "role": "탐험·수집가", "grade": "보통",
+    "thinkEvery": 0.7, "quality": 0.5, "explore": 120, "detour": 0.1
+  },
+  "persona_mujin": {
+    "extends": "settler", "persona": true, "name": "무진", "role": "PvP·영지전 전투광", "grade": "숙련",
+    "thinkEvery": 0.3, "quality": 1.0, "detour": 0.04, "skills": ["mining", "logging", "harvesting"]
+  },
+  "persona_ren": {
+    "extends": "settler", "persona": true, "name": "렌", "role": "뉴월드 경력자", "grade": "숙련",
+    "thinkEvery": 0.3, "quality": 1.5, "detour": 0.03, "tune": true
+  },
+  "persona_kongi": {
+    "extends": "settler", "persona": true, "name": "콩이", "role": "입문자(모바일 겸용)", "grade": "뉴비",
+    "thinkEvery": 1.6, "quality": 0, "detour": 0.35, "useFocus": false, "foodTarget": 0
   }
 }

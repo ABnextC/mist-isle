@@ -1,15 +1,17 @@
 // 엔진 진입점.
 //   const game = createGame({ data, seed, actors })
 //   game.dispatch({ type: 'GATHER', actor: 'p1', node: 'n_12' })
-//   game.advance(초)  — 1초 단위 월드 틱을 돌린다
+//   game.advance(초)  — 30Hz 빠른 틱(이동·행동)과 1초 월드 틱을 돌린다
 //   game.save() / loadGame({ data, save })
 
 import { makeRng } from './rng.js';
 import { makeClock } from './clock.js';
 import { makeBus } from './events.js';
+import { makeTerrain } from './terrain.js';
 import { createState, populate } from './state.js';
 import { makeCommands } from './commands.js';
 import { serialize, deserialize, hashState } from './save.js';
+import { layoutStatics, buildObstacles } from './world.js';
 import { movementTick, actionsTick } from './systems/actions.js';
 import { craftingTick } from './systems/crafting.js';
 import { nodesTick, densityHourly } from './systems/nodes.js';
@@ -20,59 +22,83 @@ import { agentsTick } from './systems/agents.js';
 const DEFAULT_ACTORS = [{ id: 'p1', name: '개척자', kind: 'player' }];
 
 function makeCtx(state, data, bus) {
+  const region = data.lists.regions[0];
+  const terrain = makeTerrain(region, state.meta.worldSeed);
   const ctx = {
     state,
     data,
     cfg: data.config,
     clock: makeClock(data.config),
     rng: makeRng(state.rng),
+    terrain,
+    statics: layoutStatics(region, terrain),
+    obstacles: null,
+    obstaclesDirty: true,
     newId: (p) => `${p}_${state.nextId++}`,
     emit: (type, payload) => bus.emit({ type, t: state.t, ...payload }),
   };
   const cmds = makeCommands(ctx);
   ctx.command = cmds.dispatch;
   ctx.check = cmds.check;
+  ctx.preview = cmds.preview;
   return ctx;
 }
 
-function wrap(state, data, bus) {
-  const ctx = makeCtx(state, data, bus);
-  let acc = 0;
+function refreshObstacles(ctx) {
+  if (ctx.obstaclesDirty) {
+    ctx.obstacles = buildObstacles(ctx);
+    ctx.obstaclesDirty = false;
+  }
+}
 
-  function tick() {
-    state.t += 1;
-    movementTick(ctx);
+function wrap(ctx, bus) {
+  const { state, data } = ctx;
+  const HZ = data.config.time.hz;
+  const thinkEvery = data.config.ai.thinkTicks;
+  let acc = 0;
+  refreshObstacles(ctx);
+
+  function fastTick() {
+    state.tick += 1;
+    state.t = state.tick / HZ;
+    refreshObstacles(ctx);
+    movementTick(ctx, 1 / HZ);
     actionsTick(ctx);
     craftingTick(ctx);
-    nodesTick(ctx);
-    focusTick(ctx);
-    const h = ctx.clock.hour(state.t);
-    if (h !== state.clock.hour) {
-      state.clock.hour = h;
-      densityHourly(ctx);
+    if (state.tick % HZ === 0) {
+      nodesTick(ctx);
+      focusTick(ctx);
+      const h = ctx.clock.hour(state.t);
+      if (h !== state.clock.hour) {
+        state.clock.hour = h;
+        densityHourly(ctx);
+      }
+      const d = ctx.clock.day(state.t);
+      if (d !== state.clock.day) {
+        state.clock.day = d;
+        dailyVeins(ctx);
+        ctx.emit('day.start', { day: d + 1 });
+      }
     }
-    const d = ctx.clock.day(state.t);
-    if (d !== state.clock.day) {
-      state.clock.day = d;
-      dailyVeins(ctx);
-      ctx.emit('day.start', { day: d + 1 });
-    }
-    agentsTick(ctx);
+    if (state.tick % thinkEvery === 0) agentsTick(ctx);
   }
 
   return {
     state,
     data,
     clock: ctx.clock,
+    terrain: ctx.terrain,
+    statics: ctx.statics,
     tele: bus.tele,
     on: bus.on,
     dispatch: ctx.command,
     check: ctx.check,
+    preview: ctx.preview,
     advance(seconds) {
-      acc += seconds;
+      acc += seconds * HZ;
       while (acc >= 1) {
         acc -= 1;
-        tick();
+        fastTick();
       }
     },
     save: () => serialize(state),
@@ -82,13 +108,15 @@ function wrap(state, data, bus) {
 
 export function createGame({ data, seed = 1, actors = DEFAULT_ACTORS }) {
   const bus = makeBus();
-  const state = createState({ data }, seed, actors);
+  const state = createState(data, seed);
   const ctx = makeCtx(state, data, bus);
   populate(ctx, actors);
-  return wrap(state, data, bus);
+  ctx.obstaclesDirty = true;
+  return wrap(ctx, bus);
 }
 
 export function loadGame({ data, save }) {
   const bus = makeBus();
-  return wrap(deserialize(save, data), data, bus);
+  const state = deserialize(save, data);
+  return wrap(makeCtx(state, data, bus), bus);
 }

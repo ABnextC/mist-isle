@@ -22,7 +22,7 @@ export const ERR = {
   no_focus: '집중력이 모자람',
   bag_full: '가방이 가득 참',
   no_recipe: '없는 레시피',
-  no_station: '작업대가 없음(정착지 밖)',
+  no_station: '작업대 앞이 아님',
   queue_full: '대기열이 가득 참',
   missing_materials: '재료가 모자람',
   missing_catalyst: '촉매가 없음',
@@ -32,6 +32,7 @@ export const ERR = {
   not_food: '먹을 수 없음',
   not_in_town: '정착지 밖',
   moved: '움직여서 멈춤',
+  recall_cooldown: '귀환은 아직 쓸 수 없음',
 };
 
 export const STAT_NAMES = {
@@ -118,6 +119,8 @@ export function describeEvent(ev, game) {
       return `${p}⚠️ ${ERR[ev.reason] || ev.reason}`;
     case 'day.start':
       return `🌅 ${ev.day}일차 아침`;
+    case 'recall.done':
+      return `${p}🏠 등대 마을로 돌아왔다`;
     case 'autopilot':
       return ev.on ? '🤖 봇이 대신 움직인다' : '🤖 봇 끔';
     case 'milestone':

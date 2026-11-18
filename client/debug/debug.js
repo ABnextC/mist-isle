@@ -1,5 +1,5 @@
-// 엔진 점검판 v0.0
-// 코어를 브라우저에서 돌리고, 명령을 눌러 보는 화면이다. 3D 화면은 v0.1에서 붙는다.
+// 엔진 점검판 (코어를 글자 화면으로 눌러 보는 도구)
+// 코어를 브라우저에서 돌리고, 명령을 눌러 보는 점검 화면이다. 게임 화면(3D)은 index.html.
 // 화면은 상태를 직접 고치지 않는다. 모든 조작은 game.dispatch(명령)로 간다.
 
 import { DATA_FILES, buildData } from '../../core/data.js';
@@ -7,9 +7,10 @@ import { createGame, loadGame } from '../../core/game.js';
 import { describeEvent, ERR, fmtProps, fmtStats, stars, itemName, entryStar } from '../../core/text.js';
 import { xpProgress, starOf } from '../../core/formulas.js';
 import { avgProps, keyOf, effectiveProps } from '../../core/inventory.js';
-import { dist, settlementAt, nearestSettlement, bestTool } from '../../core/world.js';
+import { dist, settlementAt, nearestSettlement, nearestStation, bestTool } from '../../core/world.js';
 
-const SAVE_KEY = 'mist-isle:v0';
+const SAVE_KEY = 'mist-isle:v1';
+const OLD_KEY = 'mist-isle:v0';
 const PID = 'p1';
 const $app = document.getElementById('app');
 
@@ -37,7 +38,7 @@ async function loadData() {
 }
 
 function readSave() {
-  try { return localStorage.getItem(SAVE_KEY); } catch { return null; }
+  try { return localStorage.getItem(SAVE_KEY) || localStorage.getItem(OLD_KEY); } catch { return null; }
 }
 
 function saveNow(say) {
@@ -74,7 +75,7 @@ function pTop() {
   const speeds = [0, 1, 10, 60]
     .map((s) => `<button data-act="speed" data-v="${s}" class="${ui.speed === s ? 'on' : ''}">${s === 0 ? '⏸ 멈춤' : '×' + s}</button>`)
     .join('');
-  return `<div class="title">안개섬 개척기<small>엔진 점검판 v0.0</small><a href="patchnotes.html">패치노트</a></div>
+  return `<div class="title">안개섬 개척기<small>엔진 점검판</small><a href="index.html">3D로 하기</a><a href="patchnotes.html">패치노트</a></div>
     <div class="clock">${c.night ? '🌙' : '☀️'} ${c.day}일차 · ${c.night ? '밤' : '낮'} · ${c.night ? '해 뜰 때까지' : '해 질 때까지'} ${c.minutesLeft}분</div>
     <div class="row">${speeds}
       <button data-act="auto" class="${me().ai?.on ? 'on' : ''}">🤖 봇에게 맡기기</button>
@@ -114,7 +115,7 @@ function pSkills() {
     return `<div class="skill"><span>${s.icon} ${s.name}</span><b>${p.level}</b><div class="bar thin"><span style="width:${pct}%"></span></div></div>`;
   }).join('');
   const later = data.lists.skills.filter((s) => 'opens' in s).map((s) => `${s.icon}${s.name}${s.opens ? `(${s.opens})` : ''}`).join(' · ');
-  return `<section class="card"><h2>생활 스킬<small>v0.0 상한 ${cap}</small></h2><div class="skills">${rows}</div><p class="muted">나중에 열림: ${later}</p></section>`;
+  return `<section class="card"><h2>생활 스킬<small>상한 ${cap}</small></h2><div class="skills">${rows}</div><p class="muted">나중에 열림: ${later}</p></section>`;
 }
 
 function pNodes() {
@@ -189,8 +190,9 @@ function pCraft() {
     const mats = r.slots.map((s) => `${slotLabel(s)} ${s.qty}`).join(' + ');
     const cat = r.catalyst ? ` <small>(촉매: ${itemName(data, r.catalyst)})</small>` : '';
     const why = chk.ok ? '' : `<small class="warn">${ERR[chk.error] || chk.error}</small>`;
+    const go = !chk.ok && chk.error === 'no_station' ? `<button data-act="station" data-v="${r.station}">${stn.icon} 가기</button>` : '';
     return `<li><div><b>${sk.icon} ${r.name}</b> <small>${sk.name} ${r.level} · ${stn.icon}${stn.name}</small><br><small>${mats} → ${itemName(data, r.output.item)} ×${r.output.qty}</small>${cat}</div>
-      <div class="right">${why}<button data-act="craft" data-v="${r.id}" ${chk.ok ? '' : 'disabled'}>만들기</button></div></li>`;
+      <div class="right">${why}${go}<button data-act="craft" data-v="${r.id}" ${chk.ok ? '' : 'disabled'}>만들기</button></div></li>`;
   }).join('');
   const queue = a.queue.map((j, i) => {
     const r = data.recipes[j.recipe];
@@ -292,6 +294,13 @@ function onAct(act, v) {
       break;
     }
     case 'craft': game.dispatch({ type: 'CRAFT', actor: PID, recipe: v, auto: 'best', catalyst: 'auto' }); break;
+    case 'station': {
+      stopBot();
+      ui.intent = null;
+      const st = nearestStation(ctx(), me(), v);
+      if (st) game.dispatch({ type: 'MOVE', actor: PID, x: st.x + 2.2, z: st.z });
+      break;
+    }
     case 'eat': game.dispatch({ type: 'EAT', actor: PID, key: v }); break;
     case 'tab': ui.skill = v; break;
     case 'focus': ui.focus = !ui.focus; break;

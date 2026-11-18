@@ -9,6 +9,7 @@ import { fmtPlay } from '../core/clock.js';
 import { fmtProps, fmtStats, stars, itemName } from '../core/text.js';
 import { avgProps } from '../core/inventory.js';
 import { bestTool } from '../core/world.js';
+import { ENGINE_VERSION } from '../core/state.js';
 
 function parseArgs(argv) {
   const out = { days: 3, seed: 42, bots: 1, json: false };
@@ -33,10 +34,11 @@ export function runSim({ days = 3, seed = 42, bots = 1 } = {}) {
   const failed = {};
   game.on('gather.failed', (ev) => { failed[ev.reason] = (failed[ev.reason] || 0) + 1; });
 
-  const ticks = days * data.config.time.secondsPerGameDay;
+  const seconds = days * data.config.time.secondsPerGameDay;
   const t0 = performance.now();
-  game.advance(ticks);
+  game.advance(seconds);
   const ms = performance.now() - t0;
+  const ticks = game.state.tick;
 
   const { state } = game;
   const ctx = { state, data };
@@ -79,8 +81,8 @@ function printReport(rep) {
   const { data } = rep;
   const sk = (id) => data.skills[id].name;
   const line = (s = '') => console.log(s);
-  line(`안개섬 개척기 v0.0 헤드리스 실행 — 시드 ${rep.meta.seed}, 게임 ${rep.meta.days}일(플레이 ${rep.meta.days}시간 분량), 봇 ${rep.meta.bots}`);
-  line(`처리: ${rep.meta.ticks.toLocaleString()}틱, ${rep.meta.ms}ms (초당 ${rep.meta.ticksPerSec.toLocaleString()}틱) · 상태 해시 ${rep.hash}`);
+  line(`안개섬 개척기 엔진 ${ENGINE_VERSION} 헤드리스 실행 — 시드 ${rep.meta.seed}, 게임 ${rep.meta.days}일(플레이 ${rep.meta.days}시간 분량), 봇 ${rep.meta.bots}`);
+  line(`처리: ${rep.meta.ticks.toLocaleString()}틱(${data.config.time.hz}Hz), ${rep.meta.ms}ms (초당 ${rep.meta.ticksPerSec.toLocaleString()}틱) · 상태 해시 ${rep.hash}`);
   for (const a of rep.actors) {
     line();
     line(`[${a.name}]`);

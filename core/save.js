@@ -1,10 +1,60 @@
 // 저장·불러오기와 패치 호환(마이그레이션).
 // 자동 패치가 잦으니 데이터 구조가 바뀌면 여기에 옮기는 함수를 하나씩 더한다.
 
+import { makeRng, seedState } from './rng.js';
+import { makeTerrain, fitsHabitat, hashStr } from './terrain.js';
+import { stationLayout } from './world.js';
+import { pickCenter, pickNodeSpot } from './systems/veins.js';
+import { spawnPoint } from './state.js';
+
 export const SAVE_FORMAT = 'mist-isle-save';
 
-// { from: 1, to: 2, run(state, data) { ... } }
-const MIGRATIONS = [];
+const MIGRATIONS = [
+  {
+    // v0.0 → v0.1: 30Hz 틱, 지형, 작업대 자리, 노드를 서식지로 옮기기
+    from: 1,
+    to: 2,
+    run(st, data) {
+      const hz = data.config.time.hz;
+      st.tick = Math.round(st.t * hz);
+      st.t = st.tick / hz;
+      st.meta.worldSeed = st.meta.worldSeed ?? st.meta.seed;
+      st.meta.engine = '0.1.0';
+      const region = data.lists.regions[0];
+      const terrain = makeTerrain(region, st.meta.worldSeed);
+      for (const s of Object.values(st.settlements)) s.stations = stationLayout(region);
+      // 노드 자리만 새로 고른다. 산지 이름·속성·남은 횟수는 그대로 둔다.
+      for (const v of Object.values(st.veins)) {
+        const type = data.nodes[v.node];
+        const rng = makeRng(seedState((st.meta.worldSeed ^ hashStr(v.id)) >>> 0));
+        if (!v.common) v.center = pickCenter(rng, terrain, region, type, v.radius) || v.center;
+        for (const id of v.nodes) {
+          const n = st.nodes[id];
+          if (!n || fitsHabitat(terrain, region, type, n.x, n.z)) continue;
+          const spot = pickNodeSpot(rng, terrain, region, type, v.common ? null : v.center, v.radius);
+          if (spot) {
+            n.x = spot[0];
+            n.z = spot[1];
+          }
+        }
+      }
+      const home = spawnPoint(region, terrain);
+      for (const a of Object.values(st.actors)) {
+        a.yaw = 0;
+        a.move = null;
+        a.stuck = 0;
+        a.dest = null;
+        a.nav = null;
+        a.recallReadyAt = 0;
+        if (!terrain.walkable(a.x, a.z)) {
+          a.x = home[0];
+          a.z = home[1];
+        }
+        if (a.ai) a.ai.mem = {};
+      }
+    },
+  },
+];
 
 export function serialize(state) {
   return JSON.stringify({ format: SAVE_FORMAT, dataVersion: state.meta.dataVersion, state });

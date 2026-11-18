@@ -71,9 +71,32 @@ export function buildData(raw) {
     for (const v of g.veins) if (!nodes[v.node]) problems.push(`지역 ${g.id}: 노드 ${v.node} 없음`);
     for (const st of g.settlement.stations) if (!stations[st.type]) problems.push(`지역 ${g.id}: 작업대 ${st.type} 없음`);
   }
-  for (const [id, prof] of Object.entries(raw.agents)) {
+  // AI 성향: "extends"로 기본형을 물려받는다 (페르소나는 기본형 위에 성향 값만 얹는다)
+  const agents = {};
+  const resolveAgent = (id, seen = new Set()) => {
+    if (agents[id]) return agents[id];
+    const prof = raw.agents[id];
+    if (!prof) {
+      problems.push(`AI 성향 ${id} 없음`);
+      return {};
+    }
+    if (seen.has(id)) {
+      problems.push(`AI 성향 순환 참조: ${id}`);
+      return {};
+    }
+    seen.add(id);
+    const base = prof.extends ? resolveAgent(prof.extends, seen) : {};
+    agents[id] = { ...base, ...prof, id };
+    return agents[id];
+  };
+  for (const id of Object.keys(raw.agents)) resolveAgent(id);
+  for (const [id, prof] of Object.entries(agents)) {
     for (const s of prof.skills || []) if (!skills[s]) problems.push(`AI ${id}: 스킬 ${s} 없음`);
+    for (const [s, pair] of Object.entries(prof.tools || {})) {
+      for (const rc of pair) if (!recipes[rc]) problems.push(`AI ${id}: ${s} 도구 레시피 ${rc} 없음`);
+    }
   }
+  for (const n of raw.nodes) if (!n.habitat) problems.push(`노드 ${n.id}: habitat(높이 범위) 없음`);
 
   if (problems.length) throw new Error('데이터 오류\n- ' + problems.join('\n- '));
 
@@ -86,7 +109,7 @@ export function buildData(raw) {
     nodes,
     recipes,
     regions,
-    agents: raw.agents,
+    agents,
     lists: {
       items: raw.items,
       skills: raw.skills.list,

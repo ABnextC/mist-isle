@@ -1,0 +1,82 @@
+[
+  { "id": "rc_lumber_drift", "type": "refine", "name": "거친 목재 켜기", "skill": "sawing", "level": 1, "station": "sawbench",
+    "slots": [{ "key": "main", "item": "log_drift", "qty": 3 }], "catalyst": "sap_birch",
+    "output": { "item": "lumber_drift", "qty": 1 }, "seconds": 4, "xp": 8 },
+  { "id": "rc_lumber_birch", "type": "refine", "name": "자작나무 목재 켜기", "skill": "sawing", "level": 5, "station": "sawbench",
+    "slots": [{ "key": "main", "item": "log_birch", "qty": 3 }], "catalyst": "sap_birch",
+    "output": { "item": "lumber_birch", "qty": 1 }, "seconds": 5, "xp": 14 },
+  { "id": "rc_ingot_copper", "type": "refine", "name": "구리 제련", "skill": "smelting", "level": 1, "station": "smelter",
+    "slots": [{ "key": "main", "item": "ore_copper", "qty": 3 }], "catalyst": "sand_fine",
+    "output": { "item": "ingot_copper", "qty": 1 }, "seconds": 5, "xp": 14 },
+  { "id": "rc_cloth_reed", "type": "refine", "name": "갈대 천 짜기", "skill": "weaving", "level": 1, "station": "loom",
+    "slots": [{ "key": "main", "item": "fiber_reed", "qty": 4 }],
+    "output": { "item": "cloth_reed", "qty": 1 }, "seconds": 5, "xp": 12 },
+
+  { "id": "rc_nails_copper", "type": "refine", "refineStep": false, "name": "구리 못 만들기", "skill": "smithing", "level": 1, "station": "forge",
+    "slots": [{ "key": "main", "family": "metal", "stage": "refined", "qty": 1 }],
+    "output": { "item": "nails_copper", "qty": 10 }, "seconds": 4, "xp": 13 },
+  { "id": "rc_stake_wood", "type": "refine", "refineStep": false, "name": "울타리 말뚝 깎기", "skill": "carpentry", "level": 1, "station": "workbench",
+    "slots": [{ "key": "main", "family": "wood", "stage": "refined", "qty": 2 }],
+    "output": { "item": "stake_wood", "qty": 4 }, "seconds": 4, "xp": 12 },
+
+  { "id": "rc_axe_stone", "type": "craft", "name": "돌 도끼", "skill": "smithing", "level": 1, "station": "hand",
+    "slots": [{ "key": "head", "family": "stone", "stage": "raw", "qty": 3 }, { "key": "handle", "family": "wood", "stage": "raw", "qty": 2 }],
+    "stats": {
+      "gatherSpeed": { "head.grain": 0.6, "handle.flex": 0.4 },
+      "durability": { "head.density": 0.7, "handle.strength": 0.3 } },
+    "output": { "item": "tool_axe_stone", "qty": 1 }, "seconds": 6, "xp": 25 },
+  { "id": "rc_pick_stone", "type": "craft", "name": "돌 곡괭이", "skill": "smithing", "level": 1, "station": "hand",
+    "slots": [{ "key": "head", "family": "stone", "stage": "raw", "qty": 3 }, { "key": "handle", "family": "wood", "stage": "raw", "qty": 2 }],
+    "stats": {
+      "gatherSpeed": { "head.grain": 0.6, "handle.flex": 0.4 },
+      "durability": { "head.density": 0.7, "handle.strength": 0.3 } },
+    "output": { "item": "tool_pick_stone", "qty": 1 }, "seconds": 6, "xp": 25 },
+  { "id": "rc_sickle_stone", "type": "craft", "name": "돌 낫", "skill": "smithing", "level": 1, "station": "hand",
+    "slots": [{ "key": "head", "family": "stone", "stage": "raw", "qty": 3 }, { "key": "handle", "family": "wood", "stage": "raw", "qty": 2 }],
+    "stats": {
+      "gatherSpeed": { "head.grain": 0.6, "handle.flex": 0.4 },
+      "durability": { "head.density": 0.7, "handle.strength": 0.3 } },
+    "output": { "item": "tool_sickle_stone", "qty": 1 }, "seconds": 6, "xp": 25 },
+
+  { "id": "rc_axe_copper", "type": "craft", "name": "구리 도끼", "skill": "smithing", "level": 4, "station": "forge",
+    "slots": [{ "key": "head", "family": "metal", "stage": "refined", "qty": 3 }, { "key": "handle", "family": "wood", "stage": "refined", "qty": 2 }],
+    "stats": {
+      "gatherSpeed": { "head.hardness": 0.7, "handle.strength": 0.3 },
+      "yield": { "head.hardness": 0.3, "head.toughness": 0.3, "handle.flex": 0.4 },
+      "durability": { "head.toughness": 0.6, "handle.flex": 0.4 } },
+    "output": { "item": "tool_axe_copper", "qty": 1 }, "seconds": 8, "xp": 40 },
+  { "id": "rc_pick_copper", "type": "craft", "name": "구리 곡괭이", "skill": "smithing", "level": 4, "station": "forge",
+    "slots": [{ "key": "head", "family": "metal", "stage": "refined", "qty": 3 }, { "key": "handle", "family": "wood", "stage": "refined", "qty": 2 }],
+    "stats": {
+      "gatherSpeed": { "head.hardness": 0.7, "handle.strength": 0.3 },
+      "yield": { "head.hardness": 0.3, "head.toughness": 0.3, "handle.flex": 0.4 },
+      "durability": { "head.toughness": 0.6, "handle.flex": 0.4 } },
+    "output": { "item": "tool_pick_copper", "qty": 1 }, "seconds": 8, "xp": 40 },
+  { "id": "rc_sickle_copper", "type": "craft", "name": "구리 낫", "skill": "smithing", "level": 4, "station": "forge",
+    "slots": [{ "key": "head", "family": "metal", "stage": "refined", "qty": 3 }, { "key": "handle", "family": "wood", "stage": "refined", "qty": 2 }],
+    "stats": {
+      "gatherSpeed": { "head.hardness": 0.7, "handle.strength": 0.3 },
+      "yield": { "head.hardness": 0.3, "head.toughness": 0.3, "handle.flex": 0.4 },
+      "durability": { "head.toughness": 0.6, "handle.flex": 0.4 } },
+    "output": { "item": "tool_sickle_copper", "qty": 1 }, "seconds": 8, "xp": 40 },
+
+  { "id": "rc_crate", "type": "craft", "name": "나무 상자", "skill": "carpentry", "level": 4, "station": "workbench",
+    "slots": [{ "key": "board", "family": "wood", "stage": "refined", "qty": 4 }, { "key": "nail", "item": "nails_copper", "qty": 6 }],
+    "stats": {
+      "comfort": { "board.flex": 0.6, "board.strength": 0.4 },
+      "durability": { "board.strength": 0.7, "nail.toughness": 0.3 } },
+    "output": { "item": "crate_wood", "qty": 1 }, "seconds": 10, "xp": 35 },
+
+  { "id": "rc_soup", "type": "craft", "name": "해초 버섯국", "skill": "cooking", "level": 3, "station": "kitchen",
+    "slots": [{ "key": "main", "item": "seaweed", "qty": 2 }, { "key": "side", "item": "mushroom", "qty": 1 }],
+    "stats": {
+      "buff": { "main.nutrition": 0.6, "side.nutrition": 0.4 },
+      "minutes": { "main.flavor": 0.5, "side.flavor": 0.5 } },
+    "output": { "item": "food_soup", "qty": 2 }, "seconds": 6, "xp": 22 },
+  { "id": "rc_dried_berry", "type": "craft", "name": "산딸기 말랭이", "skill": "cooking", "level": 1, "station": "kitchen",
+    "slots": [{ "key": "main", "item": "berry", "qty": 4 }],
+    "stats": {
+      "buff": { "main.nutrition": 0.5, "main.flavor": 0.5 },
+      "minutes": { "main.flavor": 1.0 } },
+    "output": { "item": "food_berry", "qty": 2 }, "seconds": 5, "xp": 14 }
+]

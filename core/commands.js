@@ -1,0 +1,365 @@
+// 명령: 검증 → 실행 → 이벤트.
+// 검증 단계는 상태를 바꾸지 않는다. 실행 단계는 실패하지 않는다.
+// 싱글에서는 로컬 코어가, 멀티에서는 서버가 같은 함수를 돌린다.
+
+import { keyOf, findEntry, takeQty, addEntry, slotsNeeded, effectiveProps, avgProps, bonusKey, qtyOf } from './inventory.js';
+import { toolSpeed, gatherSeconds, refineStep, weightedProps, round2 } from './formulas.js';
+import { dist, settlementAt, stationFor, bestTool } from './world.js';
+
+// ── 도우미 ─────────────────────────────────────────────
+function matchSlot(data, e, slot) {
+  const def = data.items[e.item];
+  if (def.kind !== 'material') return false;
+  if (slot.item) return e.item === slot.item;
+  if (slot.family && def.family !== slot.family) return false;
+  if (slot.stage && def.stage !== slot.stage) return false;
+  if (slot.minTier != null && def.tier < slot.minTier) return false;
+  return true;
+}
+
+// 그 슬롯의 어떤 속성이 결과에 얼마나 들어가는지
+function relevance(recipe, slotKey) {
+  const rel = {};
+  for (const weights of Object.values(recipe.stats || {})) {
+    for (const [ref, w] of Object.entries(weights)) {
+      const [slot, prop] = ref.split('.');
+      if (slot === slotKey) rel[prop] = (rel[prop] || 0) + w;
+    }
+  }
+  return rel;
+}
+
+function relevantAvg(props, rel) {
+  const keys = Object.keys(rel);
+  if (!keys.length) return avgProps(props);
+  let s = 0;
+  let w = 0;
+  for (const k of keys) {
+    s += (props[k] ?? 0) * rel[k];
+    w += rel[k];
+  }
+  return s / w;
+}
+
+const sameProps = (a, b) => {
+  const ka = Object.keys(a);
+  return ka.length === Object.keys(b).length && ka.every((k) => a[k] === b[k]);
+};
+
+function mixLot(ctx, recipe, props) {
+  const { state, data } = ctx;
+  const origin = recipe.slots[0].item || recipe.output.item;
+  for (const lot of Object.values(state.lots)) {
+    if (lot.mix && lot.item === origin && sameProps(lot.props, props)) return lot.id;
+  }
+  const id = ctx.newId('L');
+  state.lots[id] = { id, item: origin, name: `섞은 ${data.items[origin].name}`, props: { ...props }, vein: null, mix: true };
+  return id;
+}
+
+function weakestProp(props, names) {
+  let best = names[0];
+  for (const p of names) if ((props[p] ?? 0) < (props[best] ?? 0)) best = p;
+  return best;
+}
+
+function cancelGather(ctx, a, reason) {
+  if (!a.action) return;
+  if (a.action.focus) a.focus += ctx.cfg.focus.cost.gather;
+  ctx.emit('gather.failed', { actor: a.id, node: a.action.node, reason });
+  a.action = null;
+}
+
+// ── 명령 ───────────────────────────────────────────────
+const MOVE = {
+  validate(ctx, a, c) {
+    if (!Number.isFinite(c.x) || !Number.isFinite(c.z)) return 'bad_args';
+    const [x0, z0, x1, z1] = ctx.data.lists.regions[0].bounds;
+    if (c.x < x0 || c.x > x1 || c.z < z0 || c.z > z1) return 'out_of_bounds';
+    return {};
+  },
+  execute(ctx, a, c) {
+    cancelGather(ctx, a, 'moved');
+    a.dest = [round2(c.x), round2(c.z)];
+  },
+};
+
+const GATHER = {
+  validate(ctx, a, c) {
+    const { state, data, cfg } = ctx;
+    if (a.action) return 'busy';
+    if (a.dest) return 'moving';
+    const node = state.nodes[c.node];
+    if (!node) return 'no_node';
+    if (node.charges <= 0) return 'node_empty';
+    if (dist(a, node) > cfg.gather.rangeM) return 'too_far';
+    const type = data.nodes[node.type];
+    if (a.skills[type.skill].level < type.level) return 'level_low';
+    let tool = null;
+    if (c.tool) {
+      tool = a.bag.find((e) => e.uid === c.tool);
+      if (!tool) return 'no_tool';
+      const def = data.items[tool.item];
+      if (!def.tool || def.tool.skill !== type.skill) return 'wrong_tool';
+      if (tool.broken) return 'tool_broken';
+    } else {
+      tool = bestTool(ctx, a, type.skill);
+    }
+    const speed = toolSpeed(type, tool ? { tier: data.items[tool.item].tool.tier, stats: tool.stats } : null, cfg);
+    if (speed <= 0) return 'need_tool';
+    if (c.focus && a.focus < cfg.focus.cost.gather) return 'no_focus';
+    const probe = { item: type.item, lot: state.veins[node.vein].lot, bonus: null, qty: 1 };
+    if (a.bag.length + slotsNeeded(a.bag, [probe]) > cfg.bag.slots) return 'bag_full';
+    return { node, tool, secs: gatherSeconds(type, speed) };
+  },
+  execute(ctx, a, c, p) {
+    if (c.focus) a.focus -= ctx.cfg.focus.cost.gather;
+    a.action = {
+      type: 'gather', node: p.node.id, tool: p.tool ? p.tool.uid : null,
+      startedAt: ctx.state.t, endsAt: round2(ctx.state.t + p.secs), focus: !!c.focus,
+    };
+  },
+};
+
+const CRAFT = {
+  validate(ctx, a, c) {
+    const { state, data, cfg } = ctx;
+    const r = data.recipes[c.recipe];
+    if (!r) return 'no_recipe';
+    if (a.skills[r.skill].level < r.level) return 'level_low';
+    const station = stationFor(ctx, a, r.station);
+    if (!station) return 'no_station';
+    if (a.queue.length >= cfg.craft.queueMax) return 'queue_full';
+
+    const pools = [{ name: 'bag', list: a.bag }];
+    if (settlementAt(ctx, a)) pools.push({ name: 'storage', list: a.storage });
+    const reserved = new Map();
+    const rk = (pool, e) => pool.name + '#' + keyOf(e);
+    const avail = (pool, e) => e.qty - (reserved.get(rk(pool, e)) || 0);
+    const reserve = (pool, e, q) => reserved.set(rk(pool, e), (reserved.get(rk(pool, e)) || 0) + q);
+
+    const picks = {};
+    const slotProps = {};
+    for (const slot of r.slots) {
+      const matches = [];
+      for (const pool of pools) {
+        for (const e of pool.list) if (!e.uid && matchSlot(data, e, slot) && avail(pool, e) > 0) matches.push({ pool, entry: e });
+      }
+      const chosen = [];
+      let need = slot.qty;
+      if (c.inputs && c.inputs[slot.key]) {
+        for (const want of c.inputs[slot.key]) {
+          const m = matches.find((x) => keyOf(x.entry) === want.key && (!want.from || x.pool.name === want.from));
+          if (!m) return 'bad_input';
+          const q = Math.min(want.qty, avail(m.pool, m.entry), need);
+          if (q <= 0) return 'bad_input';
+          chosen.push({ pool: m.pool, entry: m.entry, qty: q });
+          reserve(m.pool, m.entry, q);
+          need -= q;
+        }
+      } else {
+        const rel = relevance(r, slot.key);
+        const sc = new Map(matches.map((m) => [m, relevantAvg(effectiveProps(m.entry, state.lots), rel)]));
+        const dir = c.auto === 'cheap' ? 1 : -1;
+        matches.sort((x, y) => {
+          const d = dir * (sc.get(x) - sc.get(y));
+          if (d) return d;
+          const kx = rk(x.pool, x.entry);
+          const ky = rk(y.pool, y.entry);
+          return kx < ky ? -1 : kx > ky ? 1 : 0;
+        });
+        for (const m of matches) {
+          if (need <= 0) break;
+          const q = Math.min(avail(m.pool, m.entry), need);
+          if (q <= 0) continue;
+          chosen.push({ pool: m.pool, entry: m.entry, qty: q });
+          reserve(m.pool, m.entry, q);
+          need -= q;
+        }
+      }
+      if (need > 0) return 'missing_materials';
+      picks[slot.key] = chosen;
+      slotProps[slot.key] = weightedProps(chosen.map((x) => ({ props: effectiveProps(x.entry, state.lots), qty: x.qty })));
+    }
+
+    let catalyst = null;
+    if (c.catalyst && r.catalyst) {
+      outer: for (const pool of pools) {
+        for (const e of pool.list) {
+          if (!e.uid && e.item === r.catalyst && avail(pool, e) > 0) {
+            catalyst = { pool, entry: e };
+            reserve(pool, e, 1);
+            break outer;
+          }
+        }
+      }
+      if (!catalyst && c.catalyst !== 'auto') return 'missing_catalyst';
+    }
+
+    let focusCost = 0;
+    if (c.focus && r.type === 'refine') focusCost += cfg.focus.cost.refine;
+    if (c.tune) {
+      if (r.type !== 'craft' || !r.stats[c.tune]) return 'bad_tune';
+      focusCost += cfg.focus.cost.tune;
+    }
+    if (a.focus < focusCost) return 'no_focus';
+    return { r, station, picks, slotProps, catalyst, focusCost };
+  },
+
+  execute(ctx, a, c, p) {
+    const { state, data, cfg } = ctx;
+    const r = p.r;
+    const mainKey = r.slots[0].key;
+    const mainParts = p.picks[mainKey].map((x) => ({ item: x.entry.item, lot: x.entry.lot, bonus: x.entry.bonus }));
+
+    for (const list of Object.values(p.picks)) for (const x of list) takeQty(x.pool.list, keyOf(x.entry), x.qty);
+    if (p.catalyst) takeQty(p.catalyst.pool.list, keyOf(p.catalyst.entry), 1);
+    a.focus -= p.focusCost;
+    a.stats.focusUsed += p.focusCost;
+
+    const level = a.skills[r.skill].level;
+    const job = {
+      id: ctx.newId('job'), recipe: r.id, level, stationTier: p.station.tier, slotProps: p.slotProps,
+      tune: c.tune || null, focusReturn: !!(c.focus && r.type === 'refine'),
+      catalyst: !!p.catalyst, out: null, returnTo: null, mainQty: r.slots[0].qty, startsAt: 0, endsAt: 0,
+    };
+
+    if (r.type === 'refine') {
+      const first = mainParts[0];
+      const same = mainParts.every((m) => m.lot === first.lot && bonusKey(m.bonus) === bonusKey(first.bonus));
+      let lot;
+      let bonus;
+      if (same) {
+        lot = first.lot;
+        bonus = first.bonus ? { ...first.bonus } : null;
+      } else {
+        lot = mixLot(ctx, r, p.slotProps[mainKey]);
+        bonus = null;
+      }
+      if (r.refineStep !== false) {
+        const step = refineStep(level, !!p.catalyst, cfg);
+        if (step > 0) {
+          const names = data.items[r.output.item].props;
+          const prop = c.refineProp && names.includes(c.refineProp) ? c.refineProp : weakestProp(p.slotProps[mainKey], names);
+          bonus = bonus || {};
+          bonus[prop] = Math.min(cfg.refine.maxStep, (bonus[prop] || 0) + step);
+        }
+      }
+      job.out = { lot, bonus };
+      job.returnTo = { item: first.item, lot: first.lot, bonus: first.bonus };
+    }
+
+    const last = a.queue.length ? a.queue[a.queue.length - 1].endsAt : state.t;
+    job.startsAt = Math.max(state.t, last);
+    job.endsAt = job.startsAt + r.seconds;
+    a.queue.push(job);
+    ctx.emit('craft.queued', { actor: a.id, recipe: r.id, endsAt: job.endsAt });
+  },
+};
+
+const EAT = {
+  validate(ctx, a, c) {
+    const e = findEntry(a.bag, c.key);
+    if (!e) return 'no_item';
+    const def = ctx.data.items[e.item];
+    if (def.kind !== 'consumable' || !def.buff) return 'not_food';
+    return { e, def };
+  },
+  execute(ctx, a, c, p) {
+    const stats = p.e.stats;
+    takeQty(a.bag, c.key, 1);
+    a.buffs = a.buffs.filter((b) => b.type !== p.def.buff);
+    const buff = { type: p.def.buff, value: stats.buff, endsAt: ctx.state.t + stats.minutes * 60 };
+    a.buffs.push(buff);
+    a.stats.eat++;
+    ctx.emit('eat', { actor: a.id, item: p.e.item, value: buff.value, minutes: stats.minutes });
+  },
+};
+
+// all: 재료와 가구를 모두 창고로. 도구와 음식은 가방에 남긴다.
+const STORE = {
+  validate(ctx, a, c) {
+    if (!settlementAt(ctx, a)) return 'not_in_town';
+    if (c.key && !findEntry(a.bag, c.key)) return 'no_item';
+    if (!c.key && !c.all) return 'bad_args';
+    return {};
+  },
+  execute(ctx, a, c) {
+    const { data } = ctx;
+    const list = c.key
+      ? [findEntry(a.bag, c.key)]
+      : a.bag.filter((e) => {
+        const def = data.items[e.item];
+        return def.kind === 'material' || (def.kind === 'equipment' && !def.tool);
+      });
+    let moved = 0;
+    for (const e of list) {
+      const q = c.key && c.qty ? Math.min(c.qty, qtyOf(e)) : qtyOf(e);
+      addEntry(a.storage, takeQty(a.bag, keyOf(e), q));
+      moved += q;
+    }
+    ctx.emit('store', { actor: a.id, moved });
+  },
+};
+
+const TAKE = {
+  validate(ctx, a, c) {
+    if (!settlementAt(ctx, a)) return 'not_in_town';
+    const e = findEntry(a.storage, c.key);
+    if (!e) return 'no_item';
+    const q = Math.min(c.qty || qtyOf(e), qtyOf(e));
+    const probe = e.uid ? e : { ...e, qty: q };
+    if (a.bag.length + slotsNeeded(a.bag, [probe]) > ctx.cfg.bag.slots) return 'bag_full';
+    return { q };
+  },
+  execute(ctx, a, c, p) {
+    addEntry(a.bag, takeQty(a.storage, c.key, p.q));
+    ctx.emit('take', { actor: a.id, key: c.key, qty: p.q });
+  },
+};
+
+const SET_AUTOPILOT = {
+  validate(ctx, a, c) {
+    const profile = c.profile || a.ai?.profile || 'settler';
+    if (!ctx.data.agents[profile]) return 'bad_args';
+    return { profile };
+  },
+  execute(ctx, a, c, p) {
+    if (!a.ai) a.ai = { on: false, profile: p.profile, mem: {} };
+    a.ai.on = !!c.on;
+    a.ai.profile = p.profile;
+    a.ai.mem = {};
+    ctx.emit('autopilot', { actor: a.id, on: a.ai.on });
+  },
+};
+
+const HANDLERS = { MOVE, GATHER, CRAFT, EAT, STORE, TAKE, SET_AUTOPILOT };
+
+export function makeCommands(ctx) {
+  function validate(cmd) {
+    const h = HANDLERS[cmd?.type];
+    if (!h) return { ok: false, error: 'unknown_command' };
+    const actor = ctx.state.actors[cmd.actor];
+    if (!actor) return { ok: false, error: 'no_actor' };
+    const res = h.validate(ctx, actor, cmd);
+    return typeof res === 'string' ? { ok: false, error: res } : { ok: true, plan: res };
+  }
+
+  function dispatch(cmd) {
+    const v = validate(cmd);
+    if (!v.ok) {
+      ctx.emit('cmd.rejected', { actor: cmd?.actor ?? null, cmd: cmd?.type ?? null, reason: v.error });
+      return { ok: false, error: v.error };
+    }
+    HANDLERS[cmd.type].execute(ctx, ctx.state.actors[cmd.actor], cmd, v.plan);
+    return { ok: true };
+  }
+
+  // 화면·AI가 미리 가능 여부만 볼 때 (이벤트 없음)
+  function check(cmd) {
+    const v = validate(cmd);
+    return v.ok ? { ok: true } : { ok: false, error: v.error };
+  }
+
+  return { dispatch, check };
+}

@@ -1,0 +1,18 @@
+{
+  "settler": {
+    "name": "개척민 기본형",
+    "policy": "settler",
+    "skills": ["logging", "mining", "harvesting"],
+    "tools": {
+      "logging": ["rc_axe_stone", "rc_axe_copper"],
+      "mining": ["rc_pick_stone", "rc_pick_copper"],
+      "harvesting": ["rc_sickle_stone", "rc_sickle_copper"]
+    },
+    "trip": 36,
+    "streak": 12,
+    "useFocus": true,
+    "focusReserve": 300,
+    "foodTarget": 4,
+    "keep": { "log_drift": 4 }
+  }
+}

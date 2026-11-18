@@ -1,0 +1,29 @@
+[
+  {
+    "id": "wreck_coast",
+    "name": "난파 해안",
+    "tier": 1,
+    "bounds": [0, 0, 400, 400],
+    "spawn": [200, 40],
+    "settlement": {
+      "id": "s_lighthouse", "name": "등대 마을", "x": 200, "z": 60, "radius": 30,
+      "stations": [
+        { "type": "sawbench" }, { "type": "smelter" }, { "type": "loom" },
+        { "type": "forge" }, { "type": "workbench" }, { "type": "kitchen" }
+      ]
+    },
+    "places": ["붉은절벽", "갈매기 바위", "소금 웅덩이", "난파선 뒤편", "등대 언덕", "검은 모래톱",
+               "파도 굴", "안개 여울", "조개 무덤", "바람 고개", "부서진 돛대", "물새 습지"],
+    "propDist": { "mean": 45, "sd": 15, "luckyChance": 0.04, "luckyBonus": [20, 35], "common": [30, 40] },
+    "veins": [
+      { "node": "node_driftwood", "common": 28, "rotating": 0 },
+      { "node": "node_stone", "common": 24, "rotating": 0 },
+      { "node": "node_birch", "common": 14, "rotating": 2, "nodes": [8, 14], "radius": [20, 40], "life": [5, 9] },
+      { "node": "node_copper", "common": 10, "rotating": 2, "nodes": [6, 10], "radius": [15, 30], "life": [5, 9] },
+      { "node": "node_reed", "common": 16, "rotating": 1, "nodes": [8, 12], "radius": [20, 35], "life": [5, 9] },
+      { "node": "node_berry", "common": 12, "rotating": 1, "nodes": [6, 10], "radius": [15, 30], "life": [5, 9] },
+      { "node": "node_seaweed", "common": 10, "rotating": 1, "nodes": [6, 10], "radius": [15, 30], "life": [5, 9] },
+      { "node": "node_mushroom", "common": 8, "rotating": 1, "nodes": [5, 9], "radius": [15, 25], "life": [5, 9] }
+    ]
+  }
+]

@@ -1,0 +1,9 @@
+[
+  { "id": "hand", "name": "맨손", "icon": "✋" },
+  { "id": "sawbench", "name": "제재대", "icon": "🪚" },
+  { "id": "smelter", "name": "제련로", "icon": "🔥" },
+  { "id": "loom", "name": "베틀", "icon": "🧵" },
+  { "id": "forge", "name": "대장간", "icon": "⚒️" },
+  { "id": "workbench", "name": "목공대", "icon": "🪑" },
+  { "id": "kitchen", "name": "조리대", "icon": "🍳" }
+]

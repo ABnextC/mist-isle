@@ -1,0 +1,22 @@
+{
+  "xpCurve": { "a": 40, "b": 2, "exp": 1.6 },
+  "list": [
+    { "id": "logging", "name": "벌목", "cat": "gather", "icon": "🪓" },
+    { "id": "mining", "name": "채광", "cat": "gather", "icon": "⛏️" },
+    { "id": "harvesting", "name": "채취", "cat": "gather", "icon": "🌾" },
+    { "id": "hunting", "name": "수렵", "cat": "gather", "icon": "🦌", "opens": "v0.3" },
+    { "id": "fishing", "name": "낚시", "cat": "gather", "icon": "🎣", "opens": null },
+    { "id": "sawing", "name": "제재", "cat": "refine", "icon": "🪚" },
+    { "id": "smelting", "name": "제련", "cat": "refine", "icon": "🔥" },
+    { "id": "weaving", "name": "방직", "cat": "refine", "icon": "🧵" },
+    { "id": "tanning", "name": "무두질", "cat": "refine", "icon": "🟫", "opens": "v0.3" },
+    { "id": "masonry", "name": "석공", "cat": "refine", "icon": "🧱", "opens": null },
+    { "id": "smithing", "name": "대장", "cat": "craft", "icon": "🔨" },
+    { "id": "carpentry", "name": "목수", "cat": "craft", "icon": "🪑" },
+    { "id": "cooking", "name": "요리", "cat": "craft", "icon": "🍲" },
+    { "id": "armoring", "name": "갑주", "cat": "craft", "icon": "🛡️", "opens": "v0.3" },
+    { "id": "tinkering", "name": "공예", "cat": "craft", "icon": "⚙️", "opens": "v0.4" },
+    { "id": "jewelcraft", "name": "장신구", "cat": "craft", "icon": "💍", "opens": null },
+    { "id": "alchemy", "name": "약제", "cat": "craft", "icon": "⚗️", "opens": "v0.5" }
+  ]
+}

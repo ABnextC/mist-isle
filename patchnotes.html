@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>안개섬 개척기 — 패치노트</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌫️%3C/text%3E%3C/svg%3E">
+<style>
+  :root { --bg:#0f1418; --card:#172028; --line:#24313b; --text:#e7edf1; --muted:#8ea1ae; --accent:#6fc3b2; --warm:#e9b45f; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+    font:15px/1.6 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 20px 16px 60px; }
+  header h1 { font-size: 22px; margin: 0; }
+  header p { color: var(--muted); margin: 4px 0 0; }
+  header a { color: var(--accent); }
+  article { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-top: 18px; }
+  .ver { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .ver h2 { margin:0; font-size:19px; }
+  .ver span { color: var(--muted); font-size: 13px; }
+  .lead { color: var(--warm); margin: 6px 0 2px; }
+  h3 { font-size: 15px; margin: 18px 0 6px; color: var(--accent); }
+  ul { margin: 4px 0; padding-left: 20px; }
+  li { margin: 3px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 6px; }
+  th, td { border-top: 1px solid var(--line); padding: 6px 4px; text-align: left; vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .note { color: var(--muted); font-size: 13px; }
+  .persona { border-left: 3px solid var(--line); padding: 4px 10px; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>🌫️ 안개섬 개척기 패치노트</h1>
+    <p>생활 중심 MMORPG 웹게임 · <a href="index.html">엔진 점검판 열기</a></p>
+  </header>
+
+  <article>
+    <div class="ver"><h2>v0.0 엔진 골격</h2><span>2026-11-18 · 1단계</span></div>
+    <p class="lead">화면 없이 채집 → 정제 → 제작이 명령으로 돈다. 점검판에서 직접 눌러 볼 수 있다.</p>
+
+    <h3>들어간 것</h3>
+    <ul>
+      <li><b>코어</b>: 시드 난수, 1초 월드 틱, 명령 7종(이동·채집·제작·먹기·창고에 넣기·꺼내기·봇 켜기), 이벤트 기록, 저장·불러오기</li>
+      <li><b>산지와 속성</b>: 재료마다 속성 두 개. 같은 산지에서 캔 재료끼리만 쌓인다. 순환 산지 9곳은 게임 5~9일마다 다른 곳으로 옮겨 간다(영맥 이동)</li>
+      <li><b>채집</b>: 노드 8종. 맨손으로는 티어 0만 캔다. 도구 티어가 한 단계 낮으면 속도 ×0.6. 부산물·집중력·자원 밀도 포함</li>
+      <li><b>정제·제작</b>: 레시피 17개. 넣은 재료의 속성이 결과 수치와 별 등급을 정한다. 걸작, 정제 단계 보너스, 섞은 묶음, 제작 대기열</li>
+      <li><b>AI 개척민 기본형</b>: 플레이어와 같은 명령으로만 움직인다. 기억도 세이브 안에 있다</li>
+      <li><b>점검판</b>(이 사이트 첫 화면), 헤드리스 실행기, 테스트 11개</li>
+    </ul>
+
+    <h3>헤드리스 점검 결과</h3>
+    <table>
+      <tr><th>항목</th><th>봇 1명 · 게임 3일</th><th>봇 3명 · 게임 10일</th></tr>
+      <tr><td>첫 돌 도구</td><td>플레이 3분</td><td>6~7분</td></tr>
+      <tr><td>첫 구리 도구</td><td>36분</td><td>36~38분</td></tr>
+      <tr><td>채집 스킬 10 / 20</td><td>42~45분 / 2시간 13~17분</td><td>44~51분 / 2시간 34~44분</td></tr>
+      <tr><td>채집 스킬 30(상한)</td><td>—</td><td>6시간 34~42분</td></tr>
+      <tr><td>마지막 도구 등급</td><td>구리 도구 ★2 (속도 ×1.17)</td><td>구리 도구 ★3 (속도 ×1.22~1.24)</td></tr>
+      <tr><td>산지 순환</td><td>0번(첫 닫힘 전)</td><td>12번</td></tr>
+      <tr><td>끝날 때 자원 밀도</td><td>나무 99%</td><td>나무 7% · 금속 44% · 식재료 58%</td></tr>
+      <tr><td>처리 속도</td><td colspan="2">초당 약 2만~3만 틱 (게임 하루가 0.1~0.2초)</td></tr>
+    </table>
+    <p class="note">세 채집 스킬을 고루 올리는 봇 기준이다. 한 스킬만 파면 걸리는 시간이 대략 3분의 1로 준다.</p>
+
+    <h3>개발 메모</h3>
+    <ul>
+      <li>셋이 한 해안을 나눠 쓰니 나무 밀도가 7%까지 떨어졌다. 혼자일 때는 99%다. 남획이 숫자로 보이기 시작했다.</li>
+      <li>구리 도구가 ★2~3에 머문다. 대부분 흔한 산지 재료로 만들어서다. 좋은 산지를 찾아갈 이유는 v0.2에서 키운다.</li>
+      <li>속성 80을 넘는 산지는 10일 동안 한 번도 안 나왔다. 확률 4%라 드문 게 맞지만, 체감은 후기로 본다.</li>
+      <li>v0.0에서는 정착지 반경 안이면 작업대를 모두 쓴다. 작업대 앞까지 걷는 판정은 3D 화면과 함께 넣는다.</li>
+    </ul>
+
+    <h3>아직 없는 것</h3>
+    <ul>
+      <li>3D 화면, 3인칭 이동, 30Hz 이동·전투 틱</li>
+      <li>거래소·주문 게시판·AI 개척민 경제(v0.2), 전투(v0.3)</li>
+    </ul>
+
+    <h3>페르소나 코멘터리</h3>
+    <p class="persona">엔진만 있는 패치라 이번에는 후기를 받지 않았다. 페르소나 7명의 플레이 후기는 v0.1 ‘상륙’부터 붙는다.</p>
+
+    <h3>다음: v0.1 상륙</h3>
+    <ul>
+      <li>T1 난파 해안 3D(절차 생성 지형, 로우폴리, 안개)</li>
+      <li>3인칭 자유시점 이동·카메라, PC 키보드·마우스와 모바일 가상 스틱</li>
+      <li>노드에 다가가 캐기, 작업대 앞 제작, 페르소나 첫 플레이 후기</li>
+    </ul>
+  </article>
+</main>
+</body>
+</html>

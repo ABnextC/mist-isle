@@ -1,0 +1,51 @@
+{
+  "dataVersion": 1,
+  "skillCap": 30,
+  "time": { "secondsPerGameDay": 3600, "dayFraction": 0.75 },
+  "move": { "speed": 5 },
+  "bag": { "slots": 48 },
+  "focus": {
+    "max": 1000,
+    "regenPerHour": 50,
+    "cost": { "gather": 10, "refine": 20, "tune": 30 }
+  },
+  "gather": {
+    "rangeM": 3,
+    "handSpeed": 0.6,
+    "tierPenalty": 0.6,
+    "skillBonusPerLevel": 0.005,
+    "skillBonusMax": 0.25
+  },
+  "craft": {
+    "skillBonusPerLevel": 0.2,
+    "skillBonusMax": 8,
+    "stationTierBonus": 2,
+    "queueMax": 10,
+    "refineReturn": 0.15,
+    "tune": { "min": 5, "max": 10 },
+    "masterwork": { "base": 0.02, "perLevel": 0.001, "maxFromLevel": 0.05, "tuneBonus": 0.02, "statBonus": 10 }
+  },
+  "refine": {
+    "steps": [{ "skill": 30, "add": 5 }, { "skill": 70, "add": 5 }],
+    "catalystAdd": 5,
+    "maxStep": 15
+  },
+  "density": { "perGather": 0.002, "regenPerHour": 0.015, "minFactor": 0.25, "floor": 0.05 },
+  "stars": [30, 50, 70, 85],
+  "families": {
+    "wood": ["strength", "flex"],
+    "metal": ["hardness", "toughness"],
+    "stone": ["density", "grain"],
+    "fiber": ["tenacity", "softness"],
+    "food": ["nutrition", "flavor"],
+    "herb": ["potency", "duration"]
+  },
+  "propNames": {
+    "strength": "강도", "flex": "탄성",
+    "hardness": "경도", "toughness": "인성",
+    "density": "밀도", "grain": "결",
+    "tenacity": "질김", "softness": "부드러움",
+    "nutrition": "영양", "flavor": "풍미",
+    "potency": "약효", "duration": "지속"
+  }
+}

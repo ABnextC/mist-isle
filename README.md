@@ -41,3 +41,5 @@ tools/       헤드리스 실행기, 테스트
 3. 난수는 코어의 시드 RNG만 쓴다. 시드가 같으면 결과도 같다.
 4. 재료 차감과 결과 지급은 한 번에 끝낸다.
 5. 데이터 구조가 바뀌면 `core/save.js`에 마이그레이션을 더한다.
+6. 페이지는 검색에 노출하지 않는다. 새 HTML에도 `<meta name="robots" content="noindex, nofollow, noarchive">`를 넣는다.
+   robots.txt로 막지 않는다. 막으면 검색엔진이 이 태그를 읽지 못한다.

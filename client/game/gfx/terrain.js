@@ -80,11 +80,14 @@ export function makePathMask(region, terrain) {
   const N = 512;
   const { x0, z0, size } = AREA;
   const data = new Uint8Array(N * N);
-  const t = region.settlement;
+  const t = region.settlements[0];
+  const f = region.settlements[1];
   const segs = [];
   const add = (ax, az, bx, bz, w) => segs.push([ax, az, bx, bz, w]);
-  for (const st of t.stations) add(t.x, t.z, t.x + st.dx * 0.85, t.z + st.dz * 0.85, 1.6);
-  for (const s of t.structures) if (s.kind !== 'campfire' && s.kind !== 'board') add(t.x, t.z, t.x + s.dx * 0.8, t.z + s.dz * 0.8, 1.5);
+  for (const town of region.settlements) {
+    for (const st of town.stations) add(town.x, town.z, town.x + st.dx * 0.85, town.z + st.dz * 0.85, town === t ? 1.6 : 1.3);
+    for (const s of town.structures) if (s.kind !== 'campfire' && s.kind !== 'board') add(town.x, town.z, town.x + s.dx * 0.8, town.z + s.dz * 0.8, town === t ? 1.5 : 1.2);
+  }
   const [sx, sz] = terrain.beachPoint(region.spawn[0], region.spawn[1]);
   const mx = (t.x + sx) / 2 + 6;
   const mz = (t.z + sz) / 2 + 4;
@@ -92,15 +95,23 @@ export function makePathMask(region, terrain) {
   add(mx, mz, sx + 4, sz + 2, 1.6);
   add(t.x, t.z, t.x + 12, t.z + 62, 1.6);
   add(t.x + 12, t.z + 62, t.x - 6, t.z + 130, 1.4);
-  const plaza = 13;
+  // 숲머리까지 이어지는 길(v0.4)
+  if (f) {
+    add(t.x - 6, t.z + 130, f.x + 6, (t.z + 130 + f.z) / 2 + 4, 1.4);
+    add(f.x + 6, (t.z + 130 + f.z) / 2 + 4, f.x, f.z, 1.35);
+    add(f.x, f.z, f.x - 4, f.z + 34, 1.1);
+  }
+  const plazas = region.settlements.map((town, i) => ({ x: town.x, z: town.z + (i ? 0 : 1), r: i ? 8 : 13 }));
   const cell = size / N;
   for (let j = 0; j < N; j++) {
     const z = z0 + (j + 0.5) * cell;
     for (let i = 0; i < N; i++) {
       const x = x0 + (i + 0.5) * cell;
       let v = 0;
-      const dp = Math.hypot(x - t.x, z - t.z - 1);
-      if (dp < plaza + 5) v = Math.max(v, sstep(plaza + 4, plaza - 2, dp + (fbm3(x * 0.3, z * 0.3) - 0.5) * 3));
+      for (const pl of plazas) {
+        const dp = Math.hypot(x - pl.x, z - pl.z);
+        if (dp < pl.r + 5) v = Math.max(v, sstep(pl.r + 4, pl.r - 2, dp + (fbm3(x * 0.3, z * 0.3) - 0.5) * 3));
+      }
       if (v < 1) {
         for (const [ax, az, bx, bz, w] of segs) {
           const vx = bx - ax;

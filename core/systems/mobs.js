@@ -12,13 +12,15 @@ import { resolve } from './actions.js';
 const r2 = (v) => Math.round(v * 100) / 100;
 const DEG = Math.PI / 180;
 
-function pickGroupSpot(ctx, region, type, taken) {
+export function groupSpot(ctx, region, type, taken) {
   const { rng, terrain } = ctx;
   const [x0, z0, x1, z1] = region.bounds;
   for (let i = 0; i < 160; i++) {
     const x = rng.range(x0 + 24, x1 - 24);
     const z = rng.range(z0 + 2, z1 - 24);
     if (!fitsHabitat(terrain, region, type, x, z)) continue;
+    // 무리가 마을까지 어슬렁거리지 않게 정착지에서 넉넉히 띄운다(v0.4)
+    if (region.settlements.some((t) => Math.hypot(x - t.x, z - t.z) < t.radius + 18 + type.radius)) continue;
     if (taken.some((g) => Math.hypot(g.x - x, g.z - z) < (g.type === type.id ? 34 : 18))) continue;
     return [round3(x), round3(z)];
   }
@@ -55,7 +57,7 @@ export function initMobs(ctx) {
   const taken = Object.values(state.mobGroups).map((g) => ({ x: g.x, z: g.z, type: g.type }));
   for (const type of data.lists.creatures) {
     for (let k = 0; k < type.groups; k++) {
-      const spot = pickGroupSpot(ctx, region, type, taken);
+      const spot = groupSpot(ctx, region, type, taken);
       if (!spot) continue;
       taken.push({ x: spot[0], z: spot[1], type: type.id });
       const gid = ctx.newId('g');
@@ -184,11 +186,23 @@ function strike(ctx, m, type) {
   else ctx.emit('mob.miss', { mob: m.id, actor: a.id });
 }
 
-export function mobsTick(ctx, dt) {
+// 행위자에게서 멀리 떨어진 짐승은 6틱에 한 번, 6배 시간으로 움직인다(결과는 늘 같다. 계산만 줄인다)
+const FAR = 80;
+const LOD = 6;
+
+export function mobsTick(ctx, dt0) {
   const { state, data } = ctx;
   const t = state.t;
   const region = data.lists.regions[0];
+  const actors = Object.values(state.actors);
+  let slot = 0;
   for (const m of Object.values(state.mobs)) {
+    slot++;
+    let dt = dt0;
+    if (m.mode !== 'dead' && !m.target && !actors.some((a) => Math.abs(a.x - m.x) < FAR && Math.abs(a.z - m.z) < FAR)) {
+      if ((state.tick + slot) % LOD !== 0) continue;
+      dt = dt0 * LOD;
+    }
     const type = data.creatures[m.type];
     const g = state.mobGroups[m.group];
     if (m.mode === 'dead') {

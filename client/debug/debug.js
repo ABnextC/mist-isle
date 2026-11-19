@@ -170,9 +170,12 @@ function pBag() {
   };
   const bag = [...a.bag].sort((x, y) => order(x) - order(y));
   const rows = bag.map((e) => entryRow(e, true)).join('') || '<li><small>비어 있음</small></li>';
-  const storage = [...a.storage].sort((x, y) => order(x) - order(y)).map((e) => entryRow(e, false)).join('');
+  // v0.4: 창고는 마을마다 따로다
+  const stores = Object.entries(a.storages || {}).filter(([, list]) => list.length);
+  const storage = stores.map(([sid, list]) => `<li><b>${game.state.settlements[sid]?.name ?? sid}</b></li>` + [...list].sort((x, y) => order(x) - order(y)).map((e) => entryRow(e, false)).join('')).join('');
+  const storeN = stores.reduce((n, [, list]) => n + list.length, 0);
   return `<section class="card bag"><h2>가방<small>${a.bag.length} / ${data.config.bag.slots}칸</small></h2><ul class="list">${rows}</ul>
-    <details ${a.storage.length ? '' : 'hidden'}><summary>창고 (${a.storage.length}묶음) — 정착지에서 제작할 때 같이 쓴다</summary><ul class="list">${storage}</ul></details></section>`;
+    <details ${storeN ? '' : 'hidden'}><summary>창고 (${storeN}묶음) — 마을마다 따로, 그 마을에서 제작할 때 같이 쓴다</summary><ul class="list">${storage}</ul></details></section>`;
 }
 
 function slotLabel(s) {

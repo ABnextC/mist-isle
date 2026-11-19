@@ -471,6 +471,145 @@ export function lampPost() {
   return { parts, fx };
 }
 
+// ── 숲머리(v0.4) ───────────────────────────────────
+// 천막: 맞배 모양 캔버스, 마룻대·기둥·버팀줄·말뚝. 앞은 열려 있어 안쪽이 어둡게 보인다.
+export function tent(seed) {
+  const { parts, fx, add } = kit();
+  const R = rng(seed);
+  const L = 3.0;
+  const hw = 1.25;
+  const H = 1.95;
+  const S = Math.hypot(hw, H);
+  const th = Math.atan2(H, hw);
+  const mat = R() < 0.35 ? 'clothDyed' : 'cloth';
+  for (const sx of [-1, 1]) add(mat, box(S + 0.08, 0.03, L, { x: (sx * hw) / 2, y: H / 2, rz: sx * -th + (sx > 0 ? Math.PI : 0) }));
+  // 뒤판(삼각)과 앞의 어두운 안쪽
+  const tri = (w, h) => {
+    const sh = new THREE.Shape();
+    sh.moveTo(-w, 0);
+    sh.lineTo(w, 0);
+    sh.lineTo(0, h);
+    sh.closePath();
+    return prep(new THREE.ShapeGeometry(sh));
+  };
+  add(mat, xf(tri(hw, H), { z: -L / 2 }));
+  add('ash', xf(tri(hw * 0.62, H * 0.66), { z: L / 2 - 0.25 }));
+  // 걷어 올린 앞자락
+  for (const sx of [-1, 1]) add(mat, xf(tri(0.42, 1.2), { x: sx * 0.95, y: 0.2, z: L / 2 + 0.02, rz: sx * 0.35 }));
+  // 마룻대·기둥
+  add('barkDark', taperTube([V(0, H + 0.05, -L / 2 - 0.15), V(0, H + 0.05, L / 2 + 0.15)], [0.045, 0.045], { radial: 6, vScale: 1, cap: true }));
+  for (const z of [-L / 2 - 0.05, L / 2 + 0.05]) add('barkDark', taperTube([V(0, -0.15, z), V(0, H + 0.1, z)], [0.05, 0.045], { radial: 6, vScale: 1, cap: true }));
+  // 버팀줄과 말뚝
+  for (const z of [-1, 1]) {
+    const top = V(0, H + 0.08, z * (L / 2 + 0.1));
+    for (const sx of [-1, 1]) {
+      const peg = V(sx * 1.0, 0.04, z * (L / 2 + 1.0));
+      add('rope', taperTube([top, peg], [0.012, 0.012], { radial: 4, vScale: 1 }));
+      add('planksDark', box(0.05, 0.22, 0.05, { x: peg.x, y: 0.06, z: peg.z, rx: z * 0.3 }));
+    }
+  }
+  // 둘레 살림: 자루·통·장작 몇 개
+  add('sack', lathe([[0, 0], [0.2, 0.02], [0.24, 0.2], [0.2, 0.42], [0.08, 0.52], [0.0, 0.53]], 10).translate(hw + 0.45, 0, 0.6));
+  if (R() < 0.6) barrel(add, { x: -hw - 0.5, z: 0.4 }, R);
+  else woodpile(add, R, { x: -hw - 0.55, z: 0, ry: Math.PI / 2 });
+  return { parts, fx };
+}
+
+// 통나무 오두막: 귀를 엇걸어 쌓은 통나무 벽, 너와 지붕, 돌 굴뚝(연기)
+export function cabin(seed) {
+  const { parts, fx, add } = kit();
+  const R = rng(seed);
+  const W = 4.4;
+  const D = 3.6;
+  const rLog = 0.17;
+  const rows = 9;
+  for (let i = 0; i < rows; i++) {
+    const y = 0.15 + i * rLog * 1.85;
+    const odd = i % 2;
+    for (const sz of [-1, 1]) {
+      const z = sz * (D / 2);
+      add('barkDark', taperTube([V(-W / 2 - 0.35, y + (odd ? rLog * 0.9 : 0), z), V(W / 2 + 0.35, y + (odd ? rLog * 0.9 : 0), z)], [rLog, rLog * 0.92], { radial: 7, vScale: 1.3, cap: true }));
+    }
+    for (const sx of [-1, 1]) {
+      const x = sx * (W / 2);
+      add('barkDark', taperTube([V(x, y + (odd ? 0 : rLog * 0.9), -D / 2 - 0.35), V(x, y + (odd ? 0 : rLog * 0.9), D / 2 + 0.35)], [rLog * 0.95, rLog * 0.9], { radial: 7, vScale: 1.3, cap: true }));
+    }
+  }
+  const top = 0.15 + rows * rLog * 1.85;
+  const roofH = 1.6;
+  // 박공(널빤지)
+  const tri = new THREE.Shape();
+  tri.moveTo(-D / 2, 0);
+  tri.lineTo(D / 2, 0);
+  tri.lineTo(0, roofH);
+  tri.closePath();
+  for (const sx of [-1, 1]) {
+    const g = new THREE.ExtrudeGeometry(tri, { depth: 0.12, bevelEnabled: false });
+    add('planksDark', xf(prep(g), { ry: Math.PI / 2, x: sx * (W / 2) - (sx > 0 ? 0.12 : 0), y: top }));
+  }
+  const ang = Math.atan2(roofH, D / 2);
+  const slope = Math.hypot(D / 2, roofH) + 0.5;
+  for (const sz of [-1, 1]) add('shingle', box(W + 1.1, 0.12, slope, { y: top + roofH / 2 + 0.04, z: sz * (D / 4 + 0.18), rx: sz * ang }));
+  add('barkDark', taperTube([V(-W / 2 - 0.6, top + roofH + 0.1, 0), V(W / 2 + 0.6, top + roofH + 0.1, 0)], [0.12, 0.11], { radial: 7, vScale: 1.3, cap: true }));
+  // 문·창
+  add('planks', box(0.9, 1.8, 0.08, { x: -0.7, y: 1.05, z: D / 2 + 0.16 }));
+  add('iron', box(0.05, 0.05, 0.08, { x: -0.38, y: 1.1, z: D / 2 + 0.22 }));
+  add('window', box(0.7, 0.6, 0.06, { x: 1.0, y: 1.45, z: D / 2 + 0.16 }));
+  add('planksDark', box(0.86, 0.08, 0.12, { x: 1.0, y: 1.1, z: D / 2 + 0.2 }));
+  fx.glows.push(V(1.0, 1.45, D / 2 + 0.16));
+  // 굴뚝
+  add('stone', box(0.7, top + roofH + 0.9, 0.7, { x: W / 2 + 0.25, y: (top + roofH + 0.9) / 2, z: -0.7 }));
+  fx.smokes.push(V(W / 2 + 0.25, top + roofH + 1.0, -0.7));
+  woodpile(add, R, { x: -W / 2 - 0.7, z: 0.4, ry: Math.PI / 2 });
+  return { parts, fx };
+}
+
+// 짓는 자리: 네 귀 말뚝과 줄, 쌓아 둔 판재·돌, 작은 팻말
+export function site(seed, r = 1) {
+  const { parts, fx, add } = kit();
+  const R = rng(seed);
+  const e = r + 0.45;
+  const corners = [[-e, -e], [e, -e], [e, e], [-e, e]];
+  for (const [x, z] of corners) add('barkDark', taperTube([V(x, -0.15, z), V(x, 0.75, z)], [0.045, 0.035], { radial: 6, vScale: 1, cap: true }));
+  for (let i = 0; i < 4; i++) {
+    const [ax, az] = corners[i];
+    const [bx, bz] = corners[(i + 1) % 4];
+    add('rope', taperTube([V(ax, 0.62, az), V((ax + bx) / 2, 0.55, (az + bz) / 2), V(bx, 0.62, bz)], [0.012, 0.012, 0.012], { radial: 4, vScale: 1 }));
+  }
+  for (let i = 0; i < 6; i++) add('planks', box(1.4, 0.06, 0.22, { x: -0.25 + (R() - 0.5) * 0.06, y: 0.05 + i * 0.065, z: -0.25 + (i % 2) * 0.24, ry: (R() - 0.5) * 0.12 }));
+  for (let i = 0; i < 5; i++) add('rockBare', xf(rockGeo(700 + seed * 7 + i, 0.16 + R() * 0.08, { sy: 0.7, detail: 1 }), { x: 0.55 + (R() - 0.5) * 0.4, y: 0.02, z: 0.45 + (R() - 0.5) * 0.4 }));
+  add('planksDark', box(0.06, 0.95, 0.06, { x: -e - 0.4, y: 0.45, z: e }));
+  add('planks', box(0.5, 0.34, 0.04, { x: -e - 0.4, y: 0.85, z: e + 0.03 }));
+  add('paper', box(0.38, 0.24, 0.01, { x: -e - 0.4, y: 0.85, z: e + 0.06 }));
+  return { parts, fx };
+}
+
+// 2단계 작업대 깃발
+export function pennant(n = 2) {
+  const { parts, fx, add } = kit();
+  add('barkDark', taperTube([V(0, -0.2, 0), V(0, 2.9, 0)], [0.04, 0.03], { radial: 6, vScale: 1, cap: true }));
+  for (let i = 0; i < n - 1; i++) {
+    const sh = new THREE.Shape();
+    sh.moveTo(0, 0);
+    sh.lineTo(0.75, -0.17);
+    sh.lineTo(0, -0.36);
+    sh.closePath();
+    add('clothDyed', xf(prep(new THREE.ShapeGeometry(sh)), { x: 0.03, y: 2.85 - i * 0.45 }));
+  }
+  return { parts, fx };
+}
+
+// 횃불 기둥(숲머리 길목)
+export function torch() {
+  const { parts, fx, add } = kit();
+  add('barkDark', taperTube([V(0, -0.25, 0), V(0, 1.9, 0)], [0.07, 0.06], { radial: 7, vScale: 1.2, cap: true }));
+  add('iron', lathe([[0, 0], [0.14, 0.02], [0.17, 0.16], [0.15, 0.18], [0, 0.12]], 10).translate(0, 1.9, 0));
+  add('coal', P(new THREE.SphereGeometry(0.11, 8, 6), 0xffffff, { y: 2.02, sy: 0.6 }));
+  fx.fires.push({ p: V(0, 2.08, 0), s: 0.45, low: true });
+  fx.lights.push({ kind: 'torch', p: V(0, 2.3, 0) });
+  return { parts, fx };
+}
+
 export function fence(len) {
   const { parts, fx, add } = kit();
   const R = rng(Math.floor(len * 100));

@@ -134,7 +134,7 @@ export function actionsTick(ctx) {
   }
 }
 
-// 등대로 귀환: 시전이 끝나면 마을 창고 앞으로 옮겨진다
+// 귀환: 시전이 끝나면 귀환 지점 마을의 창고 앞으로 옮겨진다
 function resolveRecall(ctx, actor) {
   const s = ctx.state.settlements[actor.action.settlement];
   actor.action = null;

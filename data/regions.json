@@ -25,117 +25,247 @@
       "wadeDepth": -1.1,
       "edge": 20
     },
-    "settlement": {
-      "id": "s_lighthouse",
-      "name": "등대 마을",
-      "x": 200,
-      "z": 60,
-      "radius": 30,
-      "stations": [
-        {
-          "type": "forge",
-          "dx": 10,
-          "dz": 3,
-          "rot": -1.2
-        },
-        {
-          "type": "smelter",
-          "dx": 12,
-          "dz": -7,
-          "rot": -1.6
-        },
-        {
-          "type": "sawbench",
-          "dx": -10,
-          "dz": 3,
-          "rot": 1.2
-        },
-        {
-          "type": "workbench",
-          "dx": -12,
-          "dz": -7,
-          "rot": 1.6
-        },
-        {
-          "type": "loom",
-          "dx": -5,
-          "dz": 12,
-          "rot": 2.8
-        },
-        {
-          "type": "kitchen",
-          "dx": 5,
-          "dz": 12,
-          "rot": -2.8
-        },
-        {
-          "type": "storage",
-          "dx": 0,
-          "dz": -10,
-          "rot": 0
-        },
-        {
-          "type": "tannery",
-          "dx": 15,
-          "dz": 8,
-          "rot": -2.2
-        },
-        {
-          "type": "armorbench",
-          "dx": 7,
-          "dz": -13,
-          "rot": 0.3
-        }
-      ],
-      "structures": [
-        {
-          "kind": "lighthouse",
-          "dx": -21,
-          "dz": -17,
-          "r": 2.6
-        },
-        {
-          "kind": "house",
-          "dx": -19,
-          "dz": 15,
-          "r": 2.8,
-          "rot": 0.5
-        },
-        {
-          "kind": "house",
-          "dx": 19,
-          "dz": 15,
-          "r": 2.8,
-          "rot": -0.5
-        },
-        {
-          "kind": "house",
-          "dx": 22,
-          "dz": -2,
-          "r": 2.8,
-          "rot": -1.4
-        },
-        {
-          "kind": "board",
-          "dx": 3,
-          "dz": -2,
-          "r": 0.5
-        },
-        {
-          "kind": "campfire",
-          "dx": 0,
-          "dz": 3,
-          "r": 0.7
-        },
-        {
-          "kind": "market",
-          "dx": -6,
-          "dz": -3,
-          "r": 1.5,
-          "rot": 0.6
-        }
-      ]
-    },
+    "settlements": [
+      {
+        "id": "s_lighthouse",
+        "name": "등대 마을",
+        "x": 200,
+        "z": 60,
+        "radius": 30,
+        "stations": [
+          {
+            "type": "forge",
+            "dx": 10,
+            "dz": 3,
+            "rot": -1.2
+          },
+          {
+            "type": "smelter",
+            "dx": 12,
+            "dz": -7,
+            "rot": -1.6
+          },
+          {
+            "type": "sawbench",
+            "dx": -10,
+            "dz": 3,
+            "rot": 1.2
+          },
+          {
+            "type": "workbench",
+            "dx": -12,
+            "dz": -7,
+            "rot": 1.6
+          },
+          {
+            "type": "loom",
+            "dx": -5,
+            "dz": 12,
+            "rot": 2.8
+          },
+          {
+            "type": "kitchen",
+            "dx": 5,
+            "dz": 12,
+            "rot": -2.8
+          },
+          {
+            "type": "storage",
+            "dx": 0,
+            "dz": -10,
+            "rot": 0
+          },
+          {
+            "type": "tannery",
+            "dx": 15,
+            "dz": 8,
+            "rot": -2.2
+          },
+          {
+            "type": "armorbench",
+            "dx": 7,
+            "dz": -13,
+            "rot": 0.3
+          }
+        ],
+        "structures": [
+          {
+            "kind": "lighthouse",
+            "dx": -21,
+            "dz": -17,
+            "r": 2.6
+          },
+          {
+            "kind": "house",
+            "dx": -19,
+            "dz": 15,
+            "r": 2.8,
+            "rot": 0.5
+          },
+          {
+            "kind": "house",
+            "dx": 19,
+            "dz": 15,
+            "r": 2.8,
+            "rot": -0.5
+          },
+          {
+            "kind": "house",
+            "dx": 22,
+            "dz": -2,
+            "r": 2.8,
+            "rot": -1.4
+          },
+          {
+            "kind": "board",
+            "dx": 3,
+            "dz": -2,
+            "r": 0.5
+          },
+          {
+            "kind": "campfire",
+            "dx": 0,
+            "dz": 3,
+            "r": 0.7
+          },
+          {
+            "kind": "market",
+            "dx": -6,
+            "dz": -3,
+            "r": 1.5,
+            "rot": 0.6
+          }
+        ],
+        "pop": 60,
+        "cap": 80
+      },
+      {
+        "id": "s_forest",
+        "name": "숲머리",
+        "x": 196,
+        "z": 234,
+        "radius": 18,
+        "flat": "local",
+        "pop": 10,
+        "cap": 14,
+        "stations": [
+          {
+            "type": "storage",
+            "dx": -1,
+            "dz": -9,
+            "rot": 0
+          },
+          {
+            "type": "kitchen",
+            "dx": 7,
+            "dz": -6,
+            "rot": -2.4
+          },
+          {
+            "type": "tannery",
+            "dx": -10,
+            "dz": 2,
+            "rot": 1.5,
+            "build": "pj_f_tannery"
+          },
+          {
+            "type": "sawbench",
+            "dx": 10,
+            "dz": 3,
+            "rot": -1.5,
+            "build": "pj_f_sawbench"
+          },
+          {
+            "type": "smelter",
+            "dx": 11,
+            "dz": -4,
+            "rot": -1.9,
+            "build": "pj_f_smelter"
+          },
+          {
+            "type": "forge",
+            "dx": 5,
+            "dz": 10,
+            "rot": -2.7,
+            "build": "pj_f_forge"
+          },
+          {
+            "type": "armorbench",
+            "dx": -5,
+            "dz": 10,
+            "rot": 2.7,
+            "build": "pj_f_armorbench"
+          }
+        ],
+        "structures": [
+          {
+            "kind": "market",
+            "dx": -8,
+            "dz": -6,
+            "r": 1.5,
+            "rot": 0.5
+          },
+          {
+            "kind": "board",
+            "dx": 3,
+            "dz": -3,
+            "r": 0.5
+          },
+          {
+            "kind": "campfire",
+            "dx": 0,
+            "dz": 2,
+            "r": 0.7
+          },
+          {
+            "kind": "tent",
+            "dx": -14,
+            "dz": -5,
+            "r": 1.9,
+            "rot": 1.1
+          },
+          {
+            "kind": "tent",
+            "dx": 15,
+            "dz": 9,
+            "r": 1.9,
+            "rot": -2.0
+          },
+          {
+            "kind": "tent",
+            "dx": -13,
+            "dz": 9,
+            "r": 1.9,
+            "rot": 2.3,
+            "build": "pj_f_house1"
+          },
+          {
+            "kind": "tent",
+            "dx": 14,
+            "dz": -11,
+            "r": 1.9,
+            "rot": -0.8,
+            "build": "pj_f_house1"
+          },
+          {
+            "kind": "cabin",
+            "dx": 0,
+            "dz": 14,
+            "r": 2.6,
+            "rot": 3.14,
+            "build": "pj_f_house2"
+          },
+          {
+            "kind": "cabin",
+            "dx": -15,
+            "dz": -14,
+            "r": 2.6,
+            "rot": 0.7,
+            "build": "pj_f_house2"
+          }
+        ]
+      }
+    ],
     "decor": [
       {
         "kind": "wreck",

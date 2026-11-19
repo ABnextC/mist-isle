@@ -11,14 +11,15 @@ import { makeTerrain } from './terrain.js';
 import { createState, populate } from './state.js';
 import { makeCommands } from './commands.js';
 import { serialize, deserialize, hashState } from './save.js';
-import { layoutStatics, buildObstacles } from './world.js';
+import { layoutStatics, buildObstacles, builtSet } from './world.js';
 import { movementTick, actionsTick } from './systems/actions.js';
 import { craftingTick } from './systems/crafting.js';
 import { nodesTick, densityHourly } from './systems/nodes.js';
 import { focusTick } from './systems/focus.js';
 import { dailyVeins } from './systems/veins.js';
 import { econHourly, econDaily } from './systems/economy.js';
-import { expireOrders, townDaily } from './market.js';
+import { expireOrders } from './market.js';
+import { settlementsDaily } from './settlements.js';
 import { dailyOrders } from './orders.js';
 import { mobsTick } from './systems/mobs.js';
 import { combatTick } from './systems/combat.js';
@@ -37,11 +38,16 @@ function makeCtx(state, data, bus) {
     clock: makeClock(data.config),
     rng: makeRng(state.rng),
     terrain,
-    statics: layoutStatics(region, terrain),
+    statics: layoutStatics(region, terrain, builtSet(state)),
     obstacles: null,
     obstaclesDirty: true,
     newId: (p) => `${p}_${state.nextId++}`,
     emit: (type, payload) => bus.emit({ type, t: state.t, ...payload }),
+  };
+  // 마을 사업으로 건물이 서면 정적 배치를 다시 잰다(충돌·화면이 같이 쓴다)
+  ctx.refreshStatics = () => {
+    ctx.statics = layoutStatics(region, terrain, builtSet(state));
+    ctx.obstaclesDirty = true;
   };
   const cmds = makeCommands(ctx);
   ctx.command = cmds.dispatch;
@@ -88,7 +94,7 @@ function wrap(ctx, bus) {
         state.clock.day = d;
         dailyVeins(ctx);
         expireOrders(ctx);
-        townDaily(ctx);
+        settlementsDaily(ctx);
         dailyOrders(ctx);
         econDaily(ctx);
         ctx.emit('day.start', { day: d + 1 });
@@ -102,7 +108,7 @@ function wrap(ctx, bus) {
     data,
     clock: ctx.clock,
     terrain: ctx.terrain,
-    statics: ctx.statics,
+    get statics() { return ctx.statics; },
     tele: bus.tele,
     on: bus.on,
     dispatch: ctx.command,

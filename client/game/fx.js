@@ -204,6 +204,9 @@ export function createFx(scene, { textures, hf, town, terrain, region }) {
   }
 
   function update(dt, t, { night = 0, day = 1, player = null, sunColor = null } = {}) {
+    // 마을 사업으로 굴뚝이 새로 서면(v0.4) 연기 자리도 늘린다
+    const sm = town?.smokes || [];
+    for (let i = emit.length; i < sm.length; i++) emit.push({ p: sm[i], acc: i * 0.37, rate: 1.6 });
     ring.material.opacity = 0.5 + 0.25 * Math.sin(t * 5);
     for (let i = 0; i < N; i++) {
       const p = parts[i];

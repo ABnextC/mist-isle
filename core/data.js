@@ -1,7 +1,7 @@
 // 데이터 정의(JSON)를 색인하고 서로 맞물리는지 검사한다.
 // 브라우저는 fetch로, Node는 fs로 읽은 원본을 넘긴다.
 
-export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures'];
+export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects'];
 
 export function buildData(raw) {
   const problems = [];
@@ -67,10 +67,38 @@ export function buildData(raw) {
       if (fam !== out.family) problems.push(`레시피 ${r.id}: 정제 전후 재료군이 다름 (${fam} → ${out.family})`);
     }
   }
+  const settlements = {};
   for (const g of raw.regions) {
     for (const v of g.veins) if (!nodes[v.node]) problems.push(`지역 ${g.id}: 노드 ${v.node} 없음`);
-    for (const st of g.settlement.stations) if (!stations[st.type]) problems.push(`지역 ${g.id}: 작업대 ${st.type} 없음`);
+    if (!Array.isArray(g.settlements) || !g.settlements.length) problems.push(`지역 ${g.id}: settlements 없음`);
+    for (const sd of g.settlements || []) {
+      if (settlements[sd.id]) problems.push(`정착지 id 중복: ${sd.id}`);
+      settlements[sd.id] = sd;
+      for (const st of sd.stations) if (!stations[st.type]) problems.push(`정착지 ${sd.id}: 작업대 ${st.type} 없음`);
+    }
   }
+  for (const r of raw.recipes) {
+    if (r.stationTier != null && !(r.stationTier >= 1 && r.stationTier <= 3)) problems.push(`레시피 ${r.id}: stationTier ${r.stationTier}`);
+  }
+  // 마을 사업(v0.4)
+  const projectList = raw.projects || [];
+  const projects = index(projectList, '마을 사업');
+  for (const p of projectList) {
+    const sd = settlements[p.at];
+    if (!sd) problems.push(`사업 ${p.id}: 정착지 ${p.at} 없음`);
+    for (const it of Object.keys(p.needs || {})) if (!items[it]) problems.push(`사업 ${p.id}: 물자 ${it} 없음`);
+    for (const a of p.after || []) if (!projects[a]) problems.push(`사업 ${p.id}: 앞 사업 ${a} 없음`);
+    const e = p.effect || {};
+    if (e.build && sd && !sd.stations.some((st) => st.type === e.build && st.build === p.id)) problems.push(`사업 ${p.id}: ${p.at}에 지을 ${e.build} 자리 없음`);
+    if (e.upgrade && sd && !sd.stations.some((st) => st.type === e.upgrade && !st.build)) problems.push(`사업 ${p.id}: 고칠 ${e.upgrade} 없음`);
+    if (!e.build && !e.upgrade && !e.cap) problems.push(`사업 ${p.id}: 효과 없음`);
+  }
+  for (const t of config.orders.templates) {
+    if (!items[t.item]) problems.push(`의뢰 틀: 아이템 ${t.item} 없음`);
+    if (t.at && !settlements[t.at]) problems.push(`의뢰 틀 ${t.item}: 정착지 ${t.at} 없음`);
+  }
+  for (const a of config.econ.agents) if (a.home && !settlements[a.home]) problems.push(`AI ${a.id}: 사는 마을 ${a.home} 없음`);
+  for (const sid of Object.keys(config.town.demand)) if (!settlements[sid]) problems.push(`수요: 정착지 ${sid} 없음`);
   // AI 성향: "extends"로 기본형을 물려받는다 (페르소나는 기본형 위에 성향 값만 얹는다)
   const agents = {};
   const resolveAgent = (id, seen = new Set()) => {
@@ -118,7 +146,10 @@ export function buildData(raw) {
     regions,
     agents,
     creatures,
+    projects,
+    settlements,
     lists: {
+      projects: projectList,
       creatures: raw.creatures || [],
       items: raw.items,
       skills: raw.skills.list,

@@ -2,11 +2,13 @@
 // 버튼은 data-act로 main.js에 넘긴다. HUD는 상태를 직접 고치지 않는다.
 
 import { ERR, fmtProps, fmtStats, stars, itemName, entryStar, describeEvent } from '../../core/text.js';
-import { tradable, refPrice, npcPrice, bestBid, repairCost, entryStar as marketStar } from '../../core/market.js';
+import { tradable, refPrice, npcPrice, bestBid, repairCost, entryStar as marketStar, bookOf, ordersOf, baseValue } from '../../core/market.js';
 import { countDeliverable } from '../../core/orders.js';
 import { xpProgress, starOf } from '../../core/formulas.js';
 import { keyOf, effectiveProps, avgProps, countItem, qtyOf } from '../../core/inventory.js';
-import { settlementAt } from '../../core/world.js';
+import { settlementAt, storeOf, standingTier } from '../../core/world.js';
+import { openProjects, projectOpen, needLeft, silverLeft, projectProgress, shipFee, upkeepOf } from '../../core/settlements.js';
+import { zoneAt } from '../../core/terrain.js';
 import { ENGINE_VERSION } from '../../core/state.js';
 
 const PID = 'p1';
@@ -48,7 +50,7 @@ export function createHud(root, game, { touch, onAct }) {
       <div class="prompt" data-k="prompt"></div>
       <div class="vitals" data-k="vitals"><div class="hp"><span data-k="hpbar"></span><em data-k="hp"></em></div><div class="st"><span data-k="stbar"></span></div></div>
       <div class="dock">
-        <button data-act="recall" data-k="recall" title="등대로 귀환 (H)">🏠<small>귀환</small></button>
+        <button data-act="recall" data-k="recall" title="귀환 지점으로 귀환 (H)">🏠<small>귀환</small></button>
         <button data-act="bag" title="가방 (I)">🎒<small>가방</small></button>
         <button data-act="craft" title="제작 (C)">🔨<small>제작</small></button>
         <button data-act="skills" title="스킬 (K)">📈<small>스킬</small></button>
@@ -189,13 +191,28 @@ export function createHud(root, game, { touch, onAct }) {
     } else if (ev.type === 'order.delivered' && ev.owner === PID) {
       toast(`📋 주문 납품 ${itemName(data, ev.item)} ${ev.qty}개 · +${ev.pay}은화${ev.done ? ' · 주문 끝' : ''}`, 'good');
     } else if (ev.type === 'recall.done') {
-      toast('🏠 등대 마을 창고 앞으로 돌아왔다', 'good');
+      toast(`🏠 ${game.state.settlements[ev.settlement]?.name ?? '마을'} 창고 앞으로 돌아왔다`, 'good');
+    } else if (ev.type === 'ship') {
+      pushFeed(`🚚 ${townName(ev.to)}(으)로 ${ev.qty}개 · 운송비 ${ev.fee}`);
+    } else if (ev.type === 'home.set') {
+      toast(`🏠 귀환 지점을 ${townName(ev.at)}(으)로 정했다`, 'good');
+    } else if (ev.type === 'project.contrib' && ev.owner === PID) {
+      pushFeed(`🏗️ ${data.projects[ev.project].name} · 명성 +${Math.round(ev.points)}`);
+    } else if (ev.type === 'project.done') {
+      banner(`🎉 ${townName(ev.at)} 「${data.projects[ev.project].name}」 완성`);
+    } else if (ev.type === 'settle.pop') {
+      pushFeed(`${ev.pop > ev.from ? '🏘️' : '🏚️'} ${townName(ev.at)} 인구 ${ev.from} → ${ev.pop}`);
+    } else if (ev.type === 'station.down') {
+      toast(`⚠️ ${townName(ev.at)} ${data.stations[ev.station].name}: 유지비가 밀려 1단계로 일한다`, 'warn');
     }
   });
 
+  const townName = (sid) => game.state.settlements[sid]?.name ?? sid;
+  const allStores = (a) => Object.values(a.storages || {});
+
   // ── 개척 일지(첫 목표) ───────────────────────────────
   function quest(a) {
-    const lists = [a.bag, a.storage];
+    const lists = [a.bag, ...allStores(a)];
     const c = (id) => countItem(lists, id);
     const m = a.milestones;
     const steps = [
@@ -205,7 +222,9 @@ export function createHud(root, game, { touch, onAct }) {
       { done: m.tool_t1 != null, text: '대장간에서 구리 도구 만들기 (대장 4)' },
       { done: a.stats.eat > 0, text: '조리대에서 음식을 만들어 먹기 — 먹으면 한동안 채집량이 는다' },
       { done: (a.stats.orders || 0) > 0, text: '마을 게시판의 주문을 하나 채워 은화 받기' },
-      { done: Object.values(game.state.veins).some((v) => !v.common && a.storage.concat(a.bag).some((e) => e.lot === v.lot)), text: '게시판의 산지 소문을 따라가 좋은 재료 캐기' },
+      { done: Object.values(game.state.veins).some((v) => !v.common && lists.flat().some((e) => e.lot === v.lot)), text: '게시판의 산지 소문을 따라가 좋은 재료 캐기' },
+      { done: Object.keys(a.standing || {}).length > 0, text: '마을 게시판 ‘마을’ 탭에서 마을 사업에 물자나 은화를 내 보기' },
+      { done: Object.keys(a.storages || {}).some((sid) => sid !== Object.keys(game.state.settlements)[0] && a.storages[sid].length), text: '숲 가장자리의 숲머리에 가서 창고를 써 보기(북쪽 길 끝)' },
     ];
     const next = steps.find((s) => !s.done);
     return next ? `📜 ${next.text}` : '';
@@ -232,12 +251,13 @@ export function createHud(root, game, { touch, onAct }) {
       el.vitals.classList.toggle('low', a.cb.hp < a.cb.maxHp * 0.3);
       const down = a.cb.downUntil > 0;
       el.downed.classList.toggle('on', down);
-      if (down) set(el.downed, `쓰러졌다 — ${Math.max(0, Math.ceil(a.cb.downUntil - game.state.t))}초 뒤 등대 마을에서 일어난다`);
+      if (down) set(el.downed, `쓰러졌다 — ${Math.max(0, Math.ceil(a.cb.downUntil - game.state.t))}초 뒤 가까운 마을에서 일어난다`);
     }
     set(el.buffs, a.buffs.map((b) => `🍽️ 채집량 +${Math.round(b.value * 100)}% · ${Math.ceil((b.endsAt - game.state.t) / 60)}분`).join('  '));
     set(el.quest, quest(a));
     const town = settlementAt({ state: game.state }, a);
-    set(el.where, town ? `🏘️ ${town.name}` : '🌫️ 난파 해안');
+    const zone = zoneAt(data.lists.regions[0], a.x, a.z);
+    set(el.where, town ? `🏘️ ${town.name}${a.home === town.id ? ' 🏠' : ''}` : zone ? `🌲 ${zone.name}` : '🌫️ 난파 해안');
 
     // 채집 진행 막대
     if (a.action) {
@@ -257,7 +277,7 @@ export function createHud(root, game, { touch, onAct }) {
     let prompt = '';
     let ok = false;
     if (a.ai?.on) prompt = '🤖 봇이 대신 움직이는 중 — 움직이면 돌아온다';
-    else if (a.action?.type === 'recall') prompt = '🏠 등대로 귀환하는 중… 움직이면 취소된다';
+    else if (a.action?.type === 'recall') prompt = `🏠 ${townName(a.home)}(으)로 귀환하는 중… 움직이면 취소된다`;
     else if (target) {
       ok = !target.why && !target.idle;
       const key = touch ? '' : '[E] ';
@@ -282,11 +302,13 @@ export function createHud(root, game, { touch, onAct }) {
   function open(kind, opts = {}) {
     panel = { kind, ...opts };
     panelEl.hidden = false;
+    root.classList.add('panel-open');
     renderPanel(true);
   }
   function close() {
     panel = null;
     panelEl.hidden = true;
+    root.classList.remove('panel-open');
   }
   function toggle(kind, opts) {
     if (panel && panel.kind === kind && panel.station === opts?.station) close();
@@ -342,13 +364,30 @@ export function createHud(root, game, { touch, onAct }) {
       return entryRow(e, act);
     }).join('') || '<li><small>비어 있다</small></li>';
     let html = `${equipHtml(a)}<h3>가방 ${a.bag.length}/${data.config.bag.slots}칸</h3><ul class="list">${rows}</ul>`;
+    const ctx = mctx();
+    const others = Object.values(game.state.settlements).filter((s) => !town || s.id !== town.id);
     if (town) {
-      const srows = sortEntries(a.storage).map((e) => entryRow(e, `<button data-act="take" data-v="${esc(keyOf(e))}">꺼내기</button>`)).join('') || '<li><small>비어 있다</small></li>';
-      html += `<h3>${town.name} 창고 <button class="mini" data-act="store-all">재료 전부 넣기</button></h3><ul class="list">${srows}</ul>
-        <p class="muted">마을 작업대에서 만들 때는 창고 재료도 함께 쓴다.</p>`;
+      const store = storeOf(a, town.id);
+      const to = others[0];
+      const srows = sortEntries(store).map((e) => {
+        const fee = to ? shipFee(ctx, a, town.id, [{ item: e.item, star: marketStar(ctx, e), uid: e.uid, qty: qtyOf(e) }]) : 0;
+        const ship = to ? `<button class="mini" data-act="ship" data-v="${to.id}>${esc(keyOf(e))}" ${a.silver >= fee ? '' : 'disabled'} title="${esc(to.name)} 창고로 보낸다">🚚 ${fee}</button>` : '';
+        return entryRow(e, `<button data-act="take" data-v="${esc(keyOf(e))}">꺼내기</button>${ship}`);
+      }).join('') || '<li><small>비어 있다</small></li>';
+      const mats = store.filter((e) => !e.uid && data.items[e.item].kind === 'material');
+      const allFee = to && mats.length ? shipFee(ctx, a, town.id, mats.map((e) => ({ item: e.item, star: marketStar(ctx, e), qty: e.qty }))) : 0;
+      html += `<h3>${town.name} 창고 <button class="mini" data-act="store-all">재료 전부 넣기</button>${to && mats.length ? ` <button class="mini" data-act="ship-all" data-v="${to.id}" ${a.silver >= allFee ? '' : 'disabled'}>재료 모두 ${esc(to.name)}로 🚚 ${allFee}</button>` : ''}</h3><ul class="list">${srows}</ul>
+        <p class="muted">창고는 마을마다 따로다. 작업대에서 만들 때는 그 마을 창고 재료를 함께 쓴다. 🚚는 다른 마을 창고로 바로 보내기(운송비 ${Math.round(standingTier(ctx, a, town.id).ship * 100 * 10) / 10}%, 은화는 사라진다).</p>
+        ${a.home === town.id ? `<p class="muted">🏠 여기가 귀환 지점이다.</p>` : `<div class="row"><button data-act="set-home">🏠 ${town.name}을(를) 귀환 지점으로</button></div>`}`;
     } else {
-      html += '<p class="muted">창고는 등대 마을 안에서 열린다.</p>';
+      html += '<p class="muted">창고는 마을 안에서 열린다.</p>';
     }
+    const far = others.map((s) => {
+      const st = storeOf(a, s.id);
+      const n = st.reduce((x, e) => x + qtyOf(e), 0);
+      return n ? `${s.name} 창고 ${st.length}묶음 ${n}개` : '';
+    }).filter(Boolean);
+    if (far.length) html += `<p class="muted">📦 ${far.join(' · ')} — 그 마을에 가야 꺼낼 수 있다.</p>`;
     return html;
   }
 
@@ -358,7 +397,7 @@ export function createHud(root, game, { touch, onAct }) {
 
   function craftHtml(a, station) {
     const town = settlementAt({ state: game.state }, a);
-    const pools = town ? [a.bag, a.storage] : [a.bag];
+    const pools = town ? [a.bag, storeOf(a, town.id)] : [a.bag];
     const recipes = data.lists.recipes.filter((r) => r.station === station);
     const queue = a.queue.map((j, i) => {
       const r = data.recipes[j.recipe];
@@ -398,9 +437,11 @@ export function createHud(root, game, { touch, onAct }) {
       }).join('');
       if (rr) repair = `<h3>수리</h3><ul class="list">${rr}</ul><p class="muted">고칠 때마다 최대 내구가 ${data.config.repair.maxLoss * 100}%씩 준다. 고친 도구는 주문에 낼 수 없다.</p>`;
     }
+    const live = town?.stations.find((x) => x.type === station);
+    const tierNote = live ? `<p class="muted">${town.name} ${data.stations[station].name} ${live.tier}단계${(live.base ?? live.tier) > live.tier ? ' — 유지비가 밀려 1단계로 일한다' : ''}. 철·참나무를 다루는 제작은 2단계 작업대가 있어야 한다.</p>` : '';
     const note = station === 'hand'
-      ? '<p class="muted">작업대가 필요한 제작은 등대 마을의 각 작업대 앞에서 E로 연다.</p>'
-      : '<p class="muted">재료는 ‘최고 품질’부터 자동으로 고른다. 대기열을 걸어 두고 채집하러 가도 된다.</p>';
+      ? '<p class="muted">작업대가 필요한 제작은 마을의 각 작업대 앞에서 E로 연다.</p>'
+      : `${tierNote}<p class="muted">재료는 ‘최고 품질’부터 자동으로 고른다. 대기열을 걸어 두고 채집하러 가도 된다.</p>`;
     return `${queue ? `<h3>대기열 ${a.queue.length}/${data.config.craft.queueMax}</h3><ul class="list">${queue}</ul>` : ''}${repair}<ul class="list">${rows}</ul>${note}`;
   }
 
@@ -435,17 +476,21 @@ export function createHud(root, game, { touch, onAct }) {
     const ctx = mctx();
     const town = settlementAt({ state: game.state }, a);
     const day = game.clock.day(game.state.t);
-    const rows = game.state.orders.filter((o) => o.left > 0).map((o) => {
+    const lists = town ? [a.bag, storeOf(a, town.id)] : [a.bag];
+    const here = (o) => !town || (o.at || Object.keys(game.state.settlements)[0]) === town.id;
+    const elsewhere = game.state.orders.filter((o) => o.left > 0 && !here(o));
+    const rows = game.state.orders.filter((o) => o.left > 0 && here(o)).map((o) => {
       const def = data.items[o.item];
-      const have = countDeliverable(ctx, [a.bag, a.storage], o);
+      const have = countDeliverable(ctx, lists, o);
       const cond = [o.minStar ? `★${o.minStar} 이상` : '', def.tool ? '내구도 95% 이상' : ''].filter(Boolean).join(' · ');
       const fresh = day - o.postedDay < data.config.orders.agentDelayDays ? ' · 오늘 붙음' : '';
       return `<li><div><b>${def.icon || ''} ${def.name}</b> ×${o.left}<small>개당 <b class="ok">${o.reward}은화</b>${cond ? ` · ${cond}` : ''} · ${o.expiresDay + 1}일차 아침까지${fresh}</small>
         <small class="${have ? 'ok' : ''}">${have ? `넘길 수 있는 것 ${Math.min(have, o.left)}개 → ${Math.min(have, o.left) * o.reward}은화` : '조건에 맞는 물건이 없다'}</small></div>
         <button data-act="ord-deliver" data-v="${o.id}" ${have && town ? '' : 'disabled'}>넘기기</button></li>`;
     }).join('');
-    return `<ul class="list">${rows || '<li><small>지금 붙은 주문이 없다. 아침마다 새로 붙는다.</small></li>'}</ul>
-      <p class="muted">마을 창고와 가방에서 조건에 맞는 것부터 넘긴다(별이 낮은 것부터). AI 개척민은 하루 지난 주문부터 남은 양의 절반까지 채운다.</p>`;
+    const other = elsewhere.length ? `<p class="muted">다른 마을 게시판: ${[...new Set(elsewhere.map((o) => townName(o.at)))].map((n) => `${n} ${elsewhere.filter((o) => townName(o.at) === n).map((o) => itemName(data, o.item)).join('·')}`).join(' / ')}</p>` : '';
+    return `<ul class="list">${rows || '<li><small>지금 붙은 주문이 없다. 아침마다 새로 붙는다.</small></li>'}</ul>${other}
+      <p class="muted">이 마을 창고와 가방에서 조건에 맞는 것부터 넘긴다(별이 낮은 것부터). AI 개척민은 하루 지난 주문부터 남은 양의 절반까지 채운다.</p>`;
   }
 
   function veinsHtml(a) {
@@ -462,15 +507,77 @@ export function createHud(root, game, { touch, onAct }) {
     return `<p class="muted">영맥이 옮겨 가면 산지도 바뀐다. 미니맵의 점선 고리가 소문난 자리다.</p><ul class="list">${rows}</ul>`;
   }
 
+  // 마을(v0.4): 인구·번영도·작업대·마을 사업·내 명성
+  function townHtml(a) {
+    const ctx = mctx();
+    const town = settlementAt({ state: game.state }, a) || game.state.settlements[a.home];
+    const inTown = !!settlementAt({ state: game.state }, a);
+    const sdef = data.settlements[town.id];
+    const tier = standingTier(ctx, a, town.id);
+    const pts = Math.round(a.standing?.[town.id] || 0);
+    const next = data.config.settle.standing.find((t) => t.min > pts);
+    const d = town.demand;
+    const head = `<div class="town">
+      <div><b>${esc(town.name)}</b> · 인구 <b>${town.pop}</b>/${town.cap} · ${d.fill == null ? '수요 집계는 내일 아침부터' : `어제 수요 ${Math.round(d.fill * 100)}% 채움`}</div>
+      <div class="bar wide"><span style="width:${Math.round(town.prosperity)}%"></span></div>
+      <small class="muted">번영 ${Math.round(town.prosperity)} — ${data.config.settle.prosper.grow} 넘으면 인구가 늘고, ${data.config.settle.prosper.shrink} 밑이면 준다. 수요를 채울수록(거래소에 팔수록) 오른다.</small>
+      <div>내 명성 <b>${pts.toLocaleString('ko-KR')}</b> · ${tier.name} (판매세 ${Math.round(tier.tax * 1000) / 10}% · 수수료 ${Math.round(tier.fee * 1000) / 10}% · 운송비 ${Math.round(tier.ship * 1000) / 10}%)${next ? ` · ${next.name}까지 ${(next.min - pts).toLocaleString('ko-KR')}` : ''}</div>
+    </div>`;
+    const stations = town.stations.filter((st) => st.type !== 'storage').map((st) => {
+      const up = upkeepOf(ctx, town.id, st.type);
+      const late = (st.base ?? st.tier) > st.tier;
+      const upk = (st.base ?? st.tier) >= 2 && Object.keys(up).length ? ` · 하루 유지비 ${Object.entries(up).map(([it, q]) => `${itemName(data, it)} ${q}`).join('·')}` : '';
+      return `<span class="chip ${st.tier >= 2 ? 'ok' : ''}${late ? ' no' : ''}">${data.stations[st.type].icon} ${data.stations[st.type].name} ${st.tier}단계${late ? '(정비 불량)' : ''}${upk}</span>`;
+    }).join(' ');
+    const lists = inTown ? [a.bag, storeOf(a, town.id)] : [a.bag];
+    const projects = data.lists.projects.filter((p) => p.at === town.id);
+    const rows = projects.map((def) => {
+      const p = game.state.projects[def.id];
+      if (!p) return '';
+      const open = projectOpen(ctx, def.id);
+      const pct = Math.round(projectProgress(ctx, def.id) * 100);
+      const eff = def.effect.build ? `${data.stations[def.effect.build].name} ${def.effect.tier}단계를 짓는다`
+        : def.effect.upgrade ? `${data.stations[def.effect.upgrade].name}을(를) ${def.effect.tier}단계로` : `인구 상한 +${def.effect.cap}`;
+      if (p.done) return `<li class="done"><div><b>✅ ${esc(def.name)}</b> <small>${eff} · ${p.doneDay + 1}일차에 끝남</small></div></li>`;
+      if (!open) {
+        const need = (def.after || []).filter((id) => !game.state.projects[id]?.done).map((id) => data.projects[id].name).join(', ');
+        return `<li class="locked"><div><b>🔒 ${esc(def.name)}</b> <small>${eff} · 먼저: ${esc(need)}</small></div></li>`;
+      }
+      const needs = Object.entries(def.needs).map(([item, q]) => {
+        const got = Math.min(q, p.got[item] || 0);
+        const left = needLeft(ctx, def.id, item);
+        const mine = lists.flat().filter((e) => !e.uid && e.item === item).sort((x, y) => marketStar(ctx, x) - marketStar(ctx, y));
+        const have = mine.reduce((x, e) => x + e.qty, 0);
+        const btn = left > 0 && have > 0 && inTown ? `<button class="mini" data-act="contrib" data-v="${def.id}>${esc(keyOf(mine[0]))}">내기 ${Math.min(left, mine[0].qty)}</button>` : '';
+        return `<div class="need ${left <= 0 ? 'ok' : ''}"><span>${itemName(data, item)} ${got}/${q}${left > 0 && have ? ` <small>(가진 것 ${have})</small>` : ''}</span>${btn}</div>`;
+      }).join('');
+      const sLeft = silverLeft(ctx, def.id);
+      const sBtns = sLeft > 0 && inTown ? [100, 500].filter((v) => v < sLeft).map((v) => `<button class="mini" data-act="contrib-silver" data-v="${def.id}" data-n="${v}" ${a.silver >= v ? '' : 'disabled'}>${v}</button>`).join('')
+        + `<button class="mini" data-act="contrib-silver" data-v="${def.id}" data-n="${Math.min(sLeft, Math.floor(a.silver))}" ${a.silver >= 1 ? '' : 'disabled'}>${a.silver >= sLeft ? `남은 ${sLeft} 다` : `가진 ${Math.floor(a.silver)} 다`}</button>` : '';
+      return `<li class="pj"><div><b>🏗️ ${esc(def.name)}</b> <small>${eff} · ${esc(def.desc)}</small>
+        <div class="bar wide"><span style="width:${pct}%"></span></div>
+        ${needs}<div class="need ${sLeft <= 0 ? 'ok' : ''}"><span>🪙 은화 ${Math.min(def.silver, p.silver).toLocaleString('ko-KR')}/${def.silver.toLocaleString('ko-KR')}</span><span class="btns">${sBtns}</span></div></div></li>`;
+    }).join('');
+    const away = inTown ? '' : `<p class="muted">마을 밖이다. 사업에 내려면 ${esc(town.name)}에 가야 한다.</p>`;
+    const home = inTown && a.home !== town.id ? '<div class="row"><button data-act="set-home">🏠 여기를 귀환 지점으로</button></div>' : '';
+    return `${head}<div class="chips">${stations}</div>${away}<h3>마을 사업</h3><ul class="list">${rows}</ul>
+      <p class="muted">물자와 은화가 다 모이면 바로 효과가 난다. 낸 것은 돌아오지 않는다. 낸 값(물자는 ★2 기본값)만큼 이 마을 명성이 쌓여 판매세·수수료·운송비가 준다. AI 개척민도 날마다 조금씩 낸다.</p>${home}
+      <p class="muted">${esc(sdef?.name || '')}</p>`;
+  }
+
   function boardHtml(a) {
     const tab = panel.tab || 'orders';
-    return tabsHtml([['orders', '주문'], ['veins', '산지 소문']], tab) + (tab === 'orders' ? ordersHtml(a) : veinsHtml(a));
+    const body = tab === 'orders' ? ordersHtml(a) : tab === 'town' ? townHtml(a) : veinsHtml(a);
+    return tabsHtml([['orders', '주문'], ['town', '마을'], ['veins', '산지 소문']], tab) + body;
   }
 
   // ── 거래소 ─────────────────────────────────────────
+  const hereId = (a) => settlementAt({ state: game.state }, a)?.id ?? null;
   function lowestAsk(item, star) {
+    const at = hereId(game.state.actors[PID]);
+    if (!at) return null;
     let low = null;
-    for (const o of game.state.market.asks) {
+    for (const o of bookOf(mctx(), at).asks) {
       if (o.item !== item || o.star !== star || (o.kind === 'actor' && o.owner === PID)) continue;
       if (!low || o.price < low.price) low = o;
     }
@@ -479,8 +586,9 @@ export function createHud(root, game, { touch, onAct }) {
 
   function sellHtml(a) {
     const ctx = mctx();
+    const at = hereId(a);
     const merged = new Map();
-    for (const e of [...a.bag, ...a.storage]) {
+    for (const e of [...a.bag, ...storeOf(a, at)]) {
       if (!tradable(ctx, e)) continue;
       const k = keyOf(e);
       if (merged.has(k)) merged.get(k).qty += e.qty;
@@ -490,19 +598,21 @@ export function createHud(root, game, { touch, onAct }) {
       const def = data.items[e.item];
       const st = marketStar(ctx, e);
       const key = keyOf(e);
-      const ref = Math.max(1, Math.round(refPrice(ctx, e.item, st)));
-      const bid = bestBid(ctx, e.item, st);
+      const ref = Math.max(1, Math.round(refPrice(ctx, at, e.item, st)));
+      const bid = bestBid(ctx, at, e.item, st);
       const low = lowestAsk(e.item, st);
+      // 다른 마을 시세(운송 차익을 가늠하게)
+      const elsewhere = Object.keys(game.state.settlements).filter((sid) => sid !== at).map((sid) => `${townName(sid)} ${Math.round(refPrice(ctx, sid, e.item, st))}`).join(' · ');
       const npc = npcPrice(ctx, e.item, st);
       const suggest = low ? Math.max(1, Math.min(ref, low.price - 1)) : ref;
       const price = prices[key] ?? suggest;
       const lot = e.lot ? game.state.lots[e.lot] : null;
       return `<li class="mk"><div><b>${def.icon || ''} ${def.name}</b> ×${e.qty} <span class="stars">${stars(st)}</span>
-        <small>${lot ? `${esc(lot.name)} · ` : ''}시세 ${ref} · 사자 ${bid ? `${bid.price}(${bid.qty}개)` : '없음'} · 팔자 최저 ${low ? low.price : '없음'}</small></div>
+        <small>${lot ? `${esc(lot.name)} · ` : ''}시세 ${ref} · 사자 ${bid ? `${bid.price}(${bid.qty}개)` : '없음'} · 팔자 최저 ${low ? low.price : '없음'}${elsewhere ? ` · ${elsewhere}` : ''}</small></div>
         <div class="btns">
           ${bid ? `<button data-act="mk-sell" data-v="${esc(key)}" data-n="${bid.price}">바로 팔기 ${bid.price}</button>` : ''}
           <div class="step"><button data-act="ui-price" data-v="${esc(key)}" data-cur="${price}" data-n="-1">−</button><b>${price}</b><button data-act="ui-price" data-v="${esc(key)}" data-cur="${price}" data-n="1">+</button></div>
-          <button data-act="mk-list" data-v="${esc(key)}" data-n="${price}">내놓기 (수수료 ${Math.round(e.qty * price * data.config.market.listingFee)})</button>
+          <button data-act="mk-list" data-v="${esc(key)}" data-n="${price}">내놓기 (수수료 ${Math.round(e.qty * price * standingTier(ctx, a, at).fee)})</button>
           <button class="mini" data-act="mk-dump" data-v="${esc(key)}">상인에게 ${npc * e.qty}</button>
         </div></li>`;
     }).join('');
@@ -514,8 +624,9 @@ export function createHud(root, game, { touch, onAct }) {
 
   function buyHtml(a) {
     const ctx = mctx();
+    const at = hereId(a);
     const groups = new Map();
-    for (const o of game.state.market.asks) {
+    for (const o of bookOf(ctx, at).asks) {
       if (o.kind === 'actor' && o.owner === PID) continue;
       const k = o.item + '|' + o.star;
       const g = groups.get(k) || { item: o.item, star: o.star, qty: 0, best: Infinity };
@@ -526,7 +637,7 @@ export function createHud(root, game, { touch, onAct }) {
     const order = new Map(data.lists.items.map((it, i) => [it.id, i]));
     const rows = [...groups.values()].sort((x, y) => (order.get(x.item) - order.get(y.item)) || y.star - x.star).map((g) => {
       const def = data.items[g.item];
-      const ref = Math.max(1, Math.round(refPrice(ctx, g.item, g.star)));
+      const ref = Math.max(1, Math.round(refPrice(ctx, at, g.item, g.star)));
       const btn = (n) => {
         const q = Math.min(n, g.qty);
         return `<button data-act="mk-buy" data-v="${g.item}|${g.star}" data-n="${q}" ${a.silver >= q * g.best ? '' : 'disabled'}>${n >= g.qty ? '다' : `${q}개`}</button>`;
@@ -536,8 +647,8 @@ export function createHud(root, game, { touch, onAct }) {
         <div class="btns row">${btn(1)}${g.qty > 5 ? btn(10) : ''}${btn(g.qty)}</div></li>`;
     }).join('');
     const wants = data.lists.items.filter((it) => (it.kind === 'material' || it.kind === 'consumable') && it.value).map((it) => {
-      const p2 = Math.max(1, Math.round(refPrice(ctx, it.id, 2)));
-      const p3 = Math.max(1, Math.round(refPrice(ctx, it.id, 3)));
+      const p2 = Math.max(1, Math.round(refPrice(ctx, at, it.id, 2)));
+      const p3 = Math.max(1, Math.round(refPrice(ctx, at, it.id, 3)));
       return `<li><div><b>${it.icon || ''} ${it.name}</b><small>시세 ★2 ${p2} · ★3 ${p3}</small></div>
         <div class="btns row"><button class="mini" data-act="mk-bid" data-v="${it.id}|0" data-n="${p2}">10개 사자</button><button class="mini" data-act="mk-bid" data-v="${it.id}|3" data-n="${p3}">★3+ 5개</button></div></li>`;
     }).join('');
@@ -547,26 +658,27 @@ export function createHud(root, game, { touch, onAct }) {
   }
 
   function mineHtml(a) {
-    const rows = [...game.state.market.asks, ...game.state.market.bids].filter((o) => o.kind === 'actor' && o.owner === PID).map((o) => {
+    const rows = ordersOf(mctx(), PID, 'actor').map((o) => {
       const def = data.items[o.item];
       const side = o.entry ? '팔자' : '사자';
       const st = o.entry ? stars(o.star) : (o.minStar ? `★${o.minStar} 이상` : '');
-      return `<li><div><b>${side} · ${def.icon || ''} ${def.name}</b> <span class="stars">${st}</span><small>${o.qty}개 · 개당 ${o.price}은화 · ${o.expiresDay + 1}일차 아침에 내려감</small></div>
+      return `<li><div><b>${side} · ${def.icon || ''} ${def.name}</b> <span class="stars">${st}</span><small>${townName(o.at)} · ${o.qty}개 · 개당 ${o.price}은화 · ${o.expiresDay + 1}일차 아침에 내려감</small></div>
         <button data-act="mk-cancel" data-v="${o.id}">거두기</button></li>`;
     }).join('');
     const sold = game.tele.log.filter((ev) => ev.type === 'market.trade' && (ev.seller === PID || ev.buyer === PID)).slice(-8).reverse()
       .map((ev) => `<li><small>${ev.seller === PID ? '팔림' : '삼'} · ${itemName(data, ev.item)} ${ev.qty}개 · 개당 ${ev.price}</small></li>`).join('');
     return `<ul class="list">${rows || '<li><small>걸어 둔 주문이 없다.</small></li>'}</ul>
-      <p class="muted">주문은 ${data.config.market.maxOrdersPerOwner}개까지 걸 수 있다. 거두면 물건·은화를 돌려받는다(수수료는 돌려받지 못한다).</p>
+      <p class="muted">주문은 모든 마을을 합쳐 ${data.config.market.maxOrdersPerOwner}개까지 걸 수 있다. 거두면 물건은 주문을 건 마을 창고로, 은화는 지갑으로 돌아온다(수수료는 돌려받지 못한다).</p>
       ${sold ? `<h3>최근 거래</h3><ul class="list log">${sold}</ul>` : ''}`;
   }
 
   function marketHtml(a) {
     const town = settlementAt({ state: game.state }, a);
-    if (!town) return '<p class="muted">거래소는 등대 마을 안에서 열린다.</p>';
+    if (!town) return '<p class="muted">거래소는 마을 안에서 열린다.</p>';
     const tab = panel.tab || 'sell';
-    const escrow = game.state.market.bids.filter((o) => o.kind === 'actor' && o.owner === PID).reduce((x, o) => x + o.escrow, 0);
-    const head = `<p class="muted">🪙 ${Math.floor(a.silver).toLocaleString('ko-KR')}은화${escrow ? ` · 맡긴 은화 ${escrow}` : ''} · 내놓을 때 수수료 ${data.config.market.listingFee * 100}% · 팔릴 때 판매세 ${data.config.market.salesTax * 100}% · 산 물건은 마을 창고로 간다.</p>`;
+    const escrow = ordersOf(mctx(), PID, 'actor').filter((o) => o.escrow != null).reduce((x, o) => x + o.escrow, 0);
+    const tier = standingTier(mctx(), a, town.id);
+    const head = `<p class="muted">🪙 ${Math.floor(a.silver).toLocaleString('ko-KR')}은화${escrow ? ` · 맡긴 은화 ${escrow}` : ''} · ${town.name} 거래소(마을마다 따로) · 수수료 ${Math.round(tier.fee * 1000) / 10}% · 판매세 ${Math.round(tier.tax * 1000) / 10}%(${tier.name}) · 산 물건은 ${town.name} 창고로 간다.</p>`;
     const body = tab === 'buy' ? buyHtml(a) : tab === 'mine' ? mineHtml(a) : sellHtml(a);
     return tabsHtml([['sell', '팔기'], ['buy', '사기'], ['mine', '내 주문']], tab) + head + body;
   }
@@ -605,8 +717,15 @@ export function createHud(root, game, { touch, onAct }) {
       html = craftHtml(a, panel.station);
     } else if (panel.kind === 'skills') html = skillsHtml(a);
     else if (panel.kind === 'log') html = logHtml();
-    else if (panel.kind === 'board') html = boardHtml(a);
-    else if (panel.kind === 'market') html = marketHtml(a);
+    else if (panel.kind === 'board') {
+      const town = settlementAt({ state: game.state }, a);
+      title = `📋 ${town ? town.name : '마을'} 게시판`;
+      html = boardHtml(a);
+    } else if (panel.kind === 'market') {
+      const town = settlementAt({ state: game.state }, a);
+      title = `⚖️ ${town ? town.name + ' ' : ''}거래소`;
+      html = marketHtml(a);
+    }
     else if (panel.kind === 'menu') html = menuHtml(a);
     set(el.ptitle, title);
     setHtml(el.pbody, html);

@@ -2,6 +2,7 @@
 // 모든 판정은 코어가 30Hz로 한다. 화면은 이벤트(combat.*)를 보고 연출만 한다.
 
 import { hurtMob } from './mobs.js';
+import { nearestSettlement } from '../world.js';
 
 const DEG = Math.PI / 180;
 const r2 = (v) => Math.round(v * 100) / 100;
@@ -226,9 +227,10 @@ function down(ctx, a, mob) {
   ctx.emit('actor.down', { actor: a.id, mob: mob?.id ?? null, species: mob?.type ?? null, x: a.x, z: a.z });
 }
 
+// 가장 가까운 마을 창고 앞에서 일어난다(v0.4)
 function getUp(ctx, a) {
   const cb = a.cb;
-  const s = Object.values(ctx.state.settlements)[0];
+  const s = nearestSettlement(ctx, a);
   const storage = s.stations.find((st) => st.type === 'storage') || s;
   a.x = Math.round((storage.x + 2.2) * 1000) / 1000;
   a.z = Math.round(storage.z * 1000) / 1000;

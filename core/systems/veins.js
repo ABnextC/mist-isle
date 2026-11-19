@@ -24,7 +24,6 @@ function shoreSpot(rng, terrain, type, xMin, xMax) {
 // 순환 산지의 중심 고르기
 export function pickCenter(rng, terrain, region, type, r) {
   const [x0, z0, x1, z1] = region.bounds;
-  const t = region.settlement;
   let fallback = null;
   for (let i = 0; i < 80; i++) {
     let cx = rng.range(x0 + 14 + r * 0.5, x1 - 14 - r * 0.5);
@@ -32,7 +31,7 @@ export function pickCenter(rng, terrain, region, type, r) {
     if (type.shore) [cx, cz] = shoreSpot(rng, terrain, type, x0 + 14 + r * 0.5, x1 - 14 - r * 0.5);
     if (!fitsHabitat(terrain, region, type, cx, cz)) continue;
     if (!fallback) fallback = [cx, cz];
-    if (Math.hypot(cx - t.x, cz - t.z) >= t.radius + 15 + r * 0.5) return [round1(cx), round1(cz)];
+    if (region.settlements.every((t) => Math.hypot(cx - t.x, cz - t.z) >= t.radius + 15 + r * 0.5)) return [round1(cx), round1(cz)];
   }
   return fallback ? [round1(fallback[0]), round1(fallback[1])] : null;
 }
@@ -42,7 +41,7 @@ export function pickCenter(rng, terrain, region, type, r) {
 // 상륙 지점 둘레에 서식지가 없으면(산딸기는 풀밭에만 자란다) 마을 바깥 둘레에서 찾는다.
 function startCenter(rng, terrain, region, type, radius) {
   const [sx, sz] = terrain.beachPoint(region.spawn[0], region.spawn[1]);
-  const t = region.settlement;
+  const t = region.settlements[0];
   const anchors = [[sx, sz, 0, radius], [t.x, t.z, t.radius + 8, t.radius + 8 + radius]];
   for (const [ax, az, r0, r1] of anchors) {
     for (let i = 0; i < 60; i++) {

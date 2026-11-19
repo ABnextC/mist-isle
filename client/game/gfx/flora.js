@@ -84,7 +84,7 @@ export function createFlora(scene, { hf, paths, region, tier, mats, ctex, game }
   const k = tier.flora;
   const [bx0, bz0, bx1, bz1] = region.bounds;
   const edge = region.terrain.edge ?? 12;
-  const town = region.settlement;
+  const towns = region.settlements;
   const nodes = Object.values(game.state.nodes);
   const nearNode = (x, z, r) => nodes.some((n) => Math.abs(n.x - x) < r && Math.abs(n.z - z) < r && Math.hypot(n.x - x, n.z - z) < r);
 
@@ -119,6 +119,7 @@ export function createFlora(scene, { hf, paths, region, tier, mats, ctex, game }
         const pz = z + (R() - 0.5) * fstep * 0.9;
         if (R() > 0.3 + Math.min(0.25, (pz - zone.z0) / 300)) continue;
         if (nearNode(px, pz, 4.5) || groups.some((g) => Math.hypot(g.x - px, g.z - pz) < g.radius + 3)) continue;
+        if (towns.some((town) => Math.hypot(px - town.x, pz - town.z) < town.radius + 6)) continue;
         const g = groundAt(hf, paths, px, pz);
         if (g.path > 0.15 || hf.slope(px, pz) > 0.6) continue;
         const v = Math.floor(R() * 3);
@@ -136,7 +137,7 @@ export function createFlora(scene, { hf, paths, region, tier, mats, ctex, game }
     for (let x = bx0 + edge; x < bx1 - edge; x += inner) {
       const px = x + (R() - 0.5) * inner;
       const pz = z + (R() - 0.5) * inner;
-      if (Math.hypot(px - town.x, pz - town.z) < town.radius + 4) continue;
+      if (towns.some((town) => Math.hypot(px - town.x, pz - town.z) < town.radius + 4)) continue;
       const g = groundAt(hf, paths, px, pz);
       if (g.path > 0.2) continue;
       const roll = R();

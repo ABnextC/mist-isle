@@ -56,15 +56,13 @@ export function makeTerrain(region, worldSeed) {
   const T = region.terrain;
   const s = (worldSeed ^ hashStr(region.id)) | 0;
   const [x0, z0, x1, z1] = region.bounds;
-  const town = region.settlement;
-
   function shoreZ(x) {
     return T.shore
       + T.shoreWobble * (valueNoise(x / 70, 0.5, s + 7) * 2 - 1)
       + 0.4 * T.shoreWobble * (valueNoise(x / 21, 3.5, s + 9) * 2 - 1);
   }
 
-  function height(x, z) {
+  function baseHeight(x, z) {
     const d = z - shoreZ(x); // 해안선에서 뭍 쪽으로 잰 거리
     let h = d < 0
       ? Math.max(T.seaFloor, d * 0.16)
@@ -73,10 +71,22 @@ export function makeTerrain(region, worldSeed) {
     h += (fbm(x / 9, z / 9, s + 57, 2) - 0.5) * 0.5 * smoothstep(-3, 8, d);
     const edge = Math.max(smoothstep(x0 + 32, x0, x), smoothstep(x1 - 32, x1, x), smoothstep(z1 - 32, z1, z));
     if (edge > 0) h += edge * T.ridge * (0.75 + 0.5 * fbm(x / 18, z / 18, s + 77, 2));
-    const dt = Math.hypot(x - town.x, z - town.z);
-    if (dt < town.radius + 16) {
-      const k = smoothstep(town.radius + 16, town.radius - 6, dt);
-      h = h * (1 - k) + T.townHeight * k;
+    return h;
+  }
+
+  // 정착지 둘레는 평평하게 다진다. 해안 마을은 정해진 높이, 내륙 마을(flat: local)은 그 자리 높이로.
+  const towns = (region.settlements || []).map((t) => ({
+    x: t.x, z: t.z, radius: t.radius, h: t.flat === 'local' ? baseHeight(t.x, t.z) : T.townHeight,
+  }));
+
+  function height(x, z) {
+    let h = baseHeight(x, z);
+    for (const t of towns) {
+      const dt = Math.hypot(x - t.x, z - t.z);
+      if (dt < t.radius + 16) {
+        const k = smoothstep(t.radius + 16, t.radius - 6, dt);
+        h = h * (1 - k) + t.h * k;
+      }
     }
     return h;
   }
@@ -108,8 +118,7 @@ export function fitsHabitat(terrain, region, nodeType, x, z) {
   const [x0, z0, x1, z1] = region.bounds;
   const m = Math.max(14, (region.terrain.edge ?? 0) + 2);
   if (x < x0 + m || x > x1 - m || z < z0 + 2 || z > z1 - m) return false;
-  const t = region.settlement;
-  if (Math.hypot(x - t.x, z - t.z) < t.radius + 6) return false;
+  for (const t of region.settlements) if (Math.hypot(x - t.x, z - t.z) < t.radius + 6) return false;
   const zone = zoneAt(region, x, z);
   if (nodeType.zone) {
     if (!zone || zone.id !== nodeType.zone) return false;

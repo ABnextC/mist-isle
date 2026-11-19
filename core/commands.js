@@ -7,8 +7,9 @@ import {
   toolSpeed, gatherSeconds, refineStep, weightedProps, round2, round3,
   craftScores, convertStats, starOf, masterworkChance, avg,
 } from './formulas.js';
-import { dist, settlementAt, stationFor, bestTool } from './world.js';
-import { placeAsk, placeBid, cancelOrder, npcSell, tradable, repairCost } from './market.js';
+import { dist, settlementAt, stationFor, bestTool, localStore, storeOf } from './world.js';
+import { placeAsk, placeBid, cancelOrder, npcSell, tradable, repairCost, findOrder, ordersOf, listingFee, entryStar } from './market.js';
+import { contribute, projectOpen, needLeft, silverLeft, shipFee } from './settlements.js';
 import { deliver, countDeliverable } from './orders.js';
 import { addXp } from './systems/progress.js';
 import { startAttack, startDodge, interrupt, equipped } from './systems/combat.js';
@@ -162,10 +163,13 @@ const CRAFT = {
     if (a.skills[r.skill].level < r.level) return 'level_low';
     const station = stationFor(ctx, a, r.station);
     if (!station) return 'no_station';
+    // v0.4: 2티어 재료는 2단계 작업대에서만 다룬다
+    if ((r.stationTier || 1) > station.tier) return 'station_tier';
     if (a.queue.length >= cfg.craft.queueMax) return 'queue_full';
 
     const pools = [{ name: 'bag', list: a.bag }];
-    if (settlementAt(ctx, a)) pools.push({ name: 'storage', list: a.storage });
+    const here = settlementAt(ctx, a);
+    if (here) pools.push({ name: 'storage', list: storeOf(a, here.id) });
     const reserved = new Map();
     const rk = (pool, e) => pool.name + '#' + keyOf(e);
     const avail = (pool, e) => e.qty - (reserved.get(rk(pool, e)) || 0);
@@ -236,7 +240,7 @@ const CRAFT = {
       focusCost += cfg.focus.cost.tune;
     }
     if (a.focus < focusCost) return 'no_focus';
-    return { r, station, picks, slotProps, catalyst, focusCost };
+    return { r, station, picks, slotProps, catalyst, focusCost, at: here ? here.id : null };
   },
 
   execute(ctx, a, c, p) {
@@ -252,7 +256,7 @@ const CRAFT = {
 
     const level = a.skills[r.skill].level;
     const job = {
-      id: ctx.newId('job'), recipe: r.id, level, stationTier: p.station.tier, slotProps: p.slotProps,
+      id: ctx.newId('job'), recipe: r.id, level, stationTier: p.station.tier, slotProps: p.slotProps, at: p.at,
       tune: c.tune || null, focusReturn: !!(c.focus && r.type === 'refine'),
       catalyst: !!p.catalyst, out: null, returnTo: null, mainQty: r.slots[0].qty, startsAt: 0, endsAt: 0,
     };
@@ -320,12 +324,13 @@ const EAT = {
 // all: 재료와 가구를 모두 창고로. 도구와 음식은 가방에 남긴다.
 const STORE = {
   validate(ctx, a, c) {
-    if (!settlementAt(ctx, a)) return 'not_in_town';
+    const s = settlementAt(ctx, a);
+    if (!s) return 'not_in_town';
     if (c.key && !findEntry(a.bag, c.key)) return 'no_item';
     if (!c.key && !c.all) return 'bad_args';
-    return {};
+    return { store: storeOf(a, s.id), at: s.id };
   },
-  execute(ctx, a, c) {
+  execute(ctx, a, c, p) {
     const { data } = ctx;
     const list = c.key
       ? [findEntry(a.bag, c.key)]
@@ -337,25 +342,26 @@ const STORE = {
     let moved = 0;
     for (const e of list) {
       const q = c.key && c.qty ? Math.min(c.qty, qtyOf(e)) : qtyOf(e);
-      addEntry(a.storage, takeQty(a.bag, keyOf(e), q));
+      addEntry(p.store, takeQty(a.bag, keyOf(e), q));
       moved += q;
     }
-    ctx.emit('store', { actor: a.id, moved });
+    ctx.emit('store', { actor: a.id, moved, at: p.at });
   },
 };
 
 const TAKE = {
   validate(ctx, a, c) {
-    if (!settlementAt(ctx, a)) return 'not_in_town';
-    const e = findEntry(a.storage, c.key);
+    const store = localStore(ctx, a);
+    if (!store) return 'not_in_town';
+    const e = findEntry(store, c.key);
     if (!e) return 'no_item';
     const q = Math.min(c.qty || qtyOf(e), qtyOf(e));
     const probe = e.uid ? e : { ...e, qty: q };
     if (a.bag.length + slotsNeeded(a.bag, [probe]) > ctx.cfg.bag.slots) return 'bag_full';
-    return { q };
+    return { q, store };
   },
   execute(ctx, a, c, p) {
-    addEntry(a.bag, takeQty(a.storage, c.key, p.q));
+    addEntry(a.bag, takeQty(p.store, c.key, p.q));
     ctx.emit('take', { actor: a.id, key: c.key, qty: p.q });
   },
 };
@@ -376,12 +382,12 @@ const SET_AUTOPILOT = {
   },
 };
 
-// 등대로 귀환(뉴월드의 여관 귀환과 같은 역할). 시전 중에 움직이면 취소된다.
+// 귀환 지점으로 귀환(뉴월드의 여관 귀환과 같은 역할). 시전 중에 움직이면 취소된다.
 const RECALL = {
   validate(ctx, a) {
     if (a.action) return 'busy';
     if ((a.recallReadyAt || 0) > ctx.state.t) return 'recall_cooldown';
-    const s = Object.values(ctx.state.settlements)[0];
+    const s = ctx.state.settlements[a.home] || Object.values(ctx.state.settlements)[0];
     if (!s) return 'bad_args';
     return { s };
   },
@@ -395,61 +401,64 @@ const RECALL = {
 };
 
 // ── 거래소·주문 ───────────────────────────────────────
-// 가방이나 창고에서 묶음을 찾는다(마을 안에서만 거래한다)
-function findOwned(a, key) {
+// 가방이나 그 마을 창고에서 묶음을 찾는다(마을 안에서만 거래한다)
+function findOwned(ctx, a, key) {
   const e = findEntry(a.bag, key);
   if (e) return { list: a.bag, e };
-  const s = findEntry(a.storage, key);
-  return s ? { list: a.storage, e: s } : null;
+  const store = localStore(ctx, a);
+  const s = store ? findEntry(store, key) : null;
+  return s ? { list: store, e: s } : null;
 }
+
+const myOrderCount = (ctx, a) => ordersOf(ctx, a.id, 'actor').length;
 
 const okPrice = (p) => Number.isInteger(p) && p >= 1 && p <= 1e6;
 const okQty = (q) => Number.isInteger(q) && q >= 1 && q <= 1e5;
 
 const MARKET_SELL = {
   validate(ctx, a, c) {
-    if (!settlementAt(ctx, a)) return 'not_in_town';
-    const f = findOwned(a, c.key);
+    const s = settlementAt(ctx, a);
+    if (!s) return 'not_in_town';
+    const f = findOwned(ctx, a, c.key);
     if (!f) return 'no_item';
     if (!tradable(ctx, f.e)) return 'not_tradable';
     if (!okPrice(c.price)) return 'bad_price';
     const q = c.qty == null ? qtyOf(f.e) : c.qty;
     if (!okQty(q) || q > qtyOf(f.e)) return 'bad_qty';
-    const fee = c.ioc ? 0 : Math.round(q * c.price * ctx.cfg.market.listingFee);
+    const fee = c.ioc ? 0 : listingFee(ctx, 'actor', a.id, s.id, q, c.price);
     if (a.silver < fee) return 'no_silver';
-    const mine = ctx.state.market.asks.filter((o) => o.kind === 'actor' && o.owner === a.id).length + ctx.state.market.bids.filter((o) => o.kind === 'actor' && o.owner === a.id).length;
-    if (!c.ioc && mine >= ctx.cfg.market.maxOrdersPerOwner) return 'too_many_orders';
-    return { f, q };
+    if (!c.ioc && myOrderCount(ctx, a) >= ctx.cfg.market.maxOrdersPerOwner) return 'too_many_orders';
+    return { f, q, at: s.id };
   },
   execute(ctx, a, c, p) {
-    const res = placeAsk(ctx, 'actor', a.id, takeQty(p.f.list, keyOf(p.f.e), p.q), c.price, { ioc: !!c.ioc });
-    ctx.emit('market.sell', { actor: a.id, sold: res.sold, rest: res.rest });
+    const res = placeAsk(ctx, p.at, 'actor', a.id, takeQty(p.f.list, keyOf(p.f.e), p.q), c.price, { ioc: !!c.ioc });
+    ctx.emit('market.sell', { actor: a.id, at: p.at, sold: res.sold, rest: res.rest });
   },
 };
 
 const MARKET_BUY = {
   validate(ctx, a, c) {
-    if (!settlementAt(ctx, a)) return 'not_in_town';
+    const s = settlementAt(ctx, a);
+    if (!s) return 'not_in_town';
     const def = ctx.data.items[c.item];
     if (!def || (def.kind !== 'material' && def.kind !== 'consumable')) return 'not_tradable';
     if (!okPrice(c.price) || !okQty(c.qty)) return 'bad_args';
     const minStar = c.minStar ?? 0;
     if (!Number.isInteger(minStar) || minStar < 0 || minStar > 5) return 'bad_args';
     if (a.silver < c.qty * c.price) return 'no_silver';
-    const mine = ctx.state.market.asks.filter((o) => o.kind === 'actor' && o.owner === a.id).length + ctx.state.market.bids.filter((o) => o.kind === 'actor' && o.owner === a.id).length;
-    if (!c.ioc && mine >= ctx.cfg.market.maxOrdersPerOwner) return 'too_many_orders';
-    return { minStar };
+    if (!c.ioc && myOrderCount(ctx, a) >= ctx.cfg.market.maxOrdersPerOwner) return 'too_many_orders';
+    return { minStar, at: s.id };
   },
   execute(ctx, a, c, p) {
-    const res = placeBid(ctx, 'actor', a.id, c.item, p.minStar, c.qty, c.price, { ioc: !!c.ioc });
-    ctx.emit('market.buy', { actor: a.id, bought: res.bought, rest: res.rest, item: c.item });
+    const res = placeBid(ctx, p.at, 'actor', a.id, c.item, p.minStar, c.qty, c.price, { ioc: !!c.ioc });
+    ctx.emit('market.buy', { actor: a.id, at: p.at, bought: res.bought, rest: res.rest, item: c.item });
   },
 };
 
+// 거두기는 어느 마을에서든 된다(물건은 그 주문을 건 마을 창고로 돌아간다)
 const MARKET_CANCEL = {
   validate(ctx, a, c) {
-    const m = ctx.state.market;
-    const o = m.asks.find((x) => x.id === c.id) || m.bids.find((x) => x.id === c.id);
+    const o = findOrder(ctx, c.id);
     if (!o || o.kind !== 'actor' || o.owner !== a.id) return 'no_order';
     return {};
   },
@@ -463,7 +472,7 @@ const MARKET_CANCEL = {
 const MARKET_DUMP = {
   validate(ctx, a, c) {
     if (!settlementAt(ctx, a)) return 'not_in_town';
-    const f = findOwned(a, c.key);
+    const f = findOwned(ctx, a, c.key);
     if (!f) return 'no_item';
     if (!tradable(ctx, f.e)) return 'not_tradable';
     const q = c.qty == null ? qtyOf(f.e) : c.qty;
@@ -477,22 +486,25 @@ const MARKET_DUMP = {
 
 const ORDER_DELIVER = {
   validate(ctx, a, c) {
-    if (!settlementAt(ctx, a)) return 'not_in_town';
+    const s = settlementAt(ctx, a);
+    if (!s) return 'not_in_town';
     const o = ctx.state.orders.find((x) => x.id === c.order);
     if (!o || o.left <= 0) return 'no_order';
-    const have = countDeliverable(ctx, [a.bag, a.storage], o);
+    if (o.at && o.at !== s.id) return 'other_town';
+    const lists = [a.bag, storeOf(a, s.id)];
+    const have = countDeliverable(ctx, lists, o);
     if (!have) return 'nothing_to_deliver';
-    return { o };
+    return { o, lists };
   },
   execute(ctx, a, c, p) {
-    deliver(ctx, 'actor', a.id, a, [a.bag, a.storage], p.o, c.qty ?? p.o.left);
+    deliver(ctx, 'actor', a.id, a, p.lists, p.o, c.qty ?? p.o.left);
   },
 };
 
 // 수리: 대장간 앞에서 은화를 내고 고친다. 고칠 때마다 최대 내구가 2% 준다(설계 7.5).
 const REPAIR = {
   validate(ctx, a, c) {
-    const e = a.bag.find((x) => x.uid === c.uid) || (settlementAt(ctx, a) ? a.storage.find((x) => x.uid === c.uid) : null);
+    const e = a.bag.find((x) => x.uid === c.uid) || (localStore(ctx, a)?.find((x) => x.uid === c.uid) ?? null);
     if (!e) return 'no_item';
     const def = ctx.data.items[e.item];
     const kind = def.armor ? 'armor' : def.weapon ? 'weapon' : def.tool ? 'tool' : null;
@@ -635,10 +647,96 @@ const SKIN = {
   },
 };
 
+// ── 정착지(v0.4) ────────────────────────────────────
+// 귀환 지점 정하기: 지금 서 있는 마을로
+const SET_HOME = {
+  validate(ctx, a) {
+    const s = settlementAt(ctx, a);
+    if (!s) return 'not_in_town';
+    if (a.home === s.id) return 'already_home';
+    return { s };
+  },
+  execute(ctx, a, c, p) {
+    a.home = p.s.id;
+    ctx.emit('home.set', { actor: a.id, at: p.s.id });
+  },
+};
+
+// 창고 운송: 이 마을 창고 → 다른 마을 창고. 운송비(은화)는 사라진다.
+//   { key, qty?, to } · { keys: [key, ...], to } · { items: [{ key, qty }], to } (한 번에 묶어 보내면 최소 운송비를 한 번만 낸다)
+const SHIP = {
+  validate(ctx, a, c) {
+    const s = settlementAt(ctx, a);
+    if (!s) return 'not_in_town';
+    if (!c.to || !ctx.state.settlements[c.to]) return 'bad_args';
+    if (c.to === s.id) return 'same_town';
+    const from = storeOf(a, s.id);
+    const want = c.items || (c.keys ? c.keys.map((key) => ({ key })) : [{ key: c.key, qty: c.qty }]);
+    const picks = [];
+    for (const w of want) {
+      const e = findEntry(from, w.key);
+      if (!e) return 'no_item';
+      const q = Math.min(w.qty || qtyOf(e), qtyOf(e));
+      if (!okQty(q)) return 'bad_qty';
+      if (picks.some((x) => x.e === e)) return 'bad_args';
+      picks.push({ e, q });
+    }
+    if (!picks.length) return 'bad_args';
+    const fee = shipFee(ctx, a, s.id, picks.map((x) => ({ item: x.e.item, star: entryStar(ctx, x.e), uid: x.e.uid, qty: x.q })));
+    if (a.silver < fee) return 'no_silver';
+    return { from, to: storeOf(a, c.to), picks, fee, at: s.id };
+  },
+  execute(ctx, a, c, p) {
+    let n = 0;
+    for (const { e, q } of p.picks) {
+      addEntry(p.to, takeQty(p.from, keyOf(e), q));
+      n += q;
+    }
+    a.silver -= p.fee;
+    a.stats.shipSpent = (a.stats.shipSpent || 0) + p.fee;
+    ctx.emit('ship', { actor: a.id, from: p.at, to: c.to, qty: n, fee: p.fee });
+  },
+};
+
+// 마을 사업에 내기: { project, key, qty } (물자) 또는 { project, silver } (은화)
+const CONTRIBUTE = {
+  validate(ctx, a, c) {
+    const s = settlementAt(ctx, a);
+    if (!s) return 'not_in_town';
+    const def = ctx.data.projects[c.project];
+    if (!def || def.at !== s.id) return 'no_project';
+    if (!projectOpen(ctx, c.project)) return 'project_closed';
+    if (c.silver != null) {
+      if (!Number.isInteger(c.silver) || c.silver < 1) return 'bad_args';
+      const q = Math.min(c.silver, silverLeft(ctx, c.project));
+      if (q <= 0) return 'not_needed';
+      if (a.silver < q) return 'no_silver';
+      return { silver: q };
+    }
+    const f = findOwned(ctx, a, c.key);
+    if (!f) return 'no_item';
+    if (f.e.uid) return 'not_tradable';
+    const left = needLeft(ctx, c.project, f.e.item);
+    if (left <= 0) return 'not_needed';
+    const q = Math.min(c.qty ?? qtyOf(f.e), qtyOf(f.e), left);
+    if (!okQty(q)) return 'bad_qty';
+    return { f, q };
+  },
+  execute(ctx, a, c, p) {
+    if (p.silver) {
+      a.silver -= p.silver;
+      contribute(ctx, c.project, { kind: 'actor', id: a.id }, { silver: p.silver });
+      return;
+    }
+    const e = takeQty(p.f.list, keyOf(p.f.e), p.q);
+    contribute(ctx, c.project, { kind: 'actor', id: a.id }, { item: e.item, qty: e.qty });
+  },
+};
+
 const HANDLERS = {
   MOVE, MOVE_INPUT, GATHER, CRAFT, EAT, STORE, TAKE, SET_AUTOPILOT, RECALL,
   MARKET_SELL, MARKET_BUY, MARKET_CANCEL, MARKET_DUMP, ORDER_DELIVER, REPAIR,
-  EQUIP, UNEQUIP, ATTACK, DODGE, BLOCK, SKIN,
+  EQUIP, UNEQUIP, ATTACK, DODGE, BLOCK, SKIN, SET_HOME, SHIP, CONTRIBUTE,
 };
 
 export function makeCommands(ctx) {

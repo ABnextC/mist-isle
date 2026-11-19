@@ -10,9 +10,10 @@
 //   tune        도구를 만들 때 집중력으로 조율하는가
 
 import { keyOf, avgProps, countItem, qtyOf } from '../inventory.js';
-import { dist, settlementAt, nearestSettlement, nearestStation, bestTool, toolTier } from '../world.js';
-import { entryStar, tradable, baseValue, bestBid, bestAsk, npcPrice, repairCost, refPrice } from '../market.js';
+import { dist, settlementAt, nearestSettlement, nearestStation, bestTool, toolTier, storeOf, hasStation, stationIn } from '../world.js';
+import { entryStar, tradable, baseValue, bestBid, bestAsk, npcPrice, repairCost, refPrice, bookOf, ordersOf } from '../market.js';
 import { countDeliverable } from '../orders.js';
+import { openProjects, needLeft, silverLeft, shipFee } from '../settlements.js';
 import { startFight } from './fighter.js';
 import { corpseOpen } from '../systems/mobs.js';
 
@@ -22,6 +23,17 @@ const ARMOR_RC = { head: 'rc_leather_hood', legs: 'rc_leather_pants', chest: 'rc
 const IRON_TOOL = { logging: 'rc_axe_iron', mining: 'rc_pick_iron', harvesting: 'rc_sickle_iron' };
 
 const fightOpts = (prof) => ({ read: prof.read ?? 0.45, block: prof.block ?? 0.3, heal: 0.45 });
+const prof0 = (ctx, actor) => ctx.data.agents[actor.ai.profile] || ctx.data.agents.settler;
+
+// v0.4: 창고가 마을마다 따로다.
+//   local: 가방 + 지금 서 있는 마을 창고(여기서 쓸 수 있는 것)
+//   owned: 가방 + 모든 마을 창고(가진 것 전부, 무엇을 더 캘지·만들지 정할 때)
+function localLists(ctx, actor) {
+  const s = settlementAt(ctx, actor);
+  return s ? [actor.bag, storeOf(actor, s.id)] : [actor.bag];
+}
+const ownedLists = (actor) => [actor.bag, ...Object.values(actor.storages || {})];
+const flat = (lists) => lists.flat();
 
 export function thinkSettler(ctx, actor) {
   const prof = ctx.data.agents[actor.ai.profile] || ctx.data.agents.settler;
@@ -66,10 +78,10 @@ function gearTier(ctx, e, kind) {
   return kind === 'weapon' ? def.weapon.tier : 1;
 }
 
-// 가방·창고에서 가장 좋은 무기(공격력)나 그 부위 갑옷(방어)
-function bestGear(ctx, actor, slot) {
+// 가방·이 마을 창고에서 가장 좋은 무기(공격력)나 그 부위 갑옷(방어)
+function bestGear(ctx, actor, slot, lists = localLists(ctx, actor)) {
   let best = null;
-  for (const e of [...actor.bag, ...actor.storage]) {
+  for (const e of flat(lists)) {
     if (!e.uid || e.broken) continue;
     const def = ctx.data.items[e.item];
     const ok = slot === 'weapon' ? !!def.weapon : def.armor?.slot === slot;
@@ -79,6 +91,9 @@ function bestGear(ctx, actor, slot) {
   }
   return best ? best.e : null;
 }
+
+// 어느 마을 창고에든 있으면 새로 만들지 않는다
+const ownedGear = (ctx, actor, slot) => bestGear(ctx, actor, slot, ownedLists(actor));
 
 function equipBest(ctx, actor) {
   const inTown = !!settlementAt(ctx, actor);
@@ -243,10 +258,63 @@ function moveNear(ctx, actor, target, standoff) {
   ctx.command({ type: 'MOVE', actor: actor.id, x: spot[0], z: spot[1] });
 }
 
-// 멀면 귀환을 쓰고, 가깝거나 재사용 대기 중이면 걷는다
+// 가방 짐 가운데 그 마을에서 다루거나 팔 수 있는 몫(0~1)
+function cargoUse(ctx, actor, s) {
+  let n = 0;
+  let u = 0;
+  for (const e of actor.bag) {
+    if (e.uid || ctx.data.items[e.item].kind !== 'material') continue;
+    n += e.qty;
+    if (canUseAt(ctx, actor, s, e.item) || bestBid(ctx, s.id, e.item, 5)) u += e.qty;
+  }
+  return n ? u / n : 1;
+}
+
+// 돌아갈 마을(v0.4): 가까우면서 짐을 다루거나 팔 수 있는 마을.
+// 하루 넘게 안 간 마을 창고에 물건이 있으면 그 마을로 간다.
+function homeTarget(ctx, actor) {
+  const mem = actor.ai.mem;
+  if (mem.goTo && ctx.state.settlements[mem.goTo]) return ctx.state.settlements[mem.goTo];
+  let near = null;
+  let bs = Infinity;
+  for (const s of Object.values(ctx.state.settlements)) {
+    const score = dist(actor, s) - cargoUse(ctx, actor, s) * 110;
+    if (score < bs) {
+      bs = score;
+      near = s;
+    }
+  }
+  const day = ctx.clock.dayLen;
+  mem.lastVisit = mem.lastVisit || {};
+  const prof = ctx.data.agents[actor.ai.profile] || ctx.data.agents.settler;
+  const spare = actor.silver - (prof.reserve ?? 800);
+  for (const s of Object.values(ctx.state.settlements)) {
+    if (s.id === near.id) continue;
+    const since = ctx.state.t - (mem.lastVisit[s.id] ?? 0);
+    const store = actor.storages?.[s.id];
+    const waiting = store && store.some((e) => !e.uid);
+    // 그 마을 사업에 낼 은화가 넉넉하면 반나절에 한 번은 들른다(사업은 직접 가서 낸다)
+    const fund = (prof.donate ?? 0.25) > 0 && spare >= 300 && wantedProjects(ctx, prof, s.id).some((p) => silverLeft(ctx, p.id) > 0);
+    if ((waiting && since > day) || (fund && since > day / 2)) {
+      mem.goTo = s.id;
+      return s;
+    }
+  }
+  return near;
+}
+
+// 그 성향이 돕는 사업(장인 성향은 작업대 사업만)
+function wantedProjects(ctx, prof, sid) {
+  return openProjects(ctx, sid).filter((p) => {
+    const e = ctx.data.projects[p.id].effect;
+    return prof.projects !== 'station' || e.build || e.upgrade;
+  });
+}
+
+// 멀면 귀환을 쓰고(귀환 지점으로 갈 때만), 가깝거나 재사용 대기 중이면 걷는다
 function goHome(ctx, actor) {
-  const s = nearestSettlement(ctx, actor);
-  if (dist(actor, s) > 60 && (actor.recallReadyAt || 0) <= ctx.state.t && ctx.command({ type: 'RECALL', actor: actor.id }).ok) return;
+  const s = homeTarget(ctx, actor);
+  if (s.id === actor.home && dist(actor, s) > 60 && (actor.recallReadyAt || 0) <= ctx.state.t && ctx.command({ type: 'RECALL', actor: actor.id }).ok) return;
   moveNear(ctx, actor, s, 4);
 }
 
@@ -276,7 +344,7 @@ function chooseNode(ctx, actor, skill, prof, mem) {
   const { state, data } = ctx;
   const tool = bestTool(ctx, actor, skill);
   const level = actor.skills[skill].level;
-  const lists = [actor.bag, actor.storage];
+  const lists = ownedLists(actor);
   const cand = [];
   for (const node of Object.values(state.nodes)) {
     if (node.charges <= 0) continue;
@@ -288,6 +356,8 @@ function chooseNode(ctx, actor, skill, prof, mem) {
     const lot = state.lots[vein.lot];
     let score = dist(actor, node) - type.tier * 60 - (avgProps(lot.props) - 40) * (prof.quality ?? 1);
     if (countItem(lists, type.item) < 12) score -= 40; // 모자란 재료 우선
+    // v0.4: 섬 어디서도 다루지 못하고 사 줄 사람도 없는 재료는 미룬다(2단계 작업대가 없을 때의 참나무·철광석)
+    if (!usableAnywhere(ctx, actor, type.item)) score += 250;
     if (prof.explore && !vein.common && !mem.seen.includes(vein.lot)) score -= prof.explore;
     cand.push({ node, type, score });
   }
@@ -361,9 +431,23 @@ function gatherStep(ctx, actor, prof, mem) {
 }
 
 function returnStep(ctx, actor, mem) {
-  if (!settlementAt(ctx, actor)) {
+  const here = settlementAt(ctx, actor);
+  if (!here) {
     goHome(ctx, actor);
     return;
+  }
+  // 들르려던 마을이 아니면 마저 간다(지나가는 길에 들른 마을은 건너뛴다)
+  if (mem.goTo && mem.goTo !== here.id) {
+    goHome(ctx, actor);
+    return;
+  }
+  mem.goTo = null;
+  mem.lastVisit = mem.lastVisit || {};
+  mem.lastVisit[here.id] = ctx.state.t;
+  // 숲 성향(사냥을 자주 가는 봇)은 숲머리에 제재대가 서면 귀환 지점을 숲머리로 옮긴다(v0.4.1)
+  const forest = Object.values(ctx.state.settlements)[1];
+  if (forest && here.id === forest.id && actor.home !== forest.id && (prof0(ctx, actor).hunt ?? 0) >= 0.3 && hasStation(forest, 'sawbench', 2)) {
+    ctx.command({ type: 'SET_HOME', actor: actor.id });
   }
   ctx.command({ type: 'STORE', actor: actor.id, all: true });
   for (const e of [...actor.bag]) {
@@ -380,16 +464,189 @@ function returnStep(ctx, actor, mem) {
     if ((def.weapon || def.armor) && !Object.values(actor.equip || {}).includes(e.uid)) ctx.command({ type: 'STORE', actor: actor.id, key: e.uid });
   }
   deliverOrders(ctx, actor);
+  projectRound(ctx, actor, prof);
+  shipRound(ctx, actor, prof);
   marketRound(ctx, actor, prof, mem);
   mem.mode = 'craft';
   mem.rounds = 0;
   mem.plan = null;
 }
 
+// ── 마을 사업(v0.4) ──────────────────────────────────
+// 사업에 내고도 내 몫으로 남겨 둘 양: 정제품은 KEEP, 원자재는 조금(돌은 돌 도구 몇 개 몫)
+function projectKeep(ctx, item) {
+  if (ctx.data.items[item].stage === 'raw') return 10;
+  return KEEP[item] ?? 0;
+}
+
+// 성향이 돕는 열린 사업들이 아직 받을 물자: { item: { total, at: { sid: q } } }
+function projectShort(ctx, prof) {
+  const out = {};
+  for (const sid of Object.keys(ctx.state.settlements)) {
+    for (const p of wantedProjects(ctx, prof, sid)) {
+      for (const item of Object.keys(ctx.data.projects[p.id].needs)) {
+        const q = needLeft(ctx, p.id, item);
+        if (q <= 0) continue;
+        const o = out[item] || (out[item] = { total: 0, at: {} });
+        o.total += q;
+        o.at[sid] = (o.at[sid] || 0) + q;
+      }
+    }
+  }
+  return out;
+}
+
+// 남길 은화(reserve)를 뺀 돈의 일부(donate)를 낸다. 남는 물자 가운데 사업에 필요한 것도 낸다.
+// projects: 'station'이면 작업대 사업만 돕는다(장인 성향)
+function projectRound(ctx, actor, prof) {
+  const here = settlementAt(ctx, actor);
+  const share = prof.donate ?? 0.25;
+  if (!here || share <= 0) return;
+  const open = wantedProjects(ctx, prof, here.id);
+  if (!open.length) return;
+  const lists = localLists(ctx, actor);
+  for (const p of open) {
+    for (const item of Object.keys(ctx.data.projects[p.id].needs)) {
+      const left = needLeft(ctx, p.id, item);
+      if (left <= 0) continue;
+      // 남겨 둘 양(projectKeep)만 빼고 필요한 만큼 낸다
+      const have = countItem(lists, item);
+      let q = Math.min(left, Math.max(0, have - projectKeep(ctx, item)));
+      for (const e of flat(lists).filter((x) => x.item === item && !x.uid).sort((x, y) => entryStar(ctx, x) - entryStar(ctx, y))) {
+        if (q <= 0) break;
+        const n = Math.min(q, qtyOf(e));
+        if (ctx.command({ type: 'CONTRIBUTE', actor: actor.id, project: p.id, key: keyOf(e), qty: n }).ok) q -= n;
+      }
+    }
+  }
+  const spare = Math.floor((actor.silver - (prof.reserve ?? 800)) * share);
+  if (spare >= 20) {
+    let left = spare;
+    for (const p of openProjects(ctx, here.id)) {
+      if (left <= 0) break;
+      if (!open.includes(p)) continue;
+      const q = Math.min(left, silverLeft(ctx, p.id));
+      if (q > 0 && ctx.command({ type: 'CONTRIBUTE', actor: actor.id, project: p.id, silver: q }).ok) left -= q;
+    }
+  }
+}
+
+// ── 창고 운송(v0.4) ──────────────────────────────────
+// 여기서 못 다루는 재료는 다룰 수 있는 마을로 보낸다. 다룰 곳이 어디에도 없으면 그냥 둔다.
+const USES = new WeakMap();
+function usesOf(ctx, item) {
+  let map = USES.get(ctx.data);
+  if (!map) {
+    map = {};
+    for (const r of ctx.data.lists.recipes) {
+      for (const it of ctx.data.lists.items) {
+        if (it.kind !== 'material') continue;
+        if (r.slots.some((sl) => (sl.item ? sl.item === it.id : (!sl.family || sl.family === it.family) && (!sl.stage || sl.stage === it.stage) && (sl.minTier == null || it.tier >= sl.minTier)))) {
+          (map[it.id] = map[it.id] || []).push(r);
+        }
+      }
+    }
+    USES.set(ctx.data, map);
+  }
+  return map[item] || [];
+}
+
+// 원자재는 주로 정제해서 쓴다(원목 → 판재). 정제법이 있으면 그것만 본다.
+function mainUses(ctx, item) {
+  const all = usesOf(ctx, item);
+  if (ctx.data.items[item].stage !== 'raw') return all;
+  const refine = all.filter((r) => r.type === 'refine' && r.slots[0].item === item);
+  return refine.length ? refine : all;
+}
+
+function usableAnywhere(ctx, actor, item) {
+  return Object.values(ctx.state.settlements).some((s) => canUseAt(ctx, actor, s, item) || bestBid(ctx, s.id, item, 5));
+}
+
+function canUseAt(ctx, actor, s, item) {
+  return mainUses(ctx, item).some((r) => actor.skills[r.skill].level >= r.level && (r.station === 'hand' || hasStation(s, r.station, r.stationTier || 1)));
+}
+
+// 1) 여기서 못 다루는 재료는 다룰 수 있는 마을로 통째로 보낸다(그 마을에서 쓰고, 남으면 거기서 판다).
+// 2) 여기서 다루는 재료의 팔 몫은, 다른 마을 사자 값이 운송비를 빼고도 10% 넘게 좋으면 그쪽으로 보낸다.
+//    받을 마을도 그 재료를 다룰 수 있어야 한다(아니면 1번 규칙에 걸려 되돌아온다).
+function shipRound(ctx, actor, prof) {
+  if (prof.ship === false) return;
+  const here = settlementAt(ctx, actor);
+  if (!here) return;
+  const store = storeOf(actor, here.id);
+  const others = Object.values(ctx.state.settlements).filter((s) => s.id !== here.id);
+  const rate = ctx.cfg.settle.ship.rate;
+  const byItem = {};
+  for (const e of store) {
+    if (e.uid || ctx.data.items[e.item].kind !== 'material') continue;
+    (byItem[e.item] = byItem[e.item] || []).push(e);
+  }
+  const whole = {};
+  const parts = [];
+  const short = (prof.donate ?? 0.25) > 0 ? projectShort(ctx, prof) : {};
+  for (const [item, list] of Object.entries(byItem)) {
+    // 이 마을 사업이 기다리는 물자는 여기 둔다
+    if (short[item]?.at[here.id]) continue;
+    const useHere = canUseAt(ctx, actor, here, item);
+    const users = others.filter((s) => canUseAt(ctx, actor, s, item));
+    if (!useHere && users.length && !Object.keys(short[item]?.at || {}).length) {
+      (whole[users[0].id] = whole[users[0].id] || []).push(...list);
+      continue;
+    }
+    // 여기서 다루면 다룰 수 있는 다른 마을로만, 아무 데서도 못 다루면(사고팔기만 하는 물건) 어디로든
+    const targets = useHere ? users : others;
+    for (const e of list) {
+      const q = surplusOf(ctx, actor, e);
+      if (q <= 0) continue;
+      const star = entryStar(ctx, e);
+      const hereBid = bestBid(ctx, here.id, item, star)?.price ?? 0;
+      let best = null;
+      for (const s of targets) {
+        const net = (bestBid(ctx, s.id, item, star)?.price ?? 0) - baseValue(ctx, item, star) * rate;
+        if (net > hereBid * 1.1 && net > 0 && (!best || net > best.net)) best = { s, net };
+      }
+      if (best) parts.push({ to: best.s.id, e, qty: q });
+    }
+  }
+  // 3) 다른 마을 사업에만 필요한 물자는 그 마을로 보낸다(다음에 들러서 낸다)
+  for (const [item, o] of Object.entries(short)) {
+    if (o.at[here.id]) continue;
+    let spare = countItem([store], item) - projectKeep(ctx, item);
+    for (const [sid, q] of Object.entries(o.at)) {
+      let need = Math.min(spare, q - countItem([storeOf(actor, sid)], item));
+      for (const e of byItem[item] || []) {
+        if (need <= 0) break;
+        const n = Math.min(need, e.qty - (parts.filter((x) => x.e === e).reduce((t, x) => t + x.qty, 0)));
+        if (n <= 0) continue;
+        parts.push({ to: sid, e, qty: n });
+        need -= n;
+        spare -= n;
+      }
+    }
+  }
+  // 받을 마을마다 한 번에 묶어 보낸다(최소 운송비를 한 번만 낸다)
+  const batch = {};
+  for (const [to, list] of Object.entries(whole)) for (const e of list) (batch[to] = batch[to] || new Map()).set(e, e.qty);
+  for (const mv of parts) {
+    const m = batch[mv.to] || (batch[mv.to] = new Map());
+    if (!m.has(mv.e)) m.set(mv.e, Math.min(mv.e.qty, mv.qty));
+    else m.set(mv.e, Math.min(mv.e.qty, m.get(mv.e) + mv.qty));
+  }
+  for (const [to, m] of Object.entries(batch)) {
+    const list = [...m.entries()].filter(([, q]) => q > 0);
+    if (!list.length) continue;
+    const fee = shipFee(ctx, actor, here.id, list.map(([e, q]) => ({ item: e.item, star: entryStar(ctx, e), qty: q })));
+    if (actor.silver < fee + 40) continue;
+    ctx.command({ type: 'SHIP', actor: actor.id, to, items: list.map(([e, q]) => ({ key: keyOf(e), qty: q })) });
+  }
+}
+
 // 이번 라운드에 만들 것 (순수 데이터 목록)
 function makePlan(ctx, actor, prof) {
   const { data } = ctx;
-  const lists = [actor.bag, actor.storage];
+  const here = settlementAt(ctx, actor);
+  const lists = localLists(ctx, actor);
   const count = (id) => countItem(lists, id);
   const plan = [];
   for (const skill of prof.skills) {
@@ -404,7 +661,7 @@ function makePlan(ctx, actor, prof) {
     const fix = (e) => e.uid && (e.star ?? 0) >= minStar && data.items[e.item].tool?.skill === skill && data.items[e.item].tool.tier >= 1
       && (e.broken || e.dur <= e.maxDur * worn) && e.maxDur >= (e.stats?.durability ?? e.maxDur) * ctx.cfg.repair.minMaxShare;
     const want = cur && tier >= 1 ? (fix(cur) ? cur : null)
-      : [...actor.bag, ...actor.storage].filter(fix).sort((x, y) => (y.star ?? 0) - (x.star ?? 0) || y.maxDur - x.maxDur)[0];
+      : flat(lists).filter(fix).sort((x, y) => (y.star ?? 0) - (x.star ?? 0) || y.maxDur - x.maxDur)[0];
     if (want && actor.silver >= repairCost(ctx, want) + 40) plan.push({ repair: want.uid });
     if (tier < 1) plan.push({ recipe: copper, n: 1, tune: 'gatherSpeed', skipIfTier: [skill, 1] });
     if (tier < 0) plan.push({ recipe: stone, n: 1, skipIfTool: skill });
@@ -416,7 +673,7 @@ function makePlan(ctx, actor, prof) {
   if (prof.hunt > 0) {
     const kind = prof.weapon || 'sword';
     const w = bestGear(ctx, actor, 'weapon');
-    const wt = gearTier(ctx, w, 'weapon');
+    const wt = Math.max(gearTier(ctx, w, 'weapon'), gearTier(ctx, ownedGear(ctx, actor, 'weapon'), 'weapon'));
     // 무기: 돌 몽둥이 → 구리 → 철. 낀 무기가 많이 닳았으면 고친다(★3 이상)
     if (wt < 0) plan.push({ recipe: 'rc_club', n: 1, skipIfWeapon: 0 });
     if (wt < 1) plan.push({ recipe: WEAPON_RC[kind][0], n: 1, tune: 'attack', skipIfWeapon: 1 });
@@ -429,10 +686,10 @@ function makePlan(ctx, actor, prof) {
     }
     // 갑옷: 가죽과 갈대 천이 모이면 두건 → 바지 → 조끼
     for (const slot of ['head', 'legs', 'chest']) {
-      if (bestGear(ctx, actor, slot)) continue;
+      if (ownedGear(ctx, actor, slot)) continue;
       plan.push({ recipe: ARMOR_RC[slot], n: 1, tune: 'armor' });
     }
-    const heals = actor.bag.concat(actor.storage).filter((e) => data.items[e.item].effect === 'heal').reduce((s2, e) => s2 + e.qty, 0);
+    const heals = flat(lists).filter((e) => data.items[e.item].effect === 'heal').reduce((s2, e) => s2 + e.qty, 0);
     if (heals < 6) plan.push({ recipe: 'rc_meat', n: 2 });
   }
   for (const id of REFINES) {
@@ -449,15 +706,32 @@ function makePlan(ctx, actor, prof) {
   else if (count('ingot_copper') > 9 && count('nails_copper') < 12) plan.push({ recipe: 'rc_nails_copper', n: 1 });
   if (count('lumber_drift') >= 4 && count('stake_wood') < 40) plan.push({ recipe: 'rc_stake_wood', n: 1, auto: 'cheap' });
   if (count('nails_copper') >= 6 && count('crate_wood') < 4) plan.push({ recipe: 'rc_crate', n: 1 });
+  // 마을 사업에 모자란 물자 가운데 여기서 만들 수 있는 것은 만든다(구리 못은 대장 경험치가 도는 길, v0.4)
+  if (here && (prof.donate ?? 0.25) > 0) {
+    const short = projectShort(ctx, prof);
+    for (const [item, o] of Object.entries(short)) {
+      const elsewhere = Object.keys(ctx.state.settlements).reduce((t, sid) => t + (sid === here.id ? 0 : countItem([storeOf(actor, sid)], item)), 0);
+      const spare = o.total - elsewhere - Math.max(0, count(item) - projectKeep(ctx, item));
+      if (spare <= 0) continue;
+      const r = data.lists.recipes.find((x) => x.output.item === item && actor.skills[x.skill].level >= x.level
+        && (x.station === 'hand' || hasStation(here, x.station, x.stationTier || 1)));
+      if (!r) continue;
+      const input = r.slots[0].item;
+      plan.push({ recipe: r.id, n: Math.min(6, Math.ceil(spare / r.output.qty)), catalyst: r.type === 'refine', focus: r.type === 'refine',
+        ...(input ? { keepItem: input, keepNeed: r.slots[0].qty, keepQty: 0 } : {}), auto: 'cheap' });
+    }
+  }
   // 주문 게시판: 만들 수 있는 의뢰는 계획에 넣는다(입문자는 게시판만 보고 만들지는 않는다)
   if (prof.market !== 'ordersOnly') {
     for (const o of ctx.state.orders) {
-      if (o.left <= 0) continue;
+      if (o.left <= 0 || (here && o.at && o.at !== here.id)) continue;
       const r = Object.values(data.recipes).find((x) => x.output.item === o.item);
       if (!r || actor.skills[r.skill].level < r.level) continue;
-      const have = countDeliverable(ctx, [actor.bag, actor.storage], o);
+      const have = countDeliverable(ctx, lists, o);
       if (have >= o.left) continue;
       const def = data.items[o.item];
+      // 장비 의뢰는 한 번만 해 본다(별이 모자라 못 낸 것이 있으면 또 만들지 않는다)
+      if (def.kind === 'equipment' && countItem(ownedLists(actor), o.item) >= o.left) continue;
       const n = def.tool ? 1 : Math.min(6, Math.ceil((o.left - have) / r.output.qty));
       plan.push({ recipe: r.id, n, tune: def.tool ? 'gatherSpeed' : null, forOrder: o.id, catalyst: r.type === 'refine', focus: r.type === 'refine' });
     }
@@ -465,11 +739,14 @@ function makePlan(ctx, actor, prof) {
   return plan;
 }
 
-// 주문 게시판에 넘길 수 있는 것은 넘긴다
+// 이 마을 주문 게시판에 넘길 수 있는 것은 넘긴다
 function deliverOrders(ctx, actor) {
+  const here = settlementAt(ctx, actor);
+  if (!here) return;
+  const lists = localLists(ctx, actor);
   for (const o of ctx.state.orders) {
-    if (o.left <= 0) continue;
-    if (countDeliverable(ctx, [actor.bag, actor.storage], o) > 0) ctx.command({ type: 'ORDER_DELIVER', actor: actor.id, order: o.id });
+    if (o.left <= 0 || (o.at && o.at !== here.id)) continue;
+    if (countDeliverable(ctx, lists, o) > 0) ctx.command({ type: 'ORDER_DELIVER', actor: actor.id, order: o.id });
   }
 }
 
@@ -479,19 +756,16 @@ function deliverOrders(ctx, actor) {
 //  trader: 주문 게시판에 넘길 물건을 거래소에서 사 오고, 한참 싸게 나온 물건은 사 뒀다가 산 값보다 비싸게 판다
 //  dump: 기다리기 싫어한다. '한꺼번에 팔기'로 좋은 사자엔 넘기고 나머지는 시세 95%로 건다(걸 자리가 없으면 상인에게)
 //  orders / ordersOnly: 주문만 하고 거래소는 안 쓴다
-const KEEP = { ingot_copper: 12, lumber_birch: 12, lumber_drift: 12, nails_copper: 30, sand_fine: 6, sap_birch: 6, food_soup: 6, food_berry: 6, leather: 14, food_meat: 8, ingot_iron: 12, lumber_oak: 12, cloth_reed: 8 };
+const KEEP = { ingot_copper: 12, lumber_birch: 12, lumber_drift: 12, nails_copper: 30, sand_fine: 6, sap_birch: 6, food_soup: 6, food_berry: 6, leather: 14, food_meat: 8, ingot_iron: 12, lumber_oak: 4, cloth_reed: 8 };
 
 function surplusOf(ctx, actor, e) {
   const def = ctx.data.items[e.item];
-  const have = countItem([actor.bag, actor.storage], e.item);
+  const have = countItem(localLists(ctx, actor), e.item);
   if (def.stage === 'raw') return Math.max(0, Math.min(qtyOf(e), have - (e.item === 'hide_raw' || e.item === 'meat_raw' ? 30 : 60)));
   return Math.max(0, Math.min(qtyOf(e), have - (KEEP[e.item] ?? 0)));
 }
 
-function myMarket(ctx, actor) {
-  const m = ctx.state.market;
-  return [...m.asks, ...m.bids].filter((o) => o.kind === 'actor' && o.owner === actor.id);
-}
+const myMarket = (ctx, actor) => ordersOf(ctx, actor.id, 'actor');
 
 function noteCost(mem, item, star, price) {
   mem.cost = mem.cost || {};
@@ -501,11 +775,13 @@ function noteCost(mem, item, star, price) {
 
 // 사 와서 주문에 넘기기(시세 차익). 주문 보상이 거래소 값보다 넉넉할 때만 산다.
 function buyForOrders(ctx, actor, mem) {
-  const m = ctx.state.market;
+  const here = settlementAt(ctx, actor);
+  const m = bookOf(ctx, here.id);
+  const lists = localLists(ctx, actor);
   let budget = Math.floor(actor.silver * 0.6);
   for (const o of ctx.state.orders) {
-    if (o.left <= 0) continue;
-    let need = o.left - countDeliverable(ctx, [actor.bag, actor.storage], o);
+    if (o.left <= 0 || (o.at && o.at !== here.id)) continue;
+    let need = o.left - countDeliverable(ctx, lists, o);
     for (const a of m.asks.filter((x) => x.item === o.item && x.star >= o.minStar && x.owner !== actor.id).sort((x, y) => x.price - y.price)) {
       if (need <= 0 || a.price > o.reward * 0.8 || budget < a.price) break;
       const q = Math.min(a.qty, need, Math.floor(budget / a.price));
@@ -522,7 +798,9 @@ function buyForOrders(ctx, actor, mem) {
 function marketRound(ctx, actor, prof, mem) {
   const style = prof.market || 'normal';
   if (style === 'orders' || style === 'ordersOnly') return;
-  const m = ctx.state.market;
+  const here = settlementAt(ctx, actor);
+  const at = here.id;
+  const m = bookOf(ctx, at);
   const cap = ctx.cfg.market.maxOrdersPerOwner;
   // 반나절 넘게 안 팔린 내 팔자는 거둬서 다시 값을 매긴다
   for (const o of myMarket(ctx, actor)) {
@@ -530,25 +808,26 @@ function marketRound(ctx, actor, prof, mem) {
   }
   if (style === 'trader') buyForOrders(ctx, actor, mem);
   let open = myMarket(ctx, actor).length;
-  for (const e of [...actor.storage]) {
+  const mineHere = (item, star) => myMarket(ctx, actor).some((o) => o.at === at && o.entry && o.item === item && o.star === star);
+  for (const e of [...storeOf(actor, at)]) {
     if (!tradable(ctx, e)) continue;
     const q = surplusOf(ctx, actor, e);
     if (q <= 0) continue;
     const star = entryStar(ctx, e);
     if (style === 'quality' && star >= 3) continue;
     const base = baseValue(ctx, e.item, star);
-    const bid = bestBid(ctx, e.item, star);
+    const bid = bestBid(ctx, at, e.item, star);
     const key = keyOf(e);
     const cost = mem.cost?.[e.item + '|' + star];
     if (style === 'dump') {
       // v0.2.1부터 '한꺼번에 팔기'를 쓴다: 시세 85% 이상 사자엔 넘기고, 나머지는 시세 95%로 건다.
       // 걸 자리가 없을 때만 상인에게 넘긴다.
-      const ref = refPrice(ctx, e.item, star);
+      const ref = refPrice(ctx, at, e.item, star);
       if (bid && bid.price >= ref * 0.85) {
         ctx.command({ type: 'MARKET_SELL', actor: actor.id, key, qty: Math.min(q, bid.qty), price: bid.price, ioc: true });
         continue;
       }
-      if (myMarket(ctx, actor).some((o) => o.entry && o.item === e.item && o.star === star)) continue;
+      if (mineHere(e.item, star)) continue;
       if (open < cap - 2) {
         if (ctx.command({ type: 'MARKET_SELL', actor: actor.id, key, qty: q, price: Math.max(npcPrice(ctx, e.item, star) + 1, Math.round(ref * 0.95)) }).ok) open++;
         continue;
@@ -562,7 +841,7 @@ function marketRound(ctx, actor, prof, mem) {
       continue;
     }
     if (open >= cap - 2) continue;
-    if (myMarket(ctx, actor).some((o) => o.entry && o.item === e.item && o.star === star)) continue;
+    if (mineHere(e.item, star)) continue;
     // 남들 최저가보다 1 싸게, 그러나 바닥값 아래로는 안 내린다
     const low = m.asks.filter((x) => x.item === e.item && x.star === star && x.owner !== actor.id).reduce((p, x) => Math.min(p, x.price), Infinity);
     const price = Math.max(floor, Math.min(Math.round(base * 0.95), low - 1));
@@ -576,7 +855,7 @@ function marketRound(ctx, actor, prof, mem) {
       if (a.owner === actor.id || baseValue(ctx, a.item, a.star) < 6) continue;
       if (a.price > baseValue(ctx, a.item, a.star) * 0.75) continue;
       if ((m.ref[a.item + '|' + a.star] ?? 0) < a.price * 1.15 + 2) continue;
-      const q = Math.min(a.qty, Math.floor(budget / a.price), Math.max(0, 40 - countItem([actor.storage], a.item)));
+      const q = Math.min(a.qty, Math.floor(budget / a.price), Math.max(0, 40 - countItem([storeOf(actor, at)], a.item)));
       if (q <= 0) continue;
       if (ctx.command({ type: 'MARKET_BUY', actor: actor.id, item: a.item, minStar: a.star, qty: q, price: a.price, ioc: true }).ok) {
         budget -= q * a.price;
@@ -585,10 +864,10 @@ function marketRound(ctx, actor, prof, mem) {
     }
   }
   // 도구 재료가 모자라면 산다(구리주괴). 장인 성향은 ★3 이상만
-  const need = 6 - countItem([actor.bag, actor.storage], 'ingot_copper');
+  const need = 6 - countItem(localLists(ctx, actor), 'ingot_copper');
   if (need > 0 && actor.skills.smithing.level >= 4) {
     const minStar = style === 'quality' ? 3 : 2;
-    const ask = bestAsk(ctx, 'ingot_copper', minStar);
+    const ask = bestAsk(ctx, at, 'ingot_copper', minStar);
     if (ask && ask.price <= baseValue(ctx, 'ingot_copper', ask.star) * 1.1 && actor.silver >= ask.price * Math.min(need, ask.qty)) {
       ctx.command({ type: 'MARKET_BUY', actor: actor.id, item: 'ingot_copper', minStar, qty: Math.min(need, ask.qty), price: ask.price, ioc: true });
     }
@@ -618,10 +897,17 @@ function craftStep(ctx, actor, prof, mem) {
     mem.plan = makePlan(ctx, actor, prof);
     mem.queued = 0;
   }
+  const here = settlementAt(ctx, actor);
+  // 이 마을 작업대만 쓴다(재료가 이 마을 창고에 있다). 마을 밖이면 가장 가까운 것.
+  const stationHere = (type, tier = 1) => {
+    if (!here) return nearestStation(ctx, actor, type);
+    const st = stationIn(here, type);
+    return st && st.tier >= tier ? st : null;
+  };
   while (mem.plan.length) {
     const step = mem.plan[0];
     if (step.repair) {
-      const st = nearestStation(ctx, actor, step.station || 'forge');
+      const st = stationHere(step.station || 'forge');
       if (!st) {
         mem.plan.shift();
         continue;
@@ -635,7 +921,7 @@ function craftStep(ctx, actor, prof, mem) {
         moveNear(ctx, actor, st, (data.stations[st.type].r || 0.8) + 1.2);
         return;
       }
-      if (ctx.command({ type: 'REPAIR', actor: actor.id, uid: step.repair }).ok && actor.storage.some((e) => e.uid === step.repair)) {
+      if (ctx.command({ type: 'REPAIR', actor: actor.id, uid: step.repair }).ok && here && storeOf(actor, here.id).some((e) => e.uid === step.repair)) {
         ctx.command({ type: 'TAKE', actor: actor.id, key: step.repair });
       }
       mem.plan.shift();
@@ -659,7 +945,7 @@ function craftStep(ctx, actor, prof, mem) {
       continue;
     }
     if (r.station !== 'hand') {
-      const st = nearestStation(ctx, actor, r.station);
+      const st = stationHere(r.station, r.stationTier || 1);
       if (!st) {
         mem.plan.shift();
         continue;
@@ -676,7 +962,7 @@ function craftStep(ctx, actor, prof, mem) {
     }
     let done = 0;
     while (done < step.n && actor.queue.length < cfg.craft.queueMax) {
-      if (step.keepItem && countItem([actor.bag, actor.storage], step.keepItem) - step.keepNeed < step.keepQty) break;
+      if (step.keepItem && countItem(localLists(ctx, actor), step.keepItem) - step.keepNeed < step.keepQty) break;
       const cmd = { type: 'CRAFT', actor: actor.id, recipe: step.recipe, auto: step.auto || 'best' };
       if (step.catalyst) cmd.catalyst = 'auto';
       if (step.focus && prof.useFocus && actor.focus >= prof.focusReserve + cfg.focus.cost.refine) cmd.focus = true;

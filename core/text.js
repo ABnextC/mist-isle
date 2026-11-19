@@ -48,7 +48,17 @@ export const ERR = {
   no_mob: '없는 짐승',
   no_corpse: '손질할 사체가 없음',
   not_equipment: '낄 수 없는 물건',
+  station_tier: '2단계 작업대가 있어야 함',
+  other_town: '다른 마을 게시판의 주문',
+  already_home: '이미 귀환 지점',
+  same_town: '같은 마을',
+  no_project: '이 마을 사업이 아님',
+  project_closed: '아직 열리지 않았거나 끝난 사업',
+  not_needed: '그 사업에 더 필요 없음',
 };
+
+// 정착지 이름(없으면 id)
+export const townName = (state, sid) => state.settlements[sid]?.name ?? sid;
 
 // 은화 표기: 1,234
 export const silver = (n) => `${Math.floor(n).toLocaleString('ko-KR')}은화`;
@@ -136,7 +146,7 @@ export function describeEvent(ev, game) {
     case 'skin.done':
       return `${p}🔪 ${data.creatures[ev.species]?.name ?? ev.species} 손질: ${ev.items.map((x) => `${itemName(data, x.item)} ${x.qty}`).join(' · ')}`;
     case 'actor.down':
-      return `${p}💀 ${ev.species ? `${data.creatures[ev.species]?.name ?? ev.species}에게 ` : ''}쓰러짐 — 마을에서 다시 일어난다(낀 장비 내구 −10%)`;
+      return `${p}💀 ${ev.species ? `${data.creatures[ev.species]?.name ?? ev.species}에게 ` : ''}쓰러짐 — 가까운 마을에서 다시 일어난다(낀 장비 내구 −10%)`;
     case 'equip': {
       const SLOT = { weapon: '무기', head: '머리', chest: '몸통', legs: '다리' };
       return ev.uid ? `${p}🛡️ ${SLOT[ev.slot]}: ${itemName(data, ev.item)} 낌` : `${p}${SLOT[ev.slot]} 장비를 벗음`;
@@ -144,7 +154,7 @@ export function describeEvent(ev, game) {
     case 'combat.guardbreak':
       return `${p}🛡️ 기력이 바닥나 막기가 풀렸다`;
     case 'store':
-      return ev.moved ? `${p}📦 창고에 ${ev.moved}개 넣음` : null;
+      return ev.moved ? `${p}📦 ${ev.at ? townName(state, ev.at) + ' ' : ''}창고에 ${ev.moved}개 넣음` : null;
     case 'take':
       return `${p}📦 창고에서 ${ev.qty}개 꺼냄`;
     case 'cmd.rejected':
@@ -152,7 +162,27 @@ export function describeEvent(ev, game) {
     case 'day.start':
       return `🌅 ${ev.day}일차 아침`;
     case 'recall.done':
-      return `${p}🏠 등대 마을로 돌아왔다`;
+      return `${p}🏠 ${townName(state, ev.settlement)}(으)로 돌아왔다`;
+    case 'home.set':
+      return `${p}🏠 귀환 지점: ${townName(state, ev.at)}`;
+    case 'ship':
+      return `${p}🚚 ${townName(state, ev.from)} → ${townName(state, ev.to)} ${ev.qty}개 운송 · ${ev.fee}은화`;
+    case 'project.contrib': {
+      if (ev.kind !== 'actor') return null;
+      const def = data.projects[ev.project];
+      const what = ev.item ? `${itemName(data, ev.item)} ${ev.qty}개` : `${ev.silver}은화`;
+      return `${state.actors[ev.owner] && Object.keys(state.actors).length > 1 ? `[${state.actors[ev.owner].name}] ` : ''}🏗️ 「${def.name}」에 ${what} 냄 · 명성 +${Math.round(ev.points)}`;
+    }
+    case 'project.done': {
+      const def = data.projects[ev.project];
+      return `🎉 ${townName(state, ev.at)} 사업 「${def.name}」 완성`;
+    }
+    case 'settle.pop':
+      return `${ev.pop > ev.from ? '🏘️' : '🏚️'} ${townName(state, ev.at)} 인구 ${ev.from} → ${ev.pop} (번영 ${Math.round(ev.prosperity)})`;
+    case 'station.down':
+      return `⚠️ ${townName(state, ev.at)} ${data.stations[ev.station]?.name ?? ev.station}: 유지비가 밀려 1단계로 일한다`;
+    case 'station.up':
+      return `🔧 ${townName(state, ev.at)} ${data.stations[ev.station]?.name ?? ev.station}: 다시 ${ev.tier}단계`;
     case 'autopilot':
       return ev.on ? '🤖 봇이 대신 움직인다' : '🤖 봇 끔';
     case 'milestone':
@@ -171,7 +201,7 @@ export function describeEvent(ev, game) {
     case 'repair':
       return `${p}🔧 ${itemName(data, ev.item)} 수리 · ${ev.cost}은화 · 최대 내구 ${ev.maxDur}`;
     case 'order.posted':
-      return `📋 새 주문: ${itemName(data, ev.item)}${ev.minStar ? ` ★${ev.minStar} 이상` : ''} ${ev.qty}개 · 개당 ${ev.reward}은화`;
+      return `📋 ${ev.at ? townName(state, ev.at) + ' ' : ''}새 주문: ${itemName(data, ev.item)}${ev.minStar ? ` ★${ev.minStar} 이상` : ''} ${ev.qty}개 · 개당 ${ev.reward}은화`;
     case 'order.delivered': {
       const nm = state.actors[ev.owner]?.name;
       return nm ? `📋 주문 납품: ${itemName(data, ev.item)} ${ev.qty}개 · ${ev.pay}은화${ev.done ? ' · 주문 끝' : ''}` : null;

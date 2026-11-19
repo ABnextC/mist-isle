@@ -49,6 +49,8 @@ export function fightTick(ctx, a) {
   if (!f || isDown(a)) return;
   const t = ctx.state.t;
   const cb = a.cb;
+  // 비틀거리는 동안은 아무것도 못 한다(헛명령을 보내지 않는다, v0.4)
+  if (cb.stunUntil > t) return;
   // 1) 준비 동작 읽기: 같은 준비 동작(until 값)마다 한 번 굴린다
   let blockWanted = false;
   for (const m of threats(ctx, a)) {
@@ -64,12 +66,13 @@ export function fightTick(ctx, a) {
       // 짐승을 등지고 옆으로 비켜 구른다
       const away = yawTo(m, a);
       const side = (m.id.length + Math.floor(t)) % 2 ? 1.2 : -1.2;
-      if (ctx.command({ type: 'DODGE', actor: a.id, yaw: away + side }).ok) continue;
+      const dodge = { type: 'DODGE', actor: a.id, yaw: away + side };
+      if (ctx.check(dodge).ok && ctx.command(dodge).ok) continue;
       f.plan[m.id] = 'block';
     }
     if (f.plan[m.id] === 'block' && left <= BLOCK_AT && !charge) blockWanted = true;
   }
-  if (blockWanted !== cb.block) {
+  if (blockWanted !== cb.block && !cb.dodge) {
     if (blockWanted) a.yaw = Math.round(yawTo(a, threats(ctx, a).find((m) => m.mode === 'windup') || a) * 1000) / 1000;
     ctx.command({ type: 'BLOCK', actor: a.id, on: blockWanted });
   }
@@ -101,7 +104,7 @@ export function fightTick(ctx, a) {
     return;
   }
   if (a.dest) a.dest = null;
-  if (cb.act) return;
+  if (cb.act && t < cb.act.endAt) return;
   const heavy = cb.st >= 70 && (m.mode === 'recover' || type.temper === 'skittish');
   ctx.command({ type: 'ATTACK', actor: a.id, kind: heavy ? 'heavy' : 'light', yaw: yawTo(a, m) });
 }

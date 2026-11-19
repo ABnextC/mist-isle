@@ -54,7 +54,7 @@ export function runSim({ days = 3, seed = 42, bots = 1 } = {}) {
       focusUsed: Math.round(a.stats.focusUsed), masterwork: a.stats.masterwork,
       levels: Object.fromEntries(Object.entries(a.skills).filter(([, s]) => s.xp > 0).map(([k, s]) => [k, s.level])),
       milestones: a.milestones, tools,
-      bag: a.bag.length, storage: a.storage.length,
+      bag: a.bag.length, storage: Object.values(a.storages || {}).reduce((n, l) => n + l.length, 0),
     };
   });
 

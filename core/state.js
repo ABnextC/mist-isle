@@ -2,14 +2,14 @@
 
 import { seedState } from './rng.js';
 import { openVein } from './systems/veins.js';
-import { stationLayout } from './world.js';
-import { emptyMarket, townDaily } from './market.js';
+import { emptyMarket } from './market.js';
 import { initEcon } from './systems/economy.js';
 import { dailyOrders } from './orders.js';
 import { initCombat, emptyEquip } from './systems/combat.js';
 import { initMobs } from './systems/mobs.js';
+import { newSettlement, initProjects, settlementsDaily } from './settlements.js';
 
-export const ENGINE_VERSION = '0.3.1';
+export const ENGINE_VERSION = '0.4.1';
 
 export function spawnPoint(region, terrain) {
   const [x, inland] = region.spawn;
@@ -20,6 +20,7 @@ export function newActor(data, spec, at) {
   const skills = {};
   for (const s of data.lists.skills) skills[s.id] = { xp: 0, level: 1 };
   const [x, z] = spec.at || at;
+  const home = data.lists.regions[0].settlements[0].id;
   return {
     id: spec.id,
     name: spec.name || spec.id,
@@ -30,7 +31,7 @@ export function newActor(data, spec, at) {
     silver: data.config.market.startSilver,
     buffs: [],
     cb: initCombat(data.config), equip: emptyEquip(),
-    bag: [], storage: [], queue: [],
+    bag: [], storages: {}, queue: [], home, standing: {},
     ai: spec.ai ? { on: true, profile: spec.ai, mem: {} } : null,
     stats: { gather: {}, craft: {}, eat: 0, focusUsed: 0, masterwork: 0, kills: {}, skin: {}, downs: 0, dmgDealt: 0, dmgTaken: 0 },
     milestones: {},
@@ -46,7 +47,7 @@ export function createState(data, seed) {
     clock: { hour: 0, day: 0 },
     rng: seedState(seed),
     nextId: 1,
-    regions: {}, lots: {}, veins: {}, nodes: {}, settlements: {}, actors: {}, mobs: {}, mobGroups: {},
+    regions: {}, lots: {}, veins: {}, nodes: {}, settlements: {}, projects: {}, actors: {}, mobs: {}, mobGroups: {},
     market: emptyMarket(), orders: [], econ: null,
   };
 }
@@ -59,11 +60,7 @@ export function populate(ctx, actorSpecs) {
     const density = {};
     for (const fam of Object.keys(cfg.families)) density[fam] = 1;
     state.regions[region.id] = { id: region.id, density };
-    const s = region.settlement;
-    state.settlements[s.id] = {
-      id: s.id, name: s.name, region: region.id, x: s.x, z: s.z, radius: s.radius,
-      stations: stationLayout(region),
-    };
+    for (const sdef of region.settlements) state.settlements[sdef.id] = newSettlement(region, sdef, cfg);
     for (const vc of region.veins) {
       if (vc.common) openVein(ctx, region, vc, { common: true });
       for (let i = 0; i < (vc.rotating || 0); i++) openVein(ctx, region, vc, { initial: true });
@@ -72,8 +69,9 @@ export function populate(ctx, actorSpecs) {
   const home = data.lists.regions[0];
   const at = spawnPoint(home, ctx.terrain);
   for (const spec of actorSpecs) state.actors[spec.id] = newActor(data, spec, at);
+  state.projects = initProjects(data);
   initMobs(ctx);
   state.econ = initEcon(ctx);
-  townDaily(ctx);
+  settlementsDaily(ctx);
   dailyOrders(ctx);
 }

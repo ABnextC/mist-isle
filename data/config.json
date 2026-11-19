@@ -1,5 +1,5 @@
 {
-  "dataVersion": 5,
+  "dataVersion": 6,
   "skillCap": 60,
   "time": {
     "secondsPerGameDay": 3600,
@@ -147,7 +147,10 @@
     "toolMinDur": 0.95
   },
   "orders": {
-    "open": 5,
+    "open": {
+      "s_lighthouse": 5,
+      "s_forest": 3
+    },
     "lifeDays": [
       2,
       3
@@ -163,7 +166,8 @@
         ],
         "minStar": 0,
         "premium": 1.36,
-        "w": 3
+        "w": 3,
+        "at": "s_lighthouse"
       },
       {
         "item": "stake_wood",
@@ -173,7 +177,8 @@
         ],
         "minStar": 0,
         "premium": 1.36,
-        "w": 3
+        "w": 3,
+        "at": "s_lighthouse"
       },
       {
         "item": "lumber_drift",
@@ -183,7 +188,8 @@
         ],
         "minStar": 2,
         "premium": 1.19,
-        "w": 2
+        "w": 2,
+        "at": "s_lighthouse"
       },
       {
         "item": "lumber_birch",
@@ -193,7 +199,8 @@
         ],
         "minStar": 3,
         "premium": 1.27,
-        "w": 2
+        "w": 2,
+        "at": "s_lighthouse"
       },
       {
         "item": "ingot_copper",
@@ -203,7 +210,8 @@
         ],
         "minStar": 3,
         "premium": 1.27,
-        "w": 2
+        "w": 2,
+        "at": "s_lighthouse"
       },
       {
         "item": "cloth_reed",
@@ -213,7 +221,8 @@
         ],
         "minStar": 3,
         "premium": 1.44,
-        "w": 2
+        "w": 2,
+        "at": "s_lighthouse"
       },
       {
         "item": "crate_wood",
@@ -223,7 +232,8 @@
         ],
         "minStar": 0,
         "premium": 1.27,
-        "w": 2
+        "w": 2,
+        "at": "s_lighthouse"
       },
       {
         "item": "food_soup",
@@ -233,7 +243,8 @@
         ],
         "minStar": 0,
         "premium": 1.36,
-        "w": 2
+        "w": 2,
+        "at": "s_lighthouse"
       },
       {
         "item": "food_berry",
@@ -243,7 +254,8 @@
         ],
         "minStar": 0,
         "premium": 1.27,
-        "w": 2
+        "w": 2,
+        "at": "s_lighthouse"
       },
       {
         "item": "sand_fine",
@@ -253,7 +265,8 @@
         ],
         "minStar": 0,
         "premium": 1.27,
-        "w": 1
+        "w": 1,
+        "at": "s_lighthouse"
       },
       {
         "item": "tool_axe_copper",
@@ -263,7 +276,8 @@
         ],
         "minStar": 3,
         "premium": 1.15,
-        "w": 1
+        "w": 1,
+        "at": "s_lighthouse"
       },
       {
         "item": "tool_pick_copper",
@@ -273,7 +287,8 @@
         ],
         "minStar": 3,
         "premium": 1.15,
-        "w": 1
+        "w": 1,
+        "at": "s_lighthouse"
       },
       {
         "item": "tool_sickle_copper",
@@ -283,7 +298,8 @@
         ],
         "minStar": 3,
         "premium": 1.15,
-        "w": 1
+        "w": 1,
+        "at": "s_lighthouse"
       },
       {
         "item": "leather",
@@ -293,7 +309,8 @@
         ],
         "minStar": 2,
         "premium": 1.3,
-        "w": 2
+        "w": 2,
+        "at": "s_lighthouse"
       },
       {
         "item": "food_meat",
@@ -303,7 +320,8 @@
         ],
         "minStar": 0,
         "premium": 1.35,
-        "w": 2
+        "w": 2,
+        "at": "s_lighthouse"
       },
       {
         "item": "wpn_sword_copper",
@@ -313,10 +331,110 @@
         ],
         "minStar": 3,
         "premium": 1.2,
-        "w": 1
+        "w": 1,
+        "at": "s_lighthouse"
+      },
+      {
+        "item": "leather",
+        "qty": [
+          4,
+          8
+        ],
+        "minStar": 2,
+        "premium": 1.3,
+        "w": 3,
+        "at": "s_forest"
+      },
+      {
+        "item": "food_meat",
+        "qty": [
+          4,
+          8
+        ],
+        "minStar": 0,
+        "premium": 1.3,
+        "w": 2,
+        "at": "s_forest"
+      },
+      {
+        "item": "stake_wood",
+        "qty": [
+          8,
+          16
+        ],
+        "minStar": 0,
+        "premium": 1.36,
+        "w": 2,
+        "at": "s_forest"
+      },
+      {
+        "item": "nails_copper",
+        "qty": [
+          30,
+          60
+        ],
+        "minStar": 0,
+        "premium": 1.36,
+        "w": 2,
+        "at": "s_forest"
+      },
+      {
+        "item": "hide_raw",
+        "qty": [
+          8,
+          14
+        ],
+        "minStar": 0,
+        "premium": 1.25,
+        "w": 2,
+        "at": "s_forest"
+      },
+      {
+        "item": "lumber_oak",
+        "qty": [
+          3,
+          6
+        ],
+        "minStar": 2,
+        "premium": 1.25,
+        "w": 2,
+        "at": "s_forest",
+        "needs": [
+          "sawbench",
+          2
+        ]
+      },
+      {
+        "item": "ingot_iron",
+        "qty": [
+          3,
+          6
+        ],
+        "minStar": 2,
+        "premium": 1.25,
+        "w": 2,
+        "at": "s_forest",
+        "needs": [
+          "smelter",
+          2
+        ]
+      },
+      {
+        "item": "wpn_spear_copper",
+        "qty": [
+          1,
+          1
+        ],
+        "minStar": 3,
+        "premium": 1.2,
+        "w": 1,
+        "at": "s_forest"
       }
     ],
-    "perDay": 3
+    "perDay": {
+      "s_lighthouse": 3,
+      "s_forest": 2
+    }
   },
   "econ": {
     "agents": [
@@ -324,119 +442,201 @@
         "id": "e1",
         "name": "도윤",
         "role": "gatherer",
-        "item": "log_drift"
+        "item": "log_drift",
+        "home": "s_lighthouse"
       },
       {
         "id": "e2",
         "name": "서연",
         "role": "gatherer",
-        "item": "log_birch"
+        "item": "log_birch",
+        "home": "s_lighthouse"
       },
       {
         "id": "e3",
         "name": "민준",
         "role": "gatherer",
-        "item": "log_birch"
+        "item": "log_birch",
+        "home": "s_lighthouse"
       },
       {
         "id": "e4",
         "name": "하은",
         "role": "gatherer",
-        "item": "stone"
+        "item": "stone",
+        "home": "s_lighthouse"
       },
       {
         "id": "e5",
         "name": "지호",
         "role": "gatherer",
-        "item": "ore_copper"
+        "item": "ore_copper",
+        "home": "s_lighthouse"
       },
       {
         "id": "e6",
         "name": "수아",
         "role": "gatherer",
-        "item": "ore_copper"
+        "item": "ore_copper",
+        "home": "s_lighthouse"
       },
       {
         "id": "e7",
         "name": "예준",
         "role": "gatherer",
-        "item": "fiber_reed"
+        "item": "fiber_reed",
+        "home": "s_lighthouse"
       },
       {
         "id": "e8",
         "name": "지우",
         "role": "gatherer",
-        "item": "berry"
+        "item": "berry",
+        "home": "s_lighthouse"
       },
       {
         "id": "e9",
         "name": "은우",
         "role": "gatherer",
-        "item": "seaweed"
+        "item": "seaweed",
+        "home": "s_lighthouse"
       },
       {
         "id": "e10",
         "name": "서윤",
         "role": "gatherer",
-        "item": "mushroom"
+        "item": "mushroom",
+        "home": "s_lighthouse"
       },
       {
         "id": "e11",
         "name": "시우",
         "role": "crafter",
-        "recipe": "rc_lumber_birch"
+        "recipe": "rc_lumber_birch",
+        "home": "s_lighthouse"
       },
       {
         "id": "e12",
         "name": "하린",
         "role": "crafter",
-        "recipe": "rc_lumber_drift"
+        "recipe": "rc_lumber_drift",
+        "home": "s_lighthouse"
       },
       {
         "id": "e13",
         "name": "주원",
         "role": "crafter",
-        "recipe": "rc_ingot_copper"
+        "recipe": "rc_ingot_copper",
+        "home": "s_lighthouse"
       },
       {
         "id": "e14",
         "name": "다은",
         "role": "crafter",
-        "recipe": "rc_cloth_reed"
+        "recipe": "rc_cloth_reed",
+        "home": "s_lighthouse"
       },
       {
         "id": "e15",
         "name": "건우",
         "role": "crafter",
-        "recipe": "rc_nails_copper"
+        "recipe": "rc_nails_copper",
+        "home": "s_lighthouse"
       },
       {
         "id": "e16",
         "name": "채원",
         "role": "crafter",
-        "recipe": "rc_soup"
+        "recipe": "rc_soup",
+        "home": "s_lighthouse"
       },
       {
         "id": "e17",
         "name": "태윤",
         "role": "crafter",
-        "recipe": "rc_stake_wood"
+        "recipe": "rc_stake_wood",
+        "home": "s_lighthouse"
       },
       {
         "id": "e18",
         "name": "현우",
-        "role": "trader"
+        "role": "trader",
+        "home": "s_lighthouse"
       },
       {
         "id": "e19",
         "name": "지안",
-        "role": "trader"
+        "role": "trader",
+        "home": "s_lighthouse"
       },
       {
         "id": "e20",
         "name": "유나",
         "role": "crafter",
-        "recipe": "rc_dried_berry"
+        "recipe": "rc_dried_berry",
+        "home": "s_lighthouse"
+      },
+      {
+        "id": "e21",
+        "name": "범수",
+        "role": "gatherer",
+        "item": "log_oak",
+        "home": "s_forest"
+      },
+      {
+        "id": "e22",
+        "name": "소율",
+        "role": "gatherer",
+        "item": "ore_iron",
+        "home": "s_forest"
+      },
+      {
+        "id": "e23",
+        "name": "도겸",
+        "role": "gatherer",
+        "item": "hide_raw",
+        "home": "s_forest"
+      },
+      {
+        "id": "e24",
+        "name": "나래",
+        "role": "gatherer",
+        "item": "meat_raw",
+        "home": "s_forest"
+      },
+      {
+        "id": "e25",
+        "name": "우진",
+        "role": "crafter",
+        "recipe": "rc_leather",
+        "home": "s_forest"
+      },
+      {
+        "id": "e26",
+        "name": "가람",
+        "role": "crafter",
+        "recipe": "rc_lumber_oak",
+        "home": "s_forest"
+      },
+      {
+        "id": "e27",
+        "name": "한결",
+        "role": "crafter",
+        "recipe": "rc_ingot_iron",
+        "home": "s_forest"
+      },
+      {
+        "id": "e28",
+        "name": "보람",
+        "role": "trader",
+        "home": "s_forest"
+      },
+      {
+        "id": "e29",
+        "name": "다솜",
+        "role": "crafter",
+        "recipe": "rc_meat",
+        "home": "s_forest"
       }
     ],
     "rate": {
@@ -447,7 +647,11 @@
       "fiber_reed": 6,
       "berry": 5,
       "seaweed": 3,
-      "mushroom": 2.5
+      "mushroom": 2.5,
+      "log_oak": 3,
+      "ore_iron": 2.5,
+      "hide_raw": 3,
+      "meat_raw": 3
     },
     "craftBatches": 2,
     "startSilver": [
@@ -488,32 +692,57 @@
       "minValue": 6,
       "minGain": 2,
       "upkeepFloor": 700
+    },
+    "donate": 0.25,
+    "food": {
+      "s_lighthouse": "food_berry",
+      "s_forest": "food_meat"
     }
   },
   "town": {
     "purse": 1000000000,
-    "priceFactor": 0.9,
+    "priceFactor": {
+      "s_lighthouse": 0.9,
+      "s_forest": 1.15
+    },
     "demand": {
-      "lumber_birch": 16,
-      "lumber_drift": 16,
-      "ingot_copper": 8,
-      "cloth_reed": 10,
-      "nails_copper": 60,
-      "stake_wood": 16,
-      "food_berry": 16,
-      "food_soup": 8,
-      "stone": 20,
-      "log_drift": 20,
-      "fiber_reed": 20,
-      "leather": 8,
-      "food_meat": 8
+      "s_lighthouse": {
+        "lumber_birch": 16,
+        "lumber_drift": 16,
+        "ingot_copper": 8,
+        "cloth_reed": 10,
+        "nails_copper": 60,
+        "stake_wood": 16,
+        "food_berry": 16,
+        "food_soup": 8,
+        "stone": 20,
+        "log_drift": 20,
+        "fiber_reed": 20,
+        "leather": 8,
+        "food_meat": 8,
+        "lumber_oak": 4,
+        "ingot_iron": 3
+      },
+      "s_forest": {
+        "food_meat": 4,
+        "food_berry": 4,
+        "food_soup": 2,
+        "stake_wood": 8,
+        "nails_copper": 16,
+        "lumber_birch": 4,
+        "stone": 10,
+        "cloth_reed": 3,
+        "leather": 2,
+        "lumber_oak": 3,
+        "ingot_iron": 2
+      }
     },
     "grow": {
       "full": 0.95,
       "up": 1.08,
       "low": 0.5,
       "down": 0.95,
-      "max": 3
+      "max": 2
     }
   },
   "repair": {
@@ -611,5 +840,78 @@
       "medium": 3.2,
       "heavy": 2.5
     }
+  },
+  "settle": {
+    "prosper": {
+      "start": 50,
+      "rate": 0.35,
+      "grow": 60,
+      "shrink": 35,
+      "up": 0.08,
+      "down": 0.04,
+      "floor": 0.6
+    },
+    "ship": {
+      "rate": 0.05,
+      "min": 2
+    },
+    "standing": [
+      {
+        "min": 0,
+        "name": "손님",
+        "tax": 0.04,
+        "fee": 0.01,
+        "ship": 0.05
+      },
+      {
+        "min": 500,
+        "name": "이웃",
+        "tax": 0.035,
+        "fee": 0.01,
+        "ship": 0.05
+      },
+      {
+        "min": 3000,
+        "name": "단골",
+        "tax": 0.03,
+        "fee": 0.005,
+        "ship": 0.04
+      },
+      {
+        "min": 10000,
+        "name": "명예 주민",
+        "tax": 0.025,
+        "fee": 0,
+        "ship": 0.025
+      }
+    ],
+    "upkeep": {
+      "s_lighthouse": {
+        "sawbench": {
+          "stone": 2
+        },
+        "smelter": {
+          "stone": 3,
+          "log_birch": 4
+        },
+        "forge": {
+          "stone": 2,
+          "log_birch": 3
+        }
+      },
+      "s_forest": {
+        "sawbench": {
+          "log_oak": 3
+        },
+        "smelter": {
+          "log_oak": 4
+        },
+        "forge": {
+          "log_oak": 3
+        }
+      }
+    },
+    "upkeepGrace": 3,
+    "upkeepLow": 0.5
   }
 }

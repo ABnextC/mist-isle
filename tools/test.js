@@ -9,7 +9,15 @@ import {
 } from '../core/formulas.js';
 import { keyOf, effectiveProps } from '../core/inventory.js';
 import { fitsHabitat } from '../core/terrain.js';
+import { allOrders, bookOf } from '../core/market.js';
+import { storeOf, nearestSettlement } from '../core/world.js';
+import { settlementDaily } from '../core/settlements.js';
 import { readFileSync } from 'node:fs';
+
+const LH = 's_lighthouse';
+const FR = 's_forest';
+// 등대 마을 창고(v0.4: 창고가 마을마다 따로다)
+const home = (a) => storeOf(a, LH);
 
 let pass = 0;
 let fail = 0;
@@ -143,7 +151,7 @@ test('정제: 한 산지면 같은 묶음 + 단계 보너스, 섞으면 가중 �
   let r = g.dispatch({ type: 'CRAFT', actor: 'p1', recipe: 'rc_ingot_copper', refineProp: 'toughness' });
   ok(r.ok, r.error);
   g.advance(6);
-  const ingot = a.storage.find((e) => e.item === 'ingot_copper');
+  const ingot = home(a).find((e) => e.item === 'ingot_copper');
   ok(ingot, '주괴가 창고에 없음');
   eq(ingot.lot, L1.id, '같은 산지 묶음');
   eq(ingot.bonus.toughness, 5, '숙련 30 단계 +5');
@@ -155,7 +163,7 @@ test('정제: 한 산지면 같은 묶음 + 단계 보너스, 섞으면 가중 �
   r = g.dispatch({ type: 'CRAFT', actor: 'p1', recipe: 'rc_ingot_copper', refineProp: 'hardness' });
   ok(r.ok, r.error);
   g.advance(6);
-  const mixed = a.storage.find((e) => e.item === 'ingot_copper' && g.state.lots[e.lot].mix);
+  const mixed = home(a).find((e) => e.item === 'ingot_copper' && g.state.lots[e.lot].mix);
   ok(mixed, '섞은 묶음이 없음');
   const want = Math.round(((L1.props.hardness * 1 + L2.props.hardness * 2) / 3) * 10) / 10;
   eq(g.state.lots[mixed.lot].props.hardness, want, '가중 평균 경도');
@@ -252,7 +260,7 @@ test('깊은 바다로는 걸어 들어갈 수 없다', () => {
   ok(g.terrain.height(a.x, a.z) > data.lists.regions[0].terrain.wadeDepth, '물속으로 들어감');
 });
 
-test('등대로 귀환: 6초 뒤 창고 앞으로, 움직이면 취소, 15분 재사용 대기', () => {
+test('귀환: 6초 뒤 귀환 지점 창고 앞으로, 움직이면 취소, 15분 재사용 대기', () => {
   const g = createGame({ data, seed: 4 });
   const a = g.state.actors.p1;
   a.x = 300;
@@ -324,10 +332,11 @@ test('v0.0 세이브를 불러오면 지형에 맞게 옮겨지고 이어서 돈
   for (const n of Object.values(g.state.nodes)) if (!fitsHabitat(g.terrain, region, data.nodes[n.type], n.x, n.z)) bad++;
   ok(bad <= 2, `서식지 밖 노드 ${bad}개`);
   eq(JSON.stringify(g.state.actors.p1.skills), JSON.stringify(before.actors.p1.skills), '스킬이 보존되지 않음');
-  eq(g.state.actors.p1.storage.length, before.actors.p1.storage.length, '창고가 보존되지 않음');
+  eq(home(g.state.actors.p1).length, before.actors.p1.storage.length, '창고가 보존되지 않음');
   eq(g.state.actors.p1.silver, data.config.market.startSilver, '은화(v0.2)');
   eq(g.state.econ.agents.length, data.config.econ.agents.length, 'AI 개척민(v0.2)');
-  ok(Array.isArray(g.state.market.asks) && Array.isArray(g.state.orders), '거래소·주문(v0.2)');
+  ok(Array.isArray(bookOf({ state: g.state }, LH).asks) && Array.isArray(g.state.orders), '거래소·주문(v0.2)');
+  ok(g.state.settlements[FR] && g.state.projects.pj_f_tannery, '숲머리·마을 사업(v0.4)');
   g.advance(600);
   const again = loadGame({ data, save: old });
   again.advance(600);
@@ -349,8 +358,7 @@ console.log('거래소·주문 (v0.2)');
 function marketGame(seed = 5) {
   const g = createGame({ data, seed, actors: [{ id: 'p1', kind: 'player' }, { id: 'p2', kind: 'player' }] });
   g.state.econ = null;
-  g.state.market.asks = [];
-  g.state.market.bids = [];
+  g.state.market.books = {};
   const town = Object.values(g.state.settlements)[0];
   for (const id of ['p1', 'p2']) {
     g.state.actors[id].x = town.x + 3;
@@ -365,15 +373,15 @@ test('팔자와 사자가 만나면 먼저 걸린 값으로 체결되고, 수수
   const p2 = g.state.actors.p2;
   p2.silver = 1000;
   const start = p1.silver;
-  p1.storage.push({ item: 'ingot_copper', lot: null, bonus: null, qty: 5 });
-  const key = keyOf(p1.storage[p1.storage.length - 1]);
+  home(p1).push({ item: 'ingot_copper', lot: null, bonus: null, qty: 5 });
+  const key = keyOf(home(p1)[home(p1).length - 1]);
   ok(g.dispatch({ type: 'MARKET_SELL', actor: 'p1', key, qty: 5, price: 50 }).ok, '팔자 거절');
   eq(p1.silver, start - 3, '수수료(5×50×1%)');
   ok(g.dispatch({ type: 'MARKET_BUY', actor: 'p2', item: 'ingot_copper', minStar: 0, qty: 3, price: 60 }).ok, '사자 거절');
   eq(p2.silver, 1000 - 150, '산 쪽은 걸린 값(50)으로 내고 차액을 돌려받는다');
   eq(p1.silver, start - 3 + 150 - 6, '판 쪽은 판매세 4%를 뺀 값을 받는다');
-  eq(p2.storage.filter((e) => e.item === 'ingot_copper').reduce((x, e) => x + e.qty, 0), 3, '산 물건은 창고로');
-  eq(g.state.market.asks[0].qty, 2, '남은 팔자');
+  eq(home(p2).filter((e) => e.item === 'ingot_copper').reduce((x, e) => x + e.qty, 0), 3, '산 물건은 창고로');
+  eq(bookOf({ state: g.state }, LH).asks[0].qty, 2, '남은 팔자');
   eq(g.dispatch({ type: 'MARKET_SELL', actor: 'p1', key, qty: 1, price: 50 }).error, 'no_item', '없는 물건');
 });
 
@@ -382,16 +390,16 @@ test('★ 조건 사자는 그 별 이상만 사고, 기한이 지나면 물건�
   const p1 = g.state.actors.p1;
   const p2 = g.state.actors.p2;
   p2.silver = 500;
-  p1.storage.push({ item: 'sap_birch', lot: null, bonus: null, qty: 4 });
-  const key = keyOf(p1.storage[p1.storage.length - 1]);
+  home(p1).push({ item: 'sap_birch', lot: null, bonus: null, qty: 4 });
+  const key = keyOf(home(p1)[home(p1).length - 1]);
   g.dispatch({ type: 'MARKET_SELL', actor: 'p1', key, price: 10 });
   g.dispatch({ type: 'MARKET_BUY', actor: 'p2', item: 'sap_birch', minStar: 3, qty: 4, price: 20 });
-  eq(g.state.market.asks.length + g.state.market.bids.length, 2, '★0 팔자와 ★3 사자는 맞지 않는다');
+  eq(allOrders({ state: g.state }).length, 2, '★0 팔자와 ★3 사자는 맞지 않는다');
   eq(p2.silver, 500 - 80, '사자는 은화를 맡긴다');
   g.advance(3600 * (cfg.market.orderDays + 1));
-  eq(g.state.market.asks.filter((o) => o.kind === 'actor').length + g.state.market.bids.filter((o) => o.kind === 'actor').length, 0, '기한 지난 주문');
+  eq(allOrders({ state: g.state }).filter((o) => o.kind === 'actor').length, 0, '기한 지난 주문');
   eq(p2.silver, 500, '맡긴 은화를 돌려받는다');
-  eq(p1.storage.filter((e) => e.item === 'sap_birch').reduce((x, e) => x + e.qty, 0), 4, '물건을 돌려받는다');
+  eq(home(p1).filter((e) => e.item === 'sap_birch').reduce((x, e) => x + e.qty, 0), 4, '물건을 돌려받는다');
 });
 
 test('주문 게시판: 조건(★·내구도)에 맞는 것만 넘기고 넘긴 만큼 은화를 받는다', () => {
@@ -403,9 +411,9 @@ test('주문 게시판: 조건(★·내구도)에 맞는 것만 넘기고 넘긴
     { id: 'O_b', item: 'ingot_copper', minStar: 3, qty: 5, left: 5, reward: 90, postedDay: day, expiresDay: day + 3 },
     { id: 'O_c', item: 'tool_axe_copper', minStar: 0, qty: 1, left: 1, reward: 300, postedDay: day, expiresDay: day + 3 },
   ];
-  p1.storage.push({ item: 'nails_copper', lot: null, bonus: null, qty: 12 });
-  p1.storage.push({ item: 'ingot_copper', lot: null, bonus: null, qty: 5 });
-  p1.storage.push({ uid: 'u_t1', item: 'tool_axe_copper', star: 2, dur: 100, stats: { durability: 400 } });
+  home(p1).push({ item: 'nails_copper', lot: null, bonus: null, qty: 12 });
+  home(p1).push({ item: 'ingot_copper', lot: null, bonus: null, qty: 5 });
+  home(p1).push({ uid: 'u_t1', item: 'tool_axe_copper', star: 2, dur: 100, stats: { durability: 400 } });
   const s0 = p1.silver;
   ok(g.dispatch({ type: 'ORDER_DELIVER', actor: 'p1', order: 'O_a' }).ok, '못 납품');
   eq(g.state.orders[0].left, 8, '남은 수량');
@@ -413,7 +421,7 @@ test('주문 게시판: 조건(★·내구도)에 맞는 것만 넘기고 넘긴
   eq(p1.stats.orders, 12, '납품 기록');
   eq(g.dispatch({ type: 'ORDER_DELIVER', actor: 'p1', order: 'O_b' }).error, 'nothing_to_deliver', '★0 주괴는 ★3 주문에 못 낸다');
   eq(g.dispatch({ type: 'ORDER_DELIVER', actor: 'p1', order: 'O_c' }).error, 'nothing_to_deliver', '닳은 도구는 못 낸다');
-  p1.storage.find((e) => e.uid === 'u_t1').dur = 400;
+  home(p1).find((e) => e.uid === 'u_t1').dur = 400;
   ok(g.dispatch({ type: 'ORDER_DELIVER', actor: 'p1', order: 'O_c' }).ok, '새 도구는 낸다');
   eq(p1.silver, s0 + 84 + 300);
 });
@@ -446,16 +454,19 @@ test('수리(v0.2.1): 대장간 앞에서 은화를 내고 고친다. 최대 내
 
 test('AI 개척민 경제: 게임 30일을 돌려도 은화가 폭주하지 않고 물가가 버틴다', () => {
   const g = createGame({ data, seed: 9, actors: [{ id: 'p1', kind: 'player' }] });
-  const total = () => g.state.econ.agents.reduce((x, a) => x + a.silver, 0) + g.state.market.bids.filter((b) => b.kind === 'agent').reduce((x, b) => x + b.escrow, 0);
+  const total = () => g.state.econ.agents.reduce((x, a) => x + a.silver, 0) + allOrders({ state: g.state }).filter((b) => b.kind === 'agent' && b.escrow != null).reduce((x, b) => x + b.escrow, 0);
   g.advance(3600 * 20);
   const mid = total();
   g.advance(3600 * 10);
   const end = total();
   ok(g.state.econ.agents.every((a) => a.silver >= 0 && Number.isFinite(a.silver)), '음수 은화');
-  ok(end < mid * 1.25, `20~30일 은화 ${mid} → ${end}`);
+  // v0.4: 마을 사업이 끝나면 2티어 물건 수요가 붙어 섬 경제가 한 단계 커진다. 그래서 30%대까지는 성장으로 본다.
+  ok(end < mid * 1.4, `20~30일 은화 ${mid} → ${end}`);
+  ok(end / g.state.econ.agents.length < 3000, `개척민 한 명 평균 은화 ${Math.round(end / g.state.econ.agents.length)}`);
   const ctx = { state: g.state, data, cfg };
   const basket = ['log_birch', 'ore_copper', 'lumber_birch', 'ingot_copper', 'cloth_reed', 'food_berry'];
-  const idx = basket.reduce((x, it) => x + (g.state.market.ref[it + '|2'] ?? 1) / Math.round(data.items[it].value * cfg.market.starMult[2]), 0) / basket.length;
+  const ref = bookOf({ state: g.state }, LH).ref;
+  const idx = basket.reduce((x, it) => x + (ref[it + '|2'] ?? 1) / Math.round(data.items[it].value * cfg.market.starMult[2]), 0) / basket.length;
   ok(idx > 0.6 && idx < 1.3, `물가 지수 ${idx.toFixed(2)}`);
   ok(g.state.orders.length > 0, '주문 게시판이 비었다');
 });
@@ -569,8 +580,8 @@ test('쓰러짐: 체력이 0이면 5초 뒤 마을에서 일어나고 낀 장비
   g.advance(5.2);
   eq(a.cb.downUntil, 0);
   eq(a.cb.hp, data.config.combat.hp, '체력이 찬다');
-  const town = Object.values(g.state.settlements)[0];
-  ok(Math.hypot(a.x - town.x, a.z - town.z) < town.radius, '마을에서 일어난다');
+  const town = nearestSettlement({ state: g.state }, a);
+  ok(Math.hypot(a.x - town.x, a.z - town.z) < town.radius, '가장 가까운 마을에서 일어난다');
 });
 
 test('수렵: 쓰러뜨린 짐승을 손질하면 사냥터 묶음의 가죽·고기와 수렵 경험치를 얻는다', () => {
@@ -625,6 +636,191 @@ test('결투를 같은 시드로 두 번 돌리면 결과가 똑같다', () => {
     return g.hash();
   };
   eq(run(), run());
+});
+
+console.log('정착지 (v0.4)');
+// 두 마을 시험용 섬: AI 개척민을 끄고 거래소를 비운다
+function townsGame(seed = 41) {
+  const g = createGame({ data, seed, actors: [{ id: 'p1', kind: 'player' }, { id: 'p2', kind: 'player' }] });
+  g.state.econ = null;
+  g.state.market.books = {};
+  return g;
+}
+const at = (a, sid, g, dx = 3, dz = 3) => {
+  const s = g.state.settlements[sid];
+  a.x = s.x + dx;
+  a.z = s.z + dz;
+};
+
+test('창고는 마을마다 따로다. 운송하면 운송비(기본값 5%)를 내고 다른 마을 창고로 간다', () => {
+  const g = townsGame();
+  const a = g.state.actors.p1;
+  a.silver = 500;
+  at(a, FR, g);
+  a.bag.push({ item: 'ingot_copper', lot: null, bonus: null, qty: 10 });
+  ok(g.dispatch({ type: 'STORE', actor: 'p1', all: true }).ok, '넣기');
+  eq(storeOf(a, FR).length, 1, '숲머리 창고에 들어간다');
+  eq(home(a).length, 0, '등대 마을 창고는 그대로');
+  const key = keyOf(storeOf(a, FR)[0]);
+  at(a, LH, g);
+  eq(g.dispatch({ type: 'TAKE', actor: 'p1', key }).error, 'no_item', '다른 마을 창고는 못 꺼낸다');
+  at(a, FR, g);
+  eq(g.dispatch({ type: 'SHIP', actor: 'p1', key, to: FR }).error, 'same_town');
+  ok(g.dispatch({ type: 'SHIP', actor: 'p1', key, qty: 4, to: LH }).ok, '운송');
+  eq(a.silver, 500 - Math.ceil(42 * 4 * 0.05), '운송비(★2 구리주괴 42 × 4개 × 5%)');
+  eq(home(a)[0].qty, 4, '등대 마을 창고로 4개');
+  eq(storeOf(a, FR)[0].qty, 6, '남은 6개');
+});
+
+test('거래소는 마을마다 따로다. 다른 마을 사자와는 맞지 않는다', () => {
+  const g = townsGame();
+  const [p1, p2] = [g.state.actors.p1, g.state.actors.p2];
+  p2.silver = 1000;
+  at(p1, FR, g);
+  at(p2, LH, g);
+  storeOf(p1, FR).push({ item: 'leather', lot: null, bonus: null, qty: 5 });
+  ok(g.dispatch({ type: 'MARKET_SELL', actor: 'p1', key: keyOf(storeOf(p1, FR)[0]), qty: 5, price: 20 }).ok);
+  ok(g.dispatch({ type: 'MARKET_BUY', actor: 'p2', item: 'leather', qty: 5, price: 30 }).ok);
+  eq(bookOf({ state: g.state }, FR).asks.length, 1, '숲머리 팔자는 남아 있다');
+  eq(bookOf({ state: g.state }, LH).bids.length, 1, '등대 마을 사자도 남아 있다');
+  at(p2, FR, g);
+  ok(g.dispatch({ type: 'MARKET_BUY', actor: 'p2', item: 'leather', qty: 5, price: 30, ioc: true }).ok);
+  eq(storeOf(p2, FR).reduce((x, e) => x + e.qty, 0), 5, '숲머리에서 산 물건은 숲머리 창고로');
+});
+
+test('주문 게시판도 마을마다 따로다', () => {
+  const g = townsGame();
+  const a = g.state.actors.p1;
+  const day = g.clock.day(g.state.t);
+  g.state.orders = [{ id: 'O_f', at: FR, item: 'nails_copper', minStar: 0, qty: 10, left: 10, reward: 7, postedDay: day, expiresDay: day + 3 }];
+  a.bag.push({ item: 'nails_copper', lot: null, bonus: null, qty: 10 });
+  at(a, LH, g);
+  eq(g.dispatch({ type: 'ORDER_DELIVER', actor: 'p1', order: 'O_f' }).error, 'other_town');
+  at(a, FR, g);
+  ok(g.dispatch({ type: 'ORDER_DELIVER', actor: 'p1', order: 'O_f' }).ok);
+});
+
+test('마을 사업: 물자·은화가 다 모이면 작업대가 서고, 낸 만큼 명성이 쌓여 판매세가 준다', () => {
+  const g = townsGame();
+  const a = g.state.actors.p1;
+  const def = data.projects.pj_f_tannery;
+  at(a, LH, g);
+  eq(g.dispatch({ type: 'CONTRIBUTE', actor: 'p1', project: 'pj_f_tannery', silver: 10 }).error, 'no_project', '다른 마을 사업');
+  at(a, FR, g);
+  eq(g.dispatch({ type: 'CONTRIBUTE', actor: 'p1', project: 'pj_f_smelter', silver: 10 }).error, 'project_closed', '앞 사업이 안 끝났다');
+  a.silver = def.silver + 100;
+  for (const [item, q] of Object.entries(def.needs)) a.bag.push({ item, lot: null, bonus: null, qty: q + 2 });
+  eq(g.dispatch({ type: 'CONTRIBUTE', actor: 'p1', project: 'pj_f_tannery', key: keyOf(a.bag.find((e) => e.item === 'log_drift') || { item: 'x', lot: null, bonus: null }) }).error, 'no_item');
+  ok(!g.state.settlements[FR].stations.some((st) => st.type === 'tannery'), '처음엔 무두질 틀이 없다');
+  for (const item of Object.keys(def.needs)) {
+    ok(g.dispatch({ type: 'CONTRIBUTE', actor: 'p1', project: 'pj_f_tannery', key: keyOf(a.bag.find((e) => e.item === item)) }).ok, item);
+  }
+  eq(a.bag.find((e) => e.item === 'stone').qty, 2, '필요한 만큼만 낸다');
+  ok(g.dispatch({ type: 'CONTRIBUTE', actor: 'p1', project: 'pj_f_tannery', silver: def.silver + 50 }).ok);
+  eq(a.silver, 100, '남은 은화는 돌려받는다(필요한 만큼만 낸다)');
+  ok(g.state.projects.pj_f_tannery.done, '완성');
+  const st = g.state.settlements[FR].stations.find((x) => x.type === 'tannery');
+  ok(st && st.tier === 1, '무두질 틀이 선다');
+  ok(g.state.projects.pj_f_armorbench && g.dispatch({ type: 'CONTRIBUTE', actor: 'p1', project: 'pj_f_armorbench', silver: 1 }).ok, '다음 사업이 열린다');
+  ok(a.standing[FR] >= 600, `명성 ${a.standing[FR]}`);
+  // 명성 이웃(500) 이상이면 숲머리 판매세 3.5%
+  const p2 = g.state.actors.p2;
+  p2.silver = 1000;
+  at(p2, FR, g);
+  storeOf(a, FR).push({ item: 'ingot_copper', lot: null, bonus: null, qty: 10 });
+  const s0 = a.silver;
+  ok(g.dispatch({ type: 'MARKET_SELL', actor: 'p1', key: keyOf(storeOf(a, FR)[0]), qty: 10, price: 100, ioc: true }).ok === true);
+  ok(g.dispatch({ type: 'MARKET_BUY', actor: 'p2', item: 'ingot_copper', qty: 10, price: 100 }).ok);
+  ok(g.dispatch({ type: 'MARKET_SELL', actor: 'p1', key: keyOf(storeOf(a, FR)[0]), qty: 10, price: 100, ioc: true }).ok);
+  eq(a.silver, s0 + 1000 - Math.floor(1000 * 0.035), '판매세 3.5%');
+});
+
+test('작업대 단계: 철 제련은 2단계 제련로에서만 된다', () => {
+  const g = townsGame();
+  const a = g.state.actors.p1;
+  a.skills.smelting.level = 30;
+  const smelter = g.state.settlements[LH].stations.find((x) => x.type === 'smelter');
+  a.x = smelter.x - 2;
+  a.z = smelter.z;
+  home(a).push({ item: 'ore_iron', lot: null, bonus: null, qty: 6 });
+  eq(g.dispatch({ type: 'CRAFT', actor: 'p1', recipe: 'rc_ingot_iron' }).error, 'station_tier');
+  smelter.tier = 2;
+  smelter.base = 2;
+  ok(g.dispatch({ type: 'CRAFT', actor: 'p1', recipe: 'rc_ingot_iron' }).ok, '2단계에서는 된다');
+});
+
+test('인구·번영도: 수요를 채우면 번영도가 오르고 인구가 늘며, 못 채우면 준다', () => {
+  const g = townsGame();
+  const s = g.state.settlements[LH];
+  const ctx = { state: g.state, data, cfg, clock: g.clock, emit: () => {}, newId: (p) => p + Math.random() };
+  const fillAll = () => {
+    for (const b of [...bookOf(ctx, LH).bids]) if (b.kind === 'town') { b.qty = 0; }
+  };
+  const pop0 = s.pop;
+  for (let d = 0; d < 4; d++) {
+    fillAll();
+    settlementDaily(ctx, s);
+  }
+  ok(s.prosperity > 70 && s.pop > pop0, `번영 ${s.prosperity} 인구 ${pop0} → ${s.pop}`);
+  ok(s.pop <= s.cap, '상한을 넘지 않는다');
+  const want = bookOf(ctx, LH).bids.filter((b) => b.kind === 'town').reduce((x, b) => x + b.qty, 0);
+  ok(want > Object.values(cfg.town.demand[LH]).reduce((x, q) => x + q, 0) - (cfg.town.demand[LH].lumber_oak + cfg.town.demand[LH].ingot_iron), '인구가 늘면 수요도 는다');
+  const grown = s.pop;
+  for (let d = 0; d < 6; d++) settlementDaily(ctx, s);
+  ok(s.prosperity < 35 && s.pop < grown, `못 채우면 번영 ${s.prosperity} 인구 ${grown} → ${s.pop}`);
+  ok(s.pop >= Math.ceil(s.pop0 * cfg.settle.prosper.floor), '바닥 밑으로는 안 준다');
+});
+
+test('2단계 작업대는 유지비를 사흘 못 채우면 1단계로 일하고, 채우면 돌아온다', () => {
+  const g = townsGame();
+  const s = g.state.settlements[LH];
+  const ctx = { state: g.state, data, cfg, clock: g.clock, emit: () => {}, newId: (p) => p };
+  const st = s.stations.find((x) => x.type === 'smelter');
+  st.tier = 2;
+  st.base = 2;
+  for (let d = 0; d < 4; d++) settlementDaily(ctx, s);
+  eq(st.tier, 1, '유지비가 밀리면 1단계');
+  for (const b of bookOf(ctx, LH).bids) if (b.kind === 'town') b.qty = 0;
+  settlementDaily(ctx, s);
+  eq(st.tier, 2, '채우면 돌아온다');
+});
+
+test('귀환 지점을 숲머리로 바꾸면 귀환이 숲머리로 간다', () => {
+  const g = townsGame();
+  const a = g.state.actors.p1;
+  at(a, FR, g);
+  ok(g.dispatch({ type: 'SET_HOME', actor: 'p1' }).ok);
+  eq(g.dispatch({ type: 'SET_HOME', actor: 'p1' }).error, 'already_home');
+  at(a, LH, g, 5, 40);
+  ok(g.dispatch({ type: 'RECALL', actor: 'p1' }).ok);
+  g.advance(cfg.recall.castSec + 0.2);
+  const f = g.state.settlements[FR];
+  ok(Math.hypot(a.x - f.x, a.z - f.z) < f.radius, '숲머리로 돌아왔다');
+});
+
+test('v0.3 세이브를 불러오면 창고·거래소·의뢰가 등대 마을 것이 되고 숲머리가 열린다', () => {
+  const old = readFileSync(new URL('./fixtures/save-v0.3.json', import.meta.url), 'utf8');
+  const before = JSON.parse(old).state;
+  const g = loadGame({ data, save: old });
+  const st = g.state;
+  eq(st.meta.dataVersion, cfg.dataVersion);
+  eq(home(st.actors.p1).length, before.actors.p1.storage.length, '창고 보존');
+  eq(st.actors.p1.home, LH);
+  ok(!('storage' in st.actors.p1), '옛 창고 필드는 없앤다');
+  eq(bookOf({ state: st }, LH).asks.length, before.market.asks.length, '팔자 보존');
+  ok(bookOf({ state: st }, LH).bids.filter((b) => b.kind === 'town').every((b) => b.owner === LH), '마을 수요의 주인');
+  ok(st.orders.every((o) => o.at === LH), '의뢰는 등대 마을 것');
+  ok(st.settlements[FR] && st.settlements[FR].stations.length === 2, '숲머리(창고·조리대)');
+  eq(st.econ.agents.length, cfg.econ.agents.length, 'AI 개척민 수');
+  const f = st.settlements[FR];
+  let inside = 0;
+  for (const n of Object.values(st.nodes)) if (Math.hypot(n.x - f.x, n.z - f.z) < f.radius + 6) inside++;
+  eq(inside, 0, '숲머리 자리 노드');
+  g.advance(3600);
+  ok(bookOf({ state: st }, FR).bids.some((b) => b.kind === 'town'), '숲머리 수요가 선다');
+  const again = loadGame({ data, save: old });
+  again.advance(3600);
+  eq(again.hash(), g.hash(), '이관 뒤에도 재현된다');
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

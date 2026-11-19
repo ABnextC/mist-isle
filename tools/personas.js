@@ -6,7 +6,8 @@
 import { performance } from 'node:perf_hooks';
 import { loadData } from './load-data.js';
 import { createGame } from '../core/game.js';
-import { bestTool } from '../core/world.js';
+import { bestTool, settlementAt } from '../core/world.js';
+import { ordersOf } from '../core/market.js';
 import { fmtPlay } from '../core/clock.js';
 import { avgProps } from '../core/inventory.js';
 
@@ -54,6 +55,13 @@ export function runPersona(data, prof, { days, seed }) {
   game.on('cmd.rejected', (ev) => { rejects[ev.reason] = (rejects[ev.reason] || 0) + 1; });
   game.on('move.blocked', () => { blocked++; });
   game.on('recall.done', () => { recalls++; });
+  // v0.4 정착지: 어느 마을에 몇 번 들렀나, 운송·사업
+  const visits = {};
+  let inTown = null;
+  const settle = { ship: 0, shipFee: 0, contrib: 0, contribSilver: 0, projects: [] };
+  game.on('ship', (ev) => { if (ev.actor === 'b1') { settle.ship++; settle.shipFee += ev.fee; } });
+  game.on('project.contrib', (ev) => { if (ev.owner === 'b1') { settle.contrib += ev.points; settle.contribSilver += ev.silver || 0; } });
+  game.on('project.done', (ev) => { settle.projects.push({ id: ev.project, day: Math.floor(game.state.t / data.config.time.secondsPerGameDay) + 1 }); });
   const money = { orders: 0, ordersQty: 0, ordersN: 0, sold: 0, soldQty: 0, spent: 0, boughtQty: 0, npc: 0, npcQty: 0, deliveredStars: [] };
   game.on('order.delivered', (ev) => {
     if (ev.owner !== 'b1') return;
@@ -103,6 +111,9 @@ export function runPersona(data, prof, { days, seed }) {
     dist += Math.hypot(a.x - px, a.z - pz);
     px = a.x;
     pz = a.z;
+    const here = settlementAt({ state: game.state }, a)?.id ?? null;
+    if (here && here !== inTown) visits[here] = (visits[here] || 0) + 1;
+    inTown = here;
   }
   const ms = performance.now() - t0;
 
@@ -130,7 +141,9 @@ export function runPersona(data, prof, { days, seed }) {
     tools, toolStars: toolStars.map((x) => x.star),
     fails, rejects, blocked, recalls,
     silver: a.silver, money,
-    openOrders: game.state.market.asks.filter((o) => o.owner === 'b1').length + game.state.market.bids.filter((o) => o.owner === 'b1').length,
+    openOrders: ordersOf({ state: game.state }, 'b1').length,
+    settle: { ...settle, visits, standing: a.standing, home: a.home,
+      towns: Object.fromEntries(Object.values(game.state.settlements).map((t) => [t.id, { pop: t.pop, cap: t.cap, prosperity: t.prosperity, stations: t.stations.filter((st) => st.tier >= 2 || !game.data.settlements[t.id].stations.find((x) => x.type === st.type && !x.build)).map((st) => `${st.type}${st.tier}`) }])) },
     bestLot: [...lots].map((id) => game.state.lots[id]).filter(Boolean).reduce((b, l) => (!b || avgProps(l.props) > avgProps(b.props) ? l : b), null)?.name || null,
   };
 }
@@ -160,6 +173,9 @@ if (isMain) {
       console.log(`  귀환 ${r.recalls}번 · 실패 ${JSON.stringify(r.fails)} · 거절 ${JSON.stringify(r.rejects)} · 막힘 ${r.blocked} · 가장 좋은 산지 ${r.bestLot}`);
       const mo = r.money;
       console.log(`  은화 ${r.silver} · 주문 ${mo.ordersN}건 ${mo.ordersQty}개 ${mo.orders}은화 · 거래소 판매 ${mo.soldQty}개 ${mo.sold}은화 · 구매 ${mo.boughtQty}개 ${mo.spent}은화 · 상인 ${mo.npcQty}개 ${mo.npc}은화 · 수리 ${mo.repairs || 0}번 ${mo.repairSpent || 0}은화 · 걸린 주문 ${r.openOrders}`);
+      const S = r.settle;
+      console.log(`  정착지: 들른 횟수 ${JSON.stringify(S.visits)} · 운송 ${S.ship}번 ${S.shipFee}은화 · 사업 기여 ${Math.round(S.contrib)}(은화 ${S.contribSilver}) · 명성 ${JSON.stringify(S.standing)}`);
+      console.log(`  끝난 사업: ${S.projects.map((p) => `${data.projects[p.id].name}(${p.day}일차)`).join(' · ') || '없음'} · 마을 ${Object.entries(S.towns).map(([k, t]) => `${data.settlements[k].name} ${t.pop}/${t.cap} 번영 ${Math.round(t.prosperity)} [${t.stations.join(',')}]`).join(' · ')}`);
     }
   }
 }

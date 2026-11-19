@@ -69,11 +69,14 @@ export function bestTool(ctx, actor, skill) {
 export const toolTier = (ctx, entry) => (entry ? ctx.data.items[entry.item].tool.tier : -1);
 
 // 정착지 건물·장식처럼 움직이지 않는 것들의 자리. 화면과 충돌 판정이 같이 쓴다.
-export function layoutStatics(region, terrain) {
+// built: 끝난 마을 사업 id 모음. 사업으로 짓는 건물(build)은 끝난 뒤에만 들어간다.
+export function layoutStatics(region, terrain, built = null) {
   const out = [];
-  const s = region.settlement;
-  for (const st of s.structures || []) {
-    out.push({ kind: st.kind, x: s.x + st.dx, z: s.z + st.dz, r: st.r, rot: st.rot || 0 });
+  for (const s of region.settlements) {
+    for (const st of s.structures || []) {
+      if (st.build && !(built && built.has(st.build))) continue;
+      out.push({ kind: st.kind, x: s.x + st.dx, z: s.z + st.dz, r: st.r, rot: st.rot || 0, at: s.id, build: st.build || null });
+    }
   }
   for (const d of region.decor || []) {
     const [x, z] = terrain.beachPoint(d.x, d.inland);
@@ -82,9 +85,53 @@ export function layoutStatics(region, terrain) {
   return out;
 }
 
-export function stationLayout(region) {
-  const s = region.settlement;
-  return s.stations.map((st) => ({ type: st.type, tier: st.tier ?? 1, x: s.x + st.dx, z: s.z + st.dz, rot: st.rot || 0 }));
+// 처음부터 있는 작업대. 마을 사업으로 짓는 작업대(build)는 빠진다.
+export function stationLayout(sdef) {
+  return sdef.stations.filter((st) => !st.build).map((st) => stationAt(sdef, st));
+}
+
+export function stationAt(sdef, st, tier = st.tier ?? 1) {
+  return { type: st.type, tier, base: tier, x: sdef.x + st.dx, z: sdef.z + st.dz, rot: st.rot || 0 };
+}
+
+// 끝난 마을 사업 id 모음(상태에서 읽는다)
+export function builtSet(state) {
+  return new Set(Object.values(state.projects || {}).filter((p) => p.done).map((p) => p.id));
+}
+
+// 기여 명성 단계(v0.4): 그 마을에서 받는 수수료·운송비 할인
+export function standingTier(ctx, actor, sid) {
+  const pts = actor?.standing?.[sid] || 0;
+  let tier = ctx.cfg.settle.standing[0];
+  for (const t of ctx.cfg.settle.standing) if (pts >= t.min) tier = t;
+  return tier;
+}
+
+// ── 창고(v0.4: 정착지마다 따로) ─────────────────────────
+export function storeOf(actor, sid) {
+  if (!actor.storages) actor.storages = {};
+  return actor.storages[sid] || (actor.storages[sid] = []);
+}
+
+// 지금 서 있는 마을의 창고. 마을 밖이면 null
+export function localStore(ctx, actor) {
+  const s = settlementAt(ctx, actor);
+  return s ? storeOf(actor, s.id) : null;
+}
+
+// 가방 + (마을 안이면) 그 마을 창고
+export function reachable(ctx, actor) {
+  const st = localStore(ctx, actor);
+  return st ? [actor.bag, st] : [actor.bag];
+}
+
+// 그 마을에 그 종류 작업대가 있는가(티어 이상)
+export function hasStation(s, type, tier = 1) {
+  return s.stations.some((st) => st.type === type && st.tier >= tier);
+}
+
+export function stationIn(s, type) {
+  return s.stations.find((st) => st.type === type) || null;
 }
 
 // 원형 장애물 격자. 노드가 바뀌면 다시 만든다(상태가 아니라 상태에서 나온 값이다).

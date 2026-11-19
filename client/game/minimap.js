@@ -63,12 +63,23 @@ export function createMinimap(canvas, game, terrain) {
     }
     for (const s of Object.values(state.settlements)) {
       const [px, py] = toPx(s.x, s.z);
+      const home = a.home === s.id;
       g.fillStyle = '#ffffff';
-      g.strokeStyle = '#2b2b2b';
+      g.strokeStyle = home ? '#f1d58a' : '#2b2b2b';
+      g.lineWidth = home ? 2 : 1;
       g.beginPath();
       g.arc(px, py, 4.5, 0, Math.PI * 2);
       g.fill();
       g.stroke();
+      g.lineWidth = 1;
+      // 마을 이름(v0.4: 마을이 둘)
+      g.font = '10px sans-serif';
+      g.fillStyle = 'rgba(255,255,255,0.9)';
+      g.strokeStyle = 'rgba(0,0,0,0.7)';
+      g.lineWidth = 2.5;
+      g.strokeText(s.name, px + 7, py + 3);
+      g.fillText(s.name, px + 7, py + 3);
+      g.lineWidth = 1;
     }
     const [px, py] = toPx(a.x, a.z);
     g.save();

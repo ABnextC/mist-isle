@@ -3,7 +3,7 @@
 
 import { addEntry, slotsNeeded } from '../inventory.js';
 import { craftScores, convertStats, starOf, masterworkChance, rollQty, avg } from '../formulas.js';
-import { settlementAt } from '../world.js';
+import { settlementAt, storeOf } from '../world.js';
 import { addXp, mark } from './progress.js';
 
 export function craftingTick(ctx) {
@@ -12,17 +12,18 @@ export function craftingTick(ctx) {
   }
 }
 
-// 정착지 안에서 나온 재료는 창고로, 나머지는 가방(가득하면 창고)으로
-function deliver(ctx, actor, entry, isMaterial) {
-  if (isMaterial && settlementAt(ctx, actor)) {
-    addEntry(actor.storage, entry);
+// 정착지 안에서 나온 재료는 그 마을 창고로, 나머지는 가방(가득하면 만든 마을 창고)으로
+function deliver(ctx, actor, entry, isMaterial, job) {
+  const here = settlementAt(ctx, actor);
+  if (isMaterial && here) {
+    addEntry(storeOf(actor, here.id), entry);
     return 'storage';
   }
   if (actor.bag.length + slotsNeeded(actor.bag, [entry]) <= ctx.cfg.bag.slots) {
     addEntry(actor.bag, entry);
     return 'bag';
   }
-  addEntry(actor.storage, entry);
+  addEntry(storeOf(actor, job.at || here?.id || actor.home), entry);
   return 'storage';
 }
 
@@ -34,13 +35,13 @@ function completeJob(ctx, actor, job) {
 
   if (r.type === 'refine') {
     const entry = { item: outDef.id, lot: job.out.lot, bonus: job.out.bonus, qty: r.output.qty };
-    ev.to = deliver(ctx, actor, entry, true);
+    ev.to = deliver(ctx, actor, entry, true, job);
     ev.lot = job.out.lot;
     ev.bonus = job.out.bonus;
     if (job.focusReturn) {
       const back = rollQty(job.mainQty * cfg.craft.refineReturn, rng);
       if (back > 0) {
-        deliver(ctx, actor, { ...job.returnTo, qty: back }, true);
+        deliver(ctx, actor, { ...job.returnTo, qty: back }, true, job);
         ev.returned = back;
       }
     }
@@ -62,13 +63,13 @@ function completeJob(ctx, actor, job) {
           uid: ctx.newId('it'), item: outDef.id, stats, scores, star, masterwork: mw,
           crafter: actor.name, dur: stats.durability ?? null, maxDur: stats.durability ?? null, broken: false,
         };
-        ev.to = deliver(ctx, actor, entry, false);
+        ev.to = deliver(ctx, actor, entry, false, job);
         ev.uid = entry.uid;
       }
       if (outDef.tool) mark(ctx, actor, `tool_t${outDef.tool.tier}`);
     } else {
       const entry = { item: outDef.id, lot: null, bonus: null, stats, star, qty: r.output.qty };
-      ev.to = deliver(ctx, actor, entry, false);
+      ev.to = deliver(ctx, actor, entry, false, job);
       if (outDef.kind === 'consumable') mark(ctx, actor, 'first_food');
     }
     if (mw) {

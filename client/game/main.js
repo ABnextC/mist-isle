@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { DATA_FILES, buildData } from '../../core/data.js';
 import { createGame, loadGame } from '../../core/game.js';
-import { dist, settlementAt } from '../../core/world.js';
+import { dist, settlementAt, storeOf } from '../../core/world.js';
 import { avgProps, keyOf } from '../../core/inventory.js';
 import { starOf } from '../../core/formulas.js';
 import { stars } from '../../core/text.js';
@@ -26,7 +26,7 @@ import { NODE_CHIP } from './models/nodes.js';
 import { createCamera } from './camera.js';
 import { createInput } from './input.js';
 import { createHud, BULK_KEEP } from './hud.js';
-import { refPrice, npcPrice, bestBid, entryStar as marketStar } from '../../core/market.js';
+import { refPrice, npcPrice, bestBid, bookOf, entryStar as marketStar } from '../../core/market.js';
 import { createMinimap } from './minimap.js';
 
 const SAVE_KEY = 'mist-isle:v1';
@@ -155,7 +155,7 @@ async function boot() {
         .filter((n) => (n.type === 'node_driftwood' || n.type === 'node_stone') && d(n) < 45)
         .sort((p, q) => d(p) - d(q))
         .slice(0, 5);
-      const town = region.settlement;
+      const town = region.settlements[0];
       const tx = near.length ? near.reduce((s, n) => s + n.x, 0) / near.length : town.x;
       const tz = near.length ? near.reduce((s, n) => s + n.z, 0) / near.length : town.z;
       yaw = Math.atan2(tx - a.x, tz - a.z);
@@ -241,17 +241,25 @@ async function boot() {
   function stash(key) {
     if (me().bag.some((e) => keyOf(e) === key)) game.dispatch({ type: 'STORE', actor: PID, key });
   }
-  // 원자재 한꺼번에 팔기(v0.2.1): 시세 85% 이상 사자 주문엔 바로 넘기고, 나머지는 시세 95%로 건다
+  // 지금 서 있는 마을(없으면 null)과 그 마을 창고
+  const hereTown = () => settlementAt({ state: game.state }, me());
+  const hereStore = () => {
+    const t = hereTown();
+    return t ? storeOf(me(), t.id) : [];
+  };
+  // 원자재 한꺼번에 팔기(v0.2.1): 시세 85% 이상 사자 주문엔 바로 넘기고, 나머지는 시세 95%로 건다(이 마을 거래소)
   function bulkSell() {
     const ctx = { state: game.state, data, cfg: data.config };
-    const keys = new Set([...me().bag, ...me().storage].filter((e) => !e.uid && data.items[e.item].stage === 'raw').map((e) => keyOf(e)));
+    const town = hereTown();
+    if (!town) return;
+    const keys = new Set([...me().bag, ...hereStore()].filter((e) => !e.uid && data.items[e.item].stage === 'raw').map((e) => keyOf(e)));
     for (const key of keys) {
       stash(key);
-      const e = me().storage.find((x) => keyOf(x) === key);
+      const e = hereStore().find((x) => keyOf(x) === key);
       if (!e || e.qty <= BULK_KEEP) continue;
       const star = marketStar(ctx, e);
-      const ref = refPrice(ctx, e.item, star);
-      const bid = bestBid(ctx, e.item, star);
+      const ref = refPrice(ctx, town.id, e.item, star);
+      const bid = bestBid(ctx, town.id, e.item, star);
       let q = e.qty - BULK_KEEP;
       if (bid && bid.price >= ref * 0.85) {
         const sell = Math.min(q, bid.qty);
@@ -264,7 +272,9 @@ async function boot() {
 
   function buyUpTo(item, star, qty) {
     // 싼 팔자부터 qty개를 채우는 데 필요한 최고 단가까지 사자(체결은 팔자 값으로, 차액은 돌려받는다)
-    const asks = game.state.market.asks.filter((o) => o.item === item && o.star === star && !(o.kind === 'actor' && o.owner === PID)).sort((x, y) => x.price - y.price);
+    const town = hereTown();
+    if (!town) return;
+    const asks = bookOf({ state: game.state }, town.id).asks.filter((o) => o.item === item && o.star === star && !(o.kind === 'actor' && o.owner === PID)).sort((x, y) => x.price - y.price);
     let left = qty;
     let cap = 0;
     for (const o of asks) {
@@ -339,6 +349,26 @@ async function boot() {
       case 'ord-deliver': game.dispatch({ type: 'ORDER_DELIVER', actor: PID, order: v }); break;
       case 'store-all': game.dispatch({ type: 'STORE', actor: PID, all: true }); break;
       case 'take': game.dispatch({ type: 'TAKE', actor: PID, key: v }); break;
+      // 정착지(v0.4): 창고 운송·마을 사업·귀환 지점
+      case 'ship': {
+        const [to, key] = v.split('>');
+        game.dispatch({ type: 'SHIP', actor: PID, to, key, qty: n ? Number(n) : undefined });
+        break;
+      }
+      case 'ship-all': {
+        // 창고의 재료를 모두 보낸다(도구·장비는 남긴다)
+        const keys = hereStore().filter((e) => !e.uid && data.items[e.item].kind === 'material').map((e) => keyOf(e));
+        if (keys.length) game.dispatch({ type: 'SHIP', actor: PID, to: v, keys });
+        break;
+      }
+      case 'contrib': {
+        const [project, key] = v.split('>');
+        stash(key);
+        game.dispatch({ type: 'CONTRIBUTE', actor: PID, project, key });
+        break;
+      }
+      case 'contrib-silver': game.dispatch({ type: 'CONTRIBUTE', actor: PID, project: v, silver: Number(n) }); break;
+      case 'set-home': game.dispatch({ type: 'SET_HOME', actor: PID }); break;
       case 'speed': hud.settings.speed = Number(v); break;
       case 'focus-toggle': hud.settings.focus = !hud.settings.focus; break;
       case 'gfx': {
@@ -451,7 +481,9 @@ async function boot() {
       }
     } else if (best.kind === 'station') {
       const st = data.stations[best.id];
-      best.label = st.name;
+      const town = settlementAt({ state }, a);
+      const live = town?.stations.find((x) => x.type === best.id);
+      best.label = `${town ? town.name + ' ' : ''}${st.name}${live && live.tier >= 2 ? ' · 2단계' : live && (live.base ?? live.tier) > live.tier ? ' · 정비 불량(1단계로 일함)' : ''}`;
       best.verb = best.id === 'storage' ? '창고 열기' : '작업대 열기';
       best.radius = (st.r || 0.8) + 0.7;
     } else if (best.kind === 'corpse') {
@@ -461,11 +493,13 @@ async function boot() {
       best.radius = type.r + 0.4;
       if (a.skills.hunting.level < type.hunt.level) best.why = `수렵 ${type.hunt.level} 필요`;
     } else if (best.kind === 'market') {
-      best.label = '거래소';
+      const town = settlementAt({ state }, a);
+      best.label = `${town ? town.name + ' ' : ''}거래소`;
       best.verb = '사고팔기';
       best.radius = 2.0;
     } else {
-      best.label = '마을 게시판 — 주문·산지 소문';
+      const town = settlementAt({ state }, a);
+      best.label = `${town ? town.name + ' ' : '마을 '}게시판 — 주문·마을 사업·산지 소문`;
       best.verb = '보기';
       best.radius = 1.2;
     }
@@ -543,7 +577,7 @@ async function boot() {
     lantern.position.set(p.x, p.y + 1.9, p.z);
     lantern.intensity = 7 * nightK;
     nodesView.update();
-    townView.update(sec, nightK, dt);
+    townView.update(sec, nightK, dt, focusVec);
     ui.target = a.ai?.on ? null : findTarget(a);
     const tg = ui.target;
     fx.setTarget(tg ? tg.x : null, tg ? ground.hf.height(tg.x, tg.z) : 0, tg?.z, tg && !tg.why && !tg.idle, tg?.radius);

@@ -6,8 +6,9 @@ import { makeTerrain, fitsHabitat, hashStr } from './terrain.js';
 import { stationLayout } from './world.js';
 import { pickCenter, pickNodeSpot, openVein } from './systems/veins.js';
 import { initCombat, emptyEquip } from './systems/combat.js';
-import { initMobs } from './systems/mobs.js';
+import { initMobs, groupSpot } from './systems/mobs.js';
 import { makeClock } from './clock.js';
+import { newSettlement, initProjects, settlementDaily } from './settlements.js';
 
 // 마이그레이션에서 산지·짐승을 새로 놓을 때 쓰는 작은 실행 문맥
 function migrationCtx(st, data, salt) {
@@ -22,7 +23,28 @@ function migrationCtx(st, data, salt) {
 }
 import { spawnPoint } from './state.js';
 import { emptyMarket } from './market.js';
-import { initEcon } from './systems/economy.js';
+import { initEcon, addMissingAgents } from './systems/economy.js';
+
+// 노드·산지 중심이 서식지(정착지 둘레 포함)를 벗어났으면 옮긴다
+function relocateNodes(st, data, ctx) {
+  const region = data.lists.regions[0];
+  const { rng, terrain } = ctx;
+  for (const v of Object.values(st.veins)) {
+    const type = data.nodes[v.node];
+    if (!v.common && v.center && !fitsHabitat(terrain, region, type, v.center[0], v.center[1])) {
+      v.center = pickCenter(rng, terrain, region, type, v.radius) || v.center;
+    }
+    for (const id of v.nodes) {
+      const n = st.nodes[id];
+      if (!n || fitsHabitat(terrain, region, type, n.x, n.z)) continue;
+      const spot = pickNodeSpot(rng, terrain, region, type, v.common ? null : v.center, v.radius);
+      if (spot) {
+        n.x = spot[0];
+        n.z = spot[1];
+      }
+    }
+  }
+}
 
 export const SAVE_FORMAT = 'mist-isle-save';
 
@@ -39,7 +61,7 @@ const MIGRATIONS = [
       st.meta.engine = '0.1.0';
       const region = data.lists.regions[0];
       const terrain = makeTerrain(region, st.meta.worldSeed);
-      for (const s of Object.values(st.settlements)) s.stations = stationLayout(region);
+      for (const s of Object.values(st.settlements)) s.stations = stationLayout(data.settlements[s.id] || region.settlements[0]);
       // 노드 자리만 새로 고른다. 산지 이름·속성·남은 횟수는 그대로 둔다.
       for (const v of Object.values(st.veins)) {
         const type = data.nodes[v.node];
@@ -112,7 +134,7 @@ const MIGRATIONS = [
       st.market = st.market || emptyMarket();
       st.orders = st.orders || [];
       const rng = makeRng(seedState((st.meta.worldSeed ^ 0x2e5bf271) >>> 0));
-      st.econ = st.econ || initEcon({ cfg: data.config, rng });
+      st.econ = st.econ || initEcon({ cfg: data.config, rng, state: st });
     },
   },
   {
@@ -153,6 +175,81 @@ const MIGRATIONS = [
       st.mobs = st.mobs || {};
       st.mobGroups = st.mobGroups || {};
       if (!Object.keys(st.mobGroups).length) initMobs(ctx);
+    },
+  },
+  {
+    // v0.3.1 → v0.4: 정착지가 둘(숲머리). 창고·거래소·수요·의뢰가 마을마다 따로, 마을 사업, AI 개척민 9명 추가.
+    from: 5,
+    to: 6,
+    run(st, data) {
+      st.meta.engine = '0.4.0';
+      const cfg = data.config;
+      const region = data.lists.regions[0];
+      const first = region.settlements[0].id;
+      const ctx = migrationCtx(st, data, 0x4d2c9a15);
+      // 정착지: 있던 마을은 작업대 자리를 지키고 인구·번영도를 붙인다. 숲머리는 새로 연다.
+      for (const sdef of region.settlements) {
+        const old = st.settlements[sdef.id];
+        const fresh = newSettlement(region, sdef, cfg);
+        if (old) fresh.stations = old.stations.map((x) => ({ ...x, base: x.base ?? x.tier }));
+        st.settlements[sdef.id] = fresh;
+      }
+      // 거래소: 하나였던 호가창·기준가·마을 수요는 등대 마을 것이 된다
+      const m = st.market || emptyMarket();
+      if (!m.books) {
+        const tag = (o) => ({ ...o, at: first, owner: o.kind === 'town' ? first : o.owner });
+        const book = { asks: (m.asks || []).map(tag), bids: (m.bids || []).map(tag), ref: m.ref || {}, trades: m.trades || [] };
+        const town = m.town || {};
+        st.market = { nextOid: m.nextOid || 1, books: { [first]: book }, stats: m.stats || {} };
+        const d = st.settlements[first].demand;
+        Object.assign(d, { silver: town.silver ?? 0, paid: town.paid ?? 0, used: town.used || {}, want: town.want || {}, mult: town.mult || {} });
+        for (const k of Object.keys(d.mult)) d.mult[k] = Math.min(cfg.town.grow.max, d.mult[k]);
+      }
+      for (const o of st.orders || []) o.at = o.at || first;
+      // 창고는 등대 마을 창고로, 귀환 지점은 등대 마을로
+      for (const a of Object.values(st.actors)) {
+        a.storages = a.storages || { [first]: a.storage || [] };
+        delete a.storage;
+        a.home = a.home || first;
+        a.standing = a.standing || {};
+        for (const j of a.queue || []) j.at = j.at || first;
+        if (a.ai) a.ai.mem = {};
+      }
+      st.projects = st.projects || initProjects(data);
+      // 숲머리 자리에 있던 노드·산지·짐승 무리를 옮긴다
+      relocateNodes(st, data, ctx);
+      const taken = Object.values(st.mobGroups || {});
+      for (const g of taken) {
+        const type = data.creatures[g.type];
+        if (!region.settlements.some((t) => Math.hypot(g.x - t.x, g.z - t.z) < t.radius + 18 + type.radius)) continue;
+        const spot = groupSpot(ctx, region, type, taken.filter((x) => x !== g));
+        if (!spot) continue;
+        const [dx, dz] = [spot[0] - g.x, spot[1] - g.z];
+        g.x = spot[0];
+        g.z = spot[1];
+        for (const id of g.mobs) {
+          const mob = st.mobs[id];
+          if (!mob) continue;
+          mob.x = Math.round((mob.x + dx) * 1000) / 1000;
+          mob.z = Math.round((mob.z + dz) * 1000) / 1000;
+          mob.mode = 'idle';
+          mob.target = null;
+          mob.dest = null;
+        }
+      }
+      // AI 개척민: 사는 마을을 정하고, 숲머리 개척민을 더한다
+      if (st.econ) {
+        for (const a of st.econ.agents) {
+          a.home = a.home || first;
+          a.shipped = a.shipped || 0;
+          a.donated = a.donated || 0;
+        }
+        addMissingAgents(ctx);
+      }
+      // 새 마을의 첫 수요와 의뢰
+      for (const s of Object.values(st.settlements)) {
+        if (!Object.keys(s.demand.want).length) settlementDaily(ctx, s);
+      }
     },
   },
 ];

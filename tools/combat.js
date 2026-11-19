@@ -21,6 +21,7 @@ function gear(itemId, score, n) {
 
 export const KITS = {
   뉴비_몽둥이: { weapon: 'wpn_club', score: 35, armor: null, read: 0.2, block: 0.2, food: 0 },
+  뉴비_구리검: { weapon: 'wpn_sword_copper', score: 50, armor: null, read: 0.2, block: 0.5, food: 0 },
   보통_구리검_가죽: { weapon: 'wpn_sword_copper', score: 45, armor: 45, read: 0.45, block: 0.3, food: 2 },
   보통_구리도끼_가죽: { weapon: 'wpn_battleaxe_copper', score: 45, armor: 45, read: 0.45, block: 0.3, food: 2 },
   보통_구리창_가죽: { weapon: 'wpn_spear_copper', score: 45, armor: 45, read: 0.45, block: 0.3, food: 2 },

@@ -131,11 +131,11 @@ export function describeEvent(ev, game) {
       if (ev.heal != null) return `${p}🍖 ${itemName(data, ev.item)} — 체력 +${ev.heal}`;
       return `${p}🍽️ ${itemName(data, ev.item)} — 채집량 +${Math.round(ev.value * 100)}%, ${ev.minutes}분`;
     case 'mob.die':
-      return state.actors[ev.actor] ? `${p}⚔️ ${data.creatures[ev.type]?.name ?? ev.type} 쓰러뜨림 — 다가가 손질하자` : null;
+      return state.actors[ev.actor] ? `${p}⚔️ ${data.creatures[ev.species]?.name ?? ev.species} 쓰러뜨림 — 다가가 손질하자` : null;
     case 'skin.done':
-      return `${p}🔪 ${data.creatures[ev.type]?.name ?? ev.type} 손질: ${ev.items.map((x) => `${itemName(data, x.item)} ${x.qty}`).join(' · ')}`;
+      return `${p}🔪 ${data.creatures[ev.species]?.name ?? ev.species} 손질: ${ev.items.map((x) => `${itemName(data, x.item)} ${x.qty}`).join(' · ')}`;
     case 'actor.down':
-      return `${p}💀 ${ev.type ? `${data.creatures[ev.type]?.name ?? ev.type}에게 ` : ''}쓰러짐 — 마을에서 다시 일어난다(낀 장비 내구 −10%)`;
+      return `${p}💀 ${ev.species ? `${data.creatures[ev.species]?.name ?? ev.species}에게 ` : ''}쓰러짐 — 마을에서 다시 일어난다(낀 장비 내구 −10%)`;
     case 'equip': {
       const SLOT = { weapon: '무기', head: '머리', chest: '몸통', legs: '다리' };
       return ev.uid ? `${p}🛡️ ${SLOT[ev.slot]}: ${itemName(data, ev.item)} 낌` : `${p}${SLOT[ev.slot]} 장비를 벗음`;

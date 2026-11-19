@@ -223,7 +223,7 @@ function down(ctx, a, mob) {
     if (e && e.maxDur) wear(ctx, a, e, Math.max(1, Math.round(e.maxDur * C.deathWear)));
   }
   a.stats.downs = (a.stats.downs || 0) + 1;
-  ctx.emit('actor.down', { actor: a.id, mob: mob?.id ?? null, type: mob?.type ?? null, x: a.x, z: a.z });
+  ctx.emit('actor.down', { actor: a.id, mob: mob?.id ?? null, species: mob?.type ?? null, x: a.x, z: a.z });
 }
 
 function getUp(ctx, a) {

@@ -13,8 +13,15 @@ import { keyOf, avgProps, countItem, qtyOf } from '../inventory.js';
 import { dist, settlementAt, nearestSettlement, nearestStation, bestTool, toolTier } from '../world.js';
 import { entryStar, tradable, baseValue, bestBid, bestAsk, npcPrice, repairCost, refPrice } from '../market.js';
 import { countDeliverable } from '../orders.js';
+import { startFight } from './fighter.js';
+import { corpseOpen } from '../systems/mobs.js';
 
-const REFINES = ['rc_ingot_copper', 'rc_lumber_birch', 'rc_lumber_drift', 'rc_cloth_reed'];
+const REFINES = ['rc_ingot_copper', 'rc_lumber_birch', 'rc_lumber_drift', 'rc_cloth_reed', 'rc_leather', 'rc_ingot_iron', 'rc_lumber_oak'];
+const WEAPON_RC = { sword: ['rc_sword_copper', 'rc_sword_iron'], axe: ['rc_battleaxe_copper', 'rc_battleaxe_iron'], spear: ['rc_spear_copper', 'rc_spear_iron'] };
+const ARMOR_RC = { head: 'rc_leather_hood', legs: 'rc_leather_pants', chest: 'rc_leather_vest' };
+const IRON_TOOL = { logging: 'rc_axe_iron', mining: 'rc_pick_iron', harvesting: 'rc_sickle_iron' };
+
+const fightOpts = (prof) => ({ read: prof.read ?? 0.45, block: prof.block ?? 0.3, heal: 0.45 });
 
 export function thinkSettler(ctx, actor) {
   const prof = ctx.data.agents[actor.ai.profile] || ctx.data.agents.settler;
@@ -26,13 +33,173 @@ export function thinkSettler(ctx, actor) {
       next: 0, target: null, plan: null, queued: 0, avoid: {}, seen: [],
     });
   }
+  // v0.3: 쓰러지면 마을에서 일어나니 돌아온 셈 친다
+  if (actor.cb?.downUntil > 0) {
+    mem.mode = 'return';
+    mem.target = null;
+    mem.hunt = null;
+    return;
+  }
+  // 덤비는 짐승이 있으면 맞서 싸운다(싸우는 동안은 ai/fighter.js가 몸을 쓴다)
+  for (const m of Object.values(ctx.state.mobs)) {
+    if (m.target === actor.id && m.mode !== 'dead' && m.mode !== 'return') {
+      startFight(actor, m.id, fightOpts(prof));
+      return;
+    }
+  }
   if (actor.action || actor.dest || actor.move) return;
   if (t < mem.next) return;
   mem.next = t + (prof.thinkEvery ?? 0.4);
+  // 싸우다 쓰러뜨린 짐승이 가까이 있으면 손질부터 한다
+  if (mem.mode !== 'craft' && mem.mode !== 'hunt' && skinNearby(ctx, actor, 8)) return;
   pruneAvoid(mem, t);
   if (mem.mode === 'gather') return gatherStep(ctx, actor, prof, mem);
   if (mem.mode === 'return') return returnStep(ctx, actor, mem);
   if (mem.mode === 'craft') return craftStep(ctx, actor, prof, mem);
+  if (mem.mode === 'hunt') return huntStep(ctx, actor, prof, mem);
+}
+
+// ── 사냥(v0.3) ─────────────────────────────────────
+function gearTier(ctx, e, kind) {
+  if (!e) return -1;
+  const def = ctx.data.items[e.item];
+  return kind === 'weapon' ? def.weapon.tier : 1;
+}
+
+// 가방·창고에서 가장 좋은 무기(공격력)나 그 부위 갑옷(방어)
+function bestGear(ctx, actor, slot) {
+  let best = null;
+  for (const e of [...actor.bag, ...actor.storage]) {
+    if (!e.uid || e.broken) continue;
+    const def = ctx.data.items[e.item];
+    const ok = slot === 'weapon' ? !!def.weapon : def.armor?.slot === slot;
+    if (!ok) continue;
+    const v = slot === 'weapon' ? e.stats.attack : e.stats.armor;
+    if (!best || v > best.v) best = { e, v };
+  }
+  return best ? best.e : null;
+}
+
+function equipBest(ctx, actor) {
+  const inTown = !!settlementAt(ctx, actor);
+  for (const slot of ['weapon', 'head', 'chest', 'legs']) {
+    const e = bestGear(ctx, actor, slot);
+    if (!e || actor.equip?.[slot] === e.uid) continue;
+    if (!actor.bag.includes(e)) {
+      if (!inTown) continue;
+      ctx.command({ type: 'TAKE', actor: actor.id, key: e.uid });
+    }
+    ctx.command({ type: 'EQUIP', actor: actor.id, uid: e.uid, keep: true });
+  }
+}
+
+function armorCount(ctx, actor) {
+  return ['head', 'chest', 'legs'].filter((s) => actor.equip?.[s] && actor.bag.some((e) => e.uid === actor.equip[s] && !e.broken)).length;
+}
+
+// 사냥감 고르기: 손질할 수 있는(수렵 레벨) 짐승만. 늑대·멧돼지는 쇠붙이 무기와 갑옷을 갖췄을 때만(무진은 무기만 있으면 간다).
+function huntable(ctx, actor, prof, type) {
+  if (actor.skills.hunting.level < type.hunt.level) return false;
+  const wt = gearTier(ctx, bestGear(ctx, actor, 'weapon'), 'weapon');
+  if (type.id === 'deer') return wt >= 1;
+  if (type.temper === 'aggressive' || type.temper === 'defensive') return wt >= 1 && (armorCount(ctx, actor) >= 2 || prof.brave);
+  return true;
+}
+
+function chooseHuntGroup(ctx, actor, prof) {
+  const { state, data } = ctx;
+  let best = null;
+  for (const g of Object.values(state.mobGroups)) {
+    const type = data.creatures[g.type];
+    if (!huntable(ctx, actor, prof, type)) continue;
+    const alive = g.mobs.filter((id) => state.mobs[id] && state.mobs[id].mode !== 'dead' && state.mobs[id].mode !== 'return').length;
+    if (!alive) continue;
+    const lot = state.lots[Object.values(g.lots)[0]];
+    const score = dist(actor, g) - type.hunt.level * 4 - (avgProps(lot?.props || {}) - 40) * (prof.quality ?? 1);
+    if (!best || score < best.score) best = { g, score };
+  }
+  return best ? best.g : null;
+}
+
+function skinNearby(ctx, actor, range) {
+  if (ctx.cfg.bag.slots - actor.bag.length <= 2) return false;
+  let best = null;
+  let bd = range;
+  for (const m of Object.values(ctx.state.mobs)) {
+    if (m.killer !== actor.id || !corpseOpen(ctx, m)) continue;
+    if (actor.skills.hunting.level < ctx.data.creatures[m.type].hunt.level) continue;
+    const d = dist(actor, m);
+    if (d < bd) {
+      bd = d;
+      best = m;
+    }
+  }
+  if (!best) return false;
+  if (bd > 2.2) moveNear(ctx, actor, best, 1.2);
+  else ctx.command({ type: 'SKIN', actor: actor.id, mob: best.id });
+  return true;
+}
+
+function nextTrip(ctx, actor, prof, mem) {
+  mem.rounds = 0;
+  mem.mode = 'gather';
+  if (!(prof.hunt > 0) || !ctx.rng.chance(prof.hunt)) return;
+  if (!chooseHuntGroup(ctx, actor, prof)) return;
+  mem.mode = 'hunt';
+  mem.hunt = { group: null, k0: totalKills(actor), since: ctx.state.t };
+}
+
+const totalKills = (actor) => Object.values(actor.stats.kills || {}).reduce((s, n) => s + n, 0);
+
+function huntStep(ctx, actor, prof, mem) {
+  const { state, data, cfg } = ctx;
+  const h = mem.hunt || (mem.hunt = { group: null, k0: totalKills(actor), since: state.t });
+  const heal = actor.bag.some((e) => data.items[e.item].effect === 'heal');
+  const done = rawCount(ctx, actor) >= prof.trip || cfg.bag.slots - actor.bag.length <= 3
+    || totalKills(actor) - h.k0 >= (prof.huntKills ?? 8) || state.t - h.since > 1200
+    || (actor.cb.hp < actor.cb.maxHp * 0.4 && !heal);
+  // 내가 쓰러뜨린 사체부터 손질한다
+  let corpse = null;
+  let cd = 30;
+  for (const m of Object.values(state.mobs)) {
+    if (m.killer !== actor.id || !corpseOpen(ctx, m)) continue;
+    if (actor.skills.hunting.level < data.creatures[m.type].hunt.level) continue;
+    const d = dist(actor, m);
+    if (d < cd) {
+      cd = d;
+      corpse = m;
+    }
+  }
+  if (corpse && cfg.bag.slots - actor.bag.length > 2) {
+    if (cd > 2.2) moveNear(ctx, actor, corpse, 1.2);
+    else ctx.command({ type: 'SKIN', actor: actor.id, mob: corpse.id });
+    return;
+  }
+  if (done) {
+    mem.hunt = null;
+    mem.mode = 'return';
+    goHome(ctx, actor);
+    return;
+  }
+  let g = h.group ? state.mobGroups[h.group] : null;
+  const aliveOf = (grp) => grp.mobs.map((id) => state.mobs[id]).filter((m) => m && m.mode !== 'dead' && m.mode !== 'return');
+  if (!g || !aliveOf(g).length) {
+    g = chooseHuntGroup(ctx, actor, prof);
+    if (!g) {
+      mem.hunt = null;
+      mem.mode = 'return';
+      goHome(ctx, actor);
+      return;
+    }
+    h.group = g.id;
+  }
+  const alive = aliveOf(g).sort((p, q) => dist(actor, p) - dist(actor, q));
+  const m = alive[0];
+  if (dist(actor, m) > 8) {
+    moveNear(ctx, actor, m, 5);
+    return;
+  }
+  startFight(actor, m.id, fightOpts(prof));
 }
 
 function pruneAvoid(mem, t) {
@@ -206,6 +373,12 @@ function returnStep(ctx, actor, mem) {
     if (e.broken || bestTool(ctx, actor, def.tool.skill) !== e) ctx.command({ type: 'STORE', actor: actor.id, key: e.uid });
   }
   const prof = ctx.data.agents[actor.ai.profile] || ctx.data.agents.settler;
+  equipBest(ctx, actor);
+  for (const e of [...actor.bag]) {
+    if (!e.uid) continue;
+    const def = ctx.data.items[e.item];
+    if ((def.weapon || def.armor) && !Object.values(actor.equip || {}).includes(e.uid)) ctx.command({ type: 'STORE', actor: actor.id, key: e.uid });
+  }
   deliverOrders(ctx, actor);
   marketRound(ctx, actor, prof, mem);
   mem.mode = 'craft';
@@ -235,6 +408,32 @@ function makePlan(ctx, actor, prof) {
     if (want && actor.silver >= repairCost(ctx, want) + 40) plan.push({ repair: want.uid });
     if (tier < 1) plan.push({ recipe: copper, n: 1, tune: 'gatherSpeed', skipIfTier: [skill, 1] });
     if (tier < 0) plan.push({ recipe: stone, n: 1, skipIfTool: skill });
+    // v0.3: 철주괴가 있으면 철 도구(티어 2)로 바꾼다
+    if (tier >= 1 && tier < 2 && count('ingot_iron') >= 3 && actor.skills.smithing.level >= data.recipes[IRON_TOOL[skill]].level) {
+      plan.push({ recipe: IRON_TOOL[skill], n: 1, tune: 'gatherSpeed', skipIfTier: [skill, 2] });
+    }
+  }
+  if (prof.hunt > 0) {
+    const kind = prof.weapon || 'sword';
+    const w = bestGear(ctx, actor, 'weapon');
+    const wt = gearTier(ctx, w, 'weapon');
+    // 무기: 돌 몽둥이 → 구리 → 철. 낀 무기가 많이 닳았으면 고친다(★3 이상)
+    if (wt < 0) plan.push({ recipe: 'rc_club', n: 1, skipIfWeapon: 0 });
+    if (wt < 1) plan.push({ recipe: WEAPON_RC[kind][0], n: 1, tune: 'attack', skipIfWeapon: 1 });
+    if (wt < 2 && count('ingot_iron') >= 4) plan.push({ recipe: WEAPON_RC[kind][1], n: 1, tune: 'attack', skipIfWeapon: 2 });
+    for (const slot of ['weapon', 'head', 'chest', 'legs']) {
+      const e = slot === 'weapon' ? w : bestGear(ctx, actor, slot);
+      if (e && (e.star ?? 0) >= 3 && e.dur <= e.maxDur * 0.3 && actor.silver >= repairCost(ctx, e) + 40) {
+        plan.push({ repair: e.uid, station: ctx.cfg.repair.stations[slot === 'weapon' ? 'weapon' : 'armor'] });
+      }
+    }
+    // 갑옷: 가죽과 갈대 천이 모이면 두건 → 바지 → 조끼
+    for (const slot of ['head', 'legs', 'chest']) {
+      if (bestGear(ctx, actor, slot)) continue;
+      plan.push({ recipe: ARMOR_RC[slot], n: 1, tune: 'armor' });
+    }
+    const heals = actor.bag.concat(actor.storage).filter((e) => data.items[e.item].effect === 'heal').reduce((s2, e) => s2 + e.qty, 0);
+    if (heals < 6) plan.push({ recipe: 'rc_meat', n: 2 });
   }
   for (const id of REFINES) {
     const r = data.recipes[id];
@@ -280,12 +479,12 @@ function deliverOrders(ctx, actor) {
 //  trader: 주문 게시판에 넘길 물건을 거래소에서 사 오고, 한참 싸게 나온 물건은 사 뒀다가 산 값보다 비싸게 판다
 //  dump: 기다리기 싫어한다. '한꺼번에 팔기'로 좋은 사자엔 넘기고 나머지는 시세 95%로 건다(걸 자리가 없으면 상인에게)
 //  orders / ordersOnly: 주문만 하고 거래소는 안 쓴다
-const KEEP = { ingot_copper: 12, lumber_birch: 12, lumber_drift: 12, nails_copper: 30, sand_fine: 6, sap_birch: 6, food_soup: 6, food_berry: 6 };
+const KEEP = { ingot_copper: 12, lumber_birch: 12, lumber_drift: 12, nails_copper: 30, sand_fine: 6, sap_birch: 6, food_soup: 6, food_berry: 6, leather: 14, food_meat: 8, ingot_iron: 12, lumber_oak: 12, cloth_reed: 8 };
 
 function surplusOf(ctx, actor, e) {
   const def = ctx.data.items[e.item];
   const have = countItem([actor.bag, actor.storage], e.item);
-  if (def.stage === 'raw') return Math.max(0, Math.min(qtyOf(e), have - 60));
+  if (def.stage === 'raw') return Math.max(0, Math.min(qtyOf(e), have - (e.item === 'hide_raw' || e.item === 'meat_raw' ? 30 : 60)));
   return Math.max(0, Math.min(qtyOf(e), have - (KEEP[e.item] ?? 0)));
 }
 
@@ -404,8 +603,7 @@ function craftStep(ctx, actor, prof, mem) {
       // 다음 단계 제작과 주문 납품은 다음 귀환 때 한다.
       const left = actor.queue[actor.queue.length - 1].endsAt - ctx.state.t;
       if (left <= 12) return;
-      mem.mode = 'gather';
-      mem.rounds = 0;
+      nextTrip(ctx, actor, prof, mem);
       return;
     }
     if (mem.orderCraft) {
@@ -413,8 +611,7 @@ function craftStep(ctx, actor, prof, mem) {
       mem.orderCraft = false;
     }
     if (mem.rounds >= 3) {
-      mem.mode = 'gather';
-      mem.rounds = 0;
+      nextTrip(ctx, actor, prof, mem);
       return;
     }
     mem.rounds++;
@@ -424,7 +621,7 @@ function craftStep(ctx, actor, prof, mem) {
   while (mem.plan.length) {
     const step = mem.plan[0];
     if (step.repair) {
-      const st = nearestStation(ctx, actor, 'forge');
+      const st = nearestStation(ctx, actor, step.station || 'forge');
       if (!st) {
         mem.plan.shift();
         continue;
@@ -445,6 +642,10 @@ function craftStep(ctx, actor, prof, mem) {
       continue;
     }
     const r = data.recipes[step.recipe];
+    if (step.skipIfWeapon != null && gearTier(ctx, bestGear(ctx, actor, 'weapon'), 'weapon') >= step.skipIfWeapon) {
+      mem.plan.shift();
+      continue;
+    }
     if (step.skipIfTier && toolTier(ctx, bestTool(ctx, actor, step.skipIfTier[0])) >= step.skipIfTier[1]) {
       mem.plan.shift();
       continue;
@@ -490,7 +691,7 @@ function craftStep(ctx, actor, prof, mem) {
   }
   mem.plan = null;
   if (!mem.queued && !actor.queue.length) {
-    mem.mode = 'gather';
+    nextTrip(ctx, actor, prof, mem);
     mem.rounds = 0;
   }
 }

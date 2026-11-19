@@ -631,7 +631,7 @@ const SKIN = {
     a.nav = null;
     p.m.skinning = a.id;
     a.action = { type: 'skin', mob: p.m.id, startedAt: ctx.state.t, endsAt: round2(ctx.state.t + p.secs) };
-    ctx.emit('skin.start', { actor: a.id, mob: p.m.id, type: p.m.type, sec: p.secs });
+    ctx.emit('skin.start', { actor: a.id, mob: p.m.id, species: p.m.type, sec: p.secs });
   },
 };
 

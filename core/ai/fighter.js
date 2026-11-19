@@ -28,7 +28,8 @@ function threats(ctx, a) {
 
 function chooseTarget(ctx, a, f) {
   const cur = ctx.state.mobs[f.target];
-  if (cur && cur.mode !== 'dead') return cur;
+  const skittish = cur && ctx.data.creatures[cur.type].temper === 'skittish';
+  if (cur && cur.mode !== 'dead' && (cur.mode !== 'return' || skittish)) return cur;
   // 덤비는 놈부터 정리한다
   let best = null;
   let bd = Infinity;
@@ -80,7 +81,12 @@ export function fightTick(ctx, a) {
   }
   // 3) 다가가서 때린다
   const m = chooseTarget(ctx, a, f);
-  if (!m) return;
+  if (!m) {
+    // 싸울 상대가 없으면 싸움을 끝낸다(다시 하던 일로)
+    if (cb.block) ctx.command({ type: 'BLOCK', actor: a.id, on: false });
+    stopFight(a);
+    return;
+  }
   if (f.since == null) f.since = t;
   const w = weaponOf(ctx, a);
   const type = ctx.data.creatures[m.type];

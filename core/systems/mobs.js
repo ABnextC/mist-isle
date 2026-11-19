@@ -125,7 +125,7 @@ function aggro(ctx, m, a) {
   m.target = a.id;
   if (first) {
     setMode(ctx, m, 'chase');
-    ctx.emit('mob.aggro', { mob: m.id, type: m.type, actor: a.id });
+    ctx.emit('mob.aggro', { mob: m.id, species: m.type, actor: a.id });
   }
 }
 
@@ -144,7 +144,7 @@ export function hurtMob(ctx, m, a, dmg, heavy) {
   const type = ctx.data.creatures[m.type];
   m.hp = r2(Math.max(0, m.hp - dmg));
   a.stats.dmgDealt = r2((a.stats.dmgDealt || 0) + dmg);
-  ctx.emit('combat.hit', { actor: a.id, mob: m.id, type: m.type, dmg, heavy, hp: m.hp });
+  ctx.emit('combat.hit', { actor: a.id, mob: m.id, species: m.type, dmg, heavy, hp: m.hp });
   if (m.hp <= 0) {
     kill(ctx, m, a);
     return;
@@ -154,7 +154,7 @@ export function hurtMob(ctx, m, a, dmg, heavy) {
     m.cd = r2(ctx.state.t + 0.8);
     ctx.emit('mob.stagger', { mob: m.id });
   }
-  if (m.mode === 'return') return;
+  if (m.mode === 'return' && type.temper !== 'skittish') return;
   packAggro(ctx, m, a);
 }
 
@@ -170,7 +170,7 @@ function kill(ctx, m, a) {
   m.killer = a.id;
   a.stats.kills = a.stats.kills || {};
   a.stats.kills[m.type] = (a.stats.kills[m.type] || 0) + 1;
-  ctx.emit('mob.die', { mob: m.id, type: m.type, actor: a.id, x: m.x, z: m.z });
+  ctx.emit('mob.die', { mob: m.id, species: m.type, actor: a.id, x: m.x, z: m.z });
 }
 
 function strike(ctx, m, type) {
@@ -196,14 +196,15 @@ export function mobsTick(ctx, dt) {
         const [x, z] = spotNear(ctx, region, type, g, type.radius);
         Object.assign(m, { x, z, hp: type.hp, deadAt: null, respawnAt: null, skinned: false, skinning: null, killer: null, target: null, cd: 0 });
         setMode(ctx, m, 'idle', t + ctx.rng.range(1, 4));
-        ctx.emit('mob.spawn', { mob: m.id, type: m.type });
+        ctx.emit('mob.spawn', { mob: m.id, species: m.type });
       }
       continue;
     }
     const home = Math.hypot(m.x - g.x, m.z - g.z);
     const tgt = m.target ? state.actors[m.target] : null;
     // 둥지에서 너무 멀리 끌려가면 돌아간다
-    if (m.mode !== 'return' && (home > type.leash || (m.target && (!tgt || isDown(tgt))))) {
+    // 달아나는 짐승은 멀리 가도 된다(달아남이 끝나면 천천히 돌아간다)
+    if (m.mode !== 'return' && m.mode !== 'flee' && (home > type.leash || (m.target && (!tgt || isDown(tgt))))) {
       m.target = null;
       setMode(ctx, m, 'return');
     }
@@ -249,7 +250,7 @@ export function mobsTick(ctx, dt) {
         else m.yaw = round3(yawTo(m, tgt));
         if (d <= reach + 0.2 && t >= m.cd) {
           setMode(ctx, m, 'windup', t + type.attack.windup);
-          ctx.emit('mob.windup', { mob: m.id, type: m.type, actor: tgt.id, sec: type.attack.windup });
+          ctx.emit('mob.windup', { mob: m.id, species: m.type, actor: tgt.id, sec: type.attack.windup });
         }
         break;
       }
@@ -288,8 +289,8 @@ export function mobsTick(ctx, dt) {
         break;
       }
       case 'return': {
-        if (moveToward(ctx, m, g.x, g.z, type.walk * 2.2, dt) < 1.5) {
-          m.hp = type.hp;
+        if (moveToward(ctx, m, g.x, g.z, type.walk * (type.temper === 'skittish' ? 1 : 2.2), dt) < 1.5) {
+          if (type.temper !== 'skittish') m.hp = type.hp; // 끌려갔던 사나운 짐승만 체력을 채운다
           m.target = null;
           setMode(ctx, m, 'idle', t + ctx.rng.range(2, 5));
         }
@@ -362,5 +363,5 @@ export function finishSkin(ctx, a) {
   a.stats.skin = a.stats.skin || {};
   a.stats.skin[m.type] = (a.stats.skin[m.type] || 0) + 1;
   addXp(ctx, a, 'hunting', type.hunt.xp);
-  ctx.emit('skin.done', { actor: a.id, mob: m.id, type: m.type, items: got, xp: type.hunt.xp });
+  ctx.emit('skin.done', { actor: a.id, mob: m.id, species: m.type, items: got, xp: type.hunt.xp });
 }

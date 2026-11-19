@@ -22,7 +22,24 @@ function parseArgs(argv) {
 export function runPersona(data, prof, { days, seed }) {
   const game = createGame({ data, seed, actors: [{ id: 'b1', name: prof.name, kind: 'bot', ai: prof.id }] });
   const a = game.state.actors.b1;
-  const time = { gather: 0, move: 0, wait: 0, idle: 0 };
+  const time = { gather: 0, move: 0, wait: 0, idle: 0, fight: 0 };
+  const fight = { swings: 0, hits: 0, hurt: 0, evaded: 0, blocked: 0, downs: [], skins: 0, gearCraft: {}, repairs: {} };
+  game.on('combat.swing', (ev) => { if (ev.actor === 'b1') fight.swings++; });
+  game.on('combat.hit', (ev) => { if (ev.actor === 'b1') fight.hits++; });
+  game.on('combat.hurt', (ev) => { if (ev.actor === 'b1') fight.hurt++; });
+  game.on('actor.down', (ev) => { if (ev.actor === 'b1') fight.downs.push(ev.species); });
+  game.on('skin.done', (ev) => { if (ev.actor === 'b1') fight.skins++; });
+  game.on('craft.done', (ev) => {
+    if (ev.actor !== 'b1') return;
+    const def = data.items[ev.item];
+    if (def.weapon || def.armor) fight.gearCraft[ev.item] = (fight.gearCraft[ev.item] || 0) + 1;
+  });
+  game.on('repair', (ev) => {
+    if (ev.actor !== 'b1') return;
+    const def = data.items[ev.item];
+    const k = def.weapon ? 'weapon' : def.armor ? 'armor' : 'tool';
+    fight.repairs[k] = (fight.repairs[k] || 0) + 1;
+  });
   const fails = {};
   const rejects = {};
   let blocked = 0;
@@ -78,7 +95,8 @@ export function runPersona(data, prof, { days, seed }) {
   const t0 = performance.now();
   for (let s = 0; s < total; s++) {
     game.advance(1);
-    if (a.action) time.gather++;
+    if (a.ai.mem.fight || a.cb.act || a.cb.downUntil > 0) time.fight++;
+    else if (a.action) time.gather++;
     else if (a.dest || a.move) time.move++;
     else if (a.queue.length) time.wait++;
     else time.idle++;
@@ -100,8 +118,11 @@ export function runPersona(data, prof, { days, seed }) {
     ms: Math.round(ms),
     firsts: { stoneTool: m.tool_t0 ?? null, copperTool: m.tool_t1 ?? null, food: m.first_food ?? null, masterwork: m.first_masterwork ?? null },
     reach: Object.fromEntries(['logging', 'mining', 'harvesting'].map((s) => [s, { 10: m[`${s}_10`] ?? null, 20: m[`${s}_20`] ?? null, 30: m[`${s}_30`] ?? null }])),
+    skinBy: a.stats.skin,
+    fight: { ...fight, kills: a.stats.kills, dmgDealt: Math.round(a.stats.dmgDealt), dmgTaken: Math.round(a.stats.dmgTaken), evaded: a.stats.evaded || 0, blockedHits: a.stats.blocked || 0,
+      equip: Object.fromEntries(Object.entries(a.equip).map(([k, uid]) => { const e = a.bag.find((x) => x.uid === uid); return [k, e ? `${e.item}★${e.star}` : null]; })) },
     levels: Object.fromEntries(Object.entries(a.skills).filter(([, s]) => s.xp > 0).map(([k, s]) => [k, s.level])),
-    time: { gather: pct(time.gather), move: pct(time.move), wait: pct(time.wait), idle: pct(time.idle) },
+    time: { gather: pct(time.gather), move: pct(time.move), wait: pct(time.wait), idle: pct(time.idle), fight: pct(time.fight) },
     distKm: Math.round(dist / 100) / 10,
     gathers, gathersPerHour: Math.round(gathers / days),
     crafts: a.stats.craft, eat: a.stats.eat, focusUsed: Math.round(a.stats.focusUsed), masterwork: a.stats.masterwork,
@@ -131,6 +152,9 @@ if (isMain) {
       console.log(`  시간: 채집 ${r.time.gather}% · 이동 ${r.time.move}% · 제작 대기 ${r.time.wait}% · 그 밖 ${r.time.idle}% · 걸은 거리 ${r.distKm}km`);
       console.log(`  채집 ${r.gathers}회(시간당 ${r.gathersPerHour}) · 산지 ${r.lotsUsed}곳(순환 ${r.rotatingLots}, 채집의 ${r.rotatingShare}%) · 걸작 ${r.masterwork} · 음식 ${r.eat}`);
       console.log(`  레벨: ${Object.entries(r.levels).map(([k, v]) => `${data.skills[k].name} ${v}`).join(' · ')}`);
+      const F = r.fight;
+      console.log(`  전투: 시간 ${r.time.fight}% · 처치 ${JSON.stringify(F.kills)} · 쓰러짐 ${F.downs.length}${F.downs.length ? `(${F.downs.join(',')})` : ''} · 손질 ${F.skins}(${JSON.stringify(r.skinBy)}) · 준 피해 ${F.dmgDealt} · 받은 피해 ${F.dmgTaken} · 피함 ${F.evaded} · 막음 ${F.blockedHits}`);
+      console.log(`  장비: ${JSON.stringify(F.equip)} · 만든 장비 ${JSON.stringify(F.gearCraft)} · 수리 ${JSON.stringify(F.repairs)}`);
       console.log(`  10/20/30 도달: ${Object.entries(r.reach).map(([k, v]) => `${data.skills[k].name} ${f(v[10])}/${f(v[20])}/${f(v[30])}`).join(' · ')}`);
       console.log(`  도구: ${Object.entries(r.tools).map(([k, v]) => (v ? `${data.items[v.item].name}★${v.star}(×${v.speed}, +${Math.round(v.yield * 100)}%)` : `${data.skills[k].name} 없음`)).join(' · ')} · 만든 도구 별 ${JSON.stringify(r.toolStars)}`);
       console.log(`  귀환 ${r.recalls}번 · 실패 ${JSON.stringify(r.fails)} · 거절 ${JSON.stringify(r.rejects)} · 막힘 ${r.blocked} · 가장 좋은 산지 ${r.bestLot}`);

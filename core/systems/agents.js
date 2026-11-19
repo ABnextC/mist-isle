@@ -8,6 +8,7 @@ const POLICIES = { settler: thinkSettler };
 export function agentsTick(ctx) {
   for (const a of Object.values(ctx.state.actors)) {
     if (!a.ai || !a.ai.on) continue;
+    if (a.ai.mem?.fight || a.ai.manual) continue; // 싸우는 동안은 싸움 요령(ai/fighter.js)이 몸을 쓴다
     const prof = ctx.data.agents[a.ai.profile];
     const policy = POLICIES[prof?.policy || 'settler'];
     if (policy) policy(ctx, a);

@@ -1,6 +1,6 @@
 {
-  "dataVersion": 4,
-  "skillCap": 30,
+  "dataVersion": 5,
+  "skillCap": 60,
   "time": {
     "secondsPerGameDay": 3600,
     "dayFraction": 0.75,
@@ -106,6 +106,10 @@
     "herb": [
       "potency",
       "duration"
+    ],
+    "leather": [
+      "thickness",
+      "suppleness"
     ]
   },
   "propNames": {
@@ -482,6 +486,96 @@
     "rate": 0.35,
     "maxLoss": 0.02,
     "xp": 0.5,
-    "minMaxShare": 0.8
+    "minMaxShare": 0.8,
+    "stations": {
+      "weapon": "forge",
+      "tool": "forge",
+      "armor": "armorbench"
+    }
+  },
+  "combat": {
+    "hp": 100,
+    "hpRegen": 3,
+    "hpRegenDelay": 5,
+    "stamina": 100,
+    "staminaRegen": 30,
+    "staminaDelay": 0.6,
+    "heavyCost": 18,
+    "heavyMult": 2.0,
+    "dodgeCost": 22,
+    "dodgeSec": 0.45,
+    "dodgeIframe": 0.3,
+    "dodgeDist": 3.8,
+    "blockArc": 120,
+    "blockCut": 0.75,
+    "blockMove": 0.5,
+    "guardBreakSec": 0.8,
+    "attackMove": 0.55,
+    "armorK": 60,
+    "downSec": 5,
+    "deathWear": 0.1,
+    "brokenMult": 0.25,
+    "corpseSec": 90,
+    "fists": {
+      "attack": 3,
+      "type": "fists"
+    },
+    "weapons": {
+      "fists": {
+        "range": 1.5,
+        "arc": 80,
+        "light": 0.5,
+        "heavy": 0.95,
+        "windup": 0.16,
+        "heavyWindup": 0.5,
+        "mult": 1.0,
+        "targets": 1
+      },
+      "club": {
+        "range": 1.9,
+        "arc": 90,
+        "light": 0.55,
+        "heavy": 1.0,
+        "windup": 0.2,
+        "heavyWindup": 0.55,
+        "mult": 1.0,
+        "targets": 1
+      },
+      "sword": {
+        "range": 2.2,
+        "arc": 100,
+        "light": 0.45,
+        "heavy": 0.95,
+        "windup": 0.16,
+        "heavyWindup": 0.5,
+        "mult": 1.0,
+        "targets": 1
+      },
+      "axe": {
+        "range": 2.4,
+        "arc": 140,
+        "light": 0.65,
+        "heavy": 1.15,
+        "windup": 0.26,
+        "heavyWindup": 0.65,
+        "mult": 1.25,
+        "targets": 2
+      },
+      "spear": {
+        "range": 3.3,
+        "arc": 45,
+        "light": 0.55,
+        "heavy": 1.05,
+        "windup": 0.2,
+        "heavyWindup": 0.6,
+        "mult": 0.95,
+        "targets": 2
+      }
+    },
+    "dodgeDistByWeight": {
+      "light": 3.8,
+      "medium": 3.2,
+      "heavy": 2.5
+    }
   }
 }

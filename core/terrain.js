@@ -95,7 +95,14 @@ export function makeTerrain(region, worldSeed) {
   };
 }
 
-// 노드 서식지 검사: 높이 범위, 정착지·가장자리 피하기
+// 구역: 지역 안에서 북쪽으로 일정 선(z0)을 넘으면 그 구역이다(v0.3 참나무 숲)
+export function zoneAt(region, x, z) {
+  let found = null;
+  for (const zn of region.zones || []) if (z >= zn.z0) found = zn;
+  return found;
+}
+
+// 노드 서식지 검사: 높이 범위, 정착지·가장자리 피하기, 구역(zone이 있으면 그 구역 안, 없으면 구역 밖)
 export function fitsHabitat(terrain, region, nodeType, x, z) {
   const hab = nodeType.habitat;
   const [x0, z0, x1, z1] = region.bounds;
@@ -103,6 +110,11 @@ export function fitsHabitat(terrain, region, nodeType, x, z) {
   if (x < x0 + m || x > x1 - m || z < z0 + 2 || z > z1 - m) return false;
   const t = region.settlement;
   if (Math.hypot(x - t.x, z - t.z) < t.radius + 6) return false;
+  const zone = zoneAt(region, x, z);
+  if (nodeType.zone) {
+    if (!zone || zone.id !== nodeType.zone) return false;
+    if (nodeType.deep && z < zone.z0 + nodeType.deep) return false;
+  } else if (zone) return false;
   const h = terrain.height(x, z);
   return h >= hab[0] && h <= hab[1];
 }

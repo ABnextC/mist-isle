@@ -4,9 +4,11 @@
 import { addEntry, slotsNeeded } from '../inventory.js';
 import { rollQty, skillYieldBonus, round3 } from '../formulas.js';
 import { addXp } from './progress.js';
+import { combatMove } from './combat.js';
+import { finishSkin } from './mobs.js';
 
 // 지형 밖·깊은 물·장애물을 피해 최종 위치를 정한다.
-function resolve(ctx, a, nx, nz) {
+export function resolve(ctx, a, nx, nz) {
   const terrain = ctx.terrain;
   if (!terrain.walkable(nx, nz)) {
     if (terrain.walkable(nx, a.z)) nz = a.z;
@@ -73,8 +75,16 @@ function steer(ctx, a, nav, ux, uz, len) {
 
 export function movementTick(ctx, dt) {
   const { state, cfg } = ctx;
-  const step = cfg.move.speed * dt;
   for (const a of Object.values(state.actors)) {
+    const cm = combatMove(ctx, a);
+    if (cm.lock) continue;
+    if (cm.dodge) {
+      const [nx, nz] = resolve(ctx, a, a.x + cm.dodge[0] * dt, a.z + cm.dodge[1] * dt);
+      a.x = round3(nx);
+      a.z = round3(nz);
+      continue;
+    }
+    const step = cfg.move.speed * dt * cm.mult;
     if (a.move) {
       const [nx, nz] = resolve(ctx, a, a.x + a.move[0] * step, a.z + a.move[1] * step);
       a.yaw = round3(Math.atan2(a.move[0], a.move[1]));
@@ -119,6 +129,7 @@ export function actionsTick(ctx) {
   for (const a of Object.values(ctx.state.actors)) {
     if (!a.action || a.action.endsAt > ctx.state.t) continue;
     if (a.action.type === 'recall') resolveRecall(ctx, a);
+    else if (a.action.type === 'skin') finishSkin(ctx, a);
     else resolveGather(ctx, a);
   }
 }

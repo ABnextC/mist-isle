@@ -11,6 +11,8 @@ import { dist, settlementAt, stationFor, bestTool } from './world.js';
 import { placeAsk, placeBid, cancelOrder, npcSell, tradable, repairCost } from './market.js';
 import { deliver, countDeliverable } from './orders.js';
 import { addXp } from './systems/progress.js';
+import { startAttack, startDodge, interrupt, equipped } from './systems/combat.js';
+import { corpseOpen, skinLoot, skinSeconds } from './systems/mobs.js';
 
 // ── 도우미 ─────────────────────────────────────────────
 function matchSlot(data, e, slot) {
@@ -70,15 +72,7 @@ function weakestProp(props, names) {
 }
 
 function cancelGather(ctx, a, reason) {
-  if (!a.action) return;
-  if (a.action.type === 'recall') {
-    ctx.emit('recall.cancelled', { actor: a.id });
-    a.action = null;
-    return;
-  }
-  if (a.action.focus) a.focus += ctx.cfg.focus.cost.gather;
-  ctx.emit('gather.failed', { actor: a.id, node: a.action.node, reason });
-  a.action = null;
+  interrupt(ctx, a, reason);
 }
 
 // ── 명령 ───────────────────────────────────────────────
@@ -301,12 +295,20 @@ const EAT = {
     const e = findEntry(a.bag, c.key);
     if (!e) return 'no_item';
     const def = ctx.data.items[e.item];
-    if (def.kind !== 'consumable' || !def.buff) return 'not_food';
+    if (def.kind !== 'consumable' || (!def.buff && def.effect !== 'heal')) return 'not_food';
+    if (def.effect === 'heal' && a.cb && a.cb.downUntil > 0) return 'down';
     return { e, def };
   },
   execute(ctx, a, c, p) {
     const stats = p.e.stats;
     takeQty(a.bag, c.key, 1);
+    if (p.def.effect === 'heal') {
+      const before = a.cb.hp;
+      a.cb.hp = Math.min(a.cb.maxHp, Math.round((a.cb.hp + (stats.heal ?? 20)) * 100) / 100);
+      a.stats.eat++;
+      ctx.emit('eat', { actor: a.id, item: p.e.item, heal: Math.round(a.cb.hp - before) });
+      return;
+    }
     a.buffs = a.buffs.filter((b) => b.type !== p.def.buff);
     const buff = { type: p.def.buff, value: stats.buff, endsAt: ctx.state.t + stats.minutes * 60 };
     a.buffs.push(buff);
@@ -329,7 +331,8 @@ const STORE = {
       ? [findEntry(a.bag, c.key)]
       : a.bag.filter((e) => {
         const def = data.items[e.item];
-        return def.kind === 'material' || (def.kind === 'equipment' && !def.tool);
+        // 도구·무기·갑옷은 가방에 남긴다(낀 장비가 빠지지 않게)
+        return def.kind === 'material' || (def.kind === 'equipment' && !def.tool && !def.weapon && !def.armor);
       });
     let moved = 0;
     for (const e of list) {
@@ -489,10 +492,12 @@ const ORDER_DELIVER = {
 // 수리: 대장간 앞에서 은화를 내고 고친다. 고칠 때마다 최대 내구가 2% 준다(설계 7.5).
 const REPAIR = {
   validate(ctx, a, c) {
-    if (!stationFor(ctx, a, 'forge')) return 'no_station';
     const e = a.bag.find((x) => x.uid === c.uid) || (settlementAt(ctx, a) ? a.storage.find((x) => x.uid === c.uid) : null);
     if (!e) return 'no_item';
-    if (!ctx.data.items[e.item].tool || e.maxDur == null) return 'not_repairable';
+    const def = ctx.data.items[e.item];
+    const kind = def.armor ? 'armor' : def.weapon ? 'weapon' : def.tool ? 'tool' : null;
+    if (!kind || e.maxDur == null) return 'not_repairable';
+    if (!stationFor(ctx, a, ctx.cfg.repair.stations?.[kind] || 'forge')) return 'no_station';
     if (!e.broken && e.dur >= e.maxDur) return 'not_damaged';
     const cost = repairCost(ctx, e);
     if (a.silver < cost) return 'no_silver';
@@ -513,9 +518,127 @@ const REPAIR = {
   },
 };
 
+// ── 전투(v0.3) ─────────────────────────────────────
+const alive = (ctx, a) => {
+  if (!a.cb || a.cb.downUntil > 0) return 'down';
+  if (a.cb.stunUntil > ctx.state.t) return 'stunned';
+  return null;
+};
+
+// 무기·갑옷 끼기. 이미 낀 것을 다시 고르면 벗는다.
+const EQUIP = {
+  validate(ctx, a, c) {
+    const e = a.bag.find((x) => x.uid === c.uid);
+    if (!e) return 'no_item';
+    const def = ctx.data.items[e.item];
+    const slot = def.weapon ? 'weapon' : def.armor?.slot;
+    if (!slot) return 'not_equipment';
+    return { e, slot };
+  },
+  execute(ctx, a, c, p) {
+    a.equip = a.equip || { weapon: null, head: null, chest: null, legs: null };
+    a.equip[p.slot] = a.equip[p.slot] === p.e.uid && !c.keep ? null : p.e.uid;
+    ctx.emit('equip', { actor: a.id, slot: p.slot, uid: a.equip[p.slot], item: p.e.item });
+  },
+};
+
+const UNEQUIP = {
+  validate(ctx, a, c) {
+    if (!['weapon', 'head', 'chest', 'legs'].includes(c.slot)) return 'bad_args';
+    return {};
+  },
+  execute(ctx, a, c) {
+    if (a.equip) a.equip[c.slot] = null;
+    ctx.emit('equip', { actor: a.id, slot: c.slot, uid: null, item: null });
+  },
+};
+
+// 공격: kind light|heavy, yaw는 바라볼 방향(없으면 지금 방향)
+const ATTACK = {
+  validate(ctx, a, c) {
+    const bad = alive(ctx, a);
+    if (bad) return bad;
+    const t = ctx.state.t;
+    if (a.cb.dodge) return 'busy';
+    if (a.cb.act && t < a.cb.act.endAt) return 'busy';
+    const kind = c.kind === 'heavy' ? 'heavy' : 'light';
+    if (kind === 'heavy' && a.cb.st < ctx.cfg.combat.heavyCost) return 'no_stamina';
+    if (c.yaw != null && !Number.isFinite(c.yaw)) return 'bad_args';
+    return { kind };
+  },
+  execute(ctx, a, c, p) {
+    cancelGather(ctx, a, 'attack');
+    a.dest = null;
+    a.nav = null;
+    startAttack(ctx, a, p.kind, c.yaw ?? a.yaw);
+  },
+};
+
+const DODGE = {
+  validate(ctx, a, c) {
+    const bad = alive(ctx, a);
+    if (bad) return bad;
+    if (a.cb.dodge) return 'busy';
+    if (a.cb.st < ctx.cfg.combat.dodgeCost) return 'no_stamina';
+    if (c.yaw != null && !Number.isFinite(c.yaw)) return 'bad_args';
+    return {};
+  },
+  execute(ctx, a, c) {
+    cancelGather(ctx, a, 'dodge');
+    a.dest = null;
+    a.nav = null;
+    const yaw = c.yaw ?? (a.move ? Math.atan2(a.move[0], a.move[1]) : a.yaw);
+    startDodge(ctx, a, yaw);
+  },
+};
+
+const BLOCK = {
+  validate(ctx, a, c) {
+    if (c.on) {
+      const bad = alive(ctx, a);
+      if (bad) return bad;
+      if (a.cb.dodge) return 'busy';
+    }
+    return {};
+  },
+  execute(ctx, a, c) {
+    const on = !!c.on;
+    if (!a.cb || a.cb.block === on) return;
+    if (on) cancelGather(ctx, a, 'block');
+    a.cb.block = on;
+    ctx.emit('combat.block', { actor: a.id, on });
+  },
+};
+
+// 손질: 쓰러뜨린 짐승의 사체에서 가죽·고기를 얻는다(수렵)
+const SKIN = {
+  validate(ctx, a, c) {
+    if (a.action) return 'busy';
+    const bad = alive(ctx, a);
+    if (bad) return bad;
+    const m = ctx.state.mobs?.[c.mob];
+    if (!m) return 'no_mob';
+    if (!corpseOpen(ctx, m) || (m.skinning && m.skinning !== a.id)) return 'no_corpse';
+    if (dist(a, m) > 2.6) return 'too_far';
+    const type = ctx.data.creatures[m.type];
+    if (a.skills.hunting.level < type.hunt.level) return 'level_low';
+    if (a.bag.length + slotsNeeded(a.bag, skinLoot(ctx, m)) > ctx.cfg.bag.slots) return 'bag_full';
+    return { m, secs: skinSeconds(ctx, a, type) };
+  },
+  execute(ctx, a, c, p) {
+    a.move = null;
+    a.dest = null;
+    a.nav = null;
+    p.m.skinning = a.id;
+    a.action = { type: 'skin', mob: p.m.id, startedAt: ctx.state.t, endsAt: round2(ctx.state.t + p.secs) };
+    ctx.emit('skin.start', { actor: a.id, mob: p.m.id, type: p.m.type, sec: p.secs });
+  },
+};
+
 const HANDLERS = {
   MOVE, MOVE_INPUT, GATHER, CRAFT, EAT, STORE, TAKE, SET_AUTOPILOT, RECALL,
   MARKET_SELL, MARKET_BUY, MARKET_CANCEL, MARKET_DUMP, ORDER_DELIVER, REPAIR,
+  EQUIP, UNEQUIP, ATTACK, DODGE, BLOCK, SKIN,
 };
 
 export function makeCommands(ctx) {

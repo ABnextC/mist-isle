@@ -2,6 +2,7 @@
 //   node tools/test.js
 
 import { loadData } from './load-data.js';
+import { startFight } from '../core/ai/fighter.js';
 import { createGame, loadGame } from '../core/game.js';
 import {
   craftScores, convertStats, starOf, masterworkChance, avg, refineStep, xpToNext, levelFromXp,
@@ -315,7 +316,10 @@ test('v0.0 세이브를 불러오면 지형에 맞게 옮겨지고 이어서 돈
   const before = JSON.parse(old).state;
   eq(g.state.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   eq(g.state.tick, before.t * data.config.time.hz, '틱 환산');
-  eq(Object.keys(g.state.nodes).length, Object.keys(before.nodes).length, '노드 수');
+  ok(Object.keys(before.nodes).every((id) => g.state.nodes[id]), '원래 노드가 그대로 있다');
+  ok(Object.values(g.state.nodes).some((n) => n.type === 'node_oak'), 'v0.3 참나무 숲 노드가 열린다');
+  ok(Object.keys(g.state.mobs).length > 10, 'v0.3 짐승');
+  ok(g.state.actors.p1.cb && g.state.actors.p1.cb.hp === data.config.combat.hp, 'v0.3 체력');
   let bad = 0;
   for (const n of Object.values(g.state.nodes)) if (!fitsHabitat(g.terrain, region, data.nodes[n.type], n.x, n.z)) bad++;
   ok(bad <= 2, `서식지 밖 노드 ${bad}개`);
@@ -454,6 +458,173 @@ test('AI 개척민 경제: 게임 30일을 돌려도 은화가 폭주하지 않�
   const idx = basket.reduce((x, it) => x + (g.state.market.ref[it + '|2'] ?? 1) / Math.round(data.items[it].value * cfg.market.starMult[2]), 0) / basket.length;
   ok(idx > 0.6 && idx < 1.3, `물가 지수 ${idx.toFixed(2)}`);
   ok(g.state.orders.length > 0, '주문 게시판이 비었다');
+});
+
+console.log('전투·수렵 (v0.3)');
+function arena(typeId, seed = 21) {
+  const g = createGame({ data, seed, actors: [{ id: 'p1', kind: 'player' }] });
+  g.state.econ = null;
+  const grp = Object.values(g.state.mobGroups).find((x) => x.type === typeId);
+  for (const m of Object.values(g.state.mobs)) if (m.group !== grp.id) delete g.state.mobs[m.id];
+  for (const id of Object.keys(g.state.mobGroups)) if (id !== grp.id) delete g.state.mobGroups[id];
+  const m = g.state.mobs[grp.mobs[0]];
+  for (const id of grp.mobs.slice(1)) delete g.state.mobs[id];
+  grp.mobs = [m.id];
+  const a = g.state.actors.p1;
+  return { g, a, m, grp };
+}
+function kit(id, score, uid) {
+  const def = data.items[id];
+  const stats = convertStats(def.statConvert, Object.fromEntries(Object.keys(def.statConvert).map((k) => [k, score])));
+  return { uid, item: id, stats, star: 2, dur: stats.durability, maxDur: stats.durability, broken: false };
+}
+function place(g, a, m, d, yawOff = 0) {
+  // 짐승 앞 d m에 세우고 짐승을 바라보게 한다
+  a.x = m.x + Math.sin(m.yaw) * d;
+  a.z = m.z + Math.cos(m.yaw) * d;
+  a.yaw = Math.atan2(m.x - a.x, m.z - a.z) + yawOff;
+}
+
+test('참나무 숲: 참나무·철광맥·늑대는 북쪽 숲(z ≥ 250)에만, T1 노드는 숲 밖에만 난다', () => {
+  const g = createGame({ data, seed: 31 });
+  const z0 = data.lists.regions[0].zones[0].z0;
+  const nodes = Object.values(g.state.nodes);
+  ok(nodes.some((n) => n.type === 'node_oak') && nodes.some((n) => n.type === 'node_iron'), 'T2 노드가 없다');
+  for (const n of nodes) {
+    const zone = data.nodes[n.type].zone;
+    ok(zone ? n.z >= z0 : n.z < z0, `${n.type} ${n.z.toFixed(0)}`);
+  }
+  const wolves = Object.values(g.state.mobGroups).filter((x) => x.type === 'wolf');
+  ok(wolves.length > 0 && wolves.every((x) => x.z >= z0 + data.creatures.wolf.deep), '늑대는 숲 깊은 곳');
+  ok(Object.values(g.state.mobGroups).filter((x) => x.type === 'crab').every((x) => x.z < z0), '게는 해안');
+});
+
+test('공격: 사거리·각도 안의 짐승을 무기 공격력만큼 때리고 무기 내구가 준다', () => {
+  const { g, a, m } = arena('boar');
+  const w = kit('wpn_sword_copper', 50, 'u_w1');
+  a.bag.push(w);
+  ok(g.dispatch({ type: 'EQUIP', actor: 'p1', uid: 'u_w1' }).ok, '장착');
+  m.mode = 'recover';
+  m.until = 1e9;
+  place(g, a, m, 1.6);
+  const hp0 = m.hp;
+  ok(g.dispatch({ type: 'ATTACK', actor: 'p1', kind: 'light' }).ok, '공격 거절');
+  g.advance(0.6);
+  const expect = Math.round(w.stats.attack * (1 - 10 / 70) * 10) / 10;
+  eq(Math.round((hp0 - m.hp) * 10) / 10, expect, '피해(방어 10 반영)');
+  eq(w.dur, w.maxDur - 1, '무기 내구');
+  eq(g.dispatch({ type: 'ATTACK', actor: 'p1', kind: 'heavy', yaw: a.yaw + Math.PI }).ok, true);
+  const hp1 = m.hp;
+  g.advance(1.2);
+  eq(m.hp, hp1, '뒤로 휘두르면 안 맞는다');
+});
+
+test('회피: 구르기 앞 0.3초에는 짐승의 공격을 맞지 않는다', () => {
+  const { g, a, m } = arena('crab');
+  place(g, a, m, 1.0);
+  m.target = 'p1';
+  m.mode = 'windup';
+  m.until = g.state.t + 0.1;
+  m.yaw = Math.atan2(a.x - m.x, a.z - m.z);
+  ok(g.dispatch({ type: 'DODGE', actor: 'p1', yaw: a.yaw }).ok, '회피 거절'); // 짐승 쪽으로 굴러 사거리 안에 남는다
+  eq(a.cb.st, data.config.combat.stamina - data.config.combat.dodgeCost, '기력');
+  g.advance(0.2);
+  eq(a.cb.hp, data.config.combat.hp, '피해를 받았다');
+  ok(a.stats.evaded >= 1, '피함 기록');
+});
+
+test('막기: 앞에서 오는 피해를 75% 줄이고, 기력이 바닥나면 비틀거린다', () => {
+  const { g, a, m } = arena('crab');
+  place(g, a, m, 1.0);
+  g.dispatch({ type: 'BLOCK', actor: 'p1', on: true });
+  m.target = 'p1';
+  m.mode = 'windup';
+  m.until = g.state.t + 0.05;
+  m.yaw = Math.atan2(a.x - m.x, a.z - m.z);
+  g.advance(0.1);
+  eq(a.cb.hp, data.config.combat.hp - Math.round(5 * 0.25 * 10) / 10, '막은 피해');
+  eq(a.cb.st, data.config.combat.stamina - 5, '기력이 준다');
+  a.cb.st = 2;
+  m.mode = 'windup';
+  m.until = g.state.t + 0.05;
+  g.advance(0.1);
+  ok(a.cb.stunUntil > g.state.t && !a.cb.block, '막기가 풀리고 비틀거린다');
+});
+
+test('쓰러짐: 체력이 0이면 5초 뒤 마을에서 일어나고 낀 장비 내구가 10% 준다', () => {
+  const { g, a, m } = arena('wolf');
+  const w = kit('wpn_spear_copper', 40, 'u_w2');
+  a.bag.push(w);
+  g.dispatch({ type: 'EQUIP', actor: 'p1', uid: 'u_w2' });
+  place(g, a, m, 1.2);
+  a.cb.hp = 3;
+  m.target = 'p1';
+  m.mode = 'windup';
+  m.until = g.state.t + 0.05;
+  m.yaw = Math.atan2(a.x - m.x, a.z - m.z);
+  g.advance(0.2);
+  ok(a.cb.downUntil > 0, '쓰러지지 않았다');
+  eq(w.dur, w.maxDur - Math.round(w.maxDur * 0.1), '장비 내구 10%');
+  eq(g.dispatch({ type: 'ATTACK', actor: 'p1' }).error, 'down');
+  g.advance(5.2);
+  eq(a.cb.downUntil, 0);
+  eq(a.cb.hp, data.config.combat.hp, '체력이 찬다');
+  const town = Object.values(g.state.settlements)[0];
+  ok(Math.hypot(a.x - town.x, a.z - town.z) < town.radius, '마을에서 일어난다');
+});
+
+test('수렵: 쓰러뜨린 짐승을 손질하면 사냥터 묶음의 가죽·고기와 수렵 경험치를 얻는다', () => {
+  const { g, a, m, grp } = arena('deer');
+  a.skills.hunting.level = data.creatures.deer.hunt.level;
+  place(g, a, m, 1.5);
+  m.mode = 'dead';
+  m.hp = 0;
+  m.deadAt = g.state.t;
+  m.respawnAt = g.state.t + 300;
+  ok(g.dispatch({ type: 'SKIN', actor: 'p1', mob: m.id }).ok, '손질 거절');
+  g.advance(data.creatures.deer.hunt.seconds + 0.2);
+  const hide = a.bag.find((e) => e.item === 'hide_raw');
+  ok(hide && hide.lot === grp.lots.hide_raw && hide.qty >= 2, '생가죽');
+  ok(a.bag.some((e) => e.item === 'meat_raw'), '생고기');
+  ok(a.skills.hunting.xp > 0, '수렵 경험치');
+  eq(g.dispatch({ type: 'SKIN', actor: 'p1', mob: m.id }).error, 'no_corpse', '두 번 손질');
+  a.skills.hunting.level = 1;
+});
+
+test('갑옷 수리는 갑주 작업대, 무기 수리는 대장간에서 한다', () => {
+  const { g, a } = arena('crab');
+  const town = Object.values(g.state.settlements)[0];
+  const forge = town.stations.find((x) => x.type === 'forge');
+  const bench = town.stations.find((x) => x.type === 'armorbench');
+  a.silver = 999;
+  const v = kit('arm_leather_vest', 50, 'u_a1');
+  v.dur = 10;
+  const w = kit('wpn_sword_copper', 50, 'u_w3');
+  w.dur = 5;
+  a.bag.push(v, w);
+  a.x = forge.x - 2;
+  a.z = forge.z;
+  eq(g.dispatch({ type: 'REPAIR', actor: 'p1', uid: 'u_a1' }).error, 'no_station', '갑옷은 대장간에서 못 고친다');
+  ok(g.dispatch({ type: 'REPAIR', actor: 'p1', uid: 'u_w3' }).ok, '무기 수리');
+  a.x = bench.x - 2;
+  a.z = bench.z;
+  ok(g.dispatch({ type: 'REPAIR', actor: 'p1', uid: 'u_a1' }).ok, '갑옷 수리');
+  eq(v.dur, v.maxDur);
+});
+
+test('결투를 같은 시드로 두 번 돌리면 결과가 똑같다', () => {
+  const run = () => {
+    const { g, a, m } = arena('wolf', 44);
+    const w = kit('wpn_battleaxe_copper', 45, 'u_w4');
+    a.bag.push(w);
+    g.dispatch({ type: 'EQUIP', actor: 'p1', uid: 'u_w4' });
+    place(g, a, m, 6);
+    startFight(a, m.id, { read: 0.5 });
+    a.ai.manual = true;
+    g.advance(20);
+    return g.hash();
+  };
+  eq(run(), run());
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

@@ -6,8 +6,10 @@ import { stationLayout } from './world.js';
 import { emptyMarket, townDaily } from './market.js';
 import { initEcon } from './systems/economy.js';
 import { dailyOrders } from './orders.js';
+import { initCombat, emptyEquip } from './systems/combat.js';
+import { initMobs } from './systems/mobs.js';
 
-export const ENGINE_VERSION = '0.2.1';
+export const ENGINE_VERSION = '0.3.0';
 
 export function spawnPoint(region, terrain) {
   const [x, inland] = region.spawn;
@@ -27,9 +29,10 @@ export function newActor(data, spec, at) {
     focus: data.config.focus.max,
     silver: data.config.market.startSilver,
     buffs: [],
+    cb: initCombat(data.config), equip: emptyEquip(),
     bag: [], storage: [], queue: [],
     ai: spec.ai ? { on: true, profile: spec.ai, mem: {} } : null,
-    stats: { gather: {}, craft: {}, eat: 0, focusUsed: 0, masterwork: 0 },
+    stats: { gather: {}, craft: {}, eat: 0, focusUsed: 0, masterwork: 0, kills: {}, skin: {}, downs: 0, dmgDealt: 0, dmgTaken: 0 },
     milestones: {},
   };
 }
@@ -43,7 +46,7 @@ export function createState(data, seed) {
     clock: { hour: 0, day: 0 },
     rng: seedState(seed),
     nextId: 1,
-    regions: {}, lots: {}, veins: {}, nodes: {}, settlements: {}, actors: {},
+    regions: {}, lots: {}, veins: {}, nodes: {}, settlements: {}, actors: {}, mobs: {}, mobGroups: {},
     market: emptyMarket(), orders: [], econ: null,
   };
 }
@@ -69,6 +72,7 @@ export function populate(ctx, actorSpecs) {
   const home = data.lists.regions[0];
   const at = spawnPoint(home, ctx.terrain);
   for (const spec of actorSpecs) state.actors[spec.id] = newActor(data, spec, at);
+  initMobs(ctx);
   state.econ = initEcon(ctx);
   townDaily(ctx);
   dailyOrders(ctx);

@@ -42,6 +42,12 @@ export const ERR = {
   nothing_to_deliver: '넘길 물건이 없음(별·내구도 확인)',
   not_repairable: '고칠 수 없는 물건',
   not_damaged: '고칠 데가 없음',
+  down: '쓰러져 있음',
+  stunned: '비틀거리는 중',
+  no_stamina: '기력이 모자람',
+  no_mob: '없는 짐승',
+  no_corpse: '손질할 사체가 없음',
+  not_equipment: '낄 수 없는 물건',
 };
 
 // 은화 표기: 1,234
@@ -122,7 +128,20 @@ export function describeEvent(ev, game) {
     case 'vein.closed':
       return `🌫️ 영맥이 옮겨 가며 「${ev.name}」이 닫혔다`;
     case 'eat':
+      if (ev.heal != null) return `${p}🍖 ${itemName(data, ev.item)} — 체력 +${ev.heal}`;
       return `${p}🍽️ ${itemName(data, ev.item)} — 채집량 +${Math.round(ev.value * 100)}%, ${ev.minutes}분`;
+    case 'mob.die':
+      return state.actors[ev.actor] ? `${p}⚔️ ${data.creatures[ev.type]?.name ?? ev.type} 쓰러뜨림 — 다가가 손질하자` : null;
+    case 'skin.done':
+      return `${p}🔪 ${data.creatures[ev.type]?.name ?? ev.type} 손질: ${ev.items.map((x) => `${itemName(data, x.item)} ${x.qty}`).join(' · ')}`;
+    case 'actor.down':
+      return `${p}💀 ${ev.type ? `${data.creatures[ev.type]?.name ?? ev.type}에게 ` : ''}쓰러짐 — 마을에서 다시 일어난다(낀 장비 내구 −10%)`;
+    case 'equip': {
+      const SLOT = { weapon: '무기', head: '머리', chest: '몸통', legs: '다리' };
+      return ev.uid ? `${p}🛡️ ${SLOT[ev.slot]}: ${itemName(data, ev.item)} 낌` : `${p}${SLOT[ev.slot]} 장비를 벗음`;
+    }
+    case 'combat.guardbreak':
+      return `${p}🛡️ 기력이 바닥나 막기가 풀렸다`;
     case 'store':
       return ev.moved ? `${p}📦 창고에 ${ev.moved}개 넣음` : null;
     case 'take':

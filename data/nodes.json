@@ -6,5 +6,8 @@
   {"id": "node_reed", "name": "갈대밭", "label": "갈대", "skill": "harvesting", "level": 1, "tier": 0, "item": "fiber_reed", "yield": [1, 3], "charges": [2, 4], "seconds": 2.5, "respawnSec": 240, "xp": 6, "byproducts": [], "habitat": [0.3, 3.2], "solid": 0},
   {"id": "node_berry", "name": "산딸기 덤불", "label": "산딸기", "skill": "harvesting", "level": 2, "tier": 0, "item": "berry", "yield": [2, 3], "charges": [2, 4], "seconds": 2.5, "respawnSec": 300, "xp": 7, "byproducts": [{"item": "seed_berry", "chance": 0.05}], "habitat": [2.0, 14], "solid": 0},
   {"id": "node_seaweed", "name": "해초 바위", "label": "해초", "skill": "harvesting", "level": 4, "tier": 1, "item": "seaweed", "yield": [1, 2], "charges": [3, 5], "seconds": 3, "respawnSec": 420, "xp": 11, "byproducts": [], "habitat": [-0.9, 0.45], "solid": 0, "shore": [-4, 1.5]},
-  {"id": "node_mushroom", "name": "들버섯 군락", "label": "들버섯", "skill": "harvesting", "level": 6, "tier": 1, "item": "mushroom", "yield": [1, 2], "charges": [2, 4], "seconds": 3, "respawnSec": 480, "xp": 12, "byproducts": [], "habitat": [4, 18], "solid": 0}
+  {"id": "node_mushroom", "name": "들버섯 군락", "label": "들버섯", "skill": "harvesting", "level": 6, "tier": 1, "item": "mushroom", "yield": [1, 2], "charges": [2, 4], "seconds": 3, "respawnSec": 480, "xp": 12, "byproducts": [], "habitat": [4, 18], "solid": 0},
+
+  {"id": "node_oak", "name": "참나무", "label": "참나무", "skill": "logging", "level": 20, "tier": 2, "item": "log_oak", "yield": [1, 2], "charges": [4, 7], "seconds": 5.5, "respawnSec": 600, "xp": 24, "byproducts": [{"item": "sap_birch", "chance": 0.04}], "habitat": [2.5, 45], "solid": 0.55, "zone": "oakwood"},
+  {"id": "node_iron", "name": "철광맥", "label": "철", "skill": "mining", "level": 20, "tier": 2, "item": "ore_iron", "yield": [1, 2], "charges": [3, 6], "seconds": 6, "respawnSec": 600, "xp": 24, "byproducts": [{"item": "gem_rough", "chance": 0.04}], "habitat": [3, 50], "solid": 0.95, "zone": "oakwood"}
 ]

@@ -1,7 +1,7 @@
 // 데이터 정의(JSON)를 색인하고 서로 맞물리는지 검사한다.
 // 브라우저는 fetch로, Node는 fs로 읽은 원본을 넘긴다.
 
-export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents'];
+export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures'];
 
 export function buildData(raw) {
   const problems = [];
@@ -97,6 +97,13 @@ export function buildData(raw) {
     }
   }
   for (const n of raw.nodes) if (!n.habitat) problems.push(`노드 ${n.id}: habitat(높이 범위) 없음`);
+  const creatures = index(raw.creatures || [], '짐승');
+  const zoneIds = new Set(raw.regions.flatMap((r) => (r.zones || []).map((z) => z.id)));
+  for (const c of raw.creatures || []) {
+    for (const lt of c.loot) if (!items[lt.item]) problems.push(`짐승 ${c.id}: 전리품 ${lt.item} 없음`);
+    if (c.zone && !zoneIds.has(c.zone)) problems.push(`짐승 ${c.id}: 구역 ${c.zone} 없음`);
+  }
+  for (const n of raw.nodes) if (n.zone && !zoneIds.has(n.zone)) problems.push(`노드 ${n.id}: 구역 ${n.zone} 없음`);
 
   if (problems.length) throw new Error('데이터 오류\n- ' + problems.join('\n- '));
 
@@ -110,7 +117,9 @@ export function buildData(raw) {
     recipes,
     regions,
     agents,
+    creatures,
     lists: {
+      creatures: raw.creatures || [],
       items: raw.items,
       skills: raw.skills.list,
       recipes: raw.recipes,

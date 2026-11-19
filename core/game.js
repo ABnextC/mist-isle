@@ -20,6 +20,9 @@ import { dailyVeins } from './systems/veins.js';
 import { econHourly, econDaily } from './systems/economy.js';
 import { expireOrders, townDaily } from './market.js';
 import { dailyOrders } from './orders.js';
+import { mobsTick } from './systems/mobs.js';
+import { combatTick } from './systems/combat.js';
+import { fightersTick } from './ai/fighter.js';
 import { agentsTick } from './systems/agents.js';
 
 const DEFAULT_ACTORS = [{ id: 'p1', name: '개척자', kind: 'player' }];
@@ -66,6 +69,9 @@ function wrap(ctx, bus) {
     state.t = state.tick / HZ;
     refreshObstacles(ctx);
     movementTick(ctx, 1 / HZ);
+    mobsTick(ctx, 1 / HZ);
+    combatTick(ctx, 1 / HZ);
+    fightersTick(ctx);
     actionsTick(ctx);
     craftingTick(ctx);
     if (state.tick % HZ === 0) {

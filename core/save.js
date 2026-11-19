@@ -4,7 +4,22 @@
 import { makeRng, seedState } from './rng.js';
 import { makeTerrain, fitsHabitat, hashStr } from './terrain.js';
 import { stationLayout } from './world.js';
-import { pickCenter, pickNodeSpot } from './systems/veins.js';
+import { pickCenter, pickNodeSpot, openVein } from './systems/veins.js';
+import { initCombat, emptyEquip } from './systems/combat.js';
+import { initMobs } from './systems/mobs.js';
+import { makeClock } from './clock.js';
+
+// 마이그레이션에서 산지·짐승을 새로 놓을 때 쓰는 작은 실행 문맥
+function migrationCtx(st, data, salt) {
+  const region = data.lists.regions[0];
+  return {
+    state: st, data, cfg: data.config, clock: makeClock(data.config),
+    rng: makeRng(seedState((st.meta.worldSeed ^ salt) >>> 0)),
+    terrain: makeTerrain(region, st.meta.worldSeed),
+    newId: (p) => `${p}_${st.nextId++}`,
+    emit: () => {}, obstaclesDirty: true,
+  };
+}
 import { spawnPoint } from './state.js';
 import { emptyMarket } from './market.js';
 import { initEcon } from './systems/economy.js';
@@ -98,6 +113,46 @@ const MIGRATIONS = [
       st.orders = st.orders || [];
       const rng = makeRng(seedState((st.meta.worldSeed ^ 0x2e5bf271) >>> 0));
       st.econ = st.econ || initEcon({ cfg: data.config, rng });
+    },
+  },
+  {
+    // v0.2.1 → v0.3: 체력·장비, 짐승, 북쪽 참나무 숲(T2). 숲에 있던 T1 노드는 숲 밖으로 옮긴다.
+    from: 4,
+    to: 5,
+    run(st, data) {
+      st.meta.engine = '0.3.0';
+      const cfg = data.config;
+      for (const a of Object.values(st.actors)) {
+        a.cb = a.cb || initCombat(cfg);
+        a.equip = a.equip || emptyEquip();
+        a.stats = { kills: {}, skin: {}, downs: 0, dmgDealt: 0, dmgTaken: 0, ...a.stats };
+      }
+      const region = data.lists.regions[0];
+      const ctx = migrationCtx(st, data, 0x3c6ef372);
+      const { rng, terrain } = ctx;
+      for (const v of Object.values(st.veins)) {
+        const type = data.nodes[v.node];
+        if (!v.common && v.center && !fitsHabitat(terrain, region, type, v.center[0], v.center[1])) {
+          v.center = pickCenter(rng, terrain, region, type, v.radius) || v.center;
+        }
+        for (const id of v.nodes) {
+          const n = st.nodes[id];
+          if (!n || fitsHabitat(terrain, region, type, n.x, n.z)) continue;
+          const spot = pickNodeSpot(rng, terrain, region, type, v.common ? null : v.center, v.radius);
+          if (spot) {
+            n.x = spot[0];
+            n.z = spot[1];
+          }
+        }
+      }
+      for (const vc of region.veins) {
+        if (Object.values(st.veins).some((v) => v.node === vc.node)) continue;
+        if (vc.common) openVein(ctx, region, vc, { common: true });
+        for (let i = 0; i < (vc.rotating || 0); i++) openVein(ctx, region, vc, { initial: true });
+      }
+      st.mobs = st.mobs || {};
+      st.mobGroups = st.mobGroups || {};
+      if (!Object.keys(st.mobGroups).length) initMobs(ctx);
     },
   },
 ];

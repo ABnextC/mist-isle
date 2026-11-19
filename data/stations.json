@@ -1,10 +1,12 @@
 [
-  { "id": "hand", "name": "맨손", "icon": "✋", "r": 0 },
-  { "id": "sawbench", "name": "제재대", "icon": "🪚", "r": 0.9 },
-  { "id": "smelter", "name": "제련로", "icon": "🔥", "r": 1.0 },
-  { "id": "loom", "name": "베틀", "icon": "🧵", "r": 0.9 },
-  { "id": "forge", "name": "대장간", "icon": "⚒️", "r": 1.0 },
-  { "id": "workbench", "name": "목공대", "icon": "🪑", "r": 0.9 },
-  { "id": "kitchen", "name": "조리대", "icon": "🍳", "r": 0.9 },
-  { "id": "storage", "name": "창고", "icon": "📦", "r": 1.1 }
+  {"id": "hand", "name": "맨손", "icon": "✋", "r": 0},
+  {"id": "sawbench", "name": "제재대", "icon": "🪚", "r": 0.9},
+  {"id": "smelter", "name": "제련로", "icon": "🔥", "r": 1.0},
+  {"id": "loom", "name": "베틀", "icon": "🧵", "r": 0.9},
+  {"id": "forge", "name": "대장간", "icon": "⚒️", "r": 1.0},
+  {"id": "workbench", "name": "목공대", "icon": "🪑", "r": 0.9},
+  {"id": "kitchen", "name": "조리대", "icon": "🍳", "r": 0.9},
+  {"id": "storage", "name": "창고", "icon": "📦", "r": 1.1},
+  {"id": "tannery", "name": "무두질 틀", "icon": "🟫", "r": 0.9},
+  {"id": "armorbench", "name": "갑주 작업대", "icon": "🛡️", "r": 0.9}
 ]

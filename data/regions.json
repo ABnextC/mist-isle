@@ -3,48 +3,380 @@
     "id": "wreck_coast",
     "name": "난파 해안",
     "tier": 1,
-    "bounds": [0, 0, 400, 400],
-    "spawn": [149, 6],
+    "bounds": [
+      0,
+      0,
+      400,
+      400
+    ],
+    "spawn": [
+      149,
+      6
+    ],
     "terrain": {
-      "shore": 26, "shoreWobble": 12, "seaFloor": -9, "beach": 1.4, "inland": 9,
-      "hills": 9, "ridge": 22, "townHeight": 1.8, "wadeDepth": -1.1, "edge": 20
+      "shore": 26,
+      "shoreWobble": 12,
+      "seaFloor": -9,
+      "beach": 1.4,
+      "inland": 9,
+      "hills": 9,
+      "ridge": 22,
+      "townHeight": 1.8,
+      "wadeDepth": -1.1,
+      "edge": 20
     },
     "settlement": {
-      "id": "s_lighthouse", "name": "등대 마을", "x": 200, "z": 60, "radius": 30,
+      "id": "s_lighthouse",
+      "name": "등대 마을",
+      "x": 200,
+      "z": 60,
+      "radius": 30,
       "stations": [
-        { "type": "forge", "dx": 10, "dz": 3, "rot": -1.2 },
-        { "type": "smelter", "dx": 12, "dz": -7, "rot": -1.6 },
-        { "type": "sawbench", "dx": -10, "dz": 3, "rot": 1.2 },
-        { "type": "workbench", "dx": -12, "dz": -7, "rot": 1.6 },
-        { "type": "loom", "dx": -5, "dz": 12, "rot": 2.8 },
-        { "type": "kitchen", "dx": 5, "dz": 12, "rot": -2.8 },
-        { "type": "storage", "dx": 0, "dz": -10, "rot": 0 }
+        {
+          "type": "forge",
+          "dx": 10,
+          "dz": 3,
+          "rot": -1.2
+        },
+        {
+          "type": "smelter",
+          "dx": 12,
+          "dz": -7,
+          "rot": -1.6
+        },
+        {
+          "type": "sawbench",
+          "dx": -10,
+          "dz": 3,
+          "rot": 1.2
+        },
+        {
+          "type": "workbench",
+          "dx": -12,
+          "dz": -7,
+          "rot": 1.6
+        },
+        {
+          "type": "loom",
+          "dx": -5,
+          "dz": 12,
+          "rot": 2.8
+        },
+        {
+          "type": "kitchen",
+          "dx": 5,
+          "dz": 12,
+          "rot": -2.8
+        },
+        {
+          "type": "storage",
+          "dx": 0,
+          "dz": -10,
+          "rot": 0
+        },
+        {
+          "type": "tannery",
+          "dx": 15,
+          "dz": 8,
+          "rot": -2.2
+        },
+        {
+          "type": "armorbench",
+          "dx": 7,
+          "dz": -13,
+          "rot": 0.3
+        }
       ],
       "structures": [
-        { "kind": "lighthouse", "dx": -21, "dz": -17, "r": 2.6 },
-        { "kind": "house", "dx": -19, "dz": 15, "r": 2.8, "rot": 0.5 },
-        { "kind": "house", "dx": 19, "dz": 15, "r": 2.8, "rot": -0.5 },
-        { "kind": "house", "dx": 22, "dz": -2, "r": 2.8, "rot": -1.4 },
-        { "kind": "board", "dx": 3, "dz": -2, "r": 0.5 },
-        { "kind": "campfire", "dx": 0, "dz": 3, "r": 0.7 },
-        { "kind": "market", "dx": -6, "dz": -3, "r": 1.5, "rot": 0.6 }
+        {
+          "kind": "lighthouse",
+          "dx": -21,
+          "dz": -17,
+          "r": 2.6
+        },
+        {
+          "kind": "house",
+          "dx": -19,
+          "dz": 15,
+          "r": 2.8,
+          "rot": 0.5
+        },
+        {
+          "kind": "house",
+          "dx": 19,
+          "dz": 15,
+          "r": 2.8,
+          "rot": -0.5
+        },
+        {
+          "kind": "house",
+          "dx": 22,
+          "dz": -2,
+          "r": 2.8,
+          "rot": -1.4
+        },
+        {
+          "kind": "board",
+          "dx": 3,
+          "dz": -2,
+          "r": 0.5
+        },
+        {
+          "kind": "campfire",
+          "dx": 0,
+          "dz": 3,
+          "r": 0.7
+        },
+        {
+          "kind": "market",
+          "dx": -6,
+          "dz": -3,
+          "r": 1.5,
+          "rot": 0.6
+        }
       ]
     },
     "decor": [
-      { "kind": "wreck", "x": 158, "inland": 1.5, "r": 3.4, "rot": 0.55 }
+      {
+        "kind": "wreck",
+        "x": 158,
+        "inland": 1.5,
+        "r": 3.4,
+        "rot": 0.55
+      }
     ],
-    "places": ["붉은절벽", "갈매기 바위", "소금 웅덩이", "난파선 뒤편", "등대 언덕", "검은 모래톱",
-               "파도 굴", "안개 여울", "조개 무덤", "바람 고개", "부서진 돛대", "물새 습지"],
-    "propDist": { "mean": 50, "sd": 14, "luckyChance": 0.06, "luckyBonus": [20, 35], "common": [30, 40] },
+    "places": [
+      "붉은절벽",
+      "갈매기 바위",
+      "소금 웅덩이",
+      "난파선 뒤편",
+      "등대 언덕",
+      "검은 모래톱",
+      "파도 굴",
+      "안개 여울",
+      "조개 무덤",
+      "바람 고개",
+      "부서진 돛대",
+      "물새 습지",
+      "늑대 골짜기",
+      "도토리 언덕",
+      "이끼 바위",
+      "쓰러진 고목",
+      "붉은 샘"
+    ],
+    "propDist": {
+      "mean": 50,
+      "sd": 14,
+      "luckyChance": 0.06,
+      "luckyBonus": [
+        20,
+        35
+      ],
+      "common": [
+        30,
+        40
+      ]
+    },
     "veins": [
-      { "node": "node_driftwood", "common": 28, "cluster": [4, 10], "start": 25, "rotating": 0 },
-      { "node": "node_stone", "common": 24, "cluster": [4, 10], "start": 30, "rotating": 0 },
-      { "node": "node_birch", "common": 14, "cluster": [5, 14], "rotating": 2, "nodes": [8, 14], "radius": [20, 40], "life": [5, 9] },
-      { "node": "node_copper", "common": 10, "cluster": [4, 9], "rotating": 2, "nodes": [6, 10], "radius": [15, 30], "life": [5, 9] },
-      { "node": "node_reed", "common": 16, "cluster": [5, 10], "start": 35, "rotating": 1, "nodes": [8, 12], "radius": [20, 35], "life": [5, 9] },
-      { "node": "node_berry", "common": 12, "cluster": [4, 9], "start": 40, "rotating": 1, "nodes": [6, 10], "radius": [15, 30], "life": [5, 9] },
-      { "node": "node_seaweed", "common": 10, "cluster": [4, 10], "rotating": 1, "nodes": [6, 10], "radius": [20, 40], "life": [5, 9] },
-      { "node": "node_mushroom", "common": 8, "cluster": [4, 8], "rotating": 1, "nodes": [5, 9], "radius": [15, 25], "life": [5, 9] }
+      {
+        "node": "node_driftwood",
+        "common": 28,
+        "cluster": [
+          4,
+          10
+        ],
+        "start": 25,
+        "rotating": 0
+      },
+      {
+        "node": "node_stone",
+        "common": 24,
+        "cluster": [
+          4,
+          10
+        ],
+        "start": 30,
+        "rotating": 0
+      },
+      {
+        "node": "node_birch",
+        "common": 14,
+        "cluster": [
+          5,
+          14
+        ],
+        "rotating": 2,
+        "nodes": [
+          8,
+          14
+        ],
+        "radius": [
+          20,
+          40
+        ],
+        "life": [
+          5,
+          9
+        ]
+      },
+      {
+        "node": "node_copper",
+        "common": 10,
+        "cluster": [
+          4,
+          9
+        ],
+        "rotating": 2,
+        "nodes": [
+          6,
+          10
+        ],
+        "radius": [
+          15,
+          30
+        ],
+        "life": [
+          5,
+          9
+        ]
+      },
+      {
+        "node": "node_reed",
+        "common": 16,
+        "cluster": [
+          5,
+          10
+        ],
+        "start": 35,
+        "rotating": 1,
+        "nodes": [
+          8,
+          12
+        ],
+        "radius": [
+          20,
+          35
+        ],
+        "life": [
+          5,
+          9
+        ]
+      },
+      {
+        "node": "node_berry",
+        "common": 12,
+        "cluster": [
+          4,
+          9
+        ],
+        "start": 40,
+        "rotating": 1,
+        "nodes": [
+          6,
+          10
+        ],
+        "radius": [
+          15,
+          30
+        ],
+        "life": [
+          5,
+          9
+        ]
+      },
+      {
+        "node": "node_seaweed",
+        "common": 10,
+        "cluster": [
+          4,
+          10
+        ],
+        "rotating": 1,
+        "nodes": [
+          6,
+          10
+        ],
+        "radius": [
+          20,
+          40
+        ],
+        "life": [
+          5,
+          9
+        ]
+      },
+      {
+        "node": "node_mushroom",
+        "common": 8,
+        "cluster": [
+          4,
+          8
+        ],
+        "rotating": 1,
+        "nodes": [
+          5,
+          9
+        ],
+        "radius": [
+          15,
+          25
+        ],
+        "life": [
+          5,
+          9
+        ]
+      },
+      {
+        "node": "node_oak",
+        "common": 22,
+        "cluster": [
+          6,
+          16
+        ],
+        "rotating": 2,
+        "nodes": [
+          8,
+          14
+        ],
+        "radius": [
+          18,
+          32
+        ],
+        "life": [
+          5,
+          9
+        ]
+      },
+      {
+        "node": "node_iron",
+        "common": 12,
+        "cluster": [
+          4,
+          10
+        ],
+        "rotating": 2,
+        "nodes": [
+          6,
+          10
+        ],
+        "radius": [
+          14,
+          26
+        ],
+        "life": [
+          5,
+          9
+        ]
+      }
+    ],
+    "zones": [
+      {
+        "id": "oakwood",
+        "name": "참나무 숲",
+        "tier": 2,
+        "z0": 250,
+        "fade": 14
+      }
     ]
   }
 ]

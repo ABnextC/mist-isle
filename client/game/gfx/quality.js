@@ -7,7 +7,7 @@ const AUTO_KEY = 'mist-isle:gfx-auto';
 export const TIERS = {
   high: {
     id: 'high', label: '높음', maxDpr: 2, shadow: 4096, shadowRange: 60, post: true, ao: true, bloom: true, aa: 'smaa',
-    grass: 90000, grassR: 50, terrainN: 560, water: 220, flora: 1, envSize: 256, texTerrain: 1024, texObject: 512,
+    grass: 90000, grassR: 50, terrainN: 560, water: 220, flora: 1, envSize: 256, texTerrain: 2048, texObject: 1024,
   },
   medium: {
     id: 'medium', label: '중간', maxDpr: 1.5, shadow: 2048, shadowRange: 46, post: true, ao: false, bloom: true, aa: 'fxaa',

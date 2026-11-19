@@ -140,7 +140,7 @@ function h3(x, y, z) {
   h = Math.imul(h ^ (h >>> 13), 1274126177);
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
-function n3(x, y, z) {
+export function n3(x, y, z) {
   const ix = Math.floor(x);
   const iy = Math.floor(y);
   const iz = Math.floor(z);

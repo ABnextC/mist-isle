@@ -186,13 +186,26 @@ export function foliageMaterial({ map = null, color = 0xffffff, sway = 0.08, alp
         }`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', '#include <common>\nuniform float uDay;')
+      // 멀리서 밉맵이 알파를 깎아 잎이 듬성해지지 않게, 밉 단계만큼 알파를 키운다
+      .replace('#include <alphatest_fragment>', `
+        #ifdef USE_MAP
+          vec2 mipD = vec2(textureSize(map, 0));
+          vec2 dxm = dFdx(vMapUv * mipD);
+          vec2 dym = dFdy(vMapUv * mipD);
+          float mipL = max(0.0, 0.5 * log2(max(dot(dxm, dxm), dot(dym, dym))));
+          diffuseColor.a *= 1.0 + mipL * 0.28;
+        #endif
+        #include <alphatest_fragment>`)
       .replace('#include <normal_fragment_begin>', `
         float faceDirection = gl_FrontFacing ? 1.0 : -1.0;
         vec3 normal = normalize(vNormal);
         vec3 nonPerturbedNormal = normal;`)
       .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
         // 잎을 통과해 오는 빛(투과)을 흉내 낸다
-        reflectedLight.indirectDiffuse += diffuseColor.rgb * ${translucency.toFixed(2)} * 0.35 * uDay;`);
+        reflectedLight.indirectDiffuse += diffuseColor.rgb * ${translucency.toFixed(2)} * 0.35 * uDay;
+        // 잎은 하늘을 거울처럼 비추지 않는다(멀리서 비스듬히 볼 때 하얗게 뜨는 것을 막는다)
+        reflectedLight.indirectSpecular *= 0.15;
+        reflectedLight.directSpecular *= 0.4;`);
   };
   return m;
 }
@@ -219,8 +232,9 @@ export function makeMaterials(tex, ctex) {
     woodBox: boxMaterial(tex.driftwood, { scale: 1.2, tint: 0xb59a7c }),
     birchLeaves: foliageMaterial({ map: ctex.birchLeaves, sway: 0.09, translucency: 0.45 }),
     bushLeaves: foliageMaterial({ map: ctex.bushLeaves, sway: 0.12, translucency: 0.35 }),
-    pineNeedles: foliageMaterial({ map: ctex.pineNeedles, sway: 0.04, translucency: 0.15, roughness: 0.85, alphaTest: 0.32 }),
+    pineNeedles: foliageMaterial({ map: ctex.pineNeedles, sway: 0.018, translucency: 0.2, roughness: 0.85, alphaTest: 0.4 }),
     flowers: foliageMaterial({ map: ctex.flowers, sway: 0.3, translucency: 0.3, roughness: 0.7, alphaTest: 0.5 }),
+    fern: foliageMaterial({ map: ctex.fern, sway: 0.25, translucency: 0.45, roughness: 0.7, alphaTest: 0.42 }),
     reed: foliageMaterial({ color: 0xffffff, sway: 0.25, translucency: 0.3, vertexColors: true, roughness: 0.7 }),
     seaweed: foliageMaterial({ color: 0xffffff, sway: 0.35, translucency: 0.2, vertexColors: true, roughness: 0.55 }),
     plantSolid: foliageMaterial({ color: 0xffffff, sway: 0.06, translucency: 0.1, vertexColors: true, roughness: 0.6 }),

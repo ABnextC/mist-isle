@@ -2,7 +2,6 @@
 // 같은 조각은 언제 다시 만들어도 같은 풀이 난다(조각 좌표로 난수를 정한다).
 
 import * as THREE from 'three';
-import { groundAt } from './terrain.js';
 
 const CHUNK = 16;
 
@@ -40,7 +39,7 @@ function rng(seed) {
   };
 }
 
-export function createGrass(scene, { hf, paths, tier, avoid }) {
+export function createGrass(scene, { hf, ground, tier, avoid }) {
   const blade = bladeGeometry();
   const U = {
     uTime: { value: 0 }, uPlayer: { value: new THREE.Vector3() }, uCenter: { value: new THREE.Vector3() },
@@ -53,6 +52,8 @@ export function createGrass(scene, { hf, paths, tier, avoid }) {
       .replace('#include <common>', `#include <common>
         attribute vec4 iOff;
         attribute vec4 iDat;
+        attribute vec3 iTint;
+        varying vec3 vTint;
         uniform float uTime;
         uniform vec3 uPlayer;
         uniform vec3 uCenter;
@@ -83,6 +84,7 @@ export function createGrass(scene, { hf, paths, tier, avoid }) {
         float y = t * hgt * (1.0 - 0.25 * bend - 0.45 * push * t);
         vT = t;
         vVar = iDat.y;
+        vTint = iTint;
         vec3 objectNormal = normalize(F * 0.45 + vec3(0.0, 1.0, 0.0) + vec3(windDir.x, 0.0, windDir.y) * bend * 0.4);`)
       .replace('#include <begin_vertex>', `
         float wid = (0.055 + 0.05 * iDat.y) * (0.6 + 0.4 * fade);
@@ -90,15 +92,16 @@ export function createGrass(scene, { hf, paths, tier, avoid }) {
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
         varying float vT;
-        varying float vVar;`)
+        varying float vVar;
+        varying vec3 vTint;`)
       .replace('#include <normal_fragment_begin>', `
         float faceDirection = gl_FrontFacing ? 1.0 : -1.0;
         vec3 normal = normalize(vNormal);
         vec3 nonPerturbedNormal = normal;`)
       .replace('#include <color_fragment>', `#include <color_fragment>
-        vec3 base = vec3(0.022, 0.05, 0.01);
-        vec3 tip = mix(vec3(0.15, 0.30, 0.045), vec3(0.36, 0.33, 0.09), smoothstep(0.66, 0.97, vVar));
-        diffuseColor.rgb = mix(base, tip, smoothstep(0.0, 1.0, vT)) * (0.82 + 0.36 * fract(vVar * 7.31));`)
+        vec3 base = vec3(0.028, 0.055, 0.014);
+        vec3 tip = mix(vec3(0.12, 0.25, 0.04), vec3(0.27, 0.27, 0.08), smoothstep(0.8, 0.98, vVar));
+        diffuseColor.rgb = mix(base, tip, smoothstep(0.0, 1.0, vT)) * (0.84 + 0.32 * fract(vVar * 7.31)) * vTint;`)
       .replace('#include <aomap_fragment>', `
         float bladeAo = mix(0.35, 1.0, vT);
         reflectedLight.indirectDiffuse *= bladeAo;
@@ -116,17 +119,26 @@ export function createGrass(scene, { hf, paths, tier, avoid }) {
     const z0 = cz * CHUNK;
     const off = [];
     const dat = [];
+    const tint = [];
     const cell = 2;
     for (let j = 0; j < CHUNK / cell; j++) {
       for (let i = 0; i < CHUNK / cell; i++) {
         const gx = x0 + (i + 0.5) * cell;
         const gz = z0 + (j + 0.5) * cell;
-        const g = groundAt(hf, paths, gx, gz);
+        const g = ground.groundAt(gx, gz);
         let w = g.grass * (1 - g.path);
         if (g.h < 1.4) w *= Math.max(0, (g.h - 1.1) / 0.3);
         if (w < 0.08) continue;
         if (avoid && avoid(gx, gz)) w *= 0.15;
         const n = Math.round(density * cell * cell * w * (0.6 + R() * 0.8));
+        // 땅 셰이더와 같은 빛깔 얼룩(마른 들·짙은 들·숲 그늘)
+        const a = g.m2;
+        const mk = Math.min(1, Math.max(0, (g.macro - 0.3) / 0.4));
+        const mm = mk * mk * (3 - 2 * mk);
+        const zk = 1 - 0.28 * g.zone * 0.8;
+        const tr = (1.08 + (0.92 - 1.08) * a) * (1.12 + (0.86 - 1.12) * mm) * zk;
+        const tg = (0.98 + (1.04 - 0.98) * a) * (1.02 + (1.0 - 1.02) * mm) * (1 - 0.16 * g.zone * 0.8);
+        const tb = (0.78 + (0.98 - 0.78) * a) * (0.72 + (0.94 - 0.72) * mm) * zk;
         // 포기(덩어리)로 모아 심는다
         let tx = gx;
         let tz = gz;
@@ -141,6 +153,7 @@ export function createGrass(scene, { hf, paths, tier, avoid }) {
           const tall = 0.22 + R() * 0.3 + (w > 0.7 ? R() * 0.2 : 0);
           off.push(x, y, z, R() * Math.PI * 2);
           dat.push(tall, R(), (R() - 0.5) * 0.8, R());
+          tint.push(tr, tg, tb);
         }
       }
     }
@@ -151,6 +164,7 @@ export function createGrass(scene, { hf, paths, tier, avoid }) {
     geo.setAttribute('normal', blade.attributes.normal);
     geo.setAttribute('iOff', new THREE.InstancedBufferAttribute(new Float32Array(off), 4));
     geo.setAttribute('iDat', new THREE.InstancedBufferAttribute(new Float32Array(dat), 4));
+    geo.setAttribute('iTint', new THREE.InstancedBufferAttribute(new Float32Array(tint), 3));
     geo.instanceCount = off.length / 4;
     geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(x0 + CHUNK / 2, hf.height(x0 + CHUNK / 2, z0 + CHUNK / 2), z0 + CHUNK / 2), CHUNK * 0.75 + 4);
     const m = new THREE.Mesh(geo, mat);

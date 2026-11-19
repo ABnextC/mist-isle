@@ -76,14 +76,14 @@ async function boot() {
   const view = createScene(canvas, { tier, textures: ctex });
   const region = data.lists.regions[0];
   await say('🌫️ 땅과 돌의 결을 굽는 중…');
-  const tex = bakeMaterials(view.renderer, { terrainSize: tier.texTerrain, objectSize: tier.texObject });
+  const tex = await bakeMaterials(view.renderer, { terrainSize: tier.texTerrain, objectSize: tier.texObject });
   const mats = makeMaterials(tex, ctex);
   await say('🌫️ 섬의 지형을 그리는 중…');
   const ground = createTerrain(view.scene, { terrain: game.terrain, region, tier, tex });
   const water = createWater(view.scene, { hf: ground.hf, tex, tier });
-  const grass = createGrass(view.scene, { hf: ground.hf, paths: ground.paths, tier });
-  const flora = createFlora(view.scene, { hf: ground.hf, paths: ground.paths, region, tier, mats, ctex, game });
-  window.__mist.gfx = { view, tier, tex, mats, ground, flora };
+  const flora = createFlora(view.scene, { hf: ground.hf, paths: ground.paths, ground, region, tier, mats, ctex, game });
+  const grass = createGrass(view.scene, { hf: ground.hf, ground, tier });
+  window.__mist.gfx = { view, tier, tex, mats, ground, flora, grass };
   const lantern = new THREE.PointLight(0xffd59a, 0, 11, 1.4); // 밤에 들고 다니는 등불
   view.scene.add(lantern);
   await say('🌫️ 마을과 숲을 세우는 중…');
@@ -401,6 +401,7 @@ async function boot() {
     liveTier = t;
     view.applyTier(t);
     grass.applyTier(t);
+    ground.applyTier(t);
     hud.settings.gfxNow = `${t.label} 화질`;
   }
   hud.settings.gfx = chosenTier();
@@ -574,6 +575,7 @@ async function boot() {
     G.uDay.value = sky.day;
     water.update(sec, view.camera);
     grass.update(sec, focusVec, G.uWind.value, firstFrame ? 999 : 3);
+    flora.update(p.x, p.z);
     lantern.position.set(p.x, p.y + 1.9, p.z);
     lantern.intensity = 7 * nightK;
     nodesView.update();

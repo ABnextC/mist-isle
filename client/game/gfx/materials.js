@@ -116,7 +116,7 @@ export function boxMaterial(t, { scale = 2, tint = 0xffffff, roughness = 1, meta
 }
 
 // 바위: 월드 공간 투영 + 윗면 이끼. 구리 광맥은 초록 녹과 구릿빛 금속 줄을 더한다.
-export function rockMaterial(t, { moss = 0.6, copper = false, wet = false } = {}) {
+export function rockMaterial(t, { moss = 0.6, copper = false, iron = false, wet = false } = {}) {
   const extra = {
     color: `
       float up = smoothstep(0.45, 0.85, bn.y + (fbm3(vBP.xz * 1.7) - 0.5) * 0.5);
@@ -128,14 +128,20 @@ export function rockMaterial(t, { moss = 0.6, copper = false, wet = false } = {}
       vec3 verd = mix(vec3(0.10, 0.38, 0.30), vec3(0.22, 0.55, 0.45), fbm3(vBP.xz * 8.0));
       diffuseColor.rgb = mix(diffuseColor.rgb, verd, vein * 0.85);
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.75, 0.40, 0.20), fleck * (1.0 - vein));
-      float gMetal = fleck * (1.0 - vein);` : 'float gMetal = 0.0;'}
+      float gMetal = fleck * (1.0 - vein);` : iron ? `
+      float band = smoothstep(0.52, 0.6, fbm3(vBP.xz * 1.1 + vBP.y * 2.4));
+      float spot = smoothstep(0.68, 0.76, fbm3(vBP.xy * 5.0 + vBP.z * 2.0));
+      vec3 rust = mix(vec3(0.42, 0.16, 0.06), vec3(0.62, 0.30, 0.12), fbm3(vBP.xz * 7.0));
+      diffuseColor.rgb = mix(diffuseColor.rgb * 0.62, rust, band * 0.8);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.30, 0.31, 0.33), spot * (1.0 - band));
+      float gMetal = spot * (1.0 - band) * 0.8;` : 'float gMetal = 0.0;'}
       ${wet ? `
       float wetK = smoothstep(0.9, 0.2, vBP.y);
       diffuseColor.rgb *= mix(1.0, 0.55, wetK);` : 'float wetK = 0.0;'}`,
     rough: `roughnessFactor = mix(roughnessFactor, 0.35, gMetal); roughnessFactor = mix(roughnessFactor, 0.25, wetK);`,
   };
   const m = boxMaterial(t, { scale: 3.2, world: true, roughness: 1, extra });
-  if (copper) {
+  if (copper || iron) {
     const prev = m.onBeforeCompile;
     m.onBeforeCompile = (sh) => {
       prev(sh);
@@ -201,6 +207,7 @@ export function makeMaterials(tex, ctex) {
     rockBare: rockMaterial(tex.rock, { moss: 0.12 }),
     rockWet: rockMaterial(tex.rock, { moss: 0.0, wet: true }),
     copper: rockMaterial(tex.rock, { moss: 0.25, copper: true }),
+    ironOre: rockMaterial(tex.rock, { moss: 0.35, iron: true }),
     birch: uvMaterial(tex.birch, { repeat: [1, 2], roughness: 1 }),
     barkDark: uvMaterial(tex.barkDark, { repeat: [1, 1.5], roughness: 1 }),
     driftwood: uvMaterial(tex.driftwood, { repeat: [1, 1], roughness: 1 }),

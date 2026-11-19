@@ -216,6 +216,54 @@ function mushrooms(seed) {
   return [{ geo: merge(parts), mat: 'mushroom', when: 'both', shrink: 0.35 }];
 }
 
+// 참나무(T2): 굵고 짧은 줄기, 옆으로 퍼지는 큰 가지, 짙은 잎 덩이
+function oak(seed) {
+  const R = rng(seed);
+  const H = 4.2 + R() * 1.0;
+  const pts = bentPath(V(0, -0.4, 0), V(0, 1, 0), H, 10, V((R() - 0.5) * 0.5, 0, (R() - 0.5) * 0.5), R);
+  const radii = pts.map((_, i) => 0.42 * Math.pow(1 - (i / (pts.length - 1)) * 0.7, 1.1) + (i < 2 ? 0.12 : 0));
+  const trunk = taperTube(pts, radii, { radial: 12, vScale: 1.5 });
+  const branches = [];
+  const centers = [];
+  const nb = 6 + Math.floor(R() * 3);
+  for (let b = 0; b < nb; b++) {
+    const t = 0.5 + (b / nb) * 0.45;
+    const i = Math.min(pts.length - 2, Math.floor(t * (pts.length - 1)));
+    const yaw = b * 2.3 + R() * 0.7;
+    const dir = V(Math.cos(yaw), 0.35 + R() * 0.35, Math.sin(yaw));
+    const L = 2.4 + R() * 1.6;
+    const bp = bentPath(pts[i], dir, L, 6, V(0, 0.35, 0), R);
+    branches.push(taperTube(bp, bp.map((_, k) => radii[i] * 0.55 * (1 - (k / (bp.length - 1)) * 0.8)), { radial: 6, vScale: 1.5 }));
+    for (let k = 2; k < bp.length; k++) centers.push(bp[k]);
+  }
+  for (let k = 0; k < 4; k++) centers.push(pts[pts.length - 1 - k]);
+  const crown = V(0, H + 1.2, 0);
+  const cards = [];
+  for (const c of centers) {
+    for (let k = 0; k < 5; k++) {
+      const o = V((R() - 0.5) * 1.6, (R() - 0.4) * 1.1, (R() - 0.5) * 1.6);
+      cards.push(leafCard(c.clone().add(o), 1.5 + R() * 0.7, R() * Math.PI * 2, (R() - 0.5) * 0.9, crown));
+    }
+  }
+  const stump = taperTube([V(0, -0.35, 0), V(0, 0.25, 0), V(0, 0.5, 0)], [0.6, 0.5, 0.47], { radial: 12, vScale: 1.5, cap: true });
+  return [
+    { geo: trunk, mat: 'barkDark', when: 'live' },
+    { geo: merge(branches), mat: 'barkDark', when: 'live' },
+    { geo: merge(cards), mat: 'bushLeaves', when: 'live', leaves: 'bushLeaves' },
+    { geo: stump, mat: 'barkDark', when: 'empty' },
+  ];
+}
+
+function ironRock(seed) {
+  const R = rng(seed);
+  const parts = [xf(rockGeo(seed * 7 + 3, 1.15, { sy: 0.85, sx: 1.05, rough: 0.4, detail: 4 }), { y: -0.12, ry: R() * 6 })];
+  for (let i = 0; i < 4; i++) {
+    const a = R() * Math.PI * 2;
+    parts.push(xf(rockGeo(seed * 7 + 4 + i, 0.28 + R() * 0.3, { sy: 0.8, rough: 0.35 }), { x: Math.cos(a) * 1.25, z: Math.sin(a) * 1.25, y: -0.05 }));
+  }
+  return [{ geo: merge(parts), mat: 'ironOre', when: 'both', shrink: 0.6 }];
+}
+
 // 종류 → 변형 목록(변형마다 조각 목록)
 export function buildNodeModels() {
   return {
@@ -227,6 +275,8 @@ export function buildNodeModels() {
     node_berry: [berryBush(51), berryBush(52)],
     node_seaweed: [seaweed(61), seaweed(62)],
     node_mushroom: [mushrooms(71), mushrooms(72)],
+    node_oak: [oak(81), oak(82), oak(83)],
+    node_iron: [ironRock(91), ironRock(92)],
   };
 }
 
@@ -234,4 +284,5 @@ export function buildNodeModels() {
 export const NODE_CHIP = {
   node_driftwood: 0xa59a88, node_birch: 0xe8e2d2, node_stone: 0x8c8780, node_copper: 0xc07a45,
   node_reed: 0x9aa860, node_berry: 0xb02838, node_seaweed: 0x4a5a22, node_mushroom: 0x9a7048,
+  node_oak: 0x6a4a2c, node_iron: 0x6a4a3a,
 };

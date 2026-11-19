@@ -46,6 +46,7 @@ export function createHud(root, game, { touch, onAct }) {
     <div class="bottom">
       <div class="progress" data-k="progress"><span></span></div>
       <div class="prompt" data-k="prompt"></div>
+      <div class="vitals" data-k="vitals"><div class="hp"><span data-k="hpbar"></span><em data-k="hp"></em></div><div class="st"><span data-k="stbar"></span></div></div>
       <div class="dock">
         <button data-act="recall" data-k="recall" title="등대로 귀환 (H)">🏠<small>귀환</small></button>
         <button data-act="bag" title="가방 (I)">🎒<small>가방</small></button>
@@ -54,16 +55,19 @@ export function createHud(root, game, { touch, onAct }) {
         <button data-act="log" title="기록 (L)">📜<small>기록</small></button>
         <button data-act="menu" title="설정">⚙️<small>설정</small></button>
       </div>
-      ${touch ? '' : '<div class="keys">WASD 이동 · 드래그 시점 · 휠 거리 · E 상호작용 · H 귀환 · I 가방 · C 제작 · K 스킬 · Esc 닫기</div>'}
+      ${touch ? '' : '<div class="keys">WASD 이동 · 드래그 시점 · 휠 거리 · E 상호작용 · H 귀환 · I 가방 · C 제작 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기</div>'}
     </div>
-    ${touch ? '<button class="act-btn" data-act="interact" data-k="actbtn">✋</button>' : ''}
+    ${touch ? '<button class="act-btn" data-act="interact" data-k="actbtn">✋</button><div class="cbtns"><button data-hold="attack" title="공격(길게 강공)">⚔️</button><button data-hold="block" title="막기">🛡️</button><button data-tap="dodge" title="구르기">🌀</button></div>' : ''}
+    <div class="downed" data-k="downed"></div>
+    <div class="hurtfx" data-k="hurtfx"></div>
     <div class="joy"><div class="knob"></div></div>
     <aside class="panel" hidden><header><h2 data-k="ptitle"></h2><button data-act="close" aria-label="닫기">✕</button></header><div class="pbody" data-k="pbody"></div></aside>
     <div class="toast" data-k="toast"></div>`;
 
   const $ = (k) => root.querySelector(`[data-k="${k}"]`);
   const el = {
-    clock: $('clock'), silver: $('silver'), focus: $('focus'), focusbar: $('focusbar'), buffs: $('buffs'), quest: $('quest'),
+    clock: $('clock'), silver: $('silver'), focus: $('focus'),
+    vitals: $('vitals'), hp: $('hp'), hpbar: $('hpbar'), stbar: $('stbar'), downed: $('downed'), hurtfx: $('hurtfx'), focusbar: $('focusbar'), buffs: $('buffs'), quest: $('quest'),
     where: $('where'), feed: $('feed'), banner: $('banner'), progress: $('progress'), prompt: $('prompt'),
     actbtn: $('actbtn'), ptitle: $('ptitle'), pbody: $('pbody'), toast: $('toast'), recall: $('recall'),
   };
@@ -93,6 +97,30 @@ export function createHud(root, game, { touch, onAct }) {
 
   root.addEventListener('pointerdown', () => { holding = true; });
   window.addEventListener('pointerup', () => setTimeout(() => { holding = false; }, 90));
+  // 모바일 전투 단추: ⚔️ 짧게 약공·길게 강공, 🛡️ 누르는 동안 막기, 🌀 구르기
+  const holdT = {};
+  root.addEventListener('pointerdown', (e) => {
+    const b = e.target.closest('[data-hold],[data-tap]');
+    if (!b) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (b.dataset.tap) onAct(b.dataset.tap);
+    else if (b.dataset.hold === 'block') onAct('block-on');
+    else holdT[b.dataset.hold] = performance.now();
+    b.classList.add('on');
+  });
+  const holdEnd = (e) => {
+    const b = e.target.closest('[data-hold],[data-tap]');
+    if (!b) return;
+    b.classList.remove('on');
+    if (b.dataset.hold === 'block') onAct('block-off');
+    else if (b.dataset.hold === 'attack' && holdT.attack) {
+      onAct(performance.now() - holdT.attack >= 320 ? 'heavy' : 'attack');
+      holdT.attack = 0;
+    }
+  };
+  root.addEventListener('pointerup', holdEnd);
+  root.addEventListener('pointercancel', holdEnd);
   root.addEventListener('click', (e) => {
     const b = e.target.closest('[data-act]');
     if (!b || b.disabled) return;
@@ -194,6 +222,18 @@ export function createHud(root, game, { touch, onAct }) {
     el.focusbar.style.width = `${(a.focus / max) * 100}%`;
     set(el.focus, `집중력 ${Math.floor(a.focus)}${settings.focus ? ' · 쓰는 중' : ''}`);
     set(el.silver, `🪙 ${Math.floor(a.silver ?? 0).toLocaleString('ko-KR')}`);
+    if (a.cb) {
+      const C = data.config.combat;
+      el.hpbar.style.width = `${(a.cb.hp / a.cb.maxHp) * 100}%`;
+      el.stbar.style.width = `${(a.cb.st / C.stamina) * 100}%`;
+      set(el.hp, `${Math.ceil(a.cb.hp)}`);
+      const busy = a.cb.hp < a.cb.maxHp || a.cb.st < C.stamina || Object.values(game.state.mobs).some((m) => m.target === PID && m.mode !== 'dead');
+      el.vitals.classList.toggle('dim', !busy);
+      el.vitals.classList.toggle('low', a.cb.hp < a.cb.maxHp * 0.3);
+      const down = a.cb.downUntil > 0;
+      el.downed.classList.toggle('on', down);
+      if (down) set(el.downed, `쓰러졌다 — ${Math.max(0, Math.ceil(a.cb.downUntil - game.state.t))}초 뒤 등대 마을에서 일어난다`);
+    }
     set(el.buffs, a.buffs.map((b) => `🍽️ 채집량 +${Math.round(b.value * 100)}% · ${Math.ceil((b.endsAt - game.state.t) / 60)}분`).join('  '));
     set(el.quest, quest(a));
     const town = settlementAt({ state: game.state }, a);
@@ -278,14 +318,30 @@ export function createHud(root, game, { touch, onAct }) {
     return [...list].sort((x, y) => order(x) - order(y));
   }
 
+  const SLOT_NAME = { weapon: '무기', head: '머리', chest: '몸통', legs: '다리' };
+  function equipHtml(a) {
+    const cells = Object.entries(SLOT_NAME).map(([slot, name]) => {
+      const e = a.equip?.[slot] ? a.bag.find((x) => x.uid === a.equip[slot]) : null;
+      if (!e) return `<div class="eq"><small>${name}</small><b class="muted">비어 있음</b></div>`;
+      const def = data.items[e.item];
+      const v = slot === 'weapon' ? `공격력 ${e.stats.attack}` : `방어 ${e.stats.armor}`;
+      return `<div class="eq ${e.broken ? 'broken' : ''}"><small>${name}</small><b>${def.icon || ''} ${def.name}</b><small>${stars(e.star ?? 0)} · ${v} · 내구 ${e.dur}/${e.maxDur}</small></div>`;
+    }).join('');
+    return `<h3>장비 <small class="muted">방어 합 ${['head', 'chest', 'legs'].reduce((s, k) => { const e = a.equip?.[k] ? a.bag.find((x) => x.uid === a.equip[k]) : null; return s + (e && !e.broken ? e.stats.armor : 0); }, 0).toFixed(1)}</small></h3><div class="eqgrid">${cells}</div>`;
+  }
+
   function bagHtml(a) {
     const town = settlementAt({ state: game.state }, a);
     const rows = sortEntries(a.bag).map((e) => {
       const def = data.items[e.item];
-      const act = def.kind === 'consumable' ? `<button data-act="eat" data-v="${esc(keyOf(e))}">먹기</button>` : '';
+      let act = def.kind === 'consumable' ? `<button data-act="eat" data-v="${esc(keyOf(e))}">먹기</button>` : '';
+      if (def.weapon || def.armor) {
+        const on = Object.values(a.equip || {}).includes(e.uid);
+        act = `<button data-act="equip" data-v="${e.uid}" class="${on ? 'on' : ''}">${on ? '벗기' : '끼기'}</button>`;
+      }
       return entryRow(e, act);
     }).join('') || '<li><small>비어 있다</small></li>';
-    let html = `<h3>가방 ${a.bag.length}/${data.config.bag.slots}칸</h3><ul class="list">${rows}</ul>`;
+    let html = `${equipHtml(a)}<h3>가방 ${a.bag.length}/${data.config.bag.slots}칸</h3><ul class="list">${rows}</ul>`;
     if (town) {
       const srows = sortEntries(a.storage).map((e) => entryRow(e, `<button data-act="take" data-v="${esc(keyOf(e))}">꺼내기</button>`)).join('') || '<li><small>비어 있다</small></li>';
       html += `<h3>${town.name} 창고 <button class="mini" data-act="store-all">재료 전부 넣기</button></h3><ul class="list">${srows}</ul>
@@ -556,12 +612,20 @@ export function createHud(root, game, { touch, onAct }) {
     setHtml(el.pbody, html);
   }
 
+  // 맞으면 화면 가장자리가 붉게 번쩍인다
+  function hurt() {
+    el.hurtfx.classList.remove('on');
+    void el.hurtfx.offsetWidth;
+    el.hurtfx.classList.add('on');
+  }
+
   return {
     update,
     open,
     close,
     toggle,
     toast,
+    hurt,
     settings,
     get panel() { return panel; },
     minimapCanvas: root.querySelector('.minimap'),

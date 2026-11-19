@@ -2,7 +2,9 @@
 // 여기서는 '무엇을 누르는지'만 모은다. 명령으로 바꾸는 일은 main.js가 한다.
 
 const MOVE_KEYS = { w: 'f', arrowup: 'f', s: 'b', arrowdown: 'b', a: 'l', arrowleft: 'l', d: 'r', arrowright: 'r' };
-const ACT_KEYS = { e: 'interact', f: 'interact', h: 'recall', i: 'bag', b: 'bag', tab: 'bag', c: 'craft', k: 'skills', l: 'log', escape: 'close' };
+const ACT_KEYS = { e: 'interact', f: 'interact', h: 'recall', i: 'bag', b: 'bag', tab: 'bag', c: 'craft', k: 'skills', l: 'log', escape: 'close', ' ': 'dodge', r: 'heavy' };
+// 전투(v0.3, PC): 마우스 왼쪽 짧게 = 약공, 길게 눌렀다 떼기 = 강공, 오른쪽 누르는 동안 = 막기, Space = 구르기, Q 누르는 동안 = 막기
+const HEAVY_MS = 320;
 
 export function createInput(canvas, { joyEl, knobEl }) {
   const keys = new Set();
@@ -25,9 +27,13 @@ export function createInput(canvas, { joyEl, knobEl }) {
       e.preventDefault();
       return;
     }
+    if (k === 'q') {
+      if (!e.repeat) acts.push(down ? 'block-on' : 'block-off');
+      return;
+    }
     if (down && !e.repeat && ACT_KEYS[k]) {
       acts.push(ACT_KEYS[k]);
-      if (k === 'tab') e.preventDefault();
+      if (k === 'tab' || k === ' ') e.preventDefault();
     }
   }
   window.addEventListener('keydown', (e) => onKey(e, true));
@@ -41,8 +47,14 @@ export function createInput(canvas, { joyEl, knobEl }) {
     knobEl.style.transform = 'translate(-50%, -50%)';
   };
 
+  const click = { id: null, x: 0, y: 0, t: 0, moved: false };
   canvas.addEventListener('pointerdown', (e) => {
     try { canvas.setPointerCapture(e.pointerId); } catch { /* 이미 끝난 포인터 */ }
+    if (e.pointerType === 'mouse' && e.button === 2) {
+      acts.push('block-on');
+      return;
+    }
+    if (e.pointerType === 'mouse' && e.button === 0) Object.assign(click, { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), moved: false });
     if (e.pointerType === 'touch') {
       touches.set(e.pointerId, [e.clientX, e.clientY]);
       const others = [...touches.keys()].filter((id) => id !== joy.id);
@@ -85,6 +97,7 @@ export function createInput(canvas, { joyEl, knobEl }) {
       pinchDist = d;
       return;
     }
+    if (e.pointerId === click.id && Math.hypot(e.clientX - click.x, e.clientY - click.y) > 6) click.moved = true;
     if (e.pointerId === drag.id) {
       camDX += e.clientX - drag.lx;
       camDY += e.clientY - drag.ly;
@@ -94,6 +107,11 @@ export function createInput(canvas, { joyEl, knobEl }) {
   });
 
   const end = (e) => {
+    if (e.pointerType === 'mouse' && e.button === 2) acts.push('block-off');
+    if (e.pointerId === click.id) {
+      if (!click.moved && e.type === 'pointerup') acts.push(performance.now() - click.t >= HEAVY_MS ? 'heavy' : 'attack');
+      click.id = null;
+    }
     touches.delete(e.pointerId);
     if (touches.size < 2) pinchDist = 0;
     if (e.pointerId === joy.id) {

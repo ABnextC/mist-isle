@@ -9,7 +9,7 @@ import { dailyOrders } from './orders.js';
 import { initCombat, emptyEquip } from './systems/combat.js';
 import { initMobs } from './systems/mobs.js';
 
-export const ENGINE_VERSION = '0.3.0';
+export const ENGINE_VERSION = '0.3.1';
 
 export function spawnPoint(region, terrain) {
   const [x, inland] = region.spawn;

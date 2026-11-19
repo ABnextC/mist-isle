@@ -18,6 +18,7 @@ node tools/personas.js --days 7 --seed 2026           # 페르소나 7명 자동
 node tools/headless.js --days 3 --seed 42             # 화면 없이 게임 3일 돌리기
 node tools/headless.js --days 10 --seed 7 --bots 3    # 봇 3명
 node tools/economy.js --days 60 --seed 7              # AI 개척민 섬 경제 점검 (--bots 1, --json 가능)
+node tools/combat.js --trials 30                      # 헤드리스 결투: 장비·실력별 승률
 python3 -m http.server 8000                           # http://localhost:8000 에서 게임 열기
 ```
 
@@ -30,6 +31,7 @@ Node 18 이상. 코어와 도구는 외부 패키지가 없다.
 
 - PC: WASD 이동 · 마우스 끌기 시점 · 휠 거리 · E 상호작용 · H 귀환 · I 가방 · C 제작 · K 스킬 · L 기록 · Esc 닫기
 - 거래소(마을 서쪽 좌판)·마을 게시판(주문·산지 소문)·대장간(제작·수리)은 앞에 서서 E로 연다
+- 전투(v0.3): 왼쪽 클릭 약공 · 길게 눌렀다 떼면 강공 · 오른쪽 버튼이나 Q 막기 · Space 구르기 · 쓰러뜨린 짐승 앞에서 E 손질. 휴대폰은 ⚔️🛡️🌀 단추
 - 모바일: 왼쪽 엄지로 이동 · 오른쪽 끌기로 시점 · 두 손가락으로 거리 · 손 단추로 상호작용
 
 ## 구조
@@ -38,12 +40,14 @@ Node 18 이상. 코어와 도구는 외부 패키지가 없다.
 core/          순수 시뮬레이션 (화면 코드 금지 · Math.random 금지)
   game.js      진입점: createGame / loadGame / dispatch / advance
   commands.js  명령 검증·실행 (MOVE MOVE_INPUT GATHER CRAFT EAT STORE TAKE SET_AUTOPILOT RECALL
-               MARKET_SELL MARKET_BUY MARKET_CANCEL MARKET_DUMP ORDER_DELIVER REPAIR)
+               MARKET_SELL MARKET_BUY MARKET_CANCEL MARKET_DUMP ORDER_DELIVER REPAIR
+               EQUIP UNEQUIP ATTACK DODGE BLOCK SKIN)
   market.js    거래소 호가창·체결·수수료, 마을 수요, 시세, 수리비
   orders.js    주문 게시판(의뢰 붙이기·납품)
   terrain.js   절차 생성 지형 (코어와 화면이 같이 쓴다)
   formulas.js  산출·스탯 공식
-  systems/     틱마다 도는 시스템 (이동·채집, 제작 대기열, 노드, 산지, 집중력, AI, 섬 경제)
+  systems/     틱마다 도는 시스템 (이동·채집, 제작 대기열, 노드, 산지, 집중력, AI, 섬 경제, 전투, 짐승)
+  ai/          개척민·페르소나 봇, 싸움 요령(fighter.js)
   ai/          AI 개척민 정책 (플레이어와 같은 명령만 쓴다)
 data/          JSON 정의 (아이템·레시피·노드·스킬·지역·작업대·AI·페르소나·설정)
 client/game/   3D 화면 (Three.js): 카메라·입력·HUD·미니맵, 노드·마을·캐릭터·효과 그리기

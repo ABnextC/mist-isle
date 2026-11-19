@@ -25,6 +25,8 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
     dark: mat(0x15100c, 0.4),
     canvas: mat(0xa89272, 0.95),
     metal: new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.32, metalness: 0.92 }),
+    copper: new THREE.MeshStandardMaterial({ color: 0xc27a4a, roughness: 0.34, metalness: 0.9 }),
+    stoneM: mat(0x7d7870, 0.9),
     wood: mat(0x6e4c30, 0.7),
   };
   const mesh = (geo, m) => {
@@ -141,5 +143,35 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
     t.position.set(0, -0.05, 0.02);
     armR.hand.add(t);
   }
-  return { root, hips, spine, neck, head, armL, armR, legL, legR, tools, materials: M };
+  // 무기(v0.3): 돌 몽둥이, 한손검·전투 도끼·창(구리·철)
+  const weapons = {};
+  const w = (key, parts) => {
+    const g = new THREE.Group();
+    for (const [geo, m] of parts) g.add(mesh(merge(geo), m));
+    g.visible = false;
+    g.rotation.x = Math.PI / 2;
+    g.position.set(0, -0.05, 0.02);
+    armR.hand.add(g);
+    weapons[key] = g;
+  };
+  w('club_0', [
+    [[P(new THREE.CylinderGeometry(0.03, 0.022, 0.62, 8), 0xffffff, { y: 0.23 })], M.wood],
+    [[P(new THREE.DodecahedronGeometry(0.085, 0), 0xffffff, { y: 0.55, sx: 1.1, sz: 0.9 })], M.stoneM],
+  ]);
+  for (const [tier, metal] of [[1, M.copper], [2, M.metal]]) {
+    w(`sword_${tier}`, [
+      [[P(new THREE.CylinderGeometry(0.02, 0.02, 0.16, 8), 0xffffff, { y: 0.0 })], M.leather],
+      [[P(new THREE.BoxGeometry(0.17, 0.025, 0.04), 0xffffff, { y: 0.09 }), P(new THREE.BoxGeometry(0.05, 0.6, 0.012), 0xffffff, { y: 0.4 }), P(new THREE.ConeGeometry(0.025, 0.09, 4), 0xffffff, { y: 0.74, sz: 0.25 })], metal],
+    ]);
+    w(`axe_${tier}`, [
+      [[P(new THREE.CylinderGeometry(0.022, 0.026, 0.86, 8), 0xffffff, { y: 0.32 })], M.wood],
+      [[P(new THREE.BoxGeometry(0.03, 0.12, 0.1), 0xffffff, { y: 0.68, z: 0.05 }), P(new THREE.CylinderGeometry(0.15, 0.15, 0.022, 14, 1, false, 0, Math.PI), 0xffffff, { y: 0.68, z: 0.1, rz: Math.PI / 2, ry: Math.PI / 2 })], metal],
+    ]);
+    w(`spear_${tier}`, [
+      [[P(new THREE.CylinderGeometry(0.018, 0.022, 1.6, 8), 0xffffff, { y: 0.45 })], M.wood],
+      [[P(new THREE.ConeGeometry(0.045, 0.26, 4), 0xffffff, { y: 1.37, sz: 0.3 }), P(new THREE.CylinderGeometry(0.026, 0.026, 0.06, 8), 0xffffff, { y: 1.23 })], metal],
+    ]);
+  }
+  root.rotation.order = 'YXZ';
+  return { root, hips, spine, neck, head, armL, armR, legL, legR, tools, weapons, materials: M };
 }

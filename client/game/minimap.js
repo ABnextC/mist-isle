@@ -2,7 +2,7 @@
 
 import { valueNoise } from '../../core/terrain.js';
 
-const DOT = { logging: '#f2ead2', mining: '#ff9a4a', harvesting: '#a6ec74' };
+const DOT = { logging: '#f2ead2', mining: '#ff9a4a', harvesting: '#a6ec74', hunting: '#e0a070' };
 
 export function createMinimap(canvas, game, terrain) {
   const region = game.data.lists.regions[0];
@@ -32,7 +32,29 @@ export function createMinimap(canvas, game, terrain) {
       g.arc(px, py, v.radius * scale + 3, 0, Math.PI * 2);
       g.stroke();
     }
+    // 참나무 숲 경계(v0.3)와 가까이서 덤비는 짐승
+    for (const zn of region.zones || []) {
+      const [, zy] = toPx(x0, zn.z0);
+      g.fillStyle = 'rgba(20, 50, 18, 0.28)';
+      g.fillRect(0, 0, PX, zy);
+      g.strokeStyle = 'rgba(190, 230, 160, 0.75)';
+      g.beginPath();
+      g.moveTo(0, zy);
+      g.lineTo(PX, zy);
+      g.stroke();
+      g.fillStyle = 'rgba(220, 245, 200, 0.9)';
+      g.font = '10px sans-serif';
+      g.fillText(`${zn.name} T${zn.tier}`, 6, zy - 4);
+    }
     g.setLineDash([]);
+    for (const m of Object.values(state.mobs || {})) {
+      if (m.mode === 'dead' || Math.abs(m.x - a.x) > 60 || Math.abs(m.z - a.z) > 60) continue;
+      const [mx, my] = toPx(m.x, m.z);
+      g.fillStyle = m.target ? '#ff5040' : 'rgba(255, 200, 120, 0.8)';
+      g.beginPath();
+      g.arc(mx, my, 1.8, 0, Math.PI * 2);
+      g.fill();
+    }
     for (const n of Object.values(state.nodes)) {
       if (n.charges <= 0 || Math.abs(n.x - a.x) > 70 || Math.abs(n.z - a.z) > 70) continue;
       const [px, py] = toPx(n.x, n.z);

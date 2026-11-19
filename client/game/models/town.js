@@ -359,7 +359,38 @@ function storage() {
   return { parts, fx };
 }
 
-export const STATIONS = { forge, smelter, sawbench, workbench, loom, kitchen, storage };
+// 무두질 틀(v0.3): 통나무 틀에 펼친 가죽 두 장, 물통, 긁개
+function tannery() {
+  const { parts, fx, add } = kit();
+  const R = rng(41);
+  for (const sx of [-1, 1]) add('barkDark', taperTube([V(sx * 0.8, -0.1, 0), V(sx * 0.8, 1.9, 0)], [0.07, 0.06], { radial: 7, vScale: 1.2 }));
+  add('barkDark', taperTube([V(-0.9, 1.75, 0), V(0.9, 1.75, 0)], [0.05, 0.05], { radial: 6, vScale: 1.2 }));
+  add('barkDark', taperTube([V(-0.9, 0.25, 0), V(0.9, 0.25, 0)], [0.05, 0.05], { radial: 6, vScale: 1.2 }));
+  for (const [x, w, c] of [[-0.36, 0.62, 0x8a5a36], [0.36, 0.58, 0x6e4528]]) {
+    add('leather', P(new THREE.PlaneGeometry(w, 1.25, 4, 6), c, { x, y: 1.0, z: 0.02 }));
+    for (const dy of [-0.55, 0.55]) add('rope', box(0.02, 0.2, 0.02, { x: x - w / 2, y: 1.0 + dy * 0.9 }));
+  }
+  add('planks', lathe([[0, 0], [0.32, 0], [0.36, 0.42], [0.34, 0.44], [0, 0.44]], 14).translate(1.4, 0, 0.3));
+  add('waterTop', P(new THREE.CircleGeometry(0.31, 14), 0x3a4a3a, { rx: -Math.PI / 2, x: 1.4, y: 0.4, z: 0.3 }));
+  crate(add, 0.45, { x: -1.35, y: 0.22, z: 0.35, ry: R() });
+  return { parts, fx };
+}
+
+// 갑주 작업대(v0.3): 작업 탁자, 가죽 조각, 조끼를 입힌 나무 몸통
+function armorbench() {
+  const { parts, fx, add } = kit();
+  add('planks', box(1.7, 0.08, 0.8, { y: 0.84 }));
+  for (const [x, z] of [[-0.75, -0.32], [0.75, -0.32], [-0.75, 0.32], [0.75, 0.32]]) add('planksDark', box(0.08, 0.84, 0.08, { x, y: 0.42, z }));
+  add('leather', P(new THREE.PlaneGeometry(0.5, 0.35), 0x7a4e30, { rx: -Math.PI / 2, x: -0.35, y: 0.885, z: 0.05, rz: 0.3 }));
+  add('leather', P(new THREE.PlaneGeometry(0.4, 0.3), 0x5e3c24, { rx: -Math.PI / 2, x: 0.25, y: 0.886, z: -0.1, rz: -0.4 }));
+  add('iron', box(0.18, 0.02, 0.04, { x: 0.55, y: 0.9, z: 0.15, ry: 0.5 }));
+  add('planksDark', taperTube([V(1.35, 0, 0), V(1.35, 1.0, 0)], [0.04, 0.04], { radial: 6, vScale: 1 }));
+  add('leather', lathe([[0, 0.95], [0.2, 0.98], [0.22, 1.2], [0.19, 1.42], [0.13, 1.5], [0, 1.52]], 12, 0x6e4528).translate(1.35, 0, 0));
+  add('planks', P(new THREE.SphereGeometry(0.1, 10, 8), 0x8a6a4a, { x: 1.35, y: 1.62 }));
+  return { parts, fx };
+}
+
+export const STATIONS = { forge, smelter, sawbench, workbench, loom, kitchen, storage, tannery, armorbench };
 
 export function wreck() {
   const { parts, fx, add } = kit();

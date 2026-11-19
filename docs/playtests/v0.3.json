@@ -1,0 +1,1295 @@
+{
+ "version": "v0.3",
+ "seed": 2026,
+ "days": 7,
+ "note": "tools/personas.js 결과(봇 플레이). 사냥 성향(hunt·read·block·weapon)을 처음 붙였다. fight: 처치·쓰러짐·손질·준/받은 피해·장비. time.fight: 싸운 시간 비율.",
+ "results": [
+  {
+   "id": "persona_sol",
+   "name": "솔",
+   "role": "느긋한 채집러",
+   "grade": "보통",
+   "ms": 24834,
+   "firsts": {
+    "stoneTool": 178.6,
+    "copperTool": 1958,
+    "food": 614.8,
+    "masterwork": 3710.6
+   },
+   "reach": {
+    "logging": {
+     "10": 2138.4333333333334,
+     "20": 6546.533333333334,
+     "30": 11160.066666666668
+    },
+    "mining": {
+     "10": 2075,
+     "20": 6339.033333333334,
+     "30": 11380.833333333334
+    },
+    "harvesting": {
+     "10": 2236.6666666666665,
+     "20": 6516.866666666667,
+     "30": 11485.466666666667
+    }
+   },
+   "skinBy": {
+    "crab": 153,
+    "deer": 6
+   },
+   "fight": {
+    "swings": 660,
+    "hits": 651,
+    "hurt": 95,
+    "evaded": 1,
+    "blocked": 0,
+    "downs": [],
+    "skins": 159,
+    "gearCraft": {
+     "wpn_club": 2,
+     "wpn_spear_copper": 1,
+     "arm_leather_hood": 1,
+     "wpn_sword_copper": 1,
+     "arm_leather_pants": 1
+    },
+    "repairs": {
+     "tool": 6,
+     "weapon": 1
+    },
+    "kills": {
+     "crab": 153,
+     "wolf": 6,
+     "deer": 11,
+     "boar": 2
+    },
+    "dmgDealt": 9577,
+    "dmgTaken": 579,
+    "blockedHits": 17,
+    "equip": {
+     "weapon": "wpn_spear_copper★3",
+     "head": "arm_leather_hood★2",
+     "chest": null,
+     "legs": null
+    }
+   },
+   "levels": {
+    "logging": 44,
+    "mining": 44,
+    "harvesting": 43,
+    "hunting": 16,
+    "sawing": 37,
+    "smelting": 36,
+    "weaving": 10,
+    "tanning": 2,
+    "smithing": 15,
+    "carpentry": 6,
+    "cooking": 12,
+    "armoring": 2
+   },
+   "time": {
+    "gather": 40.7,
+    "move": 53.7,
+    "wait": 1.7,
+    "idle": 1.1,
+    "fight": 2.7
+   },
+   "distKm": 69.5,
+   "gathers": 2613,
+   "gathersPerHour": 373,
+   "crafts": {
+    "rc_axe_stone": 2,
+    "rc_pick_stone": 3,
+    "rc_sickle_stone": 4,
+    "rc_club": 2,
+    "rc_lumber_drift": 43,
+    "rc_cloth_reed": 54,
+    "rc_dried_berry": 12,
+    "rc_stake_wood": 14,
+    "rc_meat": 35,
+    "rc_ingot_copper": 377,
+    "rc_nails_copper": 12,
+    "rc_axe_copper": 3,
+    "rc_pick_copper": 5,
+    "rc_sickle_copper": 6,
+    "rc_lumber_birch": 333,
+    "rc_spear_copper": 1,
+    "rc_soup": 10,
+    "rc_ingot_iron": 52,
+    "rc_lumber_oak": 77,
+    "rc_crate": 4,
+    "rc_leather": 6,
+    "rc_leather_hood": 1,
+    "rc_sword_copper": 1,
+    "rc_leather_pants": 1
+   },
+   "eat": 84,
+   "focusUsed": 210,
+   "masterwork": 3,
+   "lotsUsed": 23,
+   "rotatingLots": 13,
+   "rotatingShare": 53,
+   "tools": {
+    "logging": {
+     "item": "tool_axe_copper",
+     "star": 3,
+     "speed": 1.3,
+     "yield": 0.099
+    },
+    "mining": {
+     "item": "tool_pick_copper",
+     "star": 3,
+     "speed": 1.38,
+     "yield": 0.124
+    },
+    "harvesting": {
+     "item": "tool_sickle_copper",
+     "star": 3,
+     "speed": 1.34,
+     "yield": 0.119
+    }
+   },
+   "toolStars": [
+    2,
+    2,
+    2,
+    2,
+    3,
+    3,
+    3,
+    3,
+    2,
+    3,
+    2,
+    3,
+    3,
+    3,
+    3,
+    2,
+    3,
+    3,
+    2,
+    3,
+    3,
+    2,
+    3
+   ],
+   "fails": {
+    "moved": 2
+   },
+   "rejects": {},
+   "blocked": 0,
+   "recalls": 24,
+   "silver": 10962,
+   "money": {
+    "orders": 7213,
+    "ordersQty": 163,
+    "ordersN": 32,
+    "sold": 6020,
+    "soldQty": 552,
+    "spent": 90,
+    "boughtQty": 2,
+    "npc": 0,
+    "npcQty": 0,
+    "deliveredStars": [],
+    "repairs": 7,
+    "repairSpent": 556
+   },
+   "openOrders": 17,
+   "bestLot": "붉은 샘 갈대 산지"
+  },
+  {
+   "id": "persona_moru",
+   "name": "모루",
+   "role": "수치 최적화 장인",
+   "grade": "고수",
+   "ms": 23904,
+   "firsts": {
+    "stoneTool": 142,
+    "copperTool": 2686.4,
+    "food": 12139.8,
+    "masterwork": 10685.8
+   },
+   "reach": {
+    "logging": {
+     "10": 2849.1,
+     "20": 8470,
+     "30": 16492.866666666665
+    },
+    "mining": {
+     "10": 2581.8,
+     "20": 8840.633333333333,
+     "30": 17038.866666666665
+    },
+    "harvesting": {
+     "10": 3077.266666666667,
+     "20": 8681.466666666667,
+     "30": 17074.333333333332
+    }
+   },
+   "skinBy": {
+    "crab": 156,
+    "deer": 13
+   },
+   "fight": {
+    "swings": 721,
+    "hits": 680,
+    "hurt": 84,
+    "evaded": 3,
+    "blocked": 0,
+    "downs": [],
+    "skins": 169,
+    "gearCraft": {
+     "wpn_club": 2,
+     "wpn_sword_copper": 4,
+     "arm_leather_hood": 1,
+     "arm_leather_pants": 1,
+     "arm_leather_vest": 1
+    },
+    "repairs": {
+     "tool": 5,
+     "weapon": 1
+    },
+    "kills": {
+     "crab": 156,
+     "boar": 1,
+     "deer": 13,
+     "wolf": 10
+    },
+    "dmgDealt": 10746,
+    "dmgTaken": 260,
+    "blockedHits": 52,
+    "equip": {
+     "weapon": "wpn_sword_copper★3",
+     "head": "arm_leather_hood★3",
+     "chest": "arm_leather_vest★2",
+     "legs": "arm_leather_pants★2"
+    }
+   },
+   "levels": {
+    "logging": 38,
+    "mining": 38,
+    "harvesting": 38,
+    "hunting": 17,
+    "sawing": 32,
+    "smelting": 32,
+    "weaving": 17,
+    "tanning": 4,
+    "smithing": 12,
+    "carpentry": 3,
+    "cooking": 9,
+    "armoring": 3
+   },
+   "time": {
+    "gather": 37.8,
+    "move": 58.2,
+    "wait": 0.9,
+    "idle": 0.3,
+    "fight": 2.9
+   },
+   "distKm": 74.3,
+   "gathers": 1942,
+   "gathersPerHour": 277,
+   "crafts": {
+    "rc_axe_stone": 3,
+    "rc_pick_stone": 2,
+    "rc_sickle_stone": 2,
+    "rc_club": 2,
+    "rc_lumber_drift": 26,
+    "rc_cloth_reed": 127,
+    "rc_stake_wood": 11,
+    "rc_ingot_copper": 210,
+    "rc_nails_copper": 9,
+    "rc_pick_copper": 2,
+    "rc_sickle_copper": 2,
+    "rc_sword_copper": 4,
+    "rc_axe_copper": 3,
+    "rc_lumber_birch": 267,
+    "rc_dried_berry": 3,
+    "rc_meat": 27,
+    "rc_soup": 7,
+    "rc_lumber_oak": 46,
+    "rc_leather": 13,
+    "rc_leather_hood": 1,
+    "rc_leather_pants": 1,
+    "rc_ingot_iron": 77,
+    "rc_leather_vest": 1
+   },
+   "eat": 47,
+   "focusUsed": 1040,
+   "masterwork": 1,
+   "lotsUsed": 18,
+   "rotatingLots": 12,
+   "rotatingShare": 82,
+   "tools": {
+    "logging": {
+     "item": "tool_axe_copper",
+     "star": 3,
+     "speed": 1.34,
+     "yield": 0.123
+    },
+    "mining": {
+     "item": "tool_pick_copper",
+     "star": 3,
+     "speed": 1.3,
+     "yield": 0.1
+    },
+    "harvesting": {
+     "item": "tool_sickle_copper",
+     "star": 3,
+     "speed": 1.3,
+     "yield": 0.1
+    }
+   },
+   "toolStars": [
+    2,
+    2,
+    2,
+    3,
+    2,
+    2,
+    2,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    2
+   ],
+   "fails": {},
+   "rejects": {
+    "busy": 38
+   },
+   "blocked": 0,
+   "recalls": 25,
+   "silver": 5391,
+   "money": {
+    "orders": 4789,
+    "ordersQty": 141,
+    "ordersN": 27,
+    "sold": 1174,
+    "soldQty": 234,
+    "spent": 0,
+    "boughtQty": 0,
+    "npc": 0,
+    "npcQty": 0,
+    "deliveredStars": [],
+    "repairs": 6,
+    "repairSpent": 363
+   },
+   "openOrders": 7,
+   "bestLot": "붉은 샘 갈대 산지"
+  },
+  {
+   "id": "persona_harang",
+   "name": "하랑",
+   "role": "시세 차익 상인",
+   "grade": "숙련",
+   "ms": 22742,
+   "firsts": {
+    "stoneTool": 230,
+    "copperTool": 2043.6,
+    "food": 798.4,
+    "masterwork": 5642
+   },
+   "reach": {
+    "logging": {
+     "10": 1886.1,
+     "20": 5734.666666666667,
+     "30": 11457.666666666666
+    },
+    "mining": {
+     "10": 2082.866666666667,
+     "20": 5812.033333333334,
+     "30": 11623.233333333334
+    },
+    "harvesting": {
+     "10": 2166.733333333333,
+     "20": 5919.566666666667,
+     "30": 11680.066666666668
+    }
+   },
+   "skinBy": {
+    "crab": 181,
+    "deer": 8,
+    "boar": 1,
+    "wolf": 2
+   },
+   "fight": {
+    "swings": 905,
+    "hits": 881,
+    "hurt": 149,
+    "evaded": 1,
+    "blocked": 0,
+    "downs": [],
+    "skins": 192,
+    "gearCraft": {
+     "wpn_club": 1,
+     "wpn_sword_copper": 2,
+     "arm_leather_hood": 1,
+     "arm_leather_pants": 1,
+     "wpn_spear_copper": 1
+    },
+    "repairs": {
+     "tool": 7
+    },
+    "kills": {
+     "crab": 181,
+     "wolf": 14,
+     "deer": 9,
+     "boar": 1
+    },
+    "dmgDealt": 10911,
+    "dmgTaken": 657,
+    "blockedHits": 57,
+    "equip": {
+     "weapon": "wpn_spear_copper★3",
+     "head": "arm_leather_hood★3",
+     "chest": null,
+     "legs": "arm_leather_pants★2"
+    }
+   },
+   "levels": {
+    "logging": 45,
+    "mining": 44,
+    "harvesting": 44,
+    "hunting": 18,
+    "sawing": 38,
+    "smelting": 36,
+    "weaving": 16,
+    "tanning": 4,
+    "smithing": 11,
+    "carpentry": 10,
+    "cooking": 11,
+    "armoring": 2
+   },
+   "time": {
+    "gather": 41.9,
+    "move": 53.7,
+    "wait": 0.8,
+    "idle": 0.3,
+    "fight": 3.4
+   },
+   "distKm": 70.8,
+   "gathers": 2762,
+   "gathersPerHour": 395,
+   "crafts": {
+    "rc_axe_stone": 1,
+    "rc_pick_stone": 2,
+    "rc_sickle_stone": 3,
+    "rc_club": 1,
+    "rc_lumber_drift": 60,
+    "rc_cloth_reed": 112,
+    "rc_dried_berry": 6,
+    "rc_ingot_copper": 415,
+    "rc_nails_copper": 11,
+    "rc_stake_wood": 33,
+    "rc_pick_copper": 2,
+    "rc_sickle_copper": 3,
+    "rc_meat": 32,
+    "rc_soup": 9,
+    "rc_axe_copper": 1,
+    "rc_sword_copper": 2,
+    "rc_lumber_birch": 271,
+    "rc_crate": 7,
+    "rc_ingot_iron": 37,
+    "rc_lumber_oak": 126,
+    "rc_leather": 11,
+    "rc_leather_hood": 1,
+    "rc_leather_pants": 1,
+    "rc_spear_copper": 1
+   },
+   "eat": 65,
+   "focusUsed": 1040,
+   "masterwork": 1,
+   "lotsUsed": 25,
+   "rotatingLots": 15,
+   "rotatingShare": 68,
+   "tools": {
+    "logging": {
+     "item": "tool_axe_copper",
+     "star": 3,
+     "speed": 1.31,
+     "yield": 0.099
+    },
+    "mining": {
+     "item": "tool_pick_copper",
+     "star": 3,
+     "speed": 1.31,
+     "yield": 0.099
+    },
+    "harvesting": {
+     "item": "tool_sickle_copper",
+     "star": 3,
+     "speed": 1.36,
+     "yield": 0.124
+    }
+   },
+   "toolStars": [
+    2,
+    2,
+    2,
+    3,
+    3,
+    2,
+    2,
+    3,
+    3,
+    2,
+    3,
+    2
+   ],
+   "fails": {
+    "moved": 4,
+    "attack": 1,
+    "node_gone": 1
+   },
+   "rejects": {},
+   "blocked": 0,
+   "recalls": 24,
+   "silver": 9139,
+   "money": {
+    "orders": 6094,
+    "ordersQty": 167,
+    "ordersN": 39,
+    "sold": 5518,
+    "soldQty": 676,
+    "spent": 81,
+    "boughtQty": 3,
+    "npc": 0,
+    "npcQty": 0,
+    "deliveredStars": [],
+    "repairs": 7,
+    "repairSpent": 540
+   },
+   "openOrders": 22,
+   "bestLot": "안개 여울 참나무 산지"
+  },
+  {
+   "id": "persona_saebyeok",
+   "name": "새벽",
+   "role": "탐험·수집가",
+   "grade": "보통",
+   "ms": 22332,
+   "firsts": {
+    "stoneTool": 164.4,
+    "copperTool": 2607.8,
+    "food": 1188.2,
+    "masterwork": 12215.8
+   },
+   "reach": {
+    "logging": {
+     "10": 3140.3,
+     "20": 7567.6,
+     "30": 15000.2
+    },
+    "mining": {
+     "10": 3022.2,
+     "20": 7426.033333333334,
+     "30": 14832.466666666667
+    },
+    "harvesting": {
+     "10": 3350.266666666667,
+     "20": 7143.666666666667,
+     "30": 15037.5
+    }
+   },
+   "skinBy": {
+    "crab": 204,
+    "deer": 10,
+    "boar": 9,
+    "wolf": 4
+   },
+   "fight": {
+    "swings": 972,
+    "hits": 948,
+    "hurt": 144,
+    "evaded": 2,
+    "blocked": 0,
+    "downs": [],
+    "skins": 227,
+    "gearCraft": {
+     "wpn_club": 2,
+     "wpn_spear_copper": 1,
+     "arm_leather_hood": 1,
+     "arm_leather_pants": 1,
+     "arm_leather_vest": 1
+    },
+    "repairs": {
+     "weapon": 2,
+     "tool": 4
+    },
+    "kills": {
+     "crab": 204,
+     "wolf": 15,
+     "boar": 11,
+     "deer": 12
+    },
+    "dmgDealt": 14934,
+    "dmgTaken": 1063,
+    "blockedHits": 24,
+    "equip": {
+     "weapon": "wpn_spear_copper★3",
+     "head": "arm_leather_hood★2",
+     "chest": "arm_leather_vest★3",
+     "legs": "arm_leather_pants★2"
+    }
+   },
+   "levels": {
+    "logging": 38,
+    "mining": 38,
+    "harvesting": 38,
+    "hunting": 21,
+    "sawing": 33,
+    "smelting": 31,
+    "weaving": 7,
+    "tanning": 7,
+    "smithing": 11,
+    "carpentry": 12,
+    "cooking": 11,
+    "armoring": 3
+   },
+   "time": {
+    "gather": 33,
+    "move": 60.6,
+    "wait": 1.7,
+    "idle": 1.1,
+    "fight": 3.6
+   },
+   "distKm": 77.5,
+   "gathers": 2052,
+   "gathersPerHour": 293,
+   "crafts": {
+    "rc_axe_stone": 1,
+    "rc_pick_stone": 2,
+    "rc_sickle_stone": 1,
+    "rc_club": 2,
+    "rc_lumber_drift": 59,
+    "rc_cloth_reed": 29,
+    "rc_stake_wood": 35,
+    "rc_dried_berry": 3,
+    "rc_ingot_copper": 304,
+    "rc_nails_copper": 12,
+    "rc_meat": 36,
+    "rc_pick_copper": 4,
+    "rc_soup": 10,
+    "rc_sickle_copper": 2,
+    "rc_lumber_birch": 281,
+    "rc_axe_copper": 1,
+    "rc_spear_copper": 1,
+    "rc_lumber_oak": 41,
+    "rc_leather": 28,
+    "rc_leather_hood": 1,
+    "rc_ingot_iron": 20,
+    "rc_crate": 12,
+    "rc_leather_pants": 1,
+    "rc_leather_vest": 1
+   },
+   "eat": 81,
+   "focusUsed": 1040,
+   "masterwork": 1,
+   "lotsUsed": 30,
+   "rotatingLots": 20,
+   "rotatingShare": 59,
+   "tools": {
+    "logging": {
+     "item": "tool_axe_copper",
+     "star": 3,
+     "speed": 1.33,
+     "yield": 0.117
+    },
+    "mining": {
+     "item": "tool_pick_copper",
+     "star": 3,
+     "speed": 1.34,
+     "yield": 0.123
+    },
+    "harvesting": {
+     "item": "tool_sickle_copper",
+     "star": 3,
+     "speed": 1.33,
+     "yield": 0.117
+    }
+   },
+   "toolStars": [
+    2,
+    2,
+    2,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    2
+   ],
+   "fails": {
+    "moved": 1
+   },
+   "rejects": {},
+   "blocked": 0,
+   "recalls": 24,
+   "silver": 11614,
+   "money": {
+    "orders": 6350,
+    "ordersQty": 159,
+    "ordersN": 34,
+    "sold": 6695,
+    "soldQty": 603,
+    "spent": 0,
+    "boughtQty": 0,
+    "npc": 0,
+    "npcQty": 0,
+    "deliveredStars": [],
+    "repairs": 6,
+    "repairSpent": 477
+   },
+   "openOrders": 17,
+   "bestLot": "이끼 바위 철 산지"
+  },
+  {
+   "id": "persona_mujin",
+   "name": "무진",
+   "role": "PvP·영지전 전투광",
+   "grade": "숙련",
+   "ms": 19791,
+   "firsts": {
+    "stoneTool": 137.2,
+    "copperTool": 2160,
+    "food": 664.4,
+    "masterwork": 2987.4
+   },
+   "reach": {
+    "logging": {
+     "10": 2673.7,
+     "20": 12161.266666666666,
+     "30": null
+    },
+    "mining": {
+     "10": 2546.8,
+     "20": 11788.666666666666,
+     "30": null
+    },
+    "harvesting": {
+     "10": 2877.266666666667,
+     "20": 11835.333333333334,
+     "30": null
+    }
+   },
+   "skinBy": {
+    "crab": 364,
+    "deer": 72,
+    "wolf": 139,
+    "boar": 76
+   },
+   "fight": {
+    "swings": 2551,
+    "hits": 2524,
+    "hurt": 298,
+    "evaded": 32,
+    "blocked": 0,
+    "downs": [],
+    "skins": 651,
+    "gearCraft": {
+     "wpn_club": 2,
+     "wpn_sword_copper": 2,
+     "wpn_battleaxe_copper": 1,
+     "arm_leather_hood": 1,
+     "arm_leather_pants": 1,
+     "arm_leather_vest": 1
+    },
+    "repairs": {
+     "weapon": 5,
+     "tool": 2
+    },
+    "kills": {
+     "crab": 364,
+     "deer": 80,
+     "wolf": 143,
+     "boar": 77
+    },
+    "dmgDealt": 52274,
+    "dmgTaken": 2390,
+    "blockedHits": 52,
+    "equip": {
+     "weapon": "wpn_battleaxe_copper★3",
+     "head": "arm_leather_hood★2",
+     "chest": "arm_leather_vest★2",
+     "legs": "arm_leather_pants★3"
+    }
+   },
+   "levels": {
+    "logging": 28,
+    "mining": 28,
+    "harvesting": 28,
+    "hunting": 42,
+    "sawing": 24,
+    "smelting": 21,
+    "weaving": 4,
+    "tanning": 31,
+    "smithing": 12,
+    "carpentry": 7,
+    "cooking": 10,
+    "armoring": 3
+   },
+   "time": {
+    "gather": 22,
+    "move": 63.4,
+    "wait": 0.8,
+    "idle": 0.4,
+    "fight": 13.4
+   },
+   "distKm": 90.3,
+   "gathers": 1095,
+   "gathersPerHour": 156,
+   "crafts": {
+    "rc_pick_stone": 1,
+    "rc_axe_stone": 1,
+    "rc_sickle_stone": 1,
+    "rc_club": 2,
+    "rc_lumber_drift": 40,
+    "rc_cloth_reed": 12,
+    "rc_dried_berry": 3,
+    "rc_stake_wood": 17,
+    "rc_ingot_copper": 157,
+    "rc_nails_copper": 20,
+    "rc_pick_copper": 2,
+    "rc_sickle_copper": 2,
+    "rc_sword_copper": 2,
+    "rc_axe_copper": 2,
+    "rc_lumber_birch": 130,
+    "rc_battleaxe_copper": 1,
+    "rc_meat": 38,
+    "rc_leather": 350,
+    "rc_leather_hood": 1,
+    "rc_leather_pants": 1,
+    "rc_leather_vest": 1,
+    "rc_soup": 6,
+    "rc_crate": 4,
+    "rc_lumber_oak": 26,
+    "rc_ingot_iron": 4
+   },
+   "eat": 72,
+   "focusUsed": 1040,
+   "masterwork": 2,
+   "lotsUsed": 22,
+   "rotatingLots": 13,
+   "rotatingShare": 64,
+   "tools": {
+    "mining": {
+     "item": "tool_pick_copper",
+     "star": 3,
+     "speed": 1.3,
+     "yield": 0.099
+    },
+    "logging": {
+     "item": "tool_axe_copper",
+     "star": 3,
+     "speed": 1.3,
+     "yield": 0.099
+    },
+    "harvesting": {
+     "item": "tool_sickle_copper",
+     "star": 3,
+     "speed": 1.3,
+     "yield": 0.099
+    }
+   },
+   "toolStars": [
+    2,
+    2,
+    2,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3
+   ],
+   "fails": {
+    "attack": 1,
+    "moved": 1
+   },
+   "rejects": {
+    "busy": 51
+   },
+   "blocked": 0,
+   "recalls": 25,
+   "silver": 8667,
+   "money": {
+    "orders": 5823,
+    "ordersQty": 238,
+    "ordersN": 29,
+    "sold": 4405,
+    "soldQty": 294,
+    "spent": 86,
+    "boughtQty": 2,
+    "npc": 0,
+    "npcQty": 0,
+    "deliveredStars": [],
+    "repairs": 7,
+    "repairSpent": 676
+   },
+   "openOrders": 18,
+   "bestLot": "붉은 샘 참나무 산지"
+  },
+  {
+   "id": "persona_ren",
+   "name": "렌",
+   "role": "뉴월드 경력자",
+   "grade": "숙련",
+   "ms": 21364,
+   "firsts": {
+    "stoneTool": 131,
+    "copperTool": 2782.4,
+    "food": 4223.6,
+    "masterwork": 6028.8
+   },
+   "reach": {
+    "logging": {
+     "10": 2912.1,
+     "20": 8737.866666666667,
+     "30": 18752.466666666667
+    },
+    "mining": {
+     "10": 3025,
+     "20": 8680.666666666666,
+     "30": 18553.7
+    },
+    "harvesting": {
+     "10": 3689.866666666667,
+     "20": 8933.066666666668,
+     "30": 18711.466666666667
+    }
+   },
+   "skinBy": {
+    "crab": 265,
+    "deer": 31,
+    "wolf": 27,
+    "boar": 37
+   },
+   "fight": {
+    "swings": 1726,
+    "hits": 1660,
+    "hurt": 275,
+    "evaded": 6,
+    "blocked": 0,
+    "downs": [],
+    "skins": 360,
+    "gearCraft": {
+     "wpn_club": 2,
+     "wpn_sword_copper": 3,
+     "arm_leather_hood": 1,
+     "arm_leather_pants": 1,
+     "arm_leather_vest": 1
+    },
+    "repairs": {
+     "weapon": 4,
+     "tool": 3
+    },
+    "kills": {
+     "crab": 265,
+     "deer": 34,
+     "boar": 38,
+     "wolf": 31
+    },
+    "dmgDealt": 26746,
+    "dmgTaken": 1475,
+    "blockedHits": 80,
+    "equip": {
+     "weapon": "wpn_sword_copper★3",
+     "head": "arm_leather_hood★3",
+     "chest": "arm_leather_vest★2",
+     "legs": "arm_leather_pants★2"
+    }
+   },
+   "levels": {
+    "logging": 34,
+    "mining": 35,
+    "harvesting": 34,
+    "hunting": 29,
+    "sawing": 29,
+    "smelting": 28,
+    "weaving": 11,
+    "tanning": 18,
+    "smithing": 11,
+    "carpentry": 2,
+    "cooking": 10,
+    "armoring": 3
+   },
+   "time": {
+    "gather": 27.4,
+    "move": 63.7,
+    "wait": 1.6,
+    "idle": 0.5,
+    "fight": 6.8
+   },
+   "distKm": 84.1,
+   "gathers": 1579,
+   "gathersPerHour": 226,
+   "crafts": {
+    "rc_axe_stone": 1,
+    "rc_pick_stone": 1,
+    "rc_sickle_stone": 1,
+    "rc_club": 2,
+    "rc_lumber_drift": 27,
+    "rc_cloth_reed": 56,
+    "rc_stake_wood": 6,
+    "rc_ingot_copper": 179,
+    "rc_nails_copper": 6,
+    "rc_pick_copper": 2,
+    "rc_dried_berry": 3,
+    "rc_sickle_copper": 4,
+    "rc_axe_copper": 3,
+    "rc_sword_copper": 3,
+    "rc_lumber_birch": 262,
+    "rc_meat": 30,
+    "rc_soup": 9,
+    "rc_leather": 116,
+    "rc_leather_hood": 1,
+    "rc_leather_pants": 1,
+    "rc_lumber_oak": 14,
+    "rc_leather_vest": 1,
+    "rc_ingot_iron": 52
+   },
+   "eat": 54,
+   "focusUsed": 1040,
+   "masterwork": 3,
+   "lotsUsed": 22,
+   "rotatingLots": 14,
+   "rotatingShare": 73,
+   "tools": {
+    "logging": {
+     "item": "tool_axe_copper",
+     "star": 3,
+     "speed": 1.3,
+     "yield": 0.099
+    },
+    "mining": {
+     "item": "tool_pick_copper",
+     "star": 3,
+     "speed": 1.3,
+     "yield": 0.099
+    },
+    "harvesting": {
+     "item": "tool_sickle_copper",
+     "star": 3,
+     "speed": 1.34,
+     "yield": 0.119
+    }
+   },
+   "toolStars": [
+    2,
+    2,
+    2,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3
+   ],
+   "fails": {},
+   "rejects": {
+    "busy": 24
+   },
+   "blocked": 0,
+   "recalls": 24,
+   "silver": 5531,
+   "money": {
+    "orders": 6103,
+    "ordersQty": 131,
+    "ordersN": 29,
+    "sold": 0,
+    "soldQty": 0,
+    "spent": 0,
+    "boughtQty": 0,
+    "npc": 0,
+    "npcQty": 0,
+    "deliveredStars": [],
+    "repairs": 7,
+    "repairSpent": 612
+   },
+   "openOrders": 0,
+   "bestLot": "붉은 샘 들버섯 산지"
+  },
+  {
+   "id": "persona_kongi",
+   "name": "콩이",
+   "role": "입문자(모바일 겸용)",
+   "grade": "뉴비",
+   "ms": 22979,
+   "firsts": {
+    "stoneTool": 172,
+    "copperTool": 1778,
+    "food": 1048.6,
+    "masterwork": 4870.2
+   },
+   "reach": {
+    "logging": {
+     "10": 2088.6666666666665,
+     "20": 6608.266666666666,
+     "30": 13390.266666666666
+    },
+    "mining": {
+     "10": 2377.0333333333333,
+     "20": 6792.266666666666,
+     "30": 13885.866666666667
+    },
+    "harvesting": {
+     "10": 2154.4666666666667,
+     "20": 6512.3,
+     "30": 13756.7
+    }
+   },
+   "skinBy": {
+    "crab": 162,
+    "deer": 4
+   },
+   "fight": {
+    "swings": 541,
+    "hits": 538,
+    "hurt": 157,
+    "evaded": 0,
+    "blocked": 0,
+    "downs": [],
+    "skins": 166,
+    "gearCraft": {
+     "wpn_club": 1,
+     "wpn_sword_copper": 2,
+     "arm_leather_hood": 1
+    },
+    "repairs": {
+     "tool": 6,
+     "weapon": 1
+    },
+    "kills": {
+     "crab": 162,
+     "deer": 5,
+     "boar": 1
+    },
+    "dmgDealt": 11047,
+    "dmgTaken": 755,
+    "blockedHits": 19,
+    "equip": {
+     "weapon": "wpn_sword_copper★3",
+     "head": "arm_leather_hood★2",
+     "chest": null,
+     "legs": null
+    }
+   },
+   "levels": {
+    "logging": 40,
+    "mining": 39,
+    "harvesting": 39,
+    "hunting": 16,
+    "sawing": 33,
+    "smelting": 31,
+    "weaving": 11,
+    "tanning": 2,
+    "smithing": 11,
+    "carpentry": 3,
+    "cooking": 11,
+    "armoring": 1
+   },
+   "time": {
+    "gather": 33.7,
+    "move": 59.4,
+    "wait": 2,
+    "idle": 2.9,
+    "fight": 2
+   },
+   "distKm": 74.7,
+   "gathers": 2214,
+   "gathersPerHour": 316,
+   "crafts": {
+    "rc_axe_stone": 1,
+    "rc_pick_stone": 3,
+    "rc_sickle_stone": 2,
+    "rc_club": 1,
+    "rc_lumber_drift": 41,
+    "rc_cloth_reed": 63,
+    "rc_stake_wood": 10,
+    "rc_ingot_copper": 335,
+    "rc_dried_berry": 3,
+    "rc_nails_copper": 7,
+    "rc_axe_copper": 1,
+    "rc_pick_copper": 3,
+    "rc_sickle_copper": 2,
+    "rc_sword_copper": 2,
+    "rc_lumber_birch": 271,
+    "rc_lumber_oak": 60,
+    "rc_ingot_iron": 9,
+    "rc_meat": 38,
+    "rc_soup": 8,
+    "rc_leather": 4,
+    "rc_leather_hood": 1
+   },
+   "eat": 74,
+   "focusUsed": 0,
+   "masterwork": 2,
+   "lotsUsed": 21,
+   "rotatingLots": 11,
+   "rotatingShare": 42,
+   "tools": {
+    "logging": {
+     "item": "tool_axe_copper",
+     "star": 3,
+     "speed": 1.3,
+     "yield": 0.098
+    },
+    "mining": {
+     "item": "tool_pick_copper",
+     "star": 3,
+     "speed": 1.3,
+     "yield": 0.099
+    },
+    "harvesting": {
+     "item": "tool_sickle_copper",
+     "star": 3,
+     "speed": 1.31,
+     "yield": 0.101
+    }
+   },
+   "toolStars": [
+    2,
+    2,
+    2,
+    3,
+    3,
+    2,
+    3,
+    2,
+    3,
+    3,
+    2,
+    3
+   ],
+   "fails": {},
+   "rejects": {},
+   "blocked": 0,
+   "recalls": 24,
+   "silver": 3124,
+   "money": {
+    "orders": 3641,
+    "ordersQty": 115,
+    "ordersN": 20,
+    "sold": 0,
+    "soldQty": 0,
+    "spent": 0,
+    "boughtQty": 0,
+    "npc": 0,
+    "npcQty": 0,
+    "deliveredStars": [],
+    "repairs": 7,
+    "repairSpent": 557
+   },
+   "openOrders": 0,
+   "bestLot": "붉은 샘 해초 산지"
+  }
+ ]
+}

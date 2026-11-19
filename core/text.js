@@ -55,6 +55,7 @@ export const silver = (n) => `${Math.floor(n).toLocaleString('ko-KR')}은화`;
 
 export const STAT_NAMES = {
   gatherSpeed: '속도', yield: '산출', durability: '내구', comfort: '쾌적', buff: '효과', minutes: '지속',
+  attack: '공격력', armor: '방어', heal: '회복',
 };
 
 export const stars = (n) => '★'.repeat(n) + '☆'.repeat(5 - n);

@@ -124,7 +124,9 @@
     "nutrition": "영양",
     "flavor": "풍미",
     "potency": "약효",
-    "duration": "지속"
+    "duration": "지속",
+    "thickness": "두께",
+    "suppleness": "유연"
   },
   "market": {
     "startSilver": 40,
@@ -281,6 +283,36 @@
         ],
         "minStar": 3,
         "premium": 1.15,
+        "w": 1
+      },
+      {
+        "item": "leather",
+        "qty": [
+          4,
+          8
+        ],
+        "minStar": 2,
+        "premium": 1.3,
+        "w": 2
+      },
+      {
+        "item": "food_meat",
+        "qty": [
+          4,
+          8
+        ],
+        "minStar": 0,
+        "premium": 1.35,
+        "w": 2
+      },
+      {
+        "item": "wpn_sword_copper",
+        "qty": [
+          1,
+          1
+        ],
+        "minStar": 3,
+        "premium": 1.2,
         "w": 1
       }
     ],
@@ -472,7 +504,9 @@
       "food_soup": 8,
       "stone": 20,
       "log_drift": 20,
-      "fiber_reed": 20
+      "fiber_reed": 20,
+      "leather": 8,
+      "food_meat": 8
     },
     "grow": {
       "full": 0.95,

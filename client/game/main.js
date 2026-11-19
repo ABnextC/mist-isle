@@ -19,6 +19,8 @@ import { makeMaterials, G } from './gfx/materials.js';
 import { createNodesView } from './nodes-view.js';
 import { createTownView } from './town-view.js';
 import { createActorsView } from './actors-view.js';
+import { createMobsView } from './mobs-view.js';
+import { zoneAt } from '../../core/terrain.js';
 import { createFx } from './fx.js';
 import { NODE_CHIP } from './models/nodes.js';
 import { createCamera } from './camera.js';
@@ -88,6 +90,58 @@ async function boot() {
   const nodesView = createNodesView(view.scene, game, ground.hf, { mats, ctex });
   const townView = createTownView(view.scene, game, ground.hf, { mats, terrain: game.terrain, region });
   const actorsView = createActorsView(view.scene, game, ground.hf);
+  const floaters = document.createElement('div');
+  floaters.id = 'floaters';
+  document.body.appendChild(floaters);
+  const mobsView = createMobsView(view.scene, game, ground.hf, floaters);
+  // 떠오르는 숫자(준 피해·받은 피해·회피)
+  const floats = [];
+  const fv = new THREE.Vector3();
+  function floatText(x, y, z, text, cls) {
+    const el = document.createElement('div');
+    el.className = `float ${cls}`;
+    el.textContent = text;
+    floaters.appendChild(el);
+    floats.push({ el, x, y, z, t: 0, dx: (Math.random() - 0.5) * 30 });
+  }
+  function updateFloats(dt) {
+    for (let i = floats.length - 1; i >= 0; i--) {
+      const f = floats[i];
+      f.t += dt;
+      if (f.t > 0.95) {
+        f.el.remove();
+        floats.splice(i, 1);
+        continue;
+      }
+      fv.set(f.x, f.y + f.t * 1.2, f.z).project(view.camera);
+      if (fv.z > 1) {
+        f.el.style.opacity = 0;
+        continue;
+      }
+      f.el.style.opacity = String(1 - Math.max(0, f.t - 0.6) / 0.35);
+      f.el.style.transform = `translate(${((fv.x + 1) / 2) * window.innerWidth + f.dx * f.t}px, ${((1 - fv.y) / 2) * window.innerHeight}px)`;
+    }
+  }
+  game.on('combat.hit', (ev) => {
+    mobsView.onEvent(ev);
+    const m = game.state.mobs[ev.mob];
+    if (m && ev.actor === PID) floatText(m.x, ground.hf.height(m.x, m.z) + 1.4, m.z, String(Math.round(ev.dmg)), ev.heavy ? 'big' : '');
+  });
+  game.on('combat.hurt', (ev) => {
+    actorsView.onEvent(ev);
+    const a = game.state.actors[ev.actor];
+    if (ev.actor === PID && a) {
+      floatText(a.x, ground.hf.height(a.x, a.z) + 2.0, a.z, `-${Math.round(ev.dmg)}${ev.blocked ? ' 막음' : ''}`, 'hurt');
+      hud.hurt();
+    }
+  });
+  game.on('combat.evade', (ev) => {
+    const a = game.state.actors[ev.actor];
+    if (ev.actor === PID && a) floatText(a.x, ground.hf.height(a.x, a.z) + 2.0, a.z, '회피', 'evade');
+  });
+  game.on('combat.guardbreak', (ev) => {
+    if (ev.actor === PID) hud.toast('🛡️ 기력이 바닥나 막기가 풀렸다', 'warn');
+  });
   const fx = createFx(view.scene, { textures: ctex, hf: ground.hf, town: townView, terrain: game.terrain, region });
   const cam = createCamera(view.camera, ground.hf);
   window.__mist.cam = cam;
@@ -141,10 +195,40 @@ async function boot() {
     return best && bd <= data.config.craft.rangeM ? best.type : 'hand';
   }
 
+  // 공격 방향: 카메라가 보는 쪽 ±60° 안에서 가장 가까운 짐승 쪽으로(조준 보조)
+  function aimYaw() {
+    const a = me();
+    const [fx, fz] = cam.toWorld(0, 1);
+    const fy = Math.atan2(fx, fz);
+    const we = a.equip?.weapon ? a.bag.find((e) => e.uid === a.equip.weapon) : null;
+    const reach = data.config.combat.weapons[we ? data.items[we.item].weapon.type : 'fists'].range;
+    let best = null;
+    let bs = Infinity;
+    for (const m of Object.values(game.state.mobs)) {
+      if (m.mode === 'dead') continue;
+      const d = Math.hypot(m.x - a.x, m.z - a.z);
+      if (d > reach + 2.5) continue;
+      const yy = Math.atan2(m.x - a.x, m.z - a.z);
+      let diff = Math.abs(yy - fy);
+      if (diff > Math.PI) diff = 2 * Math.PI - diff;
+      if (diff > 1.05) continue;
+      const s = d + diff * 3;
+      if (s < bs) {
+        bs = s;
+        best = yy;
+      }
+    }
+    return best ?? fy;
+  }
+
   function interact() {
     const t = ui.target;
     if (!t || t.why || t.idle) return;
     stopBot();
+    if (t.kind === 'corpse') {
+      game.dispatch({ type: 'SKIN', actor: PID, mob: t.id });
+      return;
+    }
     if (t.kind === 'node') ui.gather = t.id;
     else if (t.kind === 'station') {
       if (t.id === 'storage') hud.open('bag');
@@ -196,6 +280,28 @@ async function boot() {
     const a = me();
     switch (act) {
       case 'interact': interact(); break;
+      case 'attack':
+      case 'heavy':
+        stopBot();
+        ui.gather = null;
+        game.dispatch({ type: 'ATTACK', actor: PID, kind: act === 'heavy' ? 'heavy' : 'light', yaw: aimYaw() });
+        break;
+      case 'dodge': {
+        stopBot();
+        ui.gather = null;
+        const L = ui.last;
+        const [fx, fz] = cam.toWorld(0, 1);
+        game.dispatch({ type: 'DODGE', actor: PID, yaw: L.moving ? Math.atan2(L.x, L.z) : Math.atan2(-fx, -fz) });
+        break;
+      }
+      case 'block-on':
+        stopBot();
+        ui.gather = null;
+        me().yaw = aimYaw();
+        game.dispatch({ type: 'BLOCK', actor: PID, on: true });
+        break;
+      case 'block-off': game.dispatch({ type: 'BLOCK', actor: PID, on: false }); break;
+      case 'equip': game.dispatch({ type: 'EQUIP', actor: PID, uid: v }); break;
       case 'recall':
         stopBot();
         ui.gather = null;
@@ -313,6 +419,13 @@ async function boot() {
         if (d <= data.config.craft.rangeM - 0.3) consider(d, dx, dz, { kind: 'station', id: st.type, x: st.x, z: st.z });
       }
     }
+    for (const m of Object.values(state.mobs)) {
+      if (m.mode !== 'dead' || m.skinned || state.t > m.deadAt + data.config.combat.corpseSec) continue;
+      const dx = m.x - a.x;
+      const dz = m.z - a.z;
+      const d = Math.hypot(dx, dz);
+      if (d <= 2.6) consider(d - 0.5, dx, dz, { kind: 'corpse', id: m.id, x: m.x, z: m.z, m });
+    }
     for (const o of game.statics) {
       if (o.kind !== 'board' && o.kind !== 'market') continue;
       const dx = o.x - a.x;
@@ -341,6 +454,12 @@ async function boot() {
       best.label = st.name;
       best.verb = best.id === 'storage' ? '창고 열기' : '작업대 열기';
       best.radius = (st.r || 0.8) + 0.7;
+    } else if (best.kind === 'corpse') {
+      const type = data.creatures[best.m.type];
+      best.label = `${type.name} 사체`;
+      best.verb = '손질';
+      best.radius = type.r + 0.4;
+      if (a.skills.hunting.level < type.hunt.level) best.why = `수렵 ${type.hunt.level} 필요`;
     } else if (best.kind === 'market') {
       best.label = '거래소';
       best.verb = '사고팔기';
@@ -400,6 +519,15 @@ async function boot() {
 
     // 4) 화면
     actorsView.update(dt, now / 1000);
+    mobsView.update(dt, view.camera);
+    updateFloats(dt);
+    {
+      const z = zoneAt(region, a.x, a.z);
+      if ((z?.id || null) !== ui.zone) {
+        if (z && ui.zone !== undefined) hud.toast(`🌲 ${z.name} (T${z.tier}) — 늑대·멧돼지가 산다. 장비를 갖추자`, 'warn');
+        ui.zone = z?.id || null;
+      }
+    }
     const p = actorsView.positionOf(PID);
     cam.update(dt, p.x, p.y, p.z);
     focusVec.set(p.x, p.y, p.z);

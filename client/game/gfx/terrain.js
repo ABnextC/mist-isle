@@ -148,7 +148,7 @@ export function groundAt(hf, paths, x, z) {
 }
 
 // ── 땅 재질 ─────────────────────────────────────────
-function terrainMaterial(tex, paths, tier) {
+function terrainMaterial(tex, paths, tier, forest = [1e9, 10]) {
   const mat = new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0 });
   const U = {
     tGrassA: { value: tex.grass.A }, tGrassN: { value: tex.grass.N },
@@ -157,6 +157,7 @@ function terrainMaterial(tex, paths, tier) {
     tRockA: { value: tex.rock.A }, tRockN: { value: tex.rock.N },
     tPath: { value: paths.tex },
     uArea: { value: new THREE.Vector3(AREA.x0, AREA.z0, AREA.size) },
+    uForest: { value: new THREE.Vector2(forest[0], forest[1]) },
   };
   const hq = tier.id !== 'low';
   mat.onBeforeCompile = (sh) => {
@@ -172,6 +173,7 @@ function terrainMaterial(tex, paths, tier) {
         varying vec3 vWNor;
         uniform sampler2D tGrassA, tGrassN, tDirtA, tDirtN, tSandA, tSandN, tRockA, tRockN, tPath;
         uniform vec3 uArea;
+        uniform vec2 uForest;
         ${NOISE}
         // 같은 무늬가 반복돼 보이지 않게 두 배율을 섞는다
         vec4 tri(sampler2D t, vec2 uv, float k) {
@@ -217,6 +219,11 @@ function terrainMaterial(tex, paths, tier) {
         float wet = smoothstep(0.75, 0.15, hgt) * (w.z + w.y * 0.5);
         alb *= mix(1.0, 0.58, wet);
         alb *= mix(vec3(1.0), vec3(0.55, 0.72, 0.72), smoothstep(0.0, -2.5, hgt));
+        // 참나무 숲(북쪽 구역): 풀이 짙고, 낙엽 깔린 흙이 섞인다
+        float forest = smoothstep(uForest.x - uForest.y, uForest.x + uForest.y, vWPos.z + (m1 - 0.5) * 10.0);
+        vec3 litter = mix(vec3(0.20, 0.14, 0.08), vec3(0.30, 0.22, 0.12), m2);
+        vec3 deep = alb * vec3(0.62, 0.78, 0.58);
+        alb = mix(alb, mix(deep, litter, smoothstep(0.45, 0.75, m1) * (w.x + w.y) * 0.85), forest * (1.0 - w.w * 0.6));
         // 큰 얼룩으로 색을 조금씩 흔든다
         alb *= 0.9 + 0.2 * m2;
         diffuseColor.rgb = alb;
@@ -313,7 +320,7 @@ function outerGeometry(terrain) {
 export function createTerrain(scene, { terrain, region, tier, tex }) {
   const hf = buildHeightField(terrain, tier.terrainN);
   const paths = makePathMask(region, terrain);
-  const mat = terrainMaterial(tex, paths, tier);
+  const mat = terrainMaterial(tex, paths, tier, [region.zones?.[0]?.z0 ?? 1e9, region.zones?.[0]?.fade ?? 10]);
   const mesh = new THREE.Mesh(gridGeometry(hf), mat);
   mesh.receiveShadow = true;
   scene.add(mesh);

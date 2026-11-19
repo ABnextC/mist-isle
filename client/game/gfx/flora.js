@@ -107,10 +107,26 @@ export function createFlora(scene, { hf, paths, region, tier, mats, ctex, game }
       if (R() < 0.5) bushLists[Math.floor(R() * 2)].push({ x: px + (R() - 0.5) * 4, y: h - 0.1, z: pz + (R() - 0.5) * 4, ry: R() * 6.28, s: 0.8 + R() * 0.6 });
     }
   }
-  pines.forEach((p, i) => {
-    instanced(scene, p.trunk, mats.barkDark, pineLists[i], { shadow: tier.id === 'high' });
-    instanced(scene, p.crown, mats.pineNeedles, pineLists[i], { shadow: tier.id === 'high', depthMap: ctex.pineNeedles });
-  });
+
+  // 참나무 숲(v0.3): 구역 안쪽에 배경 나무와 덤불을 촘촘히 세운다(캘 수 있는 참나무는 노드로 따로 있다)
+  const zone = (region.zones || [])[0];
+  if (zone) {
+    const fstep = 9 / Math.sqrt(k);
+    const groups = Object.values(game.state.mobGroups || {});
+    for (let z = zone.z0 + 4; z < bz1 - edge; z += fstep) {
+      for (let x = bx0 + edge; x < bx1 - edge; x += fstep) {
+        const px = x + (R() - 0.5) * fstep * 0.9;
+        const pz = z + (R() - 0.5) * fstep * 0.9;
+        if (R() > 0.3 + Math.min(0.25, (pz - zone.z0) / 300)) continue;
+        if (nearNode(px, pz, 4.5) || groups.some((g) => Math.hypot(g.x - px, g.z - pz) < g.radius + 3)) continue;
+        const g = groundAt(hf, paths, px, pz);
+        if (g.path > 0.15 || hf.slope(px, pz) > 0.6) continue;
+        const v = Math.floor(R() * 3);
+        pineLists[v].push({ x: px, y: g.h - 0.2, z: pz, ry: R() * 6.28, s: 0.6 + R() * 0.45 });
+        if (R() < 0.6) bushLists[Math.floor(R() * 2)].push({ x: px + (R() - 0.5) * 5, y: g.h - 0.1, z: pz + (R() - 0.5) * 5, ry: R() * 6.28, s: 0.7 + R() * 0.6 });
+      }
+    }
+  }
 
   // 들판: 덤불·들꽃·잔돌
   const flowers = [];
@@ -133,6 +149,10 @@ export function createFlora(scene, { hf, paths, region, tier, mats, ctex, game }
       }
     }
   }
+  pines.forEach((p, i) => {
+    instanced(scene, p.trunk, mats.barkDark, pineLists[i], { shadow: tier.id === 'high' });
+    instanced(scene, p.crown, mats.pineNeedles, pineLists[i], { shadow: tier.id === 'high', depthMap: ctex.pineNeedles });
+  });
   bushGeo.forEach((g, i) => instanced(scene, g, mats.bushLeaves, bushLists[i], { shadow: tier.id !== 'low', depthMap: ctex.bushLeaves }));
   instanced(scene, flowerTuft(), mats.flowers, flowers);
   instanced(scene, rockGeo(41, 0.3, { sy: 0.6, detail: 2 }), mats.rockBare, rocks[0], { shadow: true });

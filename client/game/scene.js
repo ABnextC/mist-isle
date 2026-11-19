@@ -103,8 +103,17 @@ export function createScene(canvas, { tier, textures }) {
   }
 
   applyTier(tier);
+  // 로딩 중에 모든 재질의 셰이더를 미리(병렬로) 컴파일한다. 처음 보는 물건이 나올 때 멈칫하지 않게
+  async function warm() {
+    const prev = renderer.getRenderTarget();
+    renderer.setRenderTarget(post.target());
+    try {
+      await renderer.compileAsync(scene, camera);
+    } catch { /* 첫 프레임에 컴파일된다 */ }
+    renderer.setRenderTarget(prev);
+  }
   return {
-    renderer, scene, camera, key, setTime, applyTier, resize,
+    renderer, scene, camera, key, setTime, applyTier, resize, warm,
     render: () => post.render(),
     get tier() { return current; },
   };

@@ -19,6 +19,7 @@ import { makeMaterials, G } from './gfx/materials.js';
 import { createNodesView } from './nodes-view.js';
 import { createTownView } from './town-view.js';
 import { createActorsView } from './actors-view.js';
+import { prepareActorBase } from './models/actor.js';
 import { createMobsView } from './mobs-view.js';
 import { zoneAt } from '../../core/terrain.js';
 import { createFx } from './fx.js';
@@ -28,6 +29,8 @@ import { createInput } from './input.js';
 import { createHud, BULK_KEEP } from './hud.js';
 import { refPrice, npcPrice, bestBid, bookOf, entryStar as marketStar } from '../../core/market.js';
 import { createMinimap } from './minimap.js';
+import { createGuide } from './guide.js';
+import { currentQuest } from './quest.js';
 
 const SAVE_KEY = 'mist-isle:v1';
 const OLD_KEY = 'mist-isle:v0';
@@ -66,6 +69,8 @@ async function boot() {
   const game = (!params.has('fresh') && restore(data)) || createGame({ data, seed: fixedSeed ?? Date.now() % 1_000_000_007 });
   window.__mist = { game };
 
+  // 캐릭터 모양은 워커가 따로 깎는다(질감 굽기·지형 만들기와 나란히)
+  const actorBase = prepareActorBase();
   const canvas = document.getElementById('view');
   const tier = startTier(touch);
   const say = async (msg) => {
@@ -89,6 +94,8 @@ async function boot() {
   await say('🌫️ 마을과 숲을 세우는 중…');
   const nodesView = createNodesView(view.scene, game, ground.hf, { mats, ctex });
   const townView = createTownView(view.scene, game, ground.hf, { mats, terrain: game.terrain, region });
+  await say('🌫️ 개척자를 준비하는 중…');
+  await actorBase;
   const actorsView = createActorsView(view.scene, game, ground.hf);
   const floaters = document.createElement('div');
   floaters.id = 'floaters';
@@ -143,6 +150,9 @@ async function boot() {
     if (ev.actor === PID) hud.toast('🛡️ 기력이 바닥나 막기가 풀렸다', 'warn');
   });
   const fx = createFx(view.scene, { textures: ctex, hf: ground.hf, town: townView, terrain: game.terrain, region });
+  const guide = createGuide(view.scene, ground.hf);
+  let questNow = null;
+  let lastQuest = -1e9;
   const cam = createCamera(view.camera, ground.hf);
   window.__mist.cam = cam;
   {
@@ -574,7 +584,7 @@ async function boot() {
     const nightK = sky.night;
     G.uDay.value = sky.day;
     water.update(sec, view.camera);
-    grass.update(sec, focusVec, G.uWind.value, firstFrame ? 999 : 3);
+    grass.update(sec, focusVec, G.uWind.value, firstFrame ? 999 : touch ? 1 : 2, firstFrame ? 1e9 : touch ? 1.5 : 2.5);
     flora.update(p.x, p.z);
     lantern.position.set(p.x, p.y + 1.9, p.z);
     lantern.intensity = 7 * nightK;
@@ -584,9 +594,16 @@ async function boot() {
     const tg = ui.target;
     fx.setTarget(tg ? tg.x : null, tg ? ground.hf.height(tg.x, tg.z) : 0, tg?.z, tg && !tg.why && !tg.idle, tg?.radius);
     fx.update(dt, sec, { night: nightK, day: sky.day, player: focusVec });
-    hud.update(dt, { target: ui.target, gathering: !!ui.gather });
+    // 개척 일지 목표와 길잡이(0.3초마다 가장 가까운 목표를 다시 고른다)
+    if (now - lastQuest > 300) {
+      questNow = currentQuest(game, a);
+      lastQuest = now;
+    }
+    const goal = questNow?.goal || null;
+    guide.update(now / 1000, p, goal);
+    hud.update(dt, { target: ui.target, gathering: !!ui.gather, quest: questNow, questDist: goal ? Math.hypot(goal.x - p.x, goal.z - p.z) : null });
     if (now - lastMap > 200) {
-      minimap.draw(PID, cam.st.yaw);
+      minimap.draw(PID, cam.st.yaw, goal, now / 1000);
       lastMap = now;
     }
     view.render();
@@ -602,6 +619,10 @@ async function boot() {
     }
     requestAnimationFrame(frame);
   }
+
+  await say('🌫️ 셰이더를 미리 준비하는 중…');
+  mobsView.update(0, view.camera);
+  await view.warm();
 
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(false); });
   window.addEventListener('pagehide', () => save(false));

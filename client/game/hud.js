@@ -208,30 +208,9 @@ export function createHud(root, game, { touch, onAct }) {
   });
 
   const townName = (sid) => game.state.settlements[sid]?.name ?? sid;
-  const allStores = (a) => Object.values(a.storages || {});
-
-  // ── 개척 일지(첫 목표) ───────────────────────────────
-  function quest(a) {
-    const lists = [a.bag, ...allStores(a)];
-    const c = (id) => countItem(lists, id);
-    const m = a.milestones;
-    const steps = [
-      { done: m.tool_t0 != null || (c('log_drift') >= 2 && c('stone') >= 3), text: `바닷가에서 표류목 ${Math.min(2, c('log_drift'))}/2, 돌 ${Math.min(3, c('stone'))}/3 줍기` },
-      { done: m.tool_t0 != null, text: '돌 도구 만들기 — 제작(C) → 맨손 제작' },
-      { done: (a.stats.craft.rc_ingot_copper || 0) > 0, text: '구리광석을 캐서 등대 마을 제련로에서 주괴로' },
-      { done: m.tool_t1 != null, text: '대장간에서 구리 도구 만들기 (대장 4)' },
-      { done: a.stats.eat > 0, text: '조리대에서 음식을 만들어 먹기 — 먹으면 한동안 채집량이 는다' },
-      { done: (a.stats.orders || 0) > 0, text: '마을 게시판의 주문을 하나 채워 은화 받기' },
-      { done: Object.values(game.state.veins).some((v) => !v.common && lists.flat().some((e) => e.lot === v.lot)), text: '게시판의 산지 소문을 따라가 좋은 재료 캐기' },
-      { done: Object.keys(a.standing || {}).length > 0, text: '마을 게시판 ‘마을’ 탭에서 마을 사업에 물자나 은화를 내 보기' },
-      { done: Object.keys(a.storages || {}).some((sid) => sid !== Object.keys(game.state.settlements)[0] && a.storages[sid].length), text: '숲 가장자리의 숲머리에 가서 창고를 써 보기(북쪽 길 끝)' },
-    ];
-    const next = steps.find((s) => !s.done);
-    return next ? `📜 ${next.text}` : '';
-  }
 
   // ── 매 프레임 ───────────────────────────────────────
-  function update(dt, { target, gathering }) {
+  function update(dt, { target, gathering, quest: q = null, questDist = null }) {
     const now = performance.now();
     fps = fps ? fps * 0.95 + (1 / Math.max(dt, 1e-3)) * 0.05 : 60;
     const a = game.state.actors[PID];
@@ -254,7 +233,9 @@ export function createHud(root, game, { touch, onAct }) {
       if (down) set(el.downed, `쓰러졌다 — ${Math.max(0, Math.ceil(a.cb.downUntil - game.state.t))}초 뒤 가까운 마을에서 일어난다`);
     }
     set(el.buffs, a.buffs.map((b) => `🍽️ 채집량 +${Math.round(b.value * 100)}% · ${Math.ceil((b.endsAt - game.state.t) / 60)}분`).join('  '));
-    set(el.quest, quest(a));
+    // 목표까지 거리: 멀면 5m 단위로(글자가 덜 바뀌게)
+    const qd = questDist == null ? '' : questDist < 30 ? ` · ${Math.round(questDist)}m` : ` · ${Math.round(questDist / 5) * 5}m`;
+    set(el.quest, q ? `📜 ${q.text}${q.goal ? `${qd} ➜ ${q.goal.label}` : ''}` : '');
     const town = settlementAt({ state: game.state }, a);
     const zone = zoneAt(data.lists.regions[0], a.x, a.z);
     set(el.where, town ? `🏘️ ${town.name}${a.home === town.id ? ' 🏠' : ''}` : zone ? `🌲 ${zone.name}` : '🌫️ 난파 해안');

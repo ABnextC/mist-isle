@@ -77,6 +77,30 @@ export function createSky(renderer, scene, { tier, textures }) {
   let envRT = null;
   const lastEnvDir = new THREE.Vector3(0, -2, 0);
   let lastEnvAt = -1e9;
+  // 반사광(v0.4.3): 하늘 큐브맵을 한 프레임에 한 면씩 그리고, 여섯 면이 차면 같은 타깃에 다시 거른다.
+  // 한꺼번에 굽고 타깃을 새로 만들던 때는 몇 초마다 화면이 튀었다(휴대폰).
+  const cubeRT = new THREE.WebGLCubeRenderTarget(tier.envSize, { type: THREE.HalfFloatType, generateMipmaps: false, minFilter: THREE.LinearFilter, depthBuffer: true });
+  const cubeCam = new THREE.CubeCamera(0.1, 400, cubeRT);
+  let envFace = -1;
+  function stepEnv(full) {
+    const prev = renderer.getRenderTarget();
+    if (full) {
+      cubeCam.update(renderer, envScene);
+      envFace = 6;
+    } else if (envFace >= 0 && envFace < 6) {
+      renderer.setRenderTarget(cubeRT, envFace);
+      renderer.render(envScene, cubeCam.children[envFace]);
+      envFace++;
+      renderer.setRenderTarget(prev);
+      return;
+    }
+    if (envFace === 6) {
+      envRT = pmrem.fromCubemap(cubeRT.texture, envRT);
+      scene.environment = envRT.texture;
+      envFace = -1;
+    }
+    renderer.setRenderTarget(prev);
+  }
 
   // 안개 색: 카메라가 보는 쪽 지평선 하늘을 작게 그려 읽어 온다(낮·노을·밤 모두 하늘과 맞는다)
   const probeRT = new THREE.WebGLRenderTarget(16, 8, { depthBuffer: false });
@@ -86,10 +110,13 @@ export function createSky(renderer, scene, { tier, textures }) {
   const fogTarget = new THREE.Color(0.6, 0.69, 0.78);
   let lastProbe = -1e9;
   const PROBE_SCALE = 0.5;
+  const probeDir = new THREE.Vector3();
+  let probing = false;
+  // 픽셀을 GPU에서 기다리지 않고(비동기) 읽는다. 기다리면 그 프레임이 통째로 멈춘다.
   function probeFog(camera) {
-    const dir = new THREE.Vector3();
-    camera.getWorldDirection(dir);
-    probeCam.rotation.set(0.12, Math.atan2(-dir.x, -dir.z), 0);
+    if (probing) return;
+    camera.getWorldDirection(probeDir);
+    probeCam.rotation.set(0.12, Math.atan2(-probeDir.x, -probeDir.z), 0);
     const prev = renderer.getRenderTarget();
     const keep = skyScale.value;
     skyScale.value = keep * PROBE_SCALE;
@@ -97,17 +124,22 @@ export function createSky(renderer, scene, { tier, textures }) {
     renderer.render(envScene, probeCam);
     renderer.setRenderTarget(prev);
     skyScale.value = keep;
-    renderer.readRenderTargetPixels(probeRT, 0, 0, 16, 8, probeBuf);
-    let r = 0;
-    let g = 0;
-    let b = 0;
-    for (let i = 0; i < 16 * 8; i++) {
-      r += probeBuf[i * 4];
-      g += probeBuf[i * 4 + 1];
-      b += probeBuf[i * 4 + 2];
-    }
-    const k = 1 / (16 * 8 * 255 * PROBE_SCALE);
-    fogTarget.setRGB(r * k, g * k, b * k);
+    probing = true;
+    const read = renderer.readRenderTargetPixelsAsync
+      ? renderer.readRenderTargetPixelsAsync(probeRT, 0, 0, 16, 8, probeBuf)
+      : Promise.resolve(renderer.readRenderTargetPixels(probeRT, 0, 0, 16, 8, probeBuf));
+    read.then(() => {
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      for (let i = 0; i < 16 * 8; i++) {
+        r += probeBuf[i * 4];
+        g += probeBuf[i * 4 + 1];
+        b += probeBuf[i * 4 + 2];
+      }
+      const k = 1 / (16 * 8 * 255 * PROBE_SCALE);
+      fogTarget.setRGB(r * k, g * k, b * k);
+    }).catch(() => {}).finally(() => { probing = false; });
   }
 
   const sunDir = new THREE.Vector3(0, 1, 0);
@@ -155,7 +187,7 @@ export function createSky(renderer, scene, { tier, textures }) {
     envSky.material.uniforms.rayleigh.value = sky.material.uniforms.rayleigh.value;
     sunColor.copy(SUN.high).lerp(SUN.low, gold);
     if (elev < 0.08) sunColor.lerp(SUN.set, THREE.MathUtils.smoothstep(0.08 - elev, 0, 0.12));
-    if (nowMs - lastProbe > 700) {
+    if (nowMs - lastProbe > 1000) {
       probeFog(camera);
       lastProbe = nowMs;
     }
@@ -170,13 +202,15 @@ export function createSky(renderer, scene, { tier, textures }) {
     moon.material.opacity = Math.max(0, Math.min(1, moonDir.y * 6)) * (0.35 + 0.65 * state.night);
     moon.position.copy(camera.position).addScaledVector(moonDir, 1500);
 
-    // 반사광: 해가 0.6° 넘게 움직였거나 4초가 지났으면 다시 굽는다
-    const moved = sunDir.angleTo(lastEnvDir) > 0.01;
-    if ((moved && nowMs - lastEnvAt > 1500) || nowMs - lastEnvAt > 4000 || !envRT) {
-      const rt = pmrem.fromScene(envScene, 0, 0.1, 400, { size: tier.envSize });
-      if (envRT) envRT.dispose();
-      envRT = rt;
-      scene.environment = envRT.texture;
+    // 반사광: 해가 0.7° 넘게 움직였거나 15초가 지났으면 한 면씩 다시 그린다(처음 한 번은 한꺼번에)
+    if (!envRT) {
+      stepEnv(true);
+      lastEnvDir.copy(sunDir);
+      lastEnvAt = nowMs;
+    } else if (envFace >= 0) {
+      stepEnv(false);
+    } else if ((sunDir.angleTo(lastEnvDir) > 0.012 && nowMs - lastEnvAt > 3000) || nowMs - lastEnvAt > 15000) {
+      envFace = 0;
       lastEnvDir.copy(sunDir);
       lastEnvAt = nowMs;
     }

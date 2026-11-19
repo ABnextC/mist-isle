@@ -113,24 +113,28 @@ export function createGrass(scene, { hf, ground, tier, avoid }) {
   const group = new THREE.Group();
   scene.add(group);
 
+  // 한 조각 최대 풀잎 수(밀도 × 칸 넓이 × 최대 배율)로 버퍼를 한 번만 잡아 두고 재사용한다(쓰레기 수거를 줄인다)
+  const CELL = 2;
+  const MAXN = Math.ceil(density * CELL * CELL * 1.45) * (CHUNK / CELL) * (CHUNK / CELL);
+  const bufOff = new Float32Array(MAXN * 4);
+  const bufDat = new Float32Array(MAXN * 4);
+  const bufTint = new Float32Array(MAXN * 3);
+
   function build(cx, cz) {
     const R = rng((cx * 73856093) ^ (cz * 19349663) ^ 0x5bd1e995);
     const x0 = cx * CHUNK;
     const z0 = cz * CHUNK;
-    const off = [];
-    const dat = [];
-    const tint = [];
-    const cell = 2;
-    for (let j = 0; j < CHUNK / cell; j++) {
-      for (let i = 0; i < CHUNK / cell; i++) {
-        const gx = x0 + (i + 0.5) * cell;
-        const gz = z0 + (j + 0.5) * cell;
+    let c = 0;
+    for (let j = 0; j < CHUNK / CELL; j++) {
+      for (let i = 0; i < CHUNK / CELL; i++) {
+        const gx = x0 + (i + 0.5) * CELL;
+        const gz = z0 + (j + 0.5) * CELL;
         const g = ground.groundAt(gx, gz);
         let w = g.grass * (1 - g.path);
         if (g.h < 1.4) w *= Math.max(0, (g.h - 1.1) / 0.3);
         if (w < 0.08) continue;
         if (avoid && avoid(gx, gz)) w *= 0.15;
-        const n = Math.round(density * cell * cell * w * (0.6 + R() * 0.8));
+        const n = Math.min(Math.round(density * CELL * CELL * w * (0.6 + R() * 0.8)), MAXN - c);
         // 땅 셰이더와 같은 빛깔 얼룩(마른 들·짙은 들·숲 그늘)
         const a = g.m2;
         const mk = Math.min(1, Math.max(0, (g.macro - 0.3) / 0.4));
@@ -144,28 +148,36 @@ export function createGrass(scene, { hf, ground, tier, avoid }) {
         let tz = gz;
         for (let k = 0; k < n; k++) {
           if (k % 7 === 0) {
-            tx = gx + (R() - 0.5) * cell;
-            tz = gz + (R() - 0.5) * cell;
+            tx = gx + (R() - 0.5) * CELL;
+            tz = gz + (R() - 0.5) * CELL;
           }
           const x = tx + (R() - 0.5) * 0.55;
           const z = tz + (R() - 0.5) * 0.55;
-          const y = hf.height(x, z) - 0.02;
-          const tall = 0.22 + R() * 0.3 + (w > 0.7 ? R() * 0.2 : 0);
-          off.push(x, y, z, R() * Math.PI * 2);
-          dat.push(tall, R(), (R() - 0.5) * 0.8, R());
-          tint.push(tr, tg, tb);
+          const o = c * 4;
+          bufOff[o] = x;
+          bufOff[o + 1] = hf.height(x, z) - 0.02;
+          bufOff[o + 2] = z;
+          bufOff[o + 3] = R() * Math.PI * 2;
+          bufDat[o] = 0.22 + R() * 0.3 + (w > 0.7 ? R() * 0.2 : 0);
+          bufDat[o + 1] = R();
+          bufDat[o + 2] = (R() - 0.5) * 0.8;
+          bufDat[o + 3] = R();
+          bufTint[c * 3] = tr;
+          bufTint[c * 3 + 1] = tg;
+          bufTint[c * 3 + 2] = tb;
+          c++;
         }
       }
     }
-    if (!off.length) return null;
+    if (!c) return null;
     const geo = new THREE.InstancedBufferGeometry();
     geo.index = blade.index;
     geo.setAttribute('position', blade.attributes.position);
     geo.setAttribute('normal', blade.attributes.normal);
-    geo.setAttribute('iOff', new THREE.InstancedBufferAttribute(new Float32Array(off), 4));
-    geo.setAttribute('iDat', new THREE.InstancedBufferAttribute(new Float32Array(dat), 4));
-    geo.setAttribute('iTint', new THREE.InstancedBufferAttribute(new Float32Array(tint), 3));
-    geo.instanceCount = off.length / 4;
+    geo.setAttribute('iOff', new THREE.InstancedBufferAttribute(bufOff.slice(0, c * 4), 4));
+    geo.setAttribute('iDat', new THREE.InstancedBufferAttribute(bufDat.slice(0, c * 4), 4));
+    geo.setAttribute('iTint', new THREE.InstancedBufferAttribute(bufTint.slice(0, c * 3), 3));
+    geo.instanceCount = c;
     geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(x0 + CHUNK / 2, hf.height(x0 + CHUNK / 2, z0 + CHUNK / 2), z0 + CHUNK / 2), CHUNK * 0.75 + 4);
     const m = new THREE.Mesh(geo, mat);
     m.receiveShadow = true;
@@ -173,39 +185,56 @@ export function createGrass(scene, { hf, ground, tier, avoid }) {
     return m;
   }
 
-  function update(t, player, wind = 1, maxBuild = 3) {
+  // 조각 관리(v0.4.3): 보이는 반경보다 한 조각 더 멀리 미리 지어 두고(숨겨 둠), 가까운 것부터 시간 예산 안에서만 짓는다.
+  // 반경을 벗어나도 두 조각 넘게 멀어질 때까지는 버리지 않는다(왔다 갔다 할 때 다시 짓지 않게).
+  const missing = [];
+  function update(t, player, wind = 1, maxBuild = 3, budgetMs = 2) {
     U.uTime.value = t;
     U.uPlayer.value.copy(player);
     U.uCenter.value.copy(player);
     U.uWind.value = wind;
     const r = U.uRadius.value;
+    const show = r + CHUNK * 0.75;
+    const want = r + CHUNK * 1.75;
+    const drop = r + CHUNK * 2.75;
     const pcx = Math.floor(player.x / CHUNK);
     const pcz = Math.floor(player.z / CHUNK);
-    const span = Math.ceil(r / CHUNK) + 1;
-    let budget = maxBuild;
-    const want = new Set();
+    const span = Math.ceil(want / CHUNK) + 1;
+    missing.length = 0;
     for (let dz = -span; dz <= span; dz++) {
       for (let dx = -span; dx <= span; dx++) {
         const cx = pcx + dx;
         const cz = pcz + dz;
-        const ccx = (cx + 0.5) * CHUNK;
-        const ccz = (cz + 0.5) * CHUNK;
-        if (Math.hypot(ccx - player.x, ccz - player.z) > r + CHUNK * 0.75) continue;
+        const d = Math.hypot((cx + 0.5) * CHUNK - player.x, (cz + 0.5) * CHUNK - player.z);
+        if (d > want) continue;
         const k = cx + ',' + cz;
-        want.add(k);
-        if (!chunks.has(k) && budget > 0) {
-          budget--;
-          const m = build(cx, cz);
-          chunks.set(k, m);
-          if (m) group.add(m);
-        }
+        const e = chunks.get(k);
+        if (e === undefined) missing.push([d, cx, cz, k]);
+        else if (e.m) e.m.visible = d <= show;
       }
     }
-    for (const [k, m] of chunks) {
-      if (want.has(k)) continue;
-      if (m) {
-        group.remove(m);
-        m.geometry.dispose();
+    if (missing.length) {
+      missing.sort((p, q) => p[0] - q[0]);
+      const t0 = performance.now();
+      let built = 0;
+      for (const [d, cx, cz, k] of missing) {
+        // 눈앞(보이는 반경 안) 조각은 한 프레임에 하나는 꼭 짓는다
+        if (built >= maxBuild) break;
+        if (built > 0 && performance.now() - t0 > budgetMs) break;
+        const m = build(cx, cz);
+        chunks.set(k, { m, cx, cz });
+        if (m) {
+          m.visible = d <= show;
+          group.add(m);
+        }
+        built++;
+      }
+    }
+    for (const [k, e] of chunks) {
+      if (Math.hypot((e.cx + 0.5) * CHUNK - player.x, (e.cz + 0.5) * CHUNK - player.z) <= drop) continue;
+      if (e.m) {
+        group.remove(e.m);
+        e.m.geometry.dispose();
       }
       chunks.delete(k);
     }

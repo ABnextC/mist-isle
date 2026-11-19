@@ -72,5 +72,7 @@ export function createPost(renderer, scene, camera) {
     }
   }
 
-  return { configure, setSize, render };
+  // 장면을 그릴 실제 타깃(후처리를 쓰면 HDR 타깃). 미리 컴파일할 때 같은 조건을 맞춘다
+  const target = () => (cfg.post ? sceneRT : null);
+  return { configure, setSize, render, target };
 }

@@ -392,25 +392,39 @@ export function createFlora(scene, { hf, paths, ground, region, tier, mats, ctex
       tmp.updateMatrix();
       return tmp.matrix.clone();
     });
-    return { list, near, far, m4 };
+    return { list, near, far, m4, isNear: new Uint8Array(list.length).fill(2) };
   });
   let lastX = 1e9;
   let lastZ = 1e9;
+  // 8m 움직일 때마다 가까운 나무를 다시 고른다. 바뀐 나무가 없으면 GPU로 다시 보내지 않는다
   function update(px, pz) {
-    if (Math.hypot(px - lastX, pz - lastZ) < 6) return;
+    if (Math.hypot(px - lastX, pz - lastZ) < 8) return;
     lastX = px;
     lastZ = pz;
     for (const S of pineSets) {
       if (!S.near) continue;
+      let changed = false;
+      for (let i = 0; i < S.list.length; i++) {
+        const t = S.list[i];
+        const v = Math.hypot(t.x - px, t.z - pz) < nearR ? 1 : 0;
+        if (v !== S.isNear[i]) {
+          S.isNear[i] = v;
+          changed = true;
+        }
+      }
+      if (!changed) continue;
       let n = 0;
       let f = 0;
       for (let i = 0; i < S.list.length; i++) {
-        const t = S.list[i];
-        if (Math.hypot(t.x - px, t.z - pz) < nearR) S.near.setMatrixAt(n++, S.m4[i]);
+        if (S.isNear[i]) S.near.setMatrixAt(n++, S.m4[i]);
         else S.far.setMatrixAt(f++, S.m4[i]);
       }
       S.near.count = n;
       S.far.count = f;
+      S.near.instanceMatrix.clearUpdateRanges();
+      S.far.instanceMatrix.clearUpdateRanges();
+      if (n) S.near.instanceMatrix.addUpdateRange(0, n * 16);
+      if (f) S.far.instanceMatrix.addUpdateRange(0, f * 16);
       S.near.instanceMatrix.needsUpdate = true;
       S.far.instanceMatrix.needsUpdate = true;
     }

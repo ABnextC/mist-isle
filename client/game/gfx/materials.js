@@ -112,6 +112,9 @@ export function boxMaterial(t, { scale = 2, tint = 0xffffff, roughness = 1, meta
         reflectedLight.indirectDiffuse *= gBN.a;
         reflectedLight.directDiffuse *= mix(1.0, gBN.a, 0.4);`);
   };
+  // three는 onBeforeCompile 글자로 프로그램을 나눠 쓴다. 같은 함수에서 나온 재질도 셰이더 내용이 다르니 열쇠를 따로 준다
+  const key = `box|${world}|${extra?.color || ''}|${extra?.rough || ''}`;
+  m.customProgramCacheKey = () => key;
   return m;
 }
 
@@ -143,10 +146,12 @@ export function rockMaterial(t, { moss = 0.6, copper = false, iron = false, wet 
   const m = boxMaterial(t, { scale: 3.2, world: true, roughness: 1, extra });
   if (copper || iron) {
     const prev = m.onBeforeCompile;
+    const base = m.customProgramCacheKey();
     m.onBeforeCompile = (sh) => {
       prev(sh);
       sh.fragmentShader = sh.fragmentShader.replace('#include <metalnessmap_fragment>', 'float metalnessFactor = metalness + gMetal * 0.85;');
     };
+    m.customProgramCacheKey = () => `${base}|metal`;
   }
   return m;
 }
@@ -207,6 +212,8 @@ export function foliageMaterial({ map = null, color = 0xffffff, sway = 0.08, alp
         reflectedLight.indirectSpecular *= 0.15;
         reflectedLight.directSpecular *= 0.4;`);
   };
+  const key = `leaf|${sway}|${translucency}|${map ? 1 : 0}`;
+  m.customProgramCacheKey = () => key;
   return m;
 }
 

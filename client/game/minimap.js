@@ -18,7 +18,7 @@ export function createMinimap(canvas, game, terrain) {
   const toPx = (x, z) => [((x - x0) / (x1 - x0)) * PX, ((z1 - z) / (z1 - z0)) * PX];
   const scale = PX / (x1 - x0);
 
-  function draw(actorId, camYaw) {
+  function draw(actorId, camYaw, goal = null, time = 0) {
     const { state, data } = game;
     const a = state.actors[actorId];
     g.drawImage(bg, 0, 0);
@@ -79,6 +79,31 @@ export function createMinimap(canvas, game, terrain) {
       g.lineWidth = 2.5;
       g.strokeText(s.name, px + 7, py + 3);
       g.fillText(s.name, px + 7, py + 3);
+      g.lineWidth = 1;
+    }
+    // 개척 일지 목표(v0.4.3): 금빛 마름모와 점선
+    if (goal) {
+      const [gx, gy] = toPx(goal.x, goal.z);
+      const [ax, ay] = toPx(a.x, a.z);
+      g.setLineDash([4, 3]);
+      g.strokeStyle = 'rgba(255, 207, 90, 0.75)';
+      g.lineWidth = 1.5;
+      g.beginPath();
+      g.moveTo(ax, ay);
+      g.lineTo(gx, gy);
+      g.stroke();
+      g.setLineDash([]);
+      const r = 5 + Math.sin(time * 4) * 1.2;
+      g.fillStyle = '#ffcf5a';
+      g.strokeStyle = '#3a2a08';
+      g.beginPath();
+      g.moveTo(gx, gy - r);
+      g.lineTo(gx + r * 0.75, gy);
+      g.lineTo(gx, gy + r);
+      g.lineTo(gx - r * 0.75, gy);
+      g.closePath();
+      g.fill();
+      g.stroke();
       g.lineWidth = 1;
     }
     const [px, py] = toPx(a.x, a.z);

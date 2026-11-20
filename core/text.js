@@ -45,6 +45,7 @@ export const ERR = {
   down: '쓰러져 있음',
   stunned: '비틀거리는 중',
   no_stamina: '기력이 모자람',
+  overloaded: '장비가 너무 무거워 구를 수 없음(과적)',
   no_mob: '없는 짐승',
   no_corpse: '손질할 사체가 없음',
   not_equipment: '낄 수 없는 물건',
@@ -56,6 +57,24 @@ export const ERR = {
   project_closed: '아직 열리지 않았거나 끝난 사업',
   not_needed: '그 사업에 더 필요 없음',
 };
+
+// 갑옷 종류(v0.4.5)
+export const ARMOR_CLASS = { robe: '로브', light: '경갑', heavy: '중갑' };
+
+// 무게 단계 효과를 짧게 적는다. 1에서 벗어난 것만.
+export function loadEffects(tier, base) {
+  const pct = (v) => `${v > 1 ? '+' : '−'}${Math.round(Math.abs(v - 1) * 100)}%`;
+  const out = [];
+  if (tier.move !== 1) out.push(`이동 ${pct(tier.move)}`);
+  if (tier.stRegen !== 1) out.push(`기력 회복 ${pct(tier.stRegen)}`);
+  if (!(tier.dodgeDist > 0)) out.push('구르기 불가');
+  else if (base && tier.dodgeDist !== base) out.push(`구르기 ${tier.dodgeDist}m`);
+  if (tier.dodgeCost !== 1 && tier.dodgeDist > 0) out.push(`구르기 기력 ${pct(tier.dodgeCost)}`);
+  if (tier.gather !== 1) out.push(`채집 ${pct(tier.gather)}`);
+  if (tier.blockCost !== 1) out.push(`막기 기력 ${pct(tier.blockCost)}`);
+  if (tier.guardBreak !== 1) out.push(`막기가 깨질 때 비틀거림 ${pct(tier.guardBreak)}`);
+  return out.join(' · ') || '효과 없음';
+}
 
 // 정착지 이름(없으면 id)
 export const townName = (state, sid) => state.settlements[sid]?.name ?? sid;

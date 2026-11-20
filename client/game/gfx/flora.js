@@ -368,7 +368,7 @@ export function createFlora(scene, { hf, paths, ground, region, tier, mats, ctex
       }
     }
   }
-  const hiShadow = tier.id === 'high';
+  const hiShadow = tier.rank >= 2;
   cragGeo.forEach((geo, i) => {
     instanced(scene, geo, mats.rockBare, cragBare[i], { shadow: tier.id !== 'low' });
     instanced(scene, geo, mats.rock, cragMoss[i], { shadow: tier.id !== 'low' });
@@ -378,13 +378,13 @@ export function createFlora(scene, { hf, paths, ground, region, tier, mats, ctex
   fernGeo.forEach((geo, i) => instanced(scene, geo, mats.fern, fernLists[i], { shadow: false }));
 
   // 전나무: 줄기는 한 벌, 수관은 가까운 것(촘촘)과 먼 것(성김) 두 벌. 플레이어가 움직이면 나눠 담는다
-  const nearR = tier.id === 'high' ? 70 : tier.id === 'medium' ? 55 : 40;
+  const nearR = tier.nearCrown ?? 55;
   const tmp = new THREE.Object3D();
   const pineSets = pines.map((p, i) => {
     const list = pineLists[i];
-    instanced(scene, p.trunk, mats.barkDark, list, { shadow: tier.id === 'high' });
-    const near = instanced(scene, p.crown, mats.pineNeedles, list, { shadow: tier.id === 'high', depthMap: ctex.pineNeedles });
-    const far = instanced(scene, p.far, mats.pineNeedles, list, { shadow: tier.id === 'high', depthMap: ctex.pineNeedles });
+    instanced(scene, p.trunk, mats.barkDark, list, { shadow: tier.rank >= 2 });
+    const near = instanced(scene, p.crown, mats.pineNeedles, list, { shadow: tier.rank >= 2, depthMap: ctex.pineNeedles });
+    const far = instanced(scene, p.far, mats.pineNeedles, list, { shadow: tier.rank >= 2, depthMap: ctex.pineNeedles });
     const m4 = list.map((t) => {
       tmp.position.set(t.x, t.y, t.z);
       tmp.rotation.set(0, t.ry || 0, 0);

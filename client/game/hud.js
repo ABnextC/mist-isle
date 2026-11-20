@@ -1,7 +1,8 @@
 // 화면 위 정보(HUD)와 패널. 아이콘·색을 먼저 보이고, 수치는 패널에서 연다.
 // 버튼은 data-act로 main.js에 넘긴다. HUD는 상태를 직접 고치지 않는다.
 
-import { ERR, fmtProps, fmtStats, stars, itemName, entryStar, describeEvent } from '../../core/text.js';
+import { ERR, fmtProps, fmtStats, stars, itemName, entryStar, describeEvent, ARMOR_CLASS, loadEffects } from '../../core/text.js';
+import { equipLoad } from '../../core/systems/combat.js';
 import { tradable, refPrice, npcPrice, bestBid, repairCost, entryStar as marketStar, bookOf, ordersOf, baseValue } from '../../core/market.js';
 import { countDeliverable } from '../../core/orders.js';
 import { xpProgress, starOf } from '../../core/formulas.js';
@@ -232,7 +233,9 @@ export function createHud(root, game, { touch, onAct }) {
       el.downed.classList.toggle('on', down);
       if (down) set(el.downed, `쓰러졌다 — ${Math.max(0, Math.ceil(a.cb.downUntil - game.state.t))}초 뒤 가까운 마을에서 일어난다`);
     }
-    set(el.buffs, a.buffs.map((b) => `🍽️ 채집량 +${Math.round(b.value * 100)}% · ${Math.ceil((b.endsAt - game.state.t) / 60)}분`).join('  '));
+    const ld = equipLoad({ data, cfg: data.config, state: game.state }, a);
+    const ldTag = ld.tier.id === 'medium' ? [] : [`${ld.tier.id === 'light' ? '🪶' : '🏋️'} ${ld.tier.name} ${ld.kg}kg`];
+    set(el.buffs, [...ldTag, ...a.buffs.map((b) => `🍽️ 채집량 +${Math.round(b.value * 100)}% · ${Math.ceil((b.endsAt - game.state.t) / 60)}분`)].join('  '));
     // 목표까지 거리: 멀면 5m 단위로(글자가 덜 바뀌게)
     const qd = questDist == null ? '' : questDist < 30 ? ` · ${Math.round(questDist)}m` : ` · ${Math.round(questDist / 5) * 5}m`;
     set(el.quest, q ? `📜 ${q.text}${q.goal ? `${qd} ➜ ${q.goal.label}` : ''}` : '');
@@ -302,7 +305,9 @@ export function createHud(root, game, { touch, onAct }) {
     const starHtml = st ? ` <span class="stars">${stars(st)}</span>` : '';
     if (e.uid) {
       const dur = e.maxDur ? ` · 내구 ${e.dur}/${e.maxDur}` : '';
-      return `<li><div><b>${def.icon || ''} ${def.name}</b>${starHtml}${e.masterwork ? ' ✨' : ''}${e.broken ? ' <em class="no">부서짐</em>' : ''}<small>${fmtStats(e.stats)}${dur}</small></div>${act || ''}</li>`;
+      const kind = def.armor ? `${ARMOR_CLASS[def.armor.class] || ''} · ` : '';
+      const kg = def.weight ? ` · ${def.weight}kg` : '';
+      return `<li><div><b>${def.icon || ''} ${def.name}</b>${starHtml}${e.masterwork ? ' ✨' : ''}${e.broken ? ' <em class="no">부서짐</em>' : ''}<small>${kind}${fmtStats(e.stats)}${dur}${kg}</small></div>${act || ''}</li>`;
     }
     if (def.kind === 'consumable') {
       return `<li><div><b>${def.icon || ''} ${def.name}</b> ×${e.qty}${starHtml}<small>${fmtStats(e.stats)}</small></div>${act || ''}</li>`;
@@ -327,10 +332,20 @@ export function createHud(root, game, { touch, onAct }) {
       const e = a.equip?.[slot] ? a.bag.find((x) => x.uid === a.equip[slot]) : null;
       if (!e) return `<div class="eq"><small>${name}</small><b class="muted">비어 있음</b></div>`;
       const def = data.items[e.item];
-      const v = slot === 'weapon' ? `공격력 ${e.stats.attack}` : `방어 ${e.stats.armor}`;
-      return `<div class="eq ${e.broken ? 'broken' : ''}"><small>${name}</small><b>${def.icon || ''} ${def.name}</b><small>${stars(e.star ?? 0)} · ${v} · 내구 ${e.dur}/${e.maxDur}</small></div>`;
+      const v = slot === 'weapon' ? `공격력 ${e.stats.attack}` : `${ARMOR_CLASS[def.armor?.class] || ''} · 방어 ${e.stats.armor}`;
+      return `<div class="eq ${e.broken ? 'broken' : ''}"><small>${name} · ${def.weight || 0}kg</small><b>${def.icon || ''} ${def.name}</b><small>${stars(e.star ?? 0)} · ${v} · 내구 ${e.dur}/${e.maxDur}</small></div>`;
     }).join('');
-    return `<h3>장비 <small class="muted">방어 합 ${['head', 'chest', 'legs'].reduce((s, k) => { const e = a.equip?.[k] ? a.bag.find((x) => x.uid === a.equip[k]) : null; return s + (e && !e.broken ? e.stats.armor : 0); }, 0).toFixed(1)}</small></h3><div class="eqgrid">${cells}</div>`;
+    const armor = ['head', 'chest', 'legs'].reduce((s, k) => { const e = a.equip?.[k] ? a.bag.find((x) => x.uid === a.equip[k]) : null; return s + (e && !e.broken ? e.stats.armor : 0); }, 0);
+    const { kg, tier } = equipLoad({ data, cfg: data.config, state: game.state }, a);
+    const tiers = data.config.load.tiers;
+    const top = tiers[tiers.length - 2].max * 1.25;
+    const marks = tiers.slice(0, -1).map((t) => `<i style="left:${(t.max / top) * 100}%"></i>`).join('');
+    const base = data.config.combat.dodgeDist;
+    return `<h3>장비 <small class="muted">방어 합 ${armor.toFixed(1)} · 무게 ${kg}kg</small></h3>
+      <div class="load ${tier.id}"><div class="lbar"><span style="width:${Math.min(100, (kg / top) * 100)}%"></span>${marks}</div>
+      <small><b>${tier.name}</b> — ${loadEffects(tier, base)}</small>
+      <small class="muted">${tiers.slice(0, -1).map((t) => `${t.name} ~${t.max}kg`).join(' · ')} · 넘으면 ${tiers[tiers.length - 1].name}</small></div>
+      <div class="eqgrid">${cells}</div>`;
   }
 
   function bagHtml(a) {
@@ -667,13 +682,14 @@ export function createHud(root, game, { touch, onAct }) {
   function menuHtml(a) {
     const armed = settings.resetArmed > performance.now();
     const sp = [1, 10, 30].map((s) => `<button data-act="speed" data-v="${s}" class="${settings.speed === s ? 'on' : ''}">×${s}</button>`).join('');
-    const gf = [['auto', '자동'], ['high', '높음'], ['medium', '중간'], ['low', '낮음']]
+    const gf = [['auto', '자동'], ['ultra', '최고'], ['high', '높음'], ['medium', '중간'], ['low', '낮음']]
       .map(([v, l]) => `<button data-act="gfx" data-v="${v}" class="${settings.gfx === v ? 'on' : ''}">${l}</button>`).join('');
     const bd = [['m', '남자'], ['f', '여자']]
       .map(([v, l]) => `<button data-act="body" data-v="${v}" class="${settings.body === v ? 'on' : ''}">${l}</button>`).join('');
     return `<h3>내 개척자</h3><div class="row">${bd}</div>
       <h3>화질</h3><div class="row">${gf}</div>
-      <p class="muted">지금 ${esc(settings.gfxNow)} · 그림자·후처리·풀은 바로 바뀌고, 지형·텍스처 해상도는 다시 열 때 바뀐다.</p>
+      <p class="muted">지금 ${esc(settings.gfxNow)} · 그림자·후처리·해상도는 바로 바뀌고, 풀 양·지형·텍스처 해상도는 다시 열 때 바뀐다. 자동은 여유가 있으면 최고까지 올린다.</p>
+      <div class="row"><button data-act="perf" class="${settings.perf ? 'on' : ''}">📊 성능 표시 (F3)</button></div>
       <h3>시험용 시간 배속</h3><div class="row">${sp}</div>
       <h3>도움</h3><div class="row">
         <button data-act="auto" class="${a.ai?.on ? 'on' : ''}">🤖 봇에게 맡기기</button>

@@ -3,6 +3,7 @@
 
 import { loadData } from './load-data.js';
 import { startFight } from '../core/ai/fighter.js';
+import { equipLoad } from '../core/systems/combat.js';
 import { createGame, loadGame } from '../core/game.js';
 import {
   craftScores, convertStats, starOf, masterworkChance, avg, refineStep, xpToNext, levelFromXp,
@@ -538,10 +539,52 @@ test('회피: 구르기 앞 0.3초에는 짐승의 공격을 맞지 않는다', 
   m.until = g.state.t + 0.1;
   m.yaw = Math.atan2(a.x - m.x, a.z - m.z);
   ok(g.dispatch({ type: 'DODGE', actor: 'p1', yaw: a.yaw }).ok, '회피 거절'); // 짐승 쪽으로 굴러 사거리 안에 남는다
-  eq(a.cb.st, data.config.combat.stamina - data.config.combat.dodgeCost, '기력');
+  const light = data.config.load.tiers.find((t) => t.id === 'light');
+  near(a.cb.st, data.config.combat.stamina - data.config.combat.dodgeCost * light.dodgeCost, 1e-6, '기력(맨몸은 가벼움 단계)');
   g.advance(0.2);
   eq(a.cb.hp, data.config.combat.hp, '피해를 받았다');
   ok(a.stats.evaded >= 1, '피함 기록');
+});
+
+test('장비 무게: 낀 무기·갑옷 무게 합으로 단계가 정해지고, 무거우면 느리게 걷고 짧게 구른다 (v0.4.5)', () => {
+  const run = (ids) => {
+    const { g, a } = arena('crab');
+    a.bag = ids.map((id, i) => kit(id, 50, 'u' + i));
+    for (const e of a.bag) g.dispatch({ type: 'EQUIP', actor: 'p1', uid: e.uid });
+    const ld = equipLoad({ data, cfg, state: g.state }, a);
+    const x0 = a.x; // 마을 안 출발점에서 동쪽으로 걷는다
+    g.dispatch({ type: 'MOVE_INPUT', actor: 'p1', dx: 1, dz: 0 });
+    g.advance(1);
+    const walked = a.x - x0;
+    g.dispatch({ type: 'MOVE_INPUT', actor: 'p1', dx: 0, dz: 0 });
+    a.cb.st = 100;
+    const x1 = a.x;
+    const r = g.dispatch({ type: 'DODGE', actor: 'p1', yaw: Math.PI / 2 });
+    g.advance(0.6);
+    return { ld, walked, rolled: a.x - x1, ok: r.ok };
+  };
+  const robe = run(['arm_robe', 'arm_cloth_hood', 'arm_cloth_pants', 'wpn_sword_copper']);
+  const iron = run(['arm_iron_cuirass', 'arm_iron_helm', 'arm_iron_greaves', 'wpn_sword_iron']);
+  eq(robe.ld.tier.id, 'light', `로브 한 벌 + 검 ${robe.ld.kg}kg`);
+  eq(iron.ld.tier.id, 'heavy', `철 한 벌 + 검 ${iron.ld.kg}kg`);
+  ok(robe.walked > iron.walked * 1.1, `걸음 ${robe.walked.toFixed(2)} vs ${iron.walked.toFixed(2)}`);
+  ok(robe.rolled > iron.rolled * 1.3, `구르기 ${robe.rolled.toFixed(2)} vs ${iron.rolled.toFixed(2)}`);
+});
+
+test('과적이면 구를 수 없다', () => {
+  const { g, a } = arena('crab');
+  a.bag = ['arm_iron_cuirass', 'arm_iron_helm', 'arm_iron_greaves', 'wpn_battleaxe_iron'].map((id, i) => kit(id, 50, 'v' + i));
+  for (const e of a.bag) g.dispatch({ type: 'EQUIP', actor: 'p1', uid: e.uid });
+  const saved = cfg.load.tiers.map((t) => t.max);
+  cfg.load.tiers[2].max = 20; // 시험용으로 과적 문턱을 낮춘다
+  try {
+    const ld = equipLoad({ data, cfg, state: g.state }, a);
+    eq(ld.tier.id, 'over', `${ld.kg}kg`);
+    const r = g.dispatch({ type: 'DODGE', actor: 'p1', yaw: 0 });
+    ok(!r.ok && r.error === 'overloaded', `거절 이유 ${r.error}`);
+  } finally {
+    cfg.load.tiers.forEach((t, i) => { t.max = saved[i]; });
+  }
 });
 
 test('막기: 앞에서 오는 피해를 75% 줄이고, 기력이 바닥나면 비틀거린다', () => {

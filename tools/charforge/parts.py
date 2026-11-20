@@ -64,7 +64,7 @@ def tube(P, W, N, radius, sides=8, n_out=None, closed=True, gid=0, lift=None, sq
         for j in range(sides):
             j2 = (j + 1) % sides
             a, b, c, d = i * sides + j, i2 * sides + j, i2 * sides + j2, i * sides + j2
-            tris += [(a, b, c), (a, c, d)]
+            tris += [(a, c, b), (a, d, c)]  # 바깥을 보게(v0.4.5: 한쪽 면만 그린다)
     me = Mesh(pos, nrm, w, tris, uv=np.array(uv), gid=gid)
     me.uv_size = (L, 2 * np.pi * float(np.mean(rad)))
     return me

@@ -18,6 +18,9 @@ export function createNodesView(scene, game, hf, { mats, ctex }) {
       mesh.receiveShadow = true;
       mesh.frustumCulled = false;
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      // 색 버퍼를 처음부터 만든다. 나중에 setColorAt이 처음 불릴 때 생기면 셰이더 변형이 달라져 게임 중에 컴파일된다
+      mesh.setColorAt(0, new THREE.Color(1, 1, 1));
+      mesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
       if (part.leaves) {
         mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: ctex[part.leaves], alphaTest: 0.45 });
       }

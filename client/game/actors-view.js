@@ -30,9 +30,21 @@ const damp = (cur, want, k) => cur + (want - cur) * k;
 
 export function createActorsView(scene, game, hf, camera = null) {
   const views = new Map();
+  let detailNear = 22; // 이 거리 안에서만 속눈썹·눈알·머리카락 끝을 그린다(화질 단계)
   let botIdx = 0;
 
   const botOf = new Map();
+  // 낀 갑옷의 종류(로브·경갑·중갑)를 칸마다. 부서진 갑옷도 입은 모습은 그대로 둔다
+  function outfitOf(a) {
+    const cls = (slot) => {
+      const uid = a.equip?.[slot];
+      if (!uid) return null;
+      const e = a.bag.find((x) => x.uid === uid);
+      return (e && game.data.items[e.item]?.armor?.class) || null;
+    };
+    return { head: cls('head'), chest: cls('chest'), legs: cls('legs') };
+  }
+  const outfitKey = (o) => `${o.head}|${o.chest}|${o.legs}`;
   function make(a, keep) {
     const player = a.kind === 'player';
     let idx = 0;
@@ -50,6 +62,9 @@ export function createActorsView(scene, game, hf, camera = null) {
     const v = { m: model, pos: new THREE.Vector3(a.x, hf.height(a.x, a.z), a.z), yaw: a.yaw || 0, phase: 0, swing: 0, speed: 0, breathe: Math.random() * 6, hurt: 0, fall: 0,
       blinkIn: 1 + Math.random() * 3, blink: -1, gaze: new THREE.Vector2(), gazeTo: new THREE.Vector2(), gazeIn: Math.random() * 2 };
     if (keep) Object.assign(v, { pos: keep.pos, yaw: keep.yaw, phase: keep.phase, speed: keep.speed });
+    const o = outfitOf(a);
+    v.outfit = outfitKey(o);
+    model.setOutfit(o);
     return v;
   }
 
@@ -121,7 +136,7 @@ export function createActorsView(scene, game, hf, camera = null) {
     if (!cb) return;
     if (cb.downUntil > 0) {
       v.fall = Math.min(1, v.fall + dt * 3);
-    } else v.fall = Math.max(0, v.fall - dt * 4);
+    } else v.fall = Math.min(1, Math.max(0, v.fall - dt * 4));
     if (v.fall > 0) {
       v.m.root.rotation.x = -Math.PI / 2 * v.fall;
       v.m.root.position.y += 0.18 * v.fall;
@@ -176,6 +191,13 @@ export function createActorsView(scene, game, hf, camera = null) {
       if (!v) {
         v = make(a);
         views.set(a.id, v);
+      }
+      // 갑옷을 갈아 끼면 옷 조각을 바꾼다(처음 입는 종류는 묶음을 읽은 뒤 바뀐다)
+      const of = outfitOf(a);
+      const ok = outfitKey(of);
+      if (ok !== v.outfit) {
+        v.outfit = ok;
+        v.m.setOutfit(of);
       }
       const px = v.pos.x;
       const pz = v.pos.z;
@@ -242,7 +264,7 @@ export function createActorsView(scene, game, hf, camera = null) {
       }
       combatPose(v, a, p, wDef, dt);
       pose(v, p);
-      if (camera) v.m.lod(camera.position.distanceTo(v.pos));
+      if (camera) v.m.lod(camera.position.distanceTo(v.pos), detailNear);
       face(v, dt);
     }
   }
@@ -251,6 +273,8 @@ export function createActorsView(scene, game, hf, camera = null) {
     update,
     onEvent,
     rebuild,
+    views,
+    setDetail(d) { detailNear = d; },
     positionOf: (id) => views.get(id)?.pos,
   };
 }

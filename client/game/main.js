@@ -19,7 +19,7 @@ import { makeMaterials, G } from './gfx/materials.js';
 import { createNodesView } from './nodes-view.js';
 import { createTownView } from './town-view.js';
 import { createActorsView, playerBody, BODY_KEY } from './actors-view.js';
-import { prepareActorBase } from './models/actor.js';
+import { prepareActorBase, loadClassPack, ARMOR_CLASSES } from './models/actor.js';
 import { createMobsView } from './mobs-view.js';
 import { zoneAt } from '../../core/terrain.js';
 import { createFx } from './fx.js';
@@ -30,6 +30,7 @@ import { createHud, BULK_KEEP } from './hud.js';
 import { refPrice, npcPrice, bestBid, bookOf, entryStar as marketStar } from '../../core/market.js';
 import { createMinimap } from './minimap.js';
 import { createGuide } from './guide.js';
+import { createPerf } from './perf.js';
 import { currentQuest } from './quest.js';
 
 const SAVE_KEY = 'mist-isle:v1';
@@ -155,6 +156,7 @@ async function boot() {
   let lastQuest = -1e9;
   const cam = createCamera(view.camera, ground.hf);
   window.__mist.cam = cam;
+  window.__mist.actorsView = actorsView;
   {
     // 새 게임은 첫 목표(표류목·돌) 무리 쪽을 바라보고 시작한다. 이어 하기는 캐릭터가 보던 쪽.
     const a = game.state.actors[PID];
@@ -311,7 +313,8 @@ async function boot() {
         ui.gather = null;
         const L = ui.last;
         const [fx, fz] = cam.toWorld(0, 1);
-        game.dispatch({ type: 'DODGE', actor: PID, yaw: L.moving ? Math.atan2(L.x, L.z) : Math.atan2(-fx, -fz) });
+        const r = game.dispatch({ type: 'DODGE', actor: PID, yaw: L.moving ? Math.atan2(L.x, L.z) : Math.atan2(-fx, -fz) });
+        if (!r.ok && r.error === 'overloaded') hud.toast('🏋️ 장비가 너무 무거워 구를 수 없다(과적). 무게를 줄이자', 'warn');
         break;
       }
       case 'block-on':
@@ -388,6 +391,7 @@ async function boot() {
         actorsView.rebuild(PID);
         break;
       case 'focus-toggle': hud.settings.focus = !hud.settings.focus; break;
+      case 'perf': perf.toggle(); hud.settings.perf = perf.on; break;
       case 'gfx': {
         setChosenTier(v);
         applyTier(v === 'auto' ? startTier(touch) : TIERS[v]);
@@ -417,17 +421,22 @@ async function boot() {
   function applyTier(t) {
     liveTier = t;
     view.applyTier(t);
+    actorsView.setDetail(t.charNear ?? 22);
     grass.applyTier(t);
     ground.applyTier(t);
     hud.settings.gfxNow = `${t.label} 화질`;
   }
   hud.settings.gfx = chosenTier();
+  actorsView.setDetail(tier.charNear ?? 22);
   hud.settings.body = playerBody();
   hud.settings.gfxNow = `${tier.label} 화질`;
-  const tuner = createAutoTuner((next, fps) => {
+  const tuner = createAutoTuner((next, fps, dir) => {
     applyTier(next);
-    hud.toast(`화면이 버거워 보여(${Math.round(fps)}fps) 화질을 '${next.label}'으로 낮췄다. 설정에서 바꿀 수 있다.`, 'info');
+    if (dir === 'up') hud.toast(`그래픽카드에 여유가 있어(${Math.round(fps)}fps) 화질을 '${next.label}'으로 올렸다. 풀·지형 세밀도는 다음에 열 때 오른다.`, 'good');
+    else hud.toast(`화면이 버거워 보여(${Math.round(fps)}fps) 화질을 '${next.label}'으로 낮췄다. 설정에서 바꿀 수 있다.`, 'info');
   });
+  const perf = createPerf(view.renderer, { tierLabel: () => `${liveTier.label} 화질`, onGpu: (ms) => tuner.gpu(ms) });
+  window.__mist.perf = perf;
   const input = createInput(canvas, { joyEl: hud.joyEl, knobEl: hud.knobEl });
   const minimap = createMinimap(hud.minimapCanvas, game, game.terrain);
 
@@ -529,12 +538,15 @@ async function boot() {
   let lastSave = performance.now();
   let lastMap = 0;
   let firstFrame = true;
+  let booted = false;
   const focusVec = new THREE.Vector3();
 
-  function frame(now) {
-    const dt = Math.min(0.25, (now - last) / 1000);
-    last = now;
+  function frame(now, silent = false) {
+    // rAF 시각은 긴 작업(예열) 직후에 앞서 잰 시각보다 이를 수 있다: 음수 dt를 막는다
+    const dt = Math.min(0.25, Math.max(0, (now - last) / 1000));
+    last = Math.max(last, now);
     const a = me();
+    perf.begin(now);
 
     // 1) 입력 → 명령
     const inp = input.poll();
@@ -568,7 +580,8 @@ async function boot() {
 
     // 3) 시뮬레이션
     game.advance(dt * hud.settings.speed);
-    tuner.tick(dt, liveTier);
+    if (!silent) tuner.tick(dt, liveTier);
+    perf.lap('sim');
 
     // 4) 화면
     actorsView.update(dt, now / 1000);
@@ -609,18 +622,28 @@ async function boot() {
     }
     const goal = questNow?.goal || null;
     guide.update(now / 1000, p, goal);
+    perf.lap('view');
     hud.update(dt, { target: ui.target, gathering: !!ui.gather, quest: questNow, questDist: goal ? Math.hypot(goal.x - p.x, goal.z - p.z) : null });
     if (now - lastMap > 200) {
       minimap.draw(PID, cam.st.yaw, goal, now / 1000);
       lastMap = now;
     }
+    perf.lap('hud');
+    perf.drawBegin();
     view.render();
+    perf.drawEnd();
+    perf.end(now);
+    if (silent) {
+      firstFrame = false; // 풀은 조용한 첫 장에서 다 채웠다
+      return;
+    }
 
     if (now - lastSave > 30000) {
       save(false);
       lastSave = now;
     }
-    if (firstFrame) {
+    if (!booted) {
+      booted = true;
       firstFrame = false;
       bootEl.remove();
       if (game.state.t < 2) hud.toast('🌫️ 난파선에서 겨우 뭍에 올랐다. 바닷가의 표류목과 돌부터 주워 보자.', 'info');
@@ -628,9 +651,16 @@ async function boot() {
     requestAnimationFrame(frame);
   }
 
-  await say('🌫️ 셰이더를 미리 준비하는 중…');
+  // 미리 데우기: 한 장을 조용히 그려 캐릭터·짐승·풀·하늘 반사광을 다 만든 뒤, 섬 전체를 한 번 그린다(셰이더·그림자·올리기)
+  await say('🌫️ 셰이더를 미리 준비하는 중… (컴퓨터에 따라 수십 초 걸릴 수 있다)');
   mobsView.update(0, view.camera);
-  await view.warm();
+  frame(performance.now(), true);
+  const warmInfo = await view.warm({ extra: actorsView.warmExtras?.() || [], say: () => say('🌫️ 섬 전체를 한 번 그려 보는 중…') });
+  window.__mist.warm = warmInfo;
+  console.info('[warm]', warmInfo);
+  // 갑옷 옷 조각 묶음은 게임을 시작한 뒤 천천히 미리 받아 둔다(갈아입을 때 바로 바뀌게)
+  setTimeout(() => { for (const c of ARMOR_CLASSES) loadClassPack(playerBody(), c); }, 6000);
+  last = performance.now();
 
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(false); });
   window.addEventListener('pagehide', () => save(false));

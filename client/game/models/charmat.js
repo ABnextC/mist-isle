@@ -42,8 +42,8 @@ export function skinMaterial(A, B) {
   return m;
 }
 
-// 옷 재질 칸(파이썬 outfit.GID와 같은 번호). 칸마다 거칠기·결 종류·결 크기·반짝임
-// 결: 0 리넨(평직), 1 모직(능직), 2 가죽, 3 금속
+// 옷 재질 칸(파이썬 pieces.SLOT과 같은 번호). 칸마다 [거칠기, 결 종류, 결 크기, 금속성]
+// 결: 0 리넨(평직), 1 모직(능직), 2 가죽, 3 금속판, 4 사슬(고리), 5 누빔(마름모 솔기)
 const SLOT = [
   [0.88, 0, 1.0, 0.0], // 0 셔츠
   [0.82, 1, 1.0, 0.0], // 1 조끼
@@ -53,37 +53,81 @@ const SLOT = [
   [0.9, 0, 1.3, 0.0], // 5 목수건
   [0.55, 2, 1.0, 0.0], // 6 끈
   [0.92, 0, 0.7, 0.0], // 7 배낭(캔버스)
-  [0.32, 3, 1.0, 1.0], // 8 금속
+  [0.32, 3, 1.0, 1.0], // 8 놋쇠(단추·버클·징)
   [0.75, 2, 2.0, 0.0], // 9 밑창
   [0.5, 2, 1.4, 0.0], // 10 가죽 테두리
+  [0.84, 1, 0.9, 0.0], // 11 로브(모직, 수 띠)
+  [0.8, 0, 1.2, 0.0], // 12 로브 허리띠
+  [0.86, 1, 0.9, 0.0], // 13 두건
+  [0.6, 2, 1.6, 0.0], // 14 무두질한 가죽 갑옷
+  [0.9, 0, 1.1, 0.0], // 15 리넨 속옷
+  [0.5, 4, 1.0, 0.75], // 16 사슬
+  [0.28, 3, 1.0, 1.0], // 17 강철판
+  [0.9, 5, 1.0, 0.0], // 18 누빔
+  [0.34, 3, 1.5, 1.0], // 19 강철 리벳
+  [0.85, 0, 2.2, 0.0], // 20 끈(꼰 실)
+];
+// 칸마다 [수 띠 폭 m, 무늬, 바느질선(테두리에서 m), 실 밝음]
+const BAND = [
+  [0, 0, 0.005, 0], [0, 0, 0.006, 0], [0, 0, 0.0, 0], [0, 0, 0.008, 1], [0, 0, 0.004, 1], [0, 0, 0, 0], [0, 0, 0.003, 1], [0, 0, 0.006, 0],
+  [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0.0035, 1],
+  [0.034, 1, 0.0, 0], [0, 0, 0.004, 1], [0.022, 1, 0.0, 0], [0, 0, 0.007, 1], [0, 0, 0.005, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0],
 ];
 export const CLOTH_SLOTS = SLOT.length;
+const NT = 24; // uTint 크기(21 수실, 22 수 띠 바탕)
 
 export function clothMaterial(detail) {
-  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0, side: THREE.DoubleSide, shadowSide: THREE.BackSide });
+  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0, side: THREE.FrontSide, shadowSide: THREE.BackSide });
   const tints = [];
-  for (let i = 0; i < 12; i++) tints.push(new THREE.Color(1, 1, 1));
-  const U = { uTint: { value: tints }, uDetail: { value: detail }, uSlot: { value: SLOT.map((s) => new THREE.Vector4(...s)) } };
+  for (let i = 0; i < NT; i++) tints.push(new THREE.Color(1, 1, 1));
+  const pad = (arr) => { const out = arr.map((s) => new THREE.Vector4(...s)); while (out.length < NT) out.push(new THREE.Vector4(0.9, 0, 1, 0)); return out; };
+  const U = { uTint: { value: tints }, uDetail: { value: detail }, uSlot: { value: pad(SLOT) }, uBand: { value: pad(BAND) } };
   m.userData.u = U;
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, U);
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float aMat;\nattribute float aEdge;\nvarying float vMat;\nvarying float vEdge;\nvarying vec3 vRest;\nvarying vec3 vRestN;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvMat = aMat;\nvEdge = aEdge;\nvRest = position;\nvRestN = normal;');
+      .replace('#include <common>', '#include <common>\nattribute float aMat;\nattribute float aEdge;\nattribute float aRim;\nvarying float vMat;\nvarying float vEdgeM;\nvarying float vRimM;\nvarying vec3 vRest;\nvarying vec3 vRestN;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvMat = aMat;\nvEdgeM = aEdge * 0.25;\nvRimM = aRim * 8.0;\nvRest = position;\nvRestN = normal;');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
-        uniform vec3 uTint[12];
-        uniform vec4 uSlot[11];
+        uniform vec3 uTint[${NT}];
+        uniform vec4 uSlot[${NT}];
+        uniform vec4 uBand[${NT}];
         uniform sampler2D uDetail;
         varying float vMat;
-        varying float vEdge;
+        varying float vEdgeM;
+        varying float vRimM;
         varying vec3 vRest;
         varying vec3 vRestN;
         float gClothH = 0.0;
         float gClothAO = 1.0;
+        float gGap = 1.0;
+        // 사슬: 엇갈린 줄의 작은 고리(높이 0~1)
+        float mailP( vec2 p ) {
+          vec2 q = p;
+          q.x += 0.5 * mod( floor( q.y ), 2.0 );
+          vec2 f = fract( q ) - 0.5;
+          float d = length( f * vec2( 1.0, 1.25 ) );
+          return smoothstep( 0.17, 0.25, d ) * ( 1.0 - smoothstep( 0.37, 0.46, d ) );
+        }
+        // 누빔: 마름모 솔기(솔기 0, 가운데 1)
+        float quiltP( vec2 p ) {
+          vec2 a = abs( fract( vec2( p.x + p.y, p.x - p.y ) ) - 0.5 ) * 2.0;
+          return smoothstep( 0.0, 0.3, min( a.x, a.y ) );
+        }
         float detailH( vec3 p, vec3 n, int kind, float sc ) {
           vec3 w = pow( abs( n ), vec3( 4.0 ) );
           w /= ( w.x + w.y + w.z );
+          if ( kind == 4 ) {
+            float f = 160.0 * sc;
+            return mailP( p.zy * f ) * w.x + mailP( p.xz * f ) * w.y + mailP( p.xy * f ) * w.z;
+          }
+          if ( kind == 5 ) {
+            float f = 24.0 * sc;
+            float q = quiltP( p.zy * f ) * w.x + quiltP( p.xz * f ) * w.y + quiltP( p.xy * f ) * w.z;
+            vec4 t = texture2D( uDetail, p.zy * 26.0 ) * w.x + texture2D( uDetail, p.xz * 26.0 ) * w.y + texture2D( uDetail, p.xy * 26.0 ) * w.z;
+            return 0.25 + 0.6 * q + 0.15 * t.r;
+          }
           float f = ( kind == 0 ) ? 26.0 : ( kind == 1 ) ? 20.0 : ( kind == 2 ) ? 9.0 : 4.0;
           f *= sc;
           vec4 a = texture2D( uDetail, p.zy * f );
@@ -95,23 +139,61 @@ export function clothMaterial(detail) {
       .replace('#include <color_fragment>', `
         int slot = int( vMat + 0.5 );
         vec4 sp = uSlot[ slot ];
+        vec4 bd = uBand[ slot ];
         int kind = int( sp.y + 0.5 );
         gClothAO = vColor.a;
-        diffuseColor.rgb *= uTint[ slot ] * vColor.rgb * 1.4;
+        vec3 cBase = uTint[ slot ] * vColor.rgb * 1.4;
         gClothH = detailH( vRest, normalize( vRestN ), kind, sp.z );
-        float dFq = ( kind == 0 ) ? 26.0 : ( kind == 1 ) ? 20.0 : ( kind == 2 ) ? 9.0 : 4.0;
+        float dFq = ( kind == 4 ) ? 160.0 : ( kind == 5 ) ? 24.0 : ( kind == 0 ) ? 26.0 : ( kind == 1 ) ? 20.0 : ( kind == 2 ) ? 9.0 : 4.0;
         float texPerPx = length( fwidth( vRest ) ) * dFq * sp.z * 512.0;
-        float dFade = clamp( 1.6 - texPerPx * 0.6, 0.0, 1.0 );
-        gClothH = mix( 0.5, gClothH, dFade );
-        diffuseColor.rgb *= 0.93 + 0.14 * gClothH;
-        float edgeW = 1.0 - smoothstep( 0.0, 0.12, vEdge );
-        diffuseColor.rgb *= 1.0 - 0.18 * edgeW;
+        float dFade = clamp( 1.6 - texPerPx * ( kind == 4 ? 2.2 : 0.6 ), 0.0, 1.0 );
+        if ( kind == 4 ) {
+          // 가까이: 고리 하나하나, 멀리: 고리 줄(가로 줄무늬)과 반짝이는 결
+          vec3 nn4 = abs( normalize( vRestN ) );
+          float rowc = ( nn4.y > 0.7 ) ? vRest.x : vRest.y;
+          float rows = 0.5 + 0.5 * cos( rowc * 6.2832 * 70.0 );
+          float rowFade = clamp( 1.6 - length( fwidth( vRest ) ) * 70.0 * 512.0 * 0.35, 0.0, 1.0 );
+          float far4 = mix( 0.78, 0.6 + 0.4 * rows, rowFade );
+          gGap = mix( far4, 0.3 + 0.7 * gClothH, dFade );
+          cBase *= gGap;
+        }
+        gClothH = mix( kind == 4 ? gGap : 0.5, gClothH, dFade );
+        cBase *= 0.93 + 0.14 * gClothH;
+        // 수 띠(테두리를 따라 마름모 사슬 무늬)
+        if ( bd.x > 0.0 && vEdgeM < bd.x ) {
+          float bt = vEdgeM / bd.x;
+          float bs = vRimM / ( bd.x * 1.15 );
+          float border = smoothstep( 0.05, 0.09, bt ) * ( 1.0 - smoothstep( 0.13, 0.17, bt ) ) + smoothstep( 0.83, 0.87, bt ) * ( 1.0 - smoothstep( 0.91, 0.95, bt ) );
+          float dm = abs( fract( bs ) - 0.5 ) * 2.0 + abs( bt - 0.5 ) * 2.7;
+          float mid = step( 0.2, bt ) * step( bt, 0.8 );
+          float dia = ( 1.0 - smoothstep( 0.6, 0.68, dm ) ) * mid;
+          float hole = ( 1.0 - smoothstep( 0.26, 0.32, dm ) ) * mid;
+          float th = clamp( border + dia - hole, 0.0, 1.0 );
+          float bandK = 1.0 - smoothstep( 0.96, 0.99, bt );
+          vec3 ground = uTint[ 22 ] * vColor.rgb * 1.4;
+          vec3 thread = uTint[ 21 ] * mix( 0.8, 1.15, gClothH );
+          cBase = mix( cBase, ground, bandK );
+          cBase = mix( cBase, thread, th * bandK * dFade + th * bandK * ( 1.0 - dFade ) * 0.5 );
+          gClothH = mix( gClothH, 0.35 + 0.45 * th, 0.75 * bandK );
+        }
+        // 바느질선(테두리에서 일정한 거리의 점선)
+        if ( bd.z > 0.0 ) {
+          float sd = abs( vEdgeM - bd.z );
+          float line = 1.0 - smoothstep( 0.00045, 0.001, sd );
+          float dash = smoothstep( 0.35, 0.45, fract( vRimM / 0.0065 ) ) * ( 1.0 - smoothstep( 0.9, 1.0, fract( vRimM / 0.0065 ) ) );
+          float st = line * dash * clamp( 1.8 - texPerPx * 0.3, 0.0, 1.0 );
+          cBase = mix( cBase, cBase * ( bd.w > 0.5 ? 1.7 : 0.42 ) + ( bd.w > 0.5 ? vec3( 0.04 ) : vec3( 0.0 ) ), st * 0.85 );
+          gClothH = mix( gClothH, 0.95, st * 0.5 );
+        }
+        diffuseColor.rgb *= cBase;
+        float edgeW = 1.0 - smoothstep( 0.0, 0.004, vEdgeM );
+        diffuseColor.rgb *= 1.0 - 0.14 * edgeW;
         if ( !gl_FrontFacing ) diffuseColor.rgb *= 0.45;`)
-      .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = clamp( sp.x + ( gClothH - 0.5 ) * 0.12, 0.05, 1.0 );')
+      .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = clamp( sp.x + ( gClothH - 0.5 ) * 0.12 + ( kind == 4 ? ( 1.0 - gGap ) * 0.4 : 0.0 ), 0.05, 1.0 );')
       .replace('#include <metalnessmap_fragment>', 'float metalnessFactor = sp.w;')
       .replace('#include <normal_fragment_maps>', `
         {
-          vec2 dH = vec2( dFdx( gClothH ), dFdy( gClothH ) ) * ( kind == 2 ? 0.9 : 1.2 );
+          vec2 dH = vec2( dFdx( gClothH ), dFdy( gClothH ) ) * ( kind == 2 ? 0.9 : kind == 4 ? 1.6 : kind == 5 ? 1.4 : 1.2 );
           vec3 sX = normalize( dFdx( -vViewPosition ) );
           vec3 sY = normalize( dFdy( -vViewPosition ) );
           vec3 R1 = cross( sY, normal );
@@ -123,13 +205,13 @@ export function clothMaterial(detail) {
       .replace('#include <aomap_fragment>', `
         reflectedLight.indirectDiffuse += diffuseColor.rgb * 0.16 * gClothAO;
         reflectedLight.indirectDiffuse *= gClothAO;
-        reflectedLight.indirectSpecular *= gClothAO;
-        if ( kind < 2 ) {
+        reflectedLight.indirectSpecular *= gClothAO * ( kind == 4 ? gGap : 1.0 );
+        if ( kind < 2 || kind == 5 ) {
           float fr = pow( 1.0 - saturate( dot( normal, normalize( vViewPosition ) ) ), 3.0 );
           reflectedLight.indirectDiffuse += diffuseColor.rgb * fr * 0.35 * gClothAO;
         }`);
   };
-  m.customProgramCacheKey = () => 'char-cloth';
+  m.customProgramCacheKey = () => 'char-cloth2';
   return m;
 }
 

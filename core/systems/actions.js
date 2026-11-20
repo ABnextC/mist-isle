@@ -4,7 +4,7 @@
 import { addEntry, slotsNeeded } from '../inventory.js';
 import { rollQty, skillYieldBonus, round3 } from '../formulas.js';
 import { addXp } from './progress.js';
-import { combatMove } from './combat.js';
+import { combatMove, equipLoad } from './combat.js';
 import { finishSkin } from './mobs.js';
 
 // 지형 밖·깊은 물·장애물을 피해 최종 위치를 정한다.
@@ -84,7 +84,7 @@ export function movementTick(ctx, dt) {
       a.z = round3(nz);
       continue;
     }
-    const step = cfg.move.speed * dt * cm.mult;
+    const step = cfg.move.speed * dt * cm.mult * equipLoad(ctx, a).tier.move;
     if (a.move) {
       const [nx, nz] = resolve(ctx, a, a.x + a.move[0] * step, a.z + a.move[1] * step);
       a.yaw = round3(Math.atan2(a.move[0], a.move[1]));

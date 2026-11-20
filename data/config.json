@@ -834,11 +834,6 @@
         "mult": 0.95,
         "targets": 2
       }
-    },
-    "dodgeDistByWeight": {
-      "light": 3.8,
-      "medium": 3.2,
-      "heavy": 2.5
     }
   },
   "settle": {
@@ -913,5 +908,58 @@
     },
     "upkeepGrace": 3,
     "upkeepLow": 0.5
+  },
+  "load": {
+    "note": "장비 무게(무기+갑옷 합, kg)에 따른 단계. move·stRegen·gather는 배율, dodgeDist는 구르기 거리(m, 0이면 못 구름), dodgeCost·blockCost는 기력 배율, guardBreak는 막기가 깨졌을 때 비틀거림 배율",
+    "tiers": [
+      {
+        "id": "light",
+        "name": "가벼움",
+        "max": 7.5,
+        "move": 1.06,
+        "stRegen": 1.15,
+        "dodgeDist": 4.0,
+        "dodgeCost": 0.85,
+        "gather": 1.04,
+        "blockCost": 1.0,
+        "guardBreak": 1.0
+      },
+      {
+        "id": "medium",
+        "name": "보통",
+        "max": 15,
+        "move": 1.0,
+        "stRegen": 1.0,
+        "dodgeDist": 3.4,
+        "dodgeCost": 1.0,
+        "gather": 1.0,
+        "blockCost": 1.0,
+        "guardBreak": 1.0
+      },
+      {
+        "id": "heavy",
+        "name": "무거움",
+        "max": 24,
+        "move": 0.92,
+        "stRegen": 0.8,
+        "dodgeDist": 2.6,
+        "dodgeCost": 1.25,
+        "gather": 0.94,
+        "blockCost": 0.8,
+        "guardBreak": 0.5
+      },
+      {
+        "id": "over",
+        "name": "과적",
+        "max": 999,
+        "move": 0.75,
+        "stRegen": 0.5,
+        "dodgeDist": 0,
+        "dodgeCost": 1.5,
+        "gather": 0.85,
+        "blockCost": 0.8,
+        "guardBreak": 0.5
+      }
+    ]
   }
 }

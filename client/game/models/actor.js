@@ -69,6 +69,22 @@ export function prepareActorBase() {
 
 const c3 = (a) => new THREE.Color(a[0], a[1], a[2]);
 
+// 갑옷 종류별 옷 조각 묶음(머리·몸통·다리): 처음 입을 때 읽고 몸마다 한 번만 둔다
+const classPacks = {};
+export function loadClassPack(kind, cls) {
+  const key = `${kind}:${cls}`;
+  if (classPacks[key]) return classPacks[key];
+  const B = BASE?.bodies[kind];
+  const id = B?.pk.meta.extra?.classes?.[cls];
+  classPacks[key] = id ? loadPack(BASE_URL + id).catch((e) => { console.warn('옷 조각 묶음을 못 읽음', id, e); delete classPacks[key]; return null; }) : Promise.resolve(null);
+  return classPacks[key];
+}
+const loadedPacks = {}; // 다 읽힌 묶음(동기 확인용)
+export const ARMOR_CLASSES = ['robe', 'light', 'heavy'];
+const ROBES = [0x2e4a7a, 0x6e2a32, 0x2f5a3a, 0x4a3a6a, 0x6a4a2a];
+const SASHES = [0xb0472e, 0xc8a050, 0x8a2a2a, 0x3a6a8a, 0xd0c090];
+const HIDDEN = new THREE.MeshBasicMaterial({ visible: false });
+
 export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1, body = null } = {}) {
   if (!BASE) throw new Error('prepareActorBase()를 먼저 기다려야 한다');
   const kind = body || (seed % 3 === 1 ? 'f' : 'm');
@@ -116,29 +132,60 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
   eyeM.userData.u.uIris.value.copy(c3(IRIS_COLORS[(seed * 5 + 2) % IRIS_COLORS.length]));
   const lashM = lashMaterial(BASE.tex.lash);
 
+  // 갑옷 칸 색(v0.4.5)
+  set(11, lin(ROBES[seed % ROBES.length]));
+  set(12, lin(SASHES[(seed + 2) % SASHES.length]));
+  set(13, lin(ROBES[seed % ROBES.length]).multiplyScalar(0.85));
+  set(14, lin(0x5a3a22));
+  set(15, lin(0xd8ccb0));
+  set(16, lin(0xa8aeb4));
+  set(17, lin(0xb8bec4));
+  set(18, lin(0x6a5a46));
+  set(19, lin(0xa4aab0));
+  set(20, lin(0xb8a888));
+  set(21, lin(0xd4a84a));
+  set(22, lin(ROBES[seed % ROBES.length]).multiplyScalar(0.55));
+  
   const skinned = [];
+  const bindSkinned = (geometry, mat) => {
+    const o = new THREE.SkinnedMesh(geometry, mat);
+    root.add(o);
+    o.bind(skeleton, new THREE.Matrix4());
+    // 뼈 변환으로 다시 재지 않게 넉넉한 경계 구(팔 들기·구르기까지 덮는다)
+    o.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0.95, 0), 1.45);
+    o.boundingBox = new THREE.Box3(new THREE.Vector3(-1.2, -0.6, -1.2), new THREE.Vector3(1.2, 2.5, 1.2));
+    o.castShadow = true;
+    o.receiveShadow = true;
+    skinned.push(o);
+    return o;
+  };
   const add = (key, mat, parent) => {
     const m = pk.meshes[key];
     if (!m) return null;
     let o;
     if (m.geometry.attributes.skinIndex) {
-      o = new THREE.SkinnedMesh(m.geometry, mat);
-      root.add(o);
-      o.bind(skeleton, new THREE.Matrix4());
-      // 뼈 변환으로 다시 재지 않게 넉넉한 경계 구(팔 들기·구르기까지 덮는다)
-      o.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0.95, 0), 1.45);
-      o.boundingBox = new THREE.Box3(new THREE.Vector3(-1.2, -0.6, -1.2), new THREE.Vector3(1.2, 2.5, 1.2));
-      skinned.push(o);
+      o = bindSkinned(m.geometry, mat);
     } else {
       o = new THREE.Mesh(m.geometry, mat);
       (parent || root).add(o);
+      o.castShadow = true;
+      o.receiveShadow = true;
     }
-    o.castShadow = true;
-    o.receiveShadow = true;
     return o;
   };
-  const skin = add('skin', skinM);
-  const cloth = add('cloth', clothM);
+  // 피부: 묶음(늘 보임·아래팔·정수리)마다 재질 칸. 옷이 덮으면 그 칸을 숨긴다(긴 소매·머리 장비)
+  const skinGeo = pk.meshes.skin.geometry;
+  const groups = pk.meshes.skin.info.groups || [];
+  if (!skinGeo.groups.length && groups.length) groups.forEach(([start, count], i) => skinGeo.addGroup(start, count, i));
+  const skinRegion = Object.fromEntries(groups.map((g, i) => [g[2], i]));
+  const skinMats = groups.length ? groups.map(() => skinM) : skinM;
+  const skin = add('skin', skinMats);
+  // 기본 옷 조각
+  const pieces = {};
+  for (const k of ['chest_base', 'legs_base', 'boots']) {
+    const o = add(k, clothM);
+    if (o) pieces[k] = o;
+  }
   const lashes = add('lashes', lashM);
   lashes.castShadow = false;
   // 눈: 머리 뼈 아래 중심점(피벗)에서 돈다
@@ -177,14 +224,71 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
   }
   // 멀리 있으면 잔 부품(속눈썹·눈알·머리카락 부드러운 끝)을 끈다
   let near = true;
-  const lod = (dist) => {
-    const n = dist < 22;
+  let hairOn = true;
+  const lod = (dist, nearD = 22) => {
+    const n = dist < nearD;
     if (n === near) return;
     near = n;
     if (lashes) lashes.visible = n;
     for (const e of eyes) e.visible = n;
-    if (hair?.userData.soft) hair.userData.soft.visible = n;
+    if (hair?.userData.soft) hair.userData.soft.visible = n && hairOn;
   };
+  // 옷 입히기(v0.4.5): 머리·몸통·다리 칸마다 갑옷 종류(robe·light·heavy) 또는 null(기본 옷·맨머리)
+  let want = { head: null, chest: null, legs: null };
+  let outfitVer = 0;
+  function pieceMesh(key, pack) {
+    if (pieces[key]) return pieces[key];
+    const m = pack?.meshes[key];
+    if (!m) return null;
+    const o = bindSkinned(m.geometry, clothM);
+    o.visible = false;
+    pieces[key] = o;
+    return o;
+  }
+  function applyOutfit() {
+    const w = want;
+    const show = {
+      chest: w.chest ? `chest_${w.chest}` : 'chest_base',
+      legs: w.legs ? `legs_${w.legs}` : 'legs_base',
+      head: w.head ? `head_${w.head}` : null,
+    };
+    for (const [slot, key] of Object.entries(show)) {
+      if (!key || pieces[key]) continue;
+      const cls = key.split('_')[1];
+      const pack = loadedPacks[`${kind}:${cls}`];
+      if (!pack) return false; // 아직 읽는 중
+      pieceMesh(key, pack);
+    }
+    const on = new Set(Object.values(show).filter(Boolean));
+    for (const [key, o] of Object.entries(pieces)) {
+      if (key === 'boots') continue;
+      o.visible = on.has(key);
+    }
+    // 피부 칸: 긴 소매면 아래팔, 머리 장비면 정수리·귀를 숨긴다
+    if (Array.isArray(skin.material)) {
+      const mats = skin.material.slice();
+      if (skinRegion.forearm !== undefined) mats[skinRegion.forearm] = w.chest ? HIDDEN : skinM;
+      if (skinRegion.scalp !== undefined) mats[skinRegion.scalp] = w.head ? HIDDEN : skinM;
+      skin.material = mats;
+    }
+    hairOn = !w.head;
+    if (hair) {
+      hair.visible = hairOn;
+      if (hair.userData.soft) hair.userData.soft.visible = hairOn && near;
+    }
+    return true;
+  }
+  function setOutfit(o = {}) {
+    want = { head: o.head || null, chest: o.chest || null, legs: o.legs || null };
+    const ver = ++outfitVer;
+    const need = [...new Set([want.head, want.chest, want.legs].filter(Boolean))].filter((c) => !loadedPacks[`${kind}:${c}`]);
+    if (!need.length) {
+      applyOutfit();
+      return Promise.resolve(true);
+    }
+    return Promise.all(need.map((c) => loadClassPack(kind, c).then((pk2) => { if (pk2) loadedPacks[`${kind}:${c}`] = pk2; })))
+      .then(() => (ver === outfitVer ? applyOutfit() : false));
+  }
   const morphIdx = {};
   (pk.meshes.skin?.morphs || []).forEach((n, i) => { morphIdx[n] = i; });
   const setMorph = (name, v) => {
@@ -263,7 +367,8 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
   }
   return {
     root, hips: by.hips, spine: by.spine, chest: by.chest, neck: by.neck, head: by.head,
-    armL, armR, legL, legR, tools, weapons, materials: M, eyes, setMorph, kind, lod,
+    armL, armR, legL, legR, tools, weapons, materials: M, eyes, setMorph, kind, lod, setOutfit,
+    get outfit() { return { ...want }; },
     hipsY: by.hips.position.y, buildMs: BASE.ms,
     tris: Object.fromEntries(Object.entries(pk.meshes).map(([k, m]) => [k, m.geometry.index.count / 3])),
   };

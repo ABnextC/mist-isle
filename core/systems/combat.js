@@ -54,15 +54,17 @@ export function armorOf(ctx, a) {
   return sum;
 }
 
-function weightOf(ctx, a) {
-  let w = 'light';
-  for (const s of SLOTS) {
+// 장비 무게(v0.4.5): 낀 무기와 갑옷의 무게 합(kg)으로 단계를 정한다. 부서진 장비도 무게는 그대로다.
+export function equipLoad(ctx, a) {
+  let kg = 0;
+  for (const s of ['weapon', ...SLOTS]) {
     const e = equipped(ctx, a, s);
-    const k = e ? ctx.data.items[e.item].armor.weight : null;
-    if (k === 'heavy') return 'heavy';
-    if (k === 'medium') w = 'medium';
+    if (e) kg += ctx.data.items[e.item].weight || 0;
   }
-  return w;
+  kg = Math.round(kg * 10) / 10;
+  const tiers = ctx.cfg.load.tiers;
+  const tier = tiers.find((t) => kg <= t.max) || tiers[tiers.length - 1];
+  return { kg, tier };
 }
 
 export const mitigate = (ctx, dmg, armor) => dmg * (1 - armor / (armor + ctx.cfg.combat.armorK));
@@ -130,8 +132,9 @@ export function startAttack(ctx, a, kind, yaw) {
 export function startDodge(ctx, a, yaw) {
   const C = ctx.cfg.combat;
   const t = ctx.state.t;
-  const speed = (C.dodgeDistByWeight[weightOf(ctx, a)] ?? C.dodgeDist) / C.dodgeSec;
-  a.cb.st = r2(a.cb.st - C.dodgeCost);
+  const { tier } = equipLoad(ctx, a);
+  const speed = (tier.dodgeDist ?? C.dodgeDist) / C.dodgeSec;
+  a.cb.st = r2(a.cb.st - C.dodgeCost * tier.dodgeCost);
   a.cb.staminaAt = t;
   a.cb.act = null;
   a.cb.block = false;
@@ -184,14 +187,15 @@ export function hurtActor(ctx, a, mob, raw) {
   let blocked = false;
   if (cb.block && cb.stunUntil <= t && angDiff(yawTo(a, mob), a.yaw) <= (C.blockArc * DEG) / 2) {
     blocked = true;
-    cb.st = r2(cb.st - raw);
+    const ld = equipLoad(ctx, a).tier;
+    cb.st = r2(cb.st - raw * ld.blockCost);
     cb.staminaAt = t;
     dmg = raw * (1 - C.blockCut);
     a.stats.blocked = (a.stats.blocked || 0) + 1;
     if (cb.st <= 0) {
       cb.st = 0;
       cb.block = false;
-      cb.stunUntil = r2(t + C.guardBreakSec);
+      cb.stunUntil = r2(t + C.guardBreakSec * equipLoad(ctx, a).tier.guardBreak);
       ctx.emit('combat.guardbreak', { actor: a.id });
     }
   }
@@ -260,6 +264,8 @@ export function combatTick(ctx, dt) {
     }
     if (cb.dodge && t >= cb.dodge.endAt) cb.dodge = null;
     if (cb.hp < cb.maxHp && t - cb.lastHitAt >= C.hpRegenDelay) cb.hp = r2(Math.min(cb.maxHp, cb.hp + C.hpRegen * dt));
-    if (!cb.block && cb.st < C.stamina && t - cb.staminaAt >= C.staminaDelay) cb.st = r2(Math.min(C.stamina, cb.st + C.staminaRegen * dt));
+    if (!cb.block && cb.st < C.stamina && t - cb.staminaAt >= C.staminaDelay) {
+      cb.st = r2(Math.min(C.stamina, cb.st + C.staminaRegen * equipLoad(ctx, a).tier.stRegen * dt));
+    }
   }
 }

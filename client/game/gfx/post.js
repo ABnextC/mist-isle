@@ -11,7 +11,8 @@ export function createPost(renderer, scene, camera) {
   const sceneRT = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, depthTexture: depth });
   const workRT = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, depthBuffer: false });
   const ldrRT = new THREE.WebGLRenderTarget(1, 1, { depthBuffer: false });
-  let cfg = { post: false, ao: false, bloom: false, aa: null };
+  let cfg = { post: false, ao: false, bloom: false, aa: null, aoFull: false, aoSamples: 12 };
+  let aoSamples = 0;
   let gtao = null;
   let bloom = null;
   let smaa = null;
@@ -22,8 +23,11 @@ export function createPost(renderer, scene, camera) {
     if (cfg.ao && !gtao) {
       gtao = new GTAOPass(scene, camera, 1, 1, { depthTexture: depth });
       gtao.blendIntensity = 0.85;
-      gtao.updateGtaoMaterial({ radius: 0.9, distanceExponent: 1.5, thickness: 1.2, scale: 1.1, samples: 12 });
-      gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 });
+    }
+    if (gtao && aoSamples !== cfg.aoSamples) {
+      aoSamples = cfg.aoSamples;
+      gtao.updateGtaoMaterial({ radius: 0.9, distanceExponent: 1.5, thickness: 1.2, scale: 1.1, samples: aoSamples });
+      gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: aoSamples });
     }
     if (cfg.bloom && !bloom) bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.14, 0.5, 3.2);
     if (cfg.aa === 'smaa' && !smaa) smaa = new SMAAPass();
@@ -37,14 +41,14 @@ export function createPost(renderer, scene, camera) {
     sceneRT.setSize(w, h);
     workRT.setSize(w, h);
     ldrRT.setSize(w, h);
-    if (gtao) gtao.setSize(Math.ceil(w / 2), Math.ceil(h / 2));
+    if (gtao) gtao.setSize(cfg.aoFull ? w : Math.ceil(w / 2), cfg.aoFull ? h : Math.ceil(h / 2));
     if (bloom) bloom.setSize(Math.ceil(w / 2), Math.ceil(h / 2));
     if (smaa) smaa.setSize(w, h);
     if (fxaa) fxaa.setSize(w, h);
   }
 
   function configure(tier) {
-    cfg = { post: tier.post, ao: tier.ao, bloom: tier.bloom, aa: tier.aa };
+    cfg = { post: tier.post, ao: tier.ao, bloom: tier.bloom, aa: tier.aa, aoFull: !!tier.aoFull, aoSamples: tier.aoSamples || 12 };
     ensure();
     setSize();
   }

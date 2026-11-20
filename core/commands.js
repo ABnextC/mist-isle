@@ -12,7 +12,7 @@ import { placeAsk, placeBid, cancelOrder, npcSell, tradable, repairCost, findOrd
 import { contribute, projectOpen, needLeft, silverLeft, shipFee } from './settlements.js';
 import { deliver, countDeliverable } from './orders.js';
 import { addXp } from './systems/progress.js';
-import { startAttack, startDodge, interrupt, equipped } from './systems/combat.js';
+import { startAttack, startDodge, interrupt, equipped, equipLoad } from './systems/combat.js';
 import { corpseOpen, skinLoot, skinSeconds } from './systems/mobs.js';
 
 // ── 도우미 ─────────────────────────────────────────────
@@ -139,7 +139,7 @@ const GATHER = {
     } else {
       tool = bestTool(ctx, a, type.skill);
     }
-    const speed = toolSpeed(type, tool ? { tier: data.items[tool.item].tool.tier, stats: tool.stats } : null, cfg);
+    const speed = toolSpeed(type, tool ? { tier: data.items[tool.item].tool.tier, stats: tool.stats } : null, cfg) * equipLoad(ctx, a).tier.gather;
     if (speed <= 0) return 'need_tool';
     if (c.focus && a.focus < cfg.focus.cost.gather) return 'no_focus';
     const probe = { item: type.item, lot: state.veins[node.vein].lot, bonus: null, qty: 1 };
@@ -591,7 +591,9 @@ const DODGE = {
     const bad = alive(ctx, a);
     if (bad) return bad;
     if (a.cb.dodge) return 'busy';
-    if (a.cb.st < ctx.cfg.combat.dodgeCost) return 'no_stamina';
+    const ld = equipLoad(ctx, a).tier;
+    if (!(ld.dodgeDist > 0)) return 'overloaded';
+    if (a.cb.st < ctx.cfg.combat.dodgeCost * ld.dodgeCost) return 'no_stamina';
     if (c.yaw != null && !Number.isFinite(c.yaw)) return 'bad_args';
     return {};
   },

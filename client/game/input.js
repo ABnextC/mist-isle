@@ -2,7 +2,7 @@
 // 여기서는 '무엇을 누르는지'만 모은다. 명령으로 바꾸는 일은 main.js가 한다.
 
 const MOVE_KEYS = { w: 'f', arrowup: 'f', s: 'b', arrowdown: 'b', a: 'l', arrowleft: 'l', d: 'r', arrowright: 'r' };
-const ACT_KEYS = { e: 'interact', f: 'interact', h: 'recall', i: 'bag', b: 'bag', tab: 'bag', c: 'craft', k: 'skills', l: 'log', escape: 'close', ' ': 'dodge', r: 'heavy' };
+const ACT_KEYS = { e: 'interact', f: 'interact', h: 'recall', i: 'bag', b: 'bag', tab: 'bag', c: 'craft', k: 'skills', l: 'log', escape: 'close', ' ': 'dodge', r: 'heavy', f3: 'perf' };
 // 전투(v0.3, PC): 마우스 왼쪽 짧게 = 약공, 길게 눌렀다 떼기 = 강공, 오른쪽 누르는 동안 = 막기, Space = 구르기, Q 누르는 동안 = 막기
 const HEAVY_MS = 320;
 
@@ -33,7 +33,7 @@ export function createInput(canvas, { joyEl, knobEl }) {
     }
     if (down && !e.repeat && ACT_KEYS[k]) {
       acts.push(ACT_KEYS[k]);
-      if (k === 'tab' || k === ' ') e.preventDefault();
+      if (k === 'tab' || k === ' ' || k === 'f3') e.preventDefault();
     }
   }
   window.addEventListener('keydown', (e) => onKey(e, true));

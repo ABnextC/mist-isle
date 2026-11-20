@@ -175,6 +175,14 @@ html, body {
 .float.big { font-size: 22px; color: #ffd27a; }
 .float.hurt { color: #ff8070; }
 .float.evade { color: #9fe0ff; }
+.load { display: grid; gap: 3px; margin: 2px 0 8px; }
+.load small { font-size: 11px; }
+.load .lbar { position: relative; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.load .lbar span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: #8fc79a; }
+.load.medium .lbar span { background: #d8c27a; }
+.load.heavy .lbar span { background: #e09a5a; }
+.load.over .lbar span { background: #e05a4f; }
+.load .lbar i { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(0,0,0,0.45); }
 .eqgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 8px; }
 .eq { padding: 6px 8px; border-radius: 8px; background: rgba(255,255,255,0.05); display: grid; gap: 1px; }
 .eq.broken { outline: 1px solid #e0473c; }
@@ -197,3 +205,10 @@ html, body {
 .need .btns { display: flex; flex-direction: row; gap: 4px; }
 /* 휴대폰: 창을 연 동안에는 전투·손 단추를 감춘다(창 속 단추를 가리지 않게) */
 .panel-open .cbtns, .panel-open .act-btn { display: none; }
+
+/* 성능 표시창(v0.4.5) */
+#perf { position: fixed; left: 8px; top: 64px; z-index: 30; max-width: min(520px, 92vw); padding: 6px 8px; border-radius: 8px;
+  background: rgba(10, 14, 18, 0.78); color: #dfe8e4; font: 11px/1.45 ui-monospace, Menlo, Consolas, monospace; pointer-events: none; }
+#perf b { color: #9fe0b8; font-size: 13px; }
+#perf u { text-decoration: none; color: #f0c27a; }
+#perf small { opacity: 0.7; }

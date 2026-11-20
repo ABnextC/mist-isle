@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { installHeightFog } from './gfx/fog.js';
 import { createSky } from './gfx/sky.js';
 import { createPost } from './gfx/post.js';
+import { pixelRatioFor } from './gfx/quality.js';
 
 const lerp = THREE.MathUtils.lerp;
 
@@ -35,8 +36,8 @@ export function createScene(canvas, { tier, textures }) {
 
   function applyTier(t) {
     current = t;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, t.maxDpr));
     key.shadow.mapSize.set(t.shadow, t.shadow);
+    key.shadow.radius = t.shadowRadius ?? 2;
     if (key.shadow.map) {
       key.shadow.map.dispose();
       key.shadow.map = null;
@@ -51,6 +52,8 @@ export function createScene(canvas, { tier, textures }) {
   function resize() {
     const w = window.innerWidth;
     const h = window.innerHeight;
+    // 그릴 배율은 창 크기에 따라 다시 정한다(픽셀 수 상한)
+    renderer.setPixelRatio(pixelRatioFor(current, w, h));
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -103,14 +106,49 @@ export function createScene(canvas, { tier, textures }) {
   }
 
   applyTier(tier);
-  // 로딩 중에 모든 재질의 셰이더를 미리(병렬로) 컴파일한다. 처음 보는 물건이 나올 때 멈칫하지 않게
-  async function warm() {
+  // 미리 데우기(v0.4.5). 처음 보는 물체가 화면에 들어올 때 멈칫하지 않게 로딩 화면 안에서 끝낸다.
+  // 1) 모든 재질 셰이더를 병렬로 컴파일한다(KHR_parallel_shader_compile가 있으면 기다리는 동안 화면이 멈추지 않는다).
+  // 2) 장면의 모든 물체를 화면 밖·먼 곳·꺼 둔 것까지 한 번 실제로 그린다(그림자·후처리 포함).
+  //    compile()은 재질마다 한 번, 처음 만난 물체 종류로만 만든다. 같은 재질을 쓰는 인스턴스·뼈대 물체 변형,
+  //    그림자 깊이 셰이더, Windows(ANGLE→D3D)가 첫 그리기 때 따로 만드는 실행 파일, 텍스처·정점 올리기는 2에서 끝난다.
+  async function warm({ extra = [], say = null } = {}) {
+    const t0 = performance.now();
     const prev = renderer.getRenderTarget();
     renderer.setRenderTarget(post.target());
+    for (const o of extra) scene.add(o);
     try {
       await renderer.compileAsync(scene, camera);
-    } catch { /* 첫 프레임에 컴파일된다 */ }
+    } catch { /* 아래에서 그리며 컴파일된다 */ }
     renderer.setRenderTarget(prev);
+    const t1 = performance.now();
+    if (say) await say();
+    const saved = [];
+    scene.traverse((o) => {
+      if (o.isLight || o.isCamera) return; // 빛 개수가 바뀌면 다른 셰이더가 되니 건드리지 않는다
+      saved.push([o, o.visible, o.frustumCulled, o.isInstancedMesh ? o.count : -1]);
+      o.visible = true;
+      o.frustumCulled = false;
+      if (o.isInstancedMesh && o.count === 0) o.count = Math.min(1, o.instanceMatrix.count);
+    });
+    const gl = renderer.getContext();
+    const px = new Uint8Array(4);
+    try {
+      for (let i = 0; i < 2; i++) {
+        post.render();
+        gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); // GPU가 다 끝낼 때까지 여기서 기다린다
+      }
+    } finally {
+      for (const [o, vis, fc, cnt] of saved) {
+        o.visible = vis;
+        o.frustumCulled = fc;
+        if (cnt >= 0) o.count = cnt;
+      }
+      for (const o of extra) scene.remove(o);
+    }
+    post.render();
+    gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    const t2 = performance.now();
+    return { compileMs: Math.round(t1 - t0), drawMs: Math.round(t2 - t1), programs: renderer.info.programs.length };
   }
   return {
     renderer, scene, camera, key, setTime, applyTier, resize, warm,

@@ -18,7 +18,7 @@ import { createFlora } from './gfx/flora.js';
 import { makeMaterials, G } from './gfx/materials.js';
 import { createNodesView } from './nodes-view.js';
 import { createTownView } from './town-view.js';
-import { createActorsView } from './actors-view.js';
+import { createActorsView, playerBody, BODY_KEY } from './actors-view.js';
 import { prepareActorBase } from './models/actor.js';
 import { createMobsView } from './mobs-view.js';
 import { zoneAt } from '../../core/terrain.js';
@@ -96,7 +96,7 @@ async function boot() {
   const townView = createTownView(view.scene, game, ground.hf, { mats, terrain: game.terrain, region });
   await say('🌫️ 개척자를 준비하는 중…');
   await actorBase;
-  const actorsView = createActorsView(view.scene, game, ground.hf);
+  const actorsView = createActorsView(view.scene, game, ground.hf, view.camera);
   const floaters = document.createElement('div');
   floaters.id = 'floaters';
   document.body.appendChild(floaters);
@@ -380,6 +380,13 @@ async function boot() {
       case 'contrib-silver': game.dispatch({ type: 'CONTRIBUTE', actor: PID, project: v, silver: Number(n) }); break;
       case 'set-home': game.dispatch({ type: 'SET_HOME', actor: PID }); break;
       case 'speed': hud.settings.speed = Number(v); break;
+      case 'body':
+        hud.settings.body = v === 'f' ? 'f' : 'm';
+        try {
+          localStorage.setItem(BODY_KEY, hud.settings.body);
+        } catch { /* 저장 못 해도 이번 판은 바꾼다 */ }
+        actorsView.rebuild(PID);
+        break;
       case 'focus-toggle': hud.settings.focus = !hud.settings.focus; break;
       case 'gfx': {
         setChosenTier(v);
@@ -415,6 +422,7 @@ async function boot() {
     hud.settings.gfxNow = `${t.label} 화질`;
   }
   hud.settings.gfx = chosenTier();
+  hud.settings.body = playerBody();
   hud.settings.gfxNow = `${tier.label} 화질`;
   const tuner = createAutoTuner((next, fps) => {
     applyTier(next);

@@ -669,7 +669,10 @@ export function createHud(root, game, { touch, onAct }) {
     const sp = [1, 10, 30].map((s) => `<button data-act="speed" data-v="${s}" class="${settings.speed === s ? 'on' : ''}">×${s}</button>`).join('');
     const gf = [['auto', '자동'], ['high', '높음'], ['medium', '중간'], ['low', '낮음']]
       .map(([v, l]) => `<button data-act="gfx" data-v="${v}" class="${settings.gfx === v ? 'on' : ''}">${l}</button>`).join('');
-    return `<h3>화질</h3><div class="row">${gf}</div>
+    const bd = [['m', '남자'], ['f', '여자']]
+      .map(([v, l]) => `<button data-act="body" data-v="${v}" class="${settings.body === v ? 'on' : ''}">${l}</button>`).join('');
+    return `<h3>내 개척자</h3><div class="row">${bd}</div>
+      <h3>화질</h3><div class="row">${gf}</div>
       <p class="muted">지금 ${esc(settings.gfxNow)} · 그림자·후처리·풀은 바로 바뀌고, 지형·텍스처 해상도는 다시 열 때 바뀐다.</p>
       <h3>시험용 시간 배속</h3><div class="row">${sp}</div>
       <h3>도움</h3><div class="row">

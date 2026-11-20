@@ -1,10 +1,23 @@
 // 캐릭터 그리기와 동작: 걷기(무릎·팔꿈치까지), 숨쉬기, 도끼·곡괭이 내려찍기, 낫질, 귀환 시전.
 // v0.3: 무기 들기, 약공·강공 휘두르기, 창 찌르기, 구르기, 막기, 쓰러짐, 맞을 때 움찔.
+// v0.5: 실제 사람 몸 모형. 동작 값은 예전 그대로 쓰고 pose()에서 해부학 좌우(오른손 = -x)로 거울 변환한다.
+//       눈 깜빡임·눈동자 움직임, 팔을 높이 들면 쇄골이 따라 올라감, 허리·가슴에 나눠 굽힘.
 
 import * as THREE from 'three';
 import { makeActorModel } from './models/actor.js';
 
-const TUNICS = [0x8a4f6e, 0x6e5a2e, 0x2e5a8a, 0x7a3a2a];
+const TUNICS = [0x8a4f6e, 0x6e5a2e, 0x2e5a8a, 0x7a3a2a, 0x4a6a3a, 0x5a4a7a, 0x8a6a3a];
+const TROUSERS = [0x4a4238, 0x3b3f4a, 0x5a4a38, 0x3a3a34];
+// 페르소나 몸: 여·남을 섞는다
+const BODY_PATTERN = ['f', 'm', 'm', 'f', 'm', 'f', 'm'];
+export const BODY_KEY = 'mist-isle:body';
+export function playerBody() {
+  try {
+    return localStorage.getItem(BODY_KEY) === 'f' ? 'f' : 'm';
+  } catch {
+    return 'm';
+  }
+}
 
 function lerpAngle(a, b, k) {
   let d = b - a;
@@ -15,21 +28,67 @@ function lerpAngle(a, b, k) {
 
 const damp = (cur, want, k) => cur + (want - cur) * k;
 
-export function createActorsView(scene, game, hf) {
+export function createActorsView(scene, game, hf, camera = null) {
   const views = new Map();
   let botIdx = 0;
 
-  function make(a) {
+  const botOf = new Map();
+  function make(a, keep) {
     const player = a.kind === 'player';
+    let idx = 0;
+    if (!player) {
+      if (!botOf.has(a.id)) botOf.set(a.id, botIdx++);
+      idx = botOf.get(a.id);
+    }
     const model = makeActorModel({
-      tunic: player ? 0x2a6e68 : TUNICS[botIdx++ % TUNICS.length],
-      trousers: player ? 0x3b3f4a : 0x4a4238,
-      seed: player ? 2 : 3 + botIdx,
+      tunic: player ? 0x2a6e68 : TUNICS[idx % TUNICS.length],
+      trousers: player ? 0x3b3f4a : TROUSERS[idx % TROUSERS.length],
+      seed: player ? 2 : 3 + idx,
+      body: player ? playerBody() : BODY_PATTERN[idx % BODY_PATTERN.length],
     });
     scene.add(model.root);
-    return { m: model, pos: new THREE.Vector3(a.x, hf.height(a.x, a.z), a.z), yaw: a.yaw || 0, phase: 0, swing: 0, speed: 0, breathe: Math.random() * 6, hurt: 0, fall: 0 };
+    const v = { m: model, pos: new THREE.Vector3(a.x, hf.height(a.x, a.z), a.z), yaw: a.yaw || 0, phase: 0, swing: 0, speed: 0, breathe: Math.random() * 6, hurt: 0, fall: 0,
+      blinkIn: 1 + Math.random() * 3, blink: -1, gaze: new THREE.Vector2(), gazeTo: new THREE.Vector2(), gazeIn: Math.random() * 2 };
+    if (keep) Object.assign(v, { pos: keep.pos, yaw: keep.yaw, phase: keep.phase, speed: keep.speed });
+    return v;
   }
 
+  // 내 개척자 몸을 바꾼다(설정에서)
+  function rebuild(id) {
+    const old = views.get(id);
+    const a = game.state.actors[id];
+    if (!old || !a) return;
+    scene.remove(old.m.root);
+    views.set(id, make(a, old));
+  }
+
+  // 눈 깜빡임과 눈동자: 2~5초마다 깜빡, 1~3초마다 시선이 조금 옮겨 간다
+  function face(v, dt) {
+    const m = v.m;
+    v.blinkIn -= dt;
+    if (v.blinkIn <= 0 && v.blink < 0) {
+      v.blink = 0;
+      v.blinkIn = 1.8 + Math.random() * 3.5;
+    }
+    let b = 0;
+    if (v.blink >= 0) {
+      v.blink += dt / 0.17;
+      b = Math.sin(Math.min(1, v.blink) * Math.PI);
+      if (v.blink >= 1) v.blink = -1;
+    }
+    m.setMorph('blinkL', b);
+    m.setMorph('blinkR', b);
+    v.gazeIn -= dt;
+    if (v.gazeIn <= 0) {
+      v.gazeIn = 0.8 + Math.random() * 2.4;
+      v.gazeTo.set((Math.random() - 0.5) * 0.36, (Math.random() - 0.5) * 0.16);
+    }
+    v.gaze.lerp(v.gazeTo, 1 - Math.exp(-dt * 18));
+    for (const e of m.eyes) e.rotation.set(-v.gaze.y, v.gaze.x, 0);
+  }
+
+  // 동작 값은 예전 모형(오른팔이 +x) 기준이다. 새 몸은 해부학 그대로(오른팔 -x)라 y·z 회전을 뒤집는다(거울)
+  const lift = (x) => Math.min(1, Math.max(0, (-x - 1.0) / 1.6));
   function pose(v, p) {
     const m = v.m;
     m.legL.th.rotation.x = p.thL;
@@ -38,14 +97,18 @@ export function createActorsView(scene, game, hf) {
     m.legR.kn.rotation.x = p.knR;
     m.legL.ft.rotation.x = p.ftL;
     m.legR.ft.rotation.x = p.ftR;
-    m.armL.sh.rotation.set(p.shLx, 0, p.shLz);
-    m.armR.sh.rotation.set(p.shRx, p.shRy || 0, p.shRz);
+    m.armL.sh.rotation.set(p.shLx, 0, -p.shLz);
+    m.armR.sh.rotation.set(p.shRx, -(p.shRy || 0), -p.shRz);
     m.armL.el.rotation.x = p.elL;
     m.armR.el.rotation.x = p.elR;
-    m.spine.rotation.set(p.spX, p.spY, 0);
-    m.hips.position.y = 0.96 + p.bob;
+    m.spine.rotation.set(p.spX * 0.55, -p.spY * 0.5, 0);
+    if (m.chest) m.chest.rotation.set(p.spX * 0.45, -p.spY * 0.5, 0);
+    m.hips.position.y = m.hipsY + p.bob;
     m.hips.rotation.x = p.roll || 0;
     m.neck.rotation.x = p.nk;
+    // 팔을 머리 위로 들면 쇄골이 따라 올라간다(어깨가 꺼지지 않게)
+    if (m.armL.clav) m.armL.clav.rotation.z = 0.3 * lift(p.shLx);
+    if (m.armR.clav) m.armR.clav.rotation.z = -0.3 * lift(p.shRx);
   }
 
   // 전투 자세: 코어의 a.cb(공격·구르기·막기·쓰러짐)를 보고 팔·몸통을 덮어쓴다
@@ -179,12 +242,15 @@ export function createActorsView(scene, game, hf) {
       }
       combatPose(v, a, p, wDef, dt);
       pose(v, p);
+      if (camera) v.m.lod(camera.position.distanceTo(v.pos));
+      face(v, dt);
     }
   }
 
   return {
     update,
     onEvent,
+    rebuild,
     positionOf: (id) => views.get(id)?.pos,
   };
 }

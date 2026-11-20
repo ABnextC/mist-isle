@@ -102,6 +102,7 @@ async function boot() {
   floaters.id = 'floaters';
   document.body.appendChild(floaters);
   const mobsView = createMobsView(view.scene, game, ground.hf, floaters);
+  window.__mist.mobsView = mobsView;
   // 떠오르는 숫자(준 피해·받은 피해·회피)
   const floats = [];
   const fv = new THREE.Vector3();

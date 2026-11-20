@@ -319,8 +319,13 @@ def ground(c, mode='const'):
 
 def pack(c):
     q = np.stack([c['q'][b] for b in BONES], 1)  # (n, 19, 4)
-    return {'n': int(c['n']), 'dur': round(float(c['dur']), 4), 'stride': round(float(c['stride']), 4), 'src': c['src'],
-            'q': [round(float(x), 4) for x in q.reshape(-1)], 'h': [round(float(x), 4) for x in c['h'].reshape(-1)]}
+    out = {'n': int(c['n']), 'dur': round(float(c['dur']), 4), 'stride': round(float(c['stride']), 4), 'src': c['src'],
+           'q': [round(float(x), 3) for x in q.reshape(-1)], 'h': [round(float(x), 4) for x in c['h'].reshape(-1)]}
+    if 'loop' in c:
+        out['loop'] = bool(c['loop'])
+    if c.get('ev'):
+        out['ev'] = c['ev']
+    return out
 
 
 if __name__ == '__main__':
@@ -333,8 +338,12 @@ if __name__ == '__main__':
     for k in ('walk', 'run'):
         ground(clips[k])
         clips[k] = plant(clips[k])
+    # 손 동작(v0.4.8): 채집·전투·시전
+    from actions import build_actions
+    for k, c in build_actions(ROOT, clips['idle']).items():
+        clips[k] = c
     for k, c in clips.items():
-        print(k, 'frames', c['n'], 'dur', round(c['dur'], 3), 'stride', round(c['stride'], 3), c.get('win', ''), c.get('warp', ''), c.get('plant', ''), c.get('info', ''), 'hips y', np.round(c['h'][:, 1].min(), 3), np.round(c['h'][:, 1].max(), 3))
+        print(k, 'frames', c['n'], 'dur', round(c['dur'], 3), 'stride', round(c['stride'], 3), c.get('win', ''), c.get('warp', ''), c.get('plant', ''), c.get('info', ''), c.get('ev', ''), c.get('straightened', ''), 'hips y', np.round(c['h'][:, 1].min(), 3), np.round(c['h'][:, 1].max(), 3))
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     data = {'fps': FPS, 'bones': BONES, 'clips': {k: pack(c) for k, c in clips.items()},
             'credit': 'CMU Graphics Lab Motion Capture Database (mocap.cs.cmu.edu), BVH: Bruce Hahne (cgspeed)'}

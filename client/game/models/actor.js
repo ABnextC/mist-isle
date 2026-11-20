@@ -369,9 +369,81 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
       [[P(new THREE.ConeGeometry(0.045, 0.26, 4), 0xffffff, { y: 1.37, sz: 0.3 }), P(new THREE.CylinderGeometry(0.026, 0.026, 0.06, 8), 0xffffff, { y: 1.23 })], metal],
     ]);
   }
+  // 두 손으로 쥐는 도구·무기(v0.4.8): 손잡이가 두 손을 지나게 돌린다.
+  // 모션 캡처 손목은 아래팔을 따르기만 해서, 오른손에만 붙이면 도끼날이 엉뚱한 쪽을 본다.
+  // from→to 방향이 손잡이(+y), 몸 옆축이 날의 면(+x)이 되게. 두 손이 멀면(한 손 동작) 오른손 방향 그대로.
+  const TWO = {
+    logging: { mode: 'radial' }, mining: { mode: 'radial' },
+    axe_1: { mode: 'radial' }, axe_2: { mode: 'radial' }, club_0: { mode: 'radial' },
+    sword_1: { mode: 'radial', far: 0.3 }, sword_2: { mode: 'radial', far: 0.3 },
+    spear_1: { mode: 'line', far: 0.9 }, spear_2: { mode: 'line', far: 0.9 },
+  };
+  const gripL = new THREE.Vector3(-grip[0], grip[1], grip[2]);
+  const gripRv = new THREE.Vector3(grip[0], grip[1], grip[2]);
+  const _pR = new THREE.Vector3();
+  const _pL = new THREE.Vector3();
+  const _s = new THREE.Vector3();
+  const _d = new THREE.Vector3();
+  const _x = new THREE.Vector3();
+  const _z = new THREE.Vector3();
+  const _m = new THREE.Matrix4();
+  const _qw = new THREE.Quaternion();
+  const _qp = new THREE.Quaternion();
+  const _q0 = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0));
+  const _o = new THREE.Vector3();
+  const _t = new THREE.Vector3();
+  // radial: 손잡이 = 두 어깨 가운데 → 두 손 가운데 방향(내려찍을 때 날이 앞·아래로, 들 때 머리 위로)
+  // line: 손잡이 = 오른손 → 왼손(창처럼 두 손이 길게 벌어진 경우)
+  function aimHeld() {
+    let g = null;
+    let key = null;
+    for (const [k, t] of Object.entries(tools)) if (t.visible) { g = t; key = k; }
+    if (!g) for (const [k, t] of Object.entries(weapons)) if (t.visible) { g = t; key = k; }
+    if (!g) return;
+    const cfg = TWO[key];
+    if (!cfg) return;
+    root.updateMatrixWorld(true);
+    _pR.copy(gripRv).applyMatrix4(armR.hand.matrixWorld);
+    _pL.copy(gripL).applyMatrix4(armL.hand.matrixWorld);
+    const dist = _pR.distanceTo(_pL);
+    let k;
+    if (cfg.mode === 'line') k = 1; // 창은 늘 겨눈다: 두 손이 붙어 있으면 몸 앞쪽 수평으로
+    else k = Math.min(1, Math.max(0, ((cfg.far ?? 0.45) + 0.15 - dist) / 0.15));
+    if (k <= 0.001) {
+      g.quaternion.copy(_q0);
+      g.position.copy(gripRv);
+      return;
+    }
+    if (cfg.mode === 'line') {
+      const kl = Math.min(1, Math.max(0, (dist - 0.22) / 0.16)) * Math.min(1, Math.max(0, (cfg.far + 0.3 - dist) / 0.3));
+      _t.set(0, -0.05, 1).applyQuaternion(root.quaternion).normalize();
+      _d.subVectors(_pL, _pR).normalize().multiplyScalar(kl).addScaledVector(_t, 1 - kl).normalize();
+      _o.copy(_pR);
+    } else {
+      armR.sh.getWorldPosition(_s);
+      armL.sh.getWorldPosition(_t);
+      _s.add(_t).multiplyScalar(0.5);
+      _o.addVectors(_pR, _pL).multiplyScalar(0.5);
+      _d.subVectors(_o, _s).normalize();
+      _o.addScaledVector(_d, -0.12);
+    }
+    _x.set(1, 0, 0).applyQuaternion(root.quaternion);
+    _x.addScaledVector(_d, -_x.dot(_d));
+    if (_x.lengthSq() < 1e-6) _x.set(0, 0, 1).applyQuaternion(root.quaternion);
+    _x.normalize();
+    _z.crossVectors(_x, _d);
+    _m.makeBasis(_x, _d, _z);
+    _qw.setFromRotationMatrix(_m);
+    armR.hand.getWorldQuaternion(_qp).invert();
+    _qw.premultiply(_qp); // 오른손 기준으로
+    g.quaternion.copy(_q0).slerp(_qw, k);
+    armR.hand.worldToLocal(_o);
+    g.position.copy(gripRv).lerp(_o, k);
+  }
+
   return {
     root, hips: by.hips, spine: by.spine, chest: by.chest, neck: by.neck, head: by.head,
-    armL, armR, legL, legR, tools, weapons, materials: M, eyes, setMorph, kind, lod, setOutfit,
+    armL, armR, legL, legR, tools, weapons, materials: M, eyes, setMorph, kind, lod, setOutfit, aimHeld,
     get outfit() { return { ...want }; },
     hipsY: by.hips.position.y, hipsRest: by.hips.position.clone(), bones: by, buildMs: BASE.ms,
     tris: Object.fromEntries(Object.entries(pk.meshes).map(([k, m]) => [k, m.geometry.index.count / 3])),

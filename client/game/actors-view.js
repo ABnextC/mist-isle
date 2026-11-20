@@ -2,11 +2,13 @@
 // v0.3: 무기 들기, 약공·강공 휘두르기, 창 찌르기, 구르기, 막기, 쓰러짐, 맞을 때 움찔.
 // v0.5: 실제 사람 몸 모형. 동작 값은 예전 그대로 쓰고 pose()에서 해부학 좌우(오른손 = -x)로 거울 변환한다.
 //       눈 깜빡임·눈동자 움직임, 팔을 높이 들면 쇄골이 따라 올라감, 허리·가슴에 나눠 굽힘.
+// v0.4.6~: 서기·걷기·달리기는 모션 캡처(anim.js). v0.4.8: 채집·전투·구르기·쓰러짐·시전도 모션 캡처 동작(actionOf).
+//       손으로 짠 pose()는 동작 묶음을 못 읽었을 때와 무기 든 오른팔(arm)에만 쓴다.
 
 import * as THREE from 'three';
 import { tickLerp } from './interp.js';
 import { makeActorModel } from './models/actor.js';
-import { loadClips, clips as animClips, sample as animSample, blend as animBlend, smoothstep, NB } from './anim.js';
+import { loadClips, clips as animClips, sample as animSample, sampleOnce as animOnce, hasClip, blend as animBlend, smoothstep, NB } from './anim.js';
 
 loadClips(new URL('../assets/anim/clips.json', import.meta.url).href);
 const LOWER = new Set(['hips', 'thL', 'knL', 'ftL', 'thR', 'knR', 'ftR']);
@@ -39,6 +41,7 @@ const AXZ = new THREE.Vector3(0, 0, 1);
 
 export function createActorsView(scene, game, hf, camera = null) {
   const views = new Map();
+  const HZ = game.data.config.time.hz;
   let detailNear = 22; // 이 거리 안에서만 속눈썹·눈알·머리카락 끝을 그린다(화질 단계)
   let botIdx = 0;
 
@@ -87,6 +90,20 @@ export function createActorsView(scene, game, hf, camera = null) {
     v.turn = 0;
     v.lastYaw = v.yaw;
     v.saveQ = [];
+    // 손 동작(v0.4.8): 동작 묶음 표본, 바뀔 때 잇는 직전 자세, 지난 장 자세
+    v.aq = new Float32Array(NB * 4);
+    v.ah = new Float32Array(3);
+    v.fromQ = new Float32Array(NB * 4);
+    v.fromH = new Float32Array(3);
+    v.lastQ = new Float32Array(NB * 4);
+    v.lastH = new Float32Array(3);
+    v.hasLast = false;
+    v.actKey = 'loco';
+    v.fadeLeft = 0;
+    v.loopName = null;
+    v.loopT = 0;
+    v.rollT0 = undefined;
+    v.downT0 = undefined;
     return v;
   }
 
@@ -149,13 +166,21 @@ export function createActorsView(scene, game, hf, camera = null) {
   }
 
   // 전투 자세: 코어의 a.cb(공격·구르기·막기·쓰러짐)를 보고 팔·몸통을 덮어쓴다
-  function combatPose(v, a, p, wDef, dt) {
+  function combatPose(v, a, p, wDef, dt, clipsOn) {
     const cb = a.cb;
     const st = game.state.t;
     const C = game.data.config.combat;
     v.hurt = Math.max(0, v.hurt - dt * 5);
     v.m.root.rotation.x = 0;
     if (!cb) return;
+    if (clipsOn) {
+      // 동작 묶음이 있으면 쓰러짐·구르기·휘두르기는 actionOf()가 맡는다. 여기선 무기 든 오른팔만
+      if (wDef && !a.action && !cb.act && !cb.dodge && !cb.block && !(cb.downUntil > 0)) {
+        Object.assign(p, { shRx: Math.min(p.shRx, -0.25), elR: Math.min(p.elR, -0.55) });
+        return 'arm';
+      }
+      return null;
+    }
     if (cb.downUntil > 0) {
       v.fall = Math.min(1, v.fall + dt * 3);
     } else v.fall = Math.min(1, Math.max(0, v.fall - dt * 4));
@@ -302,6 +327,151 @@ export function createActorsView(scene, game, hf, camera = null) {
     }
   }
 
+  // ── 손 동작(v0.4.8): 채집·전투·시전을 모션 캡처 동작으로 ──
+  // 무기 종류·세기에 따라 동작을 고른다
+  function attackClip(wDef, kind) {
+    const type = wDef?.type || 'fists';
+    if (type === 'fists') return kind === 'heavy' ? 'punch_heavy' : 'punch';
+    if (type === 'spear') return kind === 'heavy' ? 'spear_heavy' : 'spear';
+    return kind === 'heavy' ? 'atk_heavy' : 'atk_light';
+  }
+  const GATHER_CLIP = { logging: 'chop', mining: 'mine', harvesting: 'harvest' };
+  const ROLL_SPLIT = 0.78; // 구르기 동작에서 굴러 웅크린 채 일어나기 시작할 때까지(움직이는 동안)
+  const ROLL_RISE = 0.25; // 남은 일어나기에 쓰는 시간(초)
+
+  // 지금 해야 할 손 동작: { name, t(0~1), once, mode: full|upper } 또는 null
+  function actionOf(v, a, wDef, skill, casting, stI, dt) {
+    const cb = a.cb;
+    const C = game.data.config.combat;
+    // 쓰러짐: 넘어지는 동작을 한 번, 끝 장(누운 자세)에서 멈춘다
+    if (cb && cb.downUntil > 0) {
+      if (v.downT0 === undefined) v.downT0 = stI;
+      const c = animClips().clips.down;
+      return { name: 'down', t: (stI - v.downT0) / c.dur, once: true, mode: 'full' };
+    }
+    v.downT0 = undefined;
+    // 구르기: 움직이는 동안 굴러 나가고, 끝나면 잠깐 일어난다(바로 움직이면 끊는다)
+    if (cb?.dodge && cb.dodge.t0 !== v.rollT0) v.rollT0 = cb.dodge.t0;
+    if (v.rollT0 !== undefined) {
+      const D = C.dodgeSec;
+      const el = stI - v.rollT0;
+      const busy = (a.move && el > D) || cb?.act || cb?.block;
+      if (el < D + ROLL_RISE && !busy) {
+        const t = el < D ? (Math.max(0, el) / D) * ROLL_SPLIT : ROLL_SPLIT + ((el - D) / ROLL_RISE) * (1 - ROLL_SPLIT);
+        return { name: 'roll', t, once: true, mode: 'full' };
+      }
+      v.rollT0 = undefined;
+    }
+    // 휘두르기: 동작의 '맞는 순간'이 코어의 hitAt에 오게 시간을 나눠 맞춘다
+    const act = cb?.act;
+    if (act && stI < act.endAt + 0.05) {
+      const name = attackClip(wDef, act.kind);
+      if (hasClip(name)) {
+        const hp = animClips().clips[name].ev?.hit ?? 0.5;
+        const t = stI < act.hitAt
+          ? (hp * Math.max(0, stI - act.t0)) / Math.max(0.02, act.hitAt - act.t0)
+          : hp + ((1 - hp) * (stI - act.hitAt)) / Math.max(0.02, act.endAt - act.hitAt);
+        return { name, t, once: true, mode: 'upper' };
+      }
+    }
+    if (cb?.block && hasClip('guard')) return loopAct(v, 'guard', dt, 'upper');
+    if (skill && GATHER_CLIP[skill] && hasClip(GATHER_CLIP[skill])) return loopAct(v, GATHER_CLIP[skill], dt, 'full');
+    if (casting && hasClip('cast')) return loopAct(v, 'cast', dt, 'full');
+    v.loopName = null;
+    return null;
+  }
+  function loopAct(v, name, dt, mode) {
+    const c = animClips().clips[name];
+    if (v.loopName !== name) {
+      v.loopName = name;
+      v.loopT = 0;
+    } else v.loopT = (v.loopT + dt / c.dur) % 1;
+    return { name, t: v.loopT, once: false, mode };
+  }
+
+  // 동작을 뼈에 얹는다. upper: 달리는 중이면 다리·엉덩이는 이동 동작 그대로
+  function applyAction(v, act) {
+    const m = v.m;
+    if (act.once) animOnce(act.name, act.t, v.aq, v.ah);
+    else animSample(act.name, act.t, v.aq, v.ah);
+    const names = animClips().bones;
+    const wm = act.mode === 'upper' ? v.wMove || 0 : 0;
+    for (let i = 0; i < NB; i++) {
+      const nm = names[i];
+      const b = m.bones[nm];
+      if (!b) continue;
+      const k = LOWER.has(nm) ? 1 - wm : 1;
+      if (k >= 0.999) b.quaternion.fromArray(v.aq, i * 4);
+      else if (k > 0.001) {
+        tmpQ.fromArray(v.aq, i * 4);
+        b.quaternion.slerp(tmpQ, k);
+      }
+    }
+    const lk = v.legK || 1;
+    const k = 1 - wm;
+    tmpV.set(m.hipsRest.x + v.ah[0] * lk, m.hipsRest.y + v.ah[1] * lk, m.hipsRest.z + v.ah[2] * lk);
+    m.hips.position.lerp(tmpV, k);
+  }
+
+  // 동작이 바뀌는 순간(서기→휘두르기, 휘두르기→달리기 …) 직전 자세에서 0.15초 동안 이어 붙인다
+  const FADE = 0.15;
+  function crossfade(v, key, dt) {
+    const m = v.m;
+    const names = animClips().bones;
+    if (key !== v.actKey) {
+      v.actKey = key;
+      if (v.hasLast) {
+        v.fromQ.set(v.lastQ);
+        v.fromH.set(v.lastH);
+        v.fadeLeft = FADE;
+      }
+    }
+    if (v.fadeLeft > 0) {
+      v.fadeLeft = Math.max(0, v.fadeLeft - dt);
+      const x = 1 - v.fadeLeft / FADE;
+      const k = x * x * (3 - 2 * x);
+      for (let i = 0; i < NB; i++) {
+        const b = m.bones[names[i]];
+        if (!b) continue;
+        tmpQ.copy(b.quaternion);
+        b.quaternion.fromArray(v.fromQ, i * 4).slerp(tmpQ, k);
+      }
+      tmpV.set(v.fromH[0], v.fromH[1], v.fromH[2]);
+      m.hips.position.lerpVectors(tmpV, m.hips.position, k);
+    }
+    for (let i = 0; i < NB; i++) {
+      const b = m.bones[names[i]];
+      if (b) b.quaternion.toArray(v.lastQ, i * 4);
+    }
+    m.hips.position.toArray(v.lastH);
+    v.hasLast = true;
+  }
+
+  // 맞으면 움찔: 0.05초 만에 몸통이 뒤로 젖혀지고 무릎이 꺾였다가 0.4초에 걸쳐 돌아온다(덧셈)
+  const AX = new THREE.Vector3(1, 0, 0);
+  function flinch(v, dt) {
+    if (v.hurtT === undefined || v.hurtT > 0.6) return;
+    v.hurtT += dt;
+    const x = v.hurtT;
+    const k = Math.min(1, x / 0.05) * Math.exp(-Math.max(0, x - 0.05) * 6);
+    if (k < 0.01) return;
+    const add = (bone, ang) => {
+      if (!bone) return;
+      tmpQ.setFromAxisAngle(AX, ang);
+      bone.quaternion.multiply(tmpQ);
+    };
+    const by = v.m.bones;
+    add(by.spine, -0.26 * k);
+    add(by.chest, -0.2 * k);
+    add(by.neck, 0.14 * k);
+    add(by.head, -0.3 * k);
+    add(by.knL, 0.22 * k);
+    add(by.knR, 0.18 * k);
+    add(by.thL, -0.1 * k);
+    add(by.thR, -0.08 * k);
+    v.m.hips.position.y -= 0.025 * k;
+  }
+
   // 손 동작(채집·전투·시전)을 모션 캡처 위에 섞는다. 달리면서 휘두르면 다리는 달리기를 따른다
   function overlay(v, p, mode, dt) {
     const m = v.m;
@@ -340,7 +510,10 @@ export function createActorsView(scene, game, hf, camera = null) {
   function onEvent(ev) {
     if (ev.type === 'combat.hurt') {
       const v = views.get(ev.actor);
-      if (v) v.hurt = 1;
+      if (v) {
+        v.hurt = 1;
+        v.hurtT = 0;
+      }
     }
   }
 
@@ -399,11 +572,20 @@ export function createActorsView(scene, game, hf, camera = null) {
         spX: 0.06 * walk + br * 0.012, spY: s * 0.08 * walk, bob: -Math.abs(c) * 0.035 * walk + br * 0.004, nk: -0.04 * walk,
       };
       let mode = null; // 손 동작이 덮는 범위: full(온몸) · upper(윗몸, 서 있으면 다리도) · arm(오른팔만)
-      const cm = combatPose(v, a, p, wDef, dt);
+      const cm = combatPose(v, a, p, wDef, dt, !!A);
       if (cm && (!mode || cm === 'full')) mode = cm;
       if (A) {
         locomotion(v, dt, A);
-        overlay(v, p, mode, dt);
+        // 틱 사이 시각(위치 보간과 같게 틱 하나 늦춘다)
+        const stI = state.t + ((game.alpha ?? 1) - 1) / HZ;
+        const act = actionOf(v, a, wDef, skill, casting, stI, dt);
+        if (act) {
+          applyAction(v, act);
+          v.actW = 0; // 손으로 짠 덮기는 끈다(바뀌는 순간은 crossfade가 잇는다)
+        } else overlay(v, p, mode, dt);
+        crossfade(v, act ? act.name : 'loco', dt);
+        flinch(v, dt);
+        if (skill || wDef) v.m.aimHeld();
       } else pose(v, p);
       clothSway(v, dt, t);
       if (camera) v.m.lod(camera.position.distanceTo(v.pos), detailNear);

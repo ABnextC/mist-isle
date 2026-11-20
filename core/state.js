@@ -9,7 +9,7 @@ import { initCombat, emptyEquip } from './systems/combat.js';
 import { initMobs } from './systems/mobs.js';
 import { newSettlement, initProjects, settlementsDaily } from './settlements.js';
 
-export const ENGINE_VERSION = '0.4.7';
+export const ENGINE_VERSION = '0.4.8';
 
 export function spawnPoint(region, terrain) {
   const [x, inland] = region.spawn;

@@ -41,6 +41,22 @@ export function sample(name, phase, out, outH) {
   for (let k = 0; k < 3; k++) outH[k] = c.h[i0 * 3 + k] * (1 - t) + c.h[i1 * 3 + k] * t;
 }
 
+// 한 번 재생하는 동작: t(0~1)를 끝 장까지(고리로 돌지 않는다)
+export function sampleOnce(name, t, out, outH) {
+  const c = DATA.clips[name];
+  const n = c.n;
+  const f = Math.min(1, Math.max(0, t)) * (n - 1);
+  const i0 = Math.min(n - 2, Math.floor(f));
+  const i1 = i0 + 1;
+  const u = f - i0;
+  const o0 = i0 * NB * 4;
+  const o1 = i1 * NB * 4;
+  for (let b = 0; b < NB; b++) THREE.Quaternion.slerpFlat(out, b * 4, c.q, o0 + b * 4, c.q, o1 + b * 4, u);
+  for (let k = 0; k < 3; k++) outH[k] = c.h[i0 * 3 + k] * (1 - u) + c.h[i1 * 3 + k] * u;
+}
+
+export const hasClip = (name) => !!DATA?.clips[name];
+
 // a ← a·(1−t) + b·t (뼈마다 구면 보간)
 export function blend(a, aH, b, bH, t) {
   if (t <= 0) return;

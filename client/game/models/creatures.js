@@ -33,18 +33,22 @@ function quadruped({ L, H, R, lr, body, belly, dark, legLen, headLen, neckUp, se
     ell(R * 0.82, R * 0.55, L * 0.38, belly, { y: -R * 0.42, z: 0.02 }),
     ell(R * 1.02, R * 0.98, R * 1.05, body, { z: L * 0.32, y: R * 0.08 }),
   ]), m));
+  // 다리(v0.4.8): 윗다리(엉덩이 관절 g)와 아랫다리(무릎 kn) 두 마디. 앞다리는 관절이 앞으로, 뒷다리는 뒤로 접힌다
   const legs = [];
   for (const [sx, sz, ph] of [[-1, 1, 0], [1, 1, Math.PI], [-1, -1, Math.PI], [1, -1, 0]]) {
     const g = new THREE.Group();
     g.position.set(sx * R * 0.55, -R * 0.2, sz * L * 0.36);
     torso.add(g);
     const len = legLen;
-    g.add(mesh(merge([
-      cyl(lr, lr * 0.75, len * 0.55, body, { y: -len * 0.27 }),
-      cyl(lr * 0.7, lr * 0.5, len * 0.5, dark, { y: -len * 0.75 }),
-      ell(lr * 0.75, lr * 0.5, lr * 0.95, dark, { y: -len * 1.0, z: lr * 0.2 }),
+    g.add(mesh(merge([cyl(lr, lr * 0.75, len * 0.58, body, { y: -len * 0.27 })]), m));
+    const kn = new THREE.Group();
+    kn.position.y = -len * 0.55;
+    g.add(kn);
+    kn.add(mesh(merge([
+      cyl(lr * 0.72, lr * 0.5, len * 0.5, dark, { y: -len * 0.2 }),
+      ell(lr * 0.75, lr * 0.5, lr * 0.95, dark, { y: -len * 0.45, z: lr * 0.2 }),
     ]), m));
-    legs.push({ g, ph });
+    legs.push({ g, kn, ph, front: sz > 0, sx, l1: len * 0.55, l2: len * 0.45, hip: H - R * 0.2 });
   }
   const neck = new THREE.Group();
   neck.position.set(0, R * 0.35, L * 0.45);
@@ -56,7 +60,7 @@ function quadruped({ L, H, R, lr, body, belly, dark, legLen, headLen, neckUp, se
   const tail = new THREE.Group();
   tail.position.set(0, R * 0.3, -L * 0.5);
   torso.add(tail);
-  return { m, root, torso, legs, neck, head, tail, R: rng(seed) };
+  return { m, root, torso, legs, neck, head, tail, R: rng(seed), L, H };
 }
 
 function deer(seed) {

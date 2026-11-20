@@ -4,6 +4,7 @@
 //       눈 깜빡임·눈동자 움직임, 팔을 높이 들면 쇄골이 따라 올라감, 허리·가슴에 나눠 굽힘.
 
 import * as THREE from 'three';
+import { tickLerp } from './interp.js';
 import { makeActorModel } from './models/actor.js';
 import { loadClips, clips as animClips, sample as animSample, blend as animBlend, smoothstep, NB } from './anim.js';
 
@@ -208,7 +209,8 @@ export function createActorsView(scene, game, hf, camera = null) {
   }
 
   // 이동 동작: 서기·걷기·달리기를 속도로 섞고, 위상은 걸은 거리로 나아간다(발이 덜 미끄러지게)
-  const RUN_STRETCH = 1.12;
+  // 보폭은 동작 묶음에 적힌 값(딛는 발이 안 미끄러지는 한 주기 거리) 그대로 쓴다
+  const RUN_STRETCH = 1.0;
   function locomotion(v, dt, A) {
     const m = v.m;
     const sp = v.speed;
@@ -217,8 +219,15 @@ export function createActorsView(scene, game, hf, camera = null) {
     const I = A.clips.idle;
     const wMove = smoothstep(0.12, 0.9, sp);
     const wRun = smoothstep(1.7, 3.5, sp);
-    const stride = W.stride + (R.stride * RUN_STRETCH - W.stride) * wRun;
-    v.cyc = (v.cyc + (dt * sp) / Math.max(0.3, stride)) % 1;
+    // 다리 길이가 다르면(여자 몸 등) 보폭·엉덩이 출렁임도 그만큼 줄인다 — 동작 묶음은 남자 몸 기준
+    if (!v.legK) v.legK = (m.bones.knL.position.length() + m.bones.ftL.position.length()) / 0.853 || 1;
+    const lk = v.legK;
+    const stride = (W.stride + (R.stride * RUN_STRETCH - W.stride) * wRun) * lk;
+    // 위상: 섞임(자세)은 부드러운 속도로, 나아가는 양은 실제 이동 거리로 — 멈춘 뒤 제자리 뜀·출발 때 미끄럼을 없앤다
+    const raw = v.rawSpeed ?? sp;
+    const wRunRaw = smoothstep(1.7, 3.5, raw);
+    const strideRaw = (W.stride + (R.stride * RUN_STRETCH - W.stride) * Math.max(wRun, wRunRaw)) * lk;
+    v.cyc = (v.cyc + (dt * raw) / Math.max(0.3, raw > 0.05 ? strideRaw : stride)) % 1;
     v.idleT = (v.idleT + dt / I.dur) % 1;
     animSample('walk', v.cyc, v.qa, v.ha);
     if (wRun > 0) {
@@ -238,7 +247,7 @@ export function createActorsView(scene, game, hf, camera = null) {
       const b = m.bones[names[i]];
       if (b) b.quaternion.fromArray(v.qi, i * 4);
     }
-    m.hips.position.set(m.hipsRest.x + v.hi[0], m.hipsRest.y + v.hi[1], m.hipsRest.z + v.hi[2]);
+    m.hips.position.set(m.hipsRest.x + v.hi[0] * lk, m.hipsRest.y + v.hi[1] * lk, m.hipsRest.z + v.hi[2] * lk);
     // 도는 쪽으로 몸을 기울인다(달릴수록)
     let dy = v.yaw - v.lastYaw;
     while (dy > Math.PI) dy -= Math.PI * 2;
@@ -247,8 +256,10 @@ export function createActorsView(scene, game, hf, camera = null) {
     v.turn = damp(v.turn, dy / Math.max(dt, 1e-3), 1 - Math.exp(-dt * 6));
     const bank = Math.max(-0.22, Math.min(0.22, -v.turn * sp * 0.03));
     if (Math.abs(bank) > 1e-3) {
+      // 발밑(뿌리 원점)을 축으로 온몸을 기울인다 — 엉덩이를 축으로 돌리면 발이 옆으로 빠진다
       tmpQ.setFromAxisAngle(AXZ, bank);
       m.hips.quaternion.premultiply(tmpQ);
+      m.hips.position.applyQuaternion(tmpQ);
     }
   }
 
@@ -350,12 +361,12 @@ export function createActorsView(scene, game, hf, camera = null) {
       }
       const px = v.pos.x;
       const pz = v.pos.z;
-      const k = 1 - Math.exp(-dt * 16);
-      v.pos.x += (a.x - v.pos.x) * k;
-      v.pos.z += (a.z - v.pos.z) * k;
+      [v.pos.x, v.pos.z] = tickLerp(v, a.x, a.z, state.tick, game.alpha ?? 1);
       v.pos.y = hf.height(v.pos.x, v.pos.z);
       const sp = Math.hypot(v.pos.x - px, v.pos.z - pz) / Math.max(dt, 1e-3);
-      v.speed = damp(v.speed, Math.min(sp, 7), 1 - Math.exp(-dt * 10));
+      v.rawSpeed = dt > 0 ? Math.min(sp, 12) : 0; // 걸음 위상은 실제로 간 거리로(멈추면 다리도 바로 멈춘다)
+      // 멈출 때는 빨리 서기 자세로(달리던 자세로 굳어 있는 시간을 줄인다)
+      v.speed = damp(v.speed, Math.min(sp, 7), 1 - Math.exp(-dt * (sp < v.speed ? 16 : 10)));
       let yaw = a.yaw || 0;
       const node = a.action?.type === 'gather' ? state.nodes[a.action.node] : null;
       const casting = a.action?.type === 'recall';

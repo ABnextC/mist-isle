@@ -2,6 +2,7 @@
 // 판정은 코어가 한다. 여기서는 state.mobs를 보고 보이기만 한다.
 
 import * as THREE from 'three';
+import { tickLerp } from './interp.js';
 import { makeCreature } from './models/creatures.js';
 
 const lerpAngle = (a, b, k) => {
@@ -63,15 +64,14 @@ export function createMobsView(scene, game, hf, overlay) {
       if (!v.q.root.visible) {
         // 다시 날 때 그 자리로 곧장 옮긴다
         v.pos.set(m.x, hf.height(m.x, m.z), m.z);
+        v.tk = undefined;
         v.fall = 0;
         bars.get(m.id)?.classList.remove('on');
         continue;
       }
       const px = v.pos.x;
       const pz = v.pos.z;
-      const k = 1 - Math.exp(-dt * 14);
-      v.pos.x += (m.x - v.pos.x) * k;
-      v.pos.z += (m.z - v.pos.z) * k;
+      [v.pos.x, v.pos.z] = tickLerp(v, m.x, m.z, state.tick, game.alpha ?? 1);
       v.pos.y = hf.height(v.pos.x, v.pos.z);
       const sp = Math.hypot(v.pos.x - px, v.pos.z - pz) / Math.max(dt, 1e-3);
       v.speed += (Math.min(sp, 12) - v.speed) * (1 - Math.exp(-dt * 10));

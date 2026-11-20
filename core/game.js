@@ -123,6 +123,10 @@ function wrap(ctx, bus) {
     },
     save: () => serialize(state),
     hash: () => hashState(state),
+    // 다음 틱까지 쌓인 몫(0~1). 화면이 틱 사이를 보간할 때 쓴다(상태에는 안 들어간다)
+    get alpha() {
+      return acc;
+    },
   };
 }
 

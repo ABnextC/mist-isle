@@ -1,4 +1,5 @@
 # 게임 동작 묶음 만들기: CMU 모션 캡처에서 서기·걷기·달리기를 골라 게임 뼈대로 옮겨 client/assets/anim/clips.json 으로 낸다.
+# v0.4.7: 정속 달리기(16_46)·가만히 서기(77_02), 이음매 높이 맞춤, 달리기 위상 비틀기, 발 붙이기 IK, 서기 방향 맞춤.
 # 실행: python3 tools/animforge/build.py <CMU BVH 폴더(data/)>   (예: CMU 미러 저장소 data/)
 # 원본: CMU Graphics Lab Motion Capture Database (mocap.cs.cmu.edu), BVH 변환 Bruce Hahne(cgspeed). 사용 제한 없음.
 import sys, os, json
@@ -11,6 +12,15 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, '..', '..', 'client', 'assets', 'anim', 'clips.json')
 REST = {b['name']: b['pos'] for b in json.load(open(os.path.join(HERE, '..', '..', 'client', 'assets', 'char', 'pioneer_m.json')))['bones']}
 FPS = 30
+RUN = os.environ.get('RUN', '016/16_46')
+IDLE = os.environ.get('IDLE', '077/77_02')
+IDLE_T0 = float(os.environ.get('IDLE_T0', '0'))
+IDLE_T1 = float(os.environ.get('IDLE_T1', '99'))
+RUN_FOOT = os.environ.get('RUN_FOOT', 'RightFoot')
+# 게임 달리기 5m/s에서 1분에 약 190걸음이 되게(원본 그대로면 210걸음으로 너무 잦다)
+RUN_STRIDE = float(os.environ.get('RUN_STRIDE', '3.15'))
+CYCLE_FPS = 60
+OUT = os.environ.get('OUT', OUT)
 
 
 def qmul(a, b):
@@ -68,24 +78,26 @@ def heading_of(P, f0, f1):
     return float(np.arctan2(d[0], d[2]))
 
 
-def strikes(P, heading):
+def strikes(P, heading, foot='LeftFoot'):
     fwd = np.array([np.sin(heading), 0, np.cos(heading)])
-    rel = (P['LeftFoot'] - P['Hips']) @ fwd
+    rel = (P[foot] - P['Hips']) @ fwd
     w = 12
     return [i for i in range(w, len(rel) - w) if rel[i] == rel[i - w:i + w + 1].max() and rel[i] > np.percentile(rel, 60)]
 
 
-def cycle_clip(path, pick=0, amp=None):
+def cycle_clip(path, pick=0, amp=None, fps=60, foot='LeftFoot'):
+    """한 주기를 자른다. foot 발이 가장 앞에 나간 순간부터 다음 같은 순간까지 자르고,
+    위상 0은 늘 왼발이 가장 앞에 나간 순간으로 맞춘다(걷기·달리기를 같은 위상으로 섞으려고)"""
     J, D, dt = parse(path)
     P, _ = fk(J, D)
     P = {k: v[1:] for k, v in P.items()}
     hd = heading_of(P, 0, len(P['Hips']) - 1)
-    pk = strikes(P, hd)
+    pk = strikes(P, hd, foot)
     f0, f1 = pk[pick], pk[pick + 1]
     r = retarget(path, REST, heading=hd)
     L = r['L']
     H = r['hips']
-    n = max(8, int(round((f1 - f0) * dt * FPS)))
+    n = max(8, int(round((f1 - f0) * dt * fps)))
     q, h = sample(L, H, f0, f1, n)
     end_q = {b: L[b][f1:f1 + 1] for b in BONES}
     q = loop_fix(q, {b: end_q[b][0] for b in BONES})
@@ -94,45 +106,204 @@ def cycle_clip(path, pick=0, amp=None):
     # 제자리: 앞뒤·좌우 직선 흐름을 빼고 출렁임만 남긴다
     t = np.arange(n)[:, None] / n
     hh = (h - H[f0] - disp * t) * r['scale']
-    hh[:, 1] = (h[:, 1] - r['ref']['Hips'][1]) * r['scale']
+    # 높이도 처음·끝이 이어지게 어긋남을 고르게 지운다(이음매에서 몸이 툭 떨어지지 않게)
+    hh[:, 1] = (h[:, 1] - disp[1] * t[:, 0] - r['ref']['Hips'][1]) * r['scale']
     hh[:, [0, 2]] -= hh[:, [0, 2]].mean(0)
     if amp:
         for b, k in amp.items():
             q[b] = qpow(q[b], k)
-    return dict(q=q, h=hh, n=n, stride=stride, dur=(f1 - f0) * dt, src=os.path.basename(path))
+    if foot != 'LeftFoot':
+        fl = [i for i in strikes(P, hd) if f0 < i < f1]
+        if fl:
+            k = int(round((fl[0] - f0) / (f1 - f0) * n)) % n
+            q = {b: np.roll(Q, -k, axis=0) for b, Q in q.items()}
+            hh = np.roll(hh, -k, axis=0)
+    return dict(q=q, h=hh, n=n, stride=stride, dur=(f1 - f0) * dt, src=os.path.basename(path), win=[round(f0 * dt, 3), round(f1 * dt, 3)])
 
 
-def idle_clip(path, t0, t1):
-    """조용한 구간에서 처음·끝이 닮은 창을 골라 고리로"""
+def yaw_fix(q, h):
+    """엉덩이 앞 방향의 평균이 +z가 되게 온몸을 돌린다(서기 원본은 T자와 다른 쪽을 보고 서 있다)"""
+    from retarget import quat_to_mat
+    M = quat_to_mat(q['hips'])
+    yaw = np.arctan2(M[:, 0, 2], M[:, 2, 2])
+    psi = float(np.arctan2(np.sin(yaw).mean(), np.cos(yaw).mean()))
+    rq = np.array([0, np.sin(-psi / 2), 0, np.cos(-psi / 2)])
+    q = dict(q)
+    q['hips'] = qmul(np.broadcast_to(rq, q['hips'].shape), q['hips'])
+    c, s_ = np.cos(-psi), np.sin(-psi)
+    h = h.copy()
+    x, z = h[:, 0].copy(), h[:, 2].copy()
+    h[:, 0] = c * x + s_ * z
+    h[:, 2] = -s_ * x + c * z
+    return q, h, float(np.degrees(psi)), float(np.degrees(np.ptp(np.unwrap(yaw))))
+
+
+def idle_clip(path, t0, t1, lo=4.0, hi=8.0):
+    """조용한 구간에서 처음·끝이 닮고, 몸이 덜 돌고, 발이 안 움직이는 창을 골라 고리로"""
     J, D, dt = parse(path)
     P, _ = fk(J, D)
     P = {k: v[1:] for k, v in P.items()}
     r = retarget(path, REST, heading=None)
-    L = r['L']
-    H = r['hips']
-    a0, a1 = int(t0 / dt), int(t1 / dt)
-    # 머리·엉덩이 방향을 보고 이 구간 평균 방향을 +z로
-    fw = r['G']['hips'][a0:a1, :, 2]
-    hd = float(np.arctan2(fw[:, 0].mean(), fw[:, 2].mean()))
-    r = retarget(path, REST, heading=hd)
     L, H = r['L'], r['hips']
+    a0, a1 = int(t0 / dt), min(len(H) - 1, int(t1 / dt))
     feat = np.concatenate([L[b] for b in ('hips', 'spine', 'chest', 'neck', 'head', 'shL', 'shR', 'thL', 'thR')], 1)
+    Mh = r['G']['hips']
+    yaw = np.unwrap(np.arctan2(Mh[:, 0, 2], Mh[:, 2, 2]))
+    feet = np.concatenate([P['LeftFoot'][:, [0, 2]], P['RightFoot'][:, [0, 2]]], 1) * r['scale']
     best = None
-    for i in range(a0, a1 - int(5 / dt), 6):
-        for j in range(i + int(5 / dt), min(a1, i + int(9 / dt)), 6):
-            d = np.abs(np.abs((feat[i].reshape(-1, 4) * feat[j].reshape(-1, 4)).sum(1)) - 1).sum() + 0.02 * np.linalg.norm(H[i] - H[j])
-            if best is None or d < best[0]:
-                best = (d, i, j)
-    _, f0, f1 = best
+    st = 6
+    for i in range(a0, a1 - int(lo / dt), st):
+        for j in range(i + int(lo / dt), min(a1, i + int(hi / dt)), st):
+            pose = np.abs(np.abs((feat[i].reshape(-1, 4) * feat[j].reshape(-1, 4)).sum(1)) - 1).sum()
+            seg = slice(i, j + 1)
+            ys = np.degrees(np.ptp(yaw[seg]))
+            fm = np.abs(feet[seg] - feet[i]).max()
+            dd = pose + 0.02 * np.linalg.norm(H[i] - H[j]) + 0.002 * ys + (0.5 if fm > 0.04 else 0) + 0.3 * np.abs(feet[j] - feet[i]).max()
+            if best is None or dd < best[0]:
+                best = (dd, i, j, ys, fm)
+    _, f0, f1, ys, fm = best
     n = int(round((f1 - f0) * dt * FPS))
     q, h = sample(L, H, f0, f1, n)
     q = loop_fix(q, {b: L[b][f1] for b in BONES})
     t = np.arange(n)[:, None] / n
     disp = H[f1] - H[f0]
     hh = (h - H[f0] - disp * t) * r['scale']
-    hh[:, 1] = (h[:, 1] - r['ref']['Hips'][1]) * r['scale']
+    hh[:, 1] = (h[:, 1] - disp[1] * t[:, 0] - r['ref']['Hips'][1]) * r['scale']
     hh[:, [0, 2]] -= hh[:, [0, 2]].mean(0)
-    return dict(q=q, h=hh, n=n, stride=0.0, dur=(f1 - f0) * dt, src=os.path.basename(path), win=[round(f0 * dt, 2), round(f1 * dt, 2)])
+    q, hh, psi, yr = yaw_fix(q, hh)
+    return dict(q=q, h=hh, n=n, stride=0.0, dur=(f1 - f0) * dt, src=os.path.basename(path),
+                win=[round(f0 * dt, 2), round(f1 * dt, 2)], info=dict(turned=round(psi, 1), yaw_range=round(yr, 1), feet_move_cm=round(fm * 100, 1)))
+
+
+def soles(q, h):
+    """발바닥(뒤꿈치·앞꿈치) 중 낮은 점의 높이 — 발마다"""
+    from retarget import PARENT, quat_to_mat
+    G, pos = {}, {}
+    for b in BONES:
+        p = PARENT[b]
+        Ml = quat_to_mat(q[b])
+        if p is None:
+            G[b] = Ml
+            pos[b] = np.array(REST['hips']) + h
+        else:
+            G[b] = G[p] @ Ml
+            pos[b] = pos[p] + np.einsum('fij,j->fi', G[p], np.array(REST[b]) - np.array(REST[p]))
+    out = {}
+    for s_ in 'LR':
+        f = 'ft' + s_
+        heel = pos[f] + np.einsum('fij,j->fi', G[f], [0, -0.088, -0.05])
+        ball = pos[f] + np.einsum('fij,j->fi', G[f], [0, -0.088, 0.12])
+        out[s_] = np.minimum(heel[:, 1], ball[:, 1])
+    return out
+
+
+def fk_full(q, h):
+    from retarget import PARENT, quat_to_mat
+    G, pos = {}, {}
+    for b in BONES:
+        p = PARENT[b]
+        Ml = quat_to_mat(q[b])
+        if p is None:
+            G[b] = Ml
+            pos[b] = np.array(REST['hips']) + h
+        else:
+            G[b] = G[p] @ Ml
+            pos[b] = pos[p] + np.einsum('fij,j->fi', G[p], np.array(REST[b]) - np.array(REST[p]))
+    return G, pos
+
+
+def rot_between(a, b):
+    """(F,3) a 방향을 b 방향으로 돌리는 최소 회전 행렬 (F,3,3)"""
+    a = nrm(a)
+    b = nrm(b)
+    v = np.cross(a, b)
+    c = (a * b).sum(-1)
+    K = np.zeros((len(a), 3, 3))
+    K[:, 0, 1], K[:, 0, 2], K[:, 1, 2] = -v[:, 2], v[:, 1], -v[:, 0]
+    K[:, 1, 0], K[:, 2, 0], K[:, 2, 1] = v[:, 2], -v[:, 1], v[:, 0]
+    f = (1 / np.maximum(1 + c, 1e-6))[:, None, None]
+    return np.eye(3)[None] + K + K @ K * f
+
+
+def plant(c, reach=0.03, soft=0.035):
+    """딛는 발바닥이 땅(y=0)에 붙게 발마다 높이를 고치고 다리 두 마디 IK로 맞춘다(발 방향은 그대로).
+    옮긴 뼈대는 다리 좌우가 조금 달라 한 발은 땅에 묻히고 한 발은 떠 있었다."""
+    from retarget import PARENT, mat_to_quat
+    q, h, n = c['q'], c['h'], c['n']
+    G, pos = fk_full(q, h)
+    fix = {}
+    for s_ in 'LR':
+        th, kn, ft = 'th' + s_, 'kn' + s_, 'ft' + s_
+        heel = pos[ft] + np.einsum('fij,j->fi', G[ft], [0, -0.088, -0.05])
+        ball = pos[ft] + np.einsum('fij,j->fi', G[ft], [0, -0.088, 0.12])
+        y = np.minimum(heel[:, 1], ball[:, 1])
+        st = y < y.min() + reach
+        dy = np.where(st, -y, 0.0)
+        m = max(1, int(round(soft * n)))
+        ker = np.hanning(2 * m + 3)[1:-1]
+        ker /= ker.sum()
+        # 딛는 구간 경계에서 툭 끊기지 않게: 구간을 넓혀 매끈히 이어 붙인다
+        wide = np.convolve(np.concatenate([st[-m:], st, st[:m]]).astype(float), ker, 'valid')
+        val = np.convolve(np.concatenate([dy[-m:], dy, dy[:m]]), ker, 'valid')
+        cnt = np.convolve(np.concatenate([st[-m:], st, st[:m]]).astype(float), ker, 'valid')
+        dy = np.where(st, -y, np.where(cnt > 1e-6, val / np.maximum(cnt, 1e-6), 0.0) * np.clip(wide * 2, 0, 1))
+        A, B, C = pos[th], pos[kn], pos[ft]
+        C2 = C + np.stack([np.zeros(n), dy, np.zeros(n)], 1)
+        l1 = np.linalg.norm(B - A, axis=1)
+        l2 = np.linalg.norm(C - B, axis=1)
+        d = np.clip(np.linalg.norm(C2 - A, axis=1), np.abs(l1 - l2) + 1e-4, l1 + l2 - 1e-4)
+        u = nrm(C2 - A)
+        pole = (B - A) - ((B - A) * u).sum(1, keepdims=True) * u
+        pole = nrm(pole)
+        ca = np.clip((l1 ** 2 + d ** 2 - l2 ** 2) / (2 * l1 * d), -1, 1)
+        B2 = A + u * (l1 * ca)[:, None] + pole * (l1 * np.sqrt(1 - ca ** 2))[:, None]
+        C2 = A + u * d[:, None]
+        R1 = rot_between(B - A, B2 - A)
+        Gth = R1 @ G[th]
+        R2 = rot_between(np.einsum('fij,fj->fi', R1, C - B), C2 - B2)
+        Gkn = R2 @ R1 @ G[kn]
+        Gp = G[PARENT[th]]
+        fix[th] = mat_to_quat(np.transpose(Gp, (0, 2, 1)) @ Gth)
+        fix[kn] = mat_to_quat(np.transpose(Gth, (0, 2, 1)) @ Gkn)
+        fix[ft] = mat_to_quat(np.transpose(Gkn, (0, 2, 1)) @ G[ft])
+        c.setdefault('plant', {})[s_] = [round(float(dy.min() * 100), 1), round(float(dy.max() * 100), 1)]
+    q2 = dict(q)
+    q2.update(fix)
+    return dict(c, q=q2)
+
+
+def resample(c, n_out, target=None):
+    """고리 클립을 n_out장으로 다시 뽑는다.
+    target(한 주기 보폭)이 있으면 딛는 동안은 빠르게·떠 있는 동안은 느리게 위상을 비틀어
+    발이 미끄러지지 않으면서 보폭이 target이 되게 한다(같은 속도에서 걸음이 덜 잦아진다)."""
+    q, h, n = c['q'], c['h'], c['n']
+    w = np.ones(n)
+    if target:
+        k = target / c['stride']
+        so = soles(q, h)
+        st = np.zeros(n, bool)
+        for y in so.values():
+            st |= y < y.min() + 0.03
+        cf = st.mean()
+        ws = 1.0 / k
+        wf = (1 - cf * ws) / (1 - cf)
+        w = np.where(st, ws, wf)
+        m = max(1, int(round(0.035 * n)))
+        ker = np.ones(2 * m + 1) / (2 * m + 1)
+        w = np.convolve(np.concatenate([w[-m:], w, w[:m]]), ker, 'valid')
+        c['warp'] = dict(stance=round(float(cf), 3), k=round(float(k), 3), flight_rate=round(float(1 / wf), 3))
+    psi = np.concatenate([[0.0], np.cumsum(w)]) / w.sum()
+    phi = np.arange(n + 1) / n
+    f = np.interp(np.arange(n_out) / n_out, psi, phi) * n
+    i0 = np.floor(f).astype(int) % n
+    i1 = (i0 + 1) % n
+    t = f - np.floor(f)
+    q2 = {b: slerp(q[b][i0], q[b][i1], t) for b in BONES}
+    h2 = h[i0] * (1 - t[:, None]) + h[i1] * t[:, None]
+    out = dict(c, q=q2, h=h2, n=n_out)
+    if target:
+        out['stride'] = float(target)
+    return out
 
 
 def ground(c, mode='const'):
@@ -154,13 +325,16 @@ def pack(c):
 
 if __name__ == '__main__':
     clips = {}
-    clips['idle'] = idle_clip(f'{ROOT}/137/137_28.bvh', 2.0, 28.0)
-    clips['walk'] = cycle_clip(f'{ROOT}/035/35_01.bvh', pick=0)
-    clips['run'] = cycle_clip(f'{ROOT}/127/127_06.bvh', pick=0)
+    clips['idle'] = idle_clip(f'{ROOT}/{IDLE}.bvh', IDLE_T0, IDLE_T1)
+    walk = cycle_clip(f'{ROOT}/035/35_01.bvh', pick=0, fps=600)
+    run = cycle_clip(f'{ROOT}/{RUN}.bvh', pick=0, foot=RUN_FOOT, fps=600)
+    clips['walk'] = resample(walk, int(round(walk['dur'] * CYCLE_FPS)))
+    clips['run'] = resample(run, int(round(run['dur'] * CYCLE_FPS)), RUN_STRIDE)
     for k in ('walk', 'run'):
         ground(clips[k])
+        clips[k] = plant(clips[k])
     for k, c in clips.items():
-        print(k, 'frames', c['n'], 'dur', round(c['dur'], 3), 'stride', round(c['stride'], 3), c.get('win', ''), 'hips y', np.round(c['h'][:, 1].min(), 3), np.round(c['h'][:, 1].max(), 3))
+        print(k, 'frames', c['n'], 'dur', round(c['dur'], 3), 'stride', round(c['stride'], 3), c.get('win', ''), c.get('warp', ''), c.get('plant', ''), c.get('info', ''), 'hips y', np.round(c['h'][:, 1].min(), 3), np.round(c['h'][:, 1].max(), 3))
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     data = {'fps': FPS, 'bones': BONES, 'clips': {k: pack(c) for k, c in clips.items()},
             'credit': 'CMU Graphics Lab Motion Capture Database (mocap.cs.cmu.edu), BVH: Bruce Hahne (cgspeed)'}

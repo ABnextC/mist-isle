@@ -5,6 +5,11 @@
 
 import * as THREE from 'three';
 import { makeActorModel } from './models/actor.js';
+import { loadClips, clips as animClips, sample as animSample, blend as animBlend, smoothstep, NB } from './anim.js';
+
+loadClips(new URL('../assets/anim/clips.json', import.meta.url).href);
+const LOWER = new Set(['hips', 'thL', 'knL', 'ftL', 'thR', 'knR', 'ftR']);
+const RARM = new Set(['clavR', 'shR', 'elR', 'handR']);
 
 const TUNICS = [0x8a4f6e, 0x6e5a2e, 0x2e5a8a, 0x7a3a2a, 0x4a6a3a, 0x5a4a7a, 0x8a6a3a];
 const TROUSERS = [0x4a4238, 0x3b3f4a, 0x5a4a38, 0x3a3a34];
@@ -27,6 +32,9 @@ function lerpAngle(a, b, k) {
 }
 
 const damp = (cur, want, k) => cur + (want - cur) * k;
+const tmpQ = new THREE.Quaternion();
+const tmpV = new THREE.Vector3();
+const AXZ = new THREE.Vector3(0, 0, 1);
 
 export function createActorsView(scene, game, hf, camera = null) {
   const views = new Map();
@@ -65,6 +73,19 @@ export function createActorsView(scene, game, hf, camera = null) {
     const o = outfitOf(a);
     v.outfit = outfitKey(o);
     model.setOutfit(o);
+    // 모션 캡처 섞기 버퍼
+    v.qa = new Float32Array(NB * 4);
+    v.qb = new Float32Array(NB * 4);
+    v.qi = new Float32Array(NB * 4);
+    v.ha = new Float32Array(3);
+    v.hb = new Float32Array(3);
+    v.hi = new Float32Array(3);
+    v.cyc = Math.random();
+    v.idleT = Math.random();
+    v.actW = 0;
+    v.turn = 0;
+    v.lastYaw = v.yaw;
+    v.saveQ = [];
     return v;
   }
 
@@ -141,14 +162,18 @@ export function createActorsView(scene, game, hf, camera = null) {
       v.m.root.rotation.x = -Math.PI / 2 * v.fall;
       v.m.root.position.y += 0.18 * v.fall;
       Object.assign(p, { shLx: -2.6 * v.fall, shRx: -2.6 * v.fall, elL: -0.2, elR: -0.2, thL: 0.1, thR: -0.1, knL: 0.2, knR: 0.1 });
-      return;
+      return 'full';
     }
-    if (wDef && !a.action) Object.assign(p, { shRx: Math.min(p.shRx, -0.25), elR: Math.min(p.elR, -0.55) });
+    let hold = false;
+    if (wDef && !a.action) {
+      Object.assign(p, { shRx: Math.min(p.shRx, -0.25), elR: Math.min(p.elR, -0.55) });
+      hold = true;
+    }
     if (cb.dodge) {
       const k = Math.min(1, Math.max(0, (st - cb.dodge.t0) / C.dodgeSec));
       // 엉덩이를 축으로 앞구르기
       Object.assign(p, { roll: k * Math.PI * 2, thL: -1.5, thR: -1.5, knL: 2.0, knR: 2.0, shLx: -1.2, shRx: -1.2, elL: -1.8, elR: -1.8, spX: 0.7, nk: 0.5, bob: -0.5 * Math.sin(k * Math.PI) - 0.1 });
-      return;
+      return 'full';
     }
     const act = cb.act;
     if (act && st < act.endAt) {
@@ -169,12 +194,136 @@ export function createActorsView(scene, game, hf, camera = null) {
         const sw = k < h ? into : 1;
         Object.assign(p, { shRx: -1.35 + 0.3 * sw, shRy: 1.1 - 2.0 * sw * (1 - out * 0.5), shRz: 0.2, elR: -0.7 + 0.5 * strike, spY: 0.45 - 0.9 * sw, spX: 0.12, shLx: -0.5, elL: -0.8 });
       }
-      return;
+      return 'upper';
     }
     if (cb.block) {
       Object.assign(p, { shRx: -1.45, shRy: 0.95, elR: -1.05, shLx: -1.1, shLz: 0.2, elL: -1.4, spX: 0.16, nk: 0.08, thL: -0.2, knL: 0.25, knR: 0.2 });
+      return 'upper';
     }
-    if (v.hurt > 0) p.spX -= 0.3 * v.hurt;
+    if (v.hurt > 0) {
+      p.spX -= 0.3 * v.hurt;
+      return 'hurt';
+    }
+    return hold ? 'arm' : null;
+  }
+
+  // 이동 동작: 서기·걷기·달리기를 속도로 섞고, 위상은 걸은 거리로 나아간다(발이 덜 미끄러지게)
+  const RUN_STRETCH = 1.12;
+  function locomotion(v, dt, A) {
+    const m = v.m;
+    const sp = v.speed;
+    const W = A.clips.walk;
+    const R = A.clips.run;
+    const I = A.clips.idle;
+    const wMove = smoothstep(0.12, 0.9, sp);
+    const wRun = smoothstep(1.7, 3.5, sp);
+    const stride = W.stride + (R.stride * RUN_STRETCH - W.stride) * wRun;
+    v.cyc = (v.cyc + (dt * sp) / Math.max(0.3, stride)) % 1;
+    v.idleT = (v.idleT + dt / I.dur) % 1;
+    animSample('walk', v.cyc, v.qa, v.ha);
+    if (wRun > 0) {
+      animSample('run', v.cyc, v.qb, v.hb);
+      animBlend(v.qa, v.ha, v.qb, v.hb, wRun);
+    }
+    if (wMove < 1) {
+      animSample('idle', v.idleT, v.qi, v.hi);
+      animBlend(v.qi, v.hi, v.qa, v.ha, wMove);
+    } else {
+      v.qi.set(v.qa);
+      v.hi.set(v.ha);
+    }
+    v.wMove = wMove;
+    const names = A.bones;
+    for (let i = 0; i < NB; i++) {
+      const b = m.bones[names[i]];
+      if (b) b.quaternion.fromArray(v.qi, i * 4);
+    }
+    m.hips.position.set(m.hipsRest.x + v.hi[0], m.hipsRest.y + v.hi[1], m.hipsRest.z + v.hi[2]);
+    // 도는 쪽으로 몸을 기울인다(달릴수록)
+    let dy = v.yaw - v.lastYaw;
+    while (dy > Math.PI) dy -= Math.PI * 2;
+    while (dy < -Math.PI) dy += Math.PI * 2;
+    v.lastYaw = v.yaw;
+    v.turn = damp(v.turn, dy / Math.max(dt, 1e-3), 1 - Math.exp(-dt * 6));
+    const bank = Math.max(-0.22, Math.min(0.22, -v.turn * sp * 0.03));
+    if (Math.abs(bank) > 1e-3) {
+      tmpQ.setFromAxisAngle(AXZ, bank);
+      m.hips.quaternion.premultiply(tmpQ);
+    }
+  }
+
+  // 옷자락·머리카락 관성(v0.4.6): 달리면 뒤로 끌리고, 멈추면 앞으로 쏠렸다 돌아오고, 돌면 바깥으로 흔들린다
+  const tmpQ2 = new THREE.Quaternion();
+  const tmpV2 = new THREE.Vector3();
+  function clothSway(v, dt, t) {
+    const m = v.m;
+    v.sw ||= new THREE.Vector3();
+    v.swV ||= new THREE.Vector3();
+    const fwd = Math.min(v.speed, 6);
+    const tz = -fwd * 0.017;
+    const tx = Math.max(-0.07, Math.min(0.07, -(v.turn || 0) * fwd * 0.006));
+    const ty = Math.abs(tz) * 0.3;
+    const K = 70;
+    const C = 9;
+    let left = Math.min(dt, 0.25);
+    while (left > 1e-4) {
+      const h = Math.min(left, 1 / 60);
+      v.swV.x += ((tx - v.sw.x) * K - v.swV.x * C) * h;
+      v.swV.y += ((ty - v.sw.y) * K - v.swV.y * C) * h;
+      v.swV.z += ((tz - v.sw.z) * K - v.swV.z * C) * h;
+      v.sw.addScaledVector(v.swV, h);
+      left -= h;
+    }
+    const wm = v.wMove || 0;
+    const bounce = -0.011 * Math.cos((v.cyc || 0) * Math.PI * 4) * wm;
+    const u = m.materials.cloth?.userData.u;
+    if (u) {
+      u.uSway.value.set(v.sw.x, v.sw.y + bounce, v.sw.z);
+      u.uSwayT.value = t;
+      u.uFlutter.value = wm;
+    }
+    if (m.materials.hair?.length) {
+      // 액터 공간 → 머리 공간
+      tmpV2.set(v.sw.x * 0.45, (v.sw.y + bounce) * 0.6, v.sw.z * 0.45).applyQuaternion(m.root.quaternion);
+      m.head.getWorldQuaternion(tmpQ2).invert();
+      tmpV2.applyQuaternion(tmpQ2);
+      for (const hm of m.materials.hair) hm.userData.u.uSway.value.copy(tmpV2);
+    }
+  }
+
+  // 손 동작(채집·전투·시전)을 모션 캡처 위에 섞는다. 달리면서 휘두르면 다리는 달리기를 따른다
+  function overlay(v, p, mode, dt) {
+    const m = v.m;
+    const want = mode ? 1 : 0;
+    const rate = mode === 'full' || mode === 'upper' ? 14 : 8;
+    v.actW = damp(v.actW, want, 1 - Math.exp(-dt * rate));
+    if (mode) v.lastMode = mode;
+    const w = v.actW;
+    if (w < 0.002) return;
+    const md = mode || v.lastMode || 'upper';
+    const names = animClips().bones;
+    const bones = m.bones;
+    for (let i = 0; i < NB; i++) {
+      const b = bones[names[i]];
+      (v.saveQ[i] ||= new THREE.Quaternion()).copy(b.quaternion);
+      b.quaternion.identity();
+    }
+    tmpV.copy(m.hips.position);
+    pose(v, p);
+    const wm = v.wMove || 0;
+    for (let i = 0; i < NB; i++) {
+      const nm = names[i];
+      const b = bones[nm];
+      let k;
+      if (md === 'full') k = w;
+      else if (md === 'arm') k = RARM.has(nm) ? w * 0.75 : 0;
+      else if (md === 'hurt') k = nm === 'spine' || nm === 'chest' ? w : 0;
+      else k = LOWER.has(nm) ? w * (1 - wm) : w;
+      tmpQ.copy(b.quaternion);
+      b.quaternion.slerpQuaternions(v.saveQ[i], tmpQ, k);
+    }
+    const kh = md === 'full' ? w : md === 'upper' ? w * (1 - wm) : 0;
+    m.hips.position.lerpVectors(tmpV, m.hips.position, kh);
   }
 
   function onEvent(ev) {
@@ -222,7 +371,9 @@ export function createActorsView(scene, game, hf, camera = null) {
       const wKey = wDef ? `${wDef.type}_${wDef.tier}` : null;
       for (const [kname, g] of Object.entries(v.m.weapons)) g.visible = !skill && kname === wKey;
 
-      const walk = Math.min(1, v.speed / 1.2);
+      const A = animClips();
+      // 손으로 짠 동작(예전 방식): 동작 묶음이 아직 없으면 걷기도 이걸로 한다
+      const walk = A ? 0 : Math.min(1, v.speed / 1.2);
       v.phase += dt * v.speed * (Math.PI * 2 / 1.45);
       v.breathe += dt * 1.7;
       const s = Math.sin(v.phase);
@@ -236,34 +387,14 @@ export function createActorsView(scene, game, hf, camera = null) {
         elL: -(0.25 + 0.25 * Math.max(0, s)) * walk - 0.12, elR: -(0.25 + 0.25 * Math.max(0, -s)) * walk - 0.12,
         spX: 0.06 * walk + br * 0.012, spY: s * 0.08 * walk, bob: -Math.abs(c) * 0.035 * walk + br * 0.004, nk: -0.04 * walk,
       };
-      if (node) {
-        // 채집: 도끼·곡괭이는 위에서 내려찍고, 낫은 옆으로 벤다
-        v.swing += dt * (skill === 'harvesting' ? 5.5 : 4.2);
-        const w = v.swing % (Math.PI * 2);
-        const strike = w < 4.4 ? Math.sin((w / 4.4) * Math.PI * 0.5) : 1 - (w - 4.4) / (Math.PI * 2 - 4.4);
-        if (skill === 'harvesting') {
-          const sw = Math.sin(v.swing);
-          Object.assign(p, {
-            thL: -0.35, thR: 0.2, knL: 0.75, knR: 0.55, ftL: 0, ftR: 0,
-            spX: 0.42, spY: sw * 0.35, bob: -0.14, nk: 0.15,
-            shRx: -0.9, shRy: sw * 0.9, shRz: 0.25, elR: -0.5,
-            shLx: -0.6, shLz: -0.15, elL: -0.9,
-          });
-        } else {
-          const up = 1 - strike;
-          Object.assign(p, {
-            thL: -0.25, thR: 0.18, knL: 0.3, knR: 0.25, ftL: 0, ftR: 0,
-            spX: 0.1 + strike * 0.38, spY: -0.15, bob: -0.04 - strike * 0.05, nk: 0.1,
-            shRx: -2.6 * up - 0.5 * strike, shRz: 0.1, elR: -0.9 * up - 0.15,
-            shLx: -2.3 * up - 0.6 * strike, shLz: 0.25, elL: -0.8 * up - 0.2,
-          });
-        }
-      } else if (casting) {
-        const f = Math.sin(t * 3) * 0.05;
-        Object.assign(p, { shLx: -1.3 + f, shRx: -1.3 - f, shLz: 0.35, shRz: -0.35, elL: -0.6, elR: -0.6, nk: 0.25, spX: 0.05 });
-      }
-      combatPose(v, a, p, wDef, dt);
-      pose(v, p);
+      let mode = null; // 손 동작이 덮는 범위: full(온몸) · upper(윗몸, 서 있으면 다리도) · arm(오른팔만)
+      const cm = combatPose(v, a, p, wDef, dt);
+      if (cm && (!mode || cm === 'full')) mode = cm;
+      if (A) {
+        locomotion(v, dt, A);
+        overlay(v, p, mode, dt);
+      } else pose(v, p);
+      clothSway(v, dt, t);
       if (camera) v.m.lod(camera.position.distanceTo(v.pos), detailNear);
       face(v, dt);
     }

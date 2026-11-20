@@ -76,24 +76,34 @@ const BAND = [
 export const CLOTH_SLOTS = SLOT.length;
 const NT = 24; // uTint 크기(21 수실, 22 수 띠 바탕)
 
-export function clothMaterial(detail) {
+export function clothMaterial(detail, detail2) {
   const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0, side: THREE.FrontSide, shadowSide: THREE.BackSide });
   const tints = [];
   for (let i = 0; i < NT; i++) tints.push(new THREE.Color(1, 1, 1));
   const pad = (arr) => { const out = arr.map((s) => new THREE.Vector4(...s)); while (out.length < NT) out.push(new THREE.Vector4(0.9, 0, 1, 0)); return out; };
-  const U = { uTint: { value: tints }, uDetail: { value: detail }, uSlot: { value: pad(SLOT) }, uBand: { value: pad(BAND) } };
+  const U = { uTint: { value: tints }, uDetail: { value: detail }, uDetail2: { value: detail2 || detail }, uSlot: { value: pad(SLOT) }, uBand: { value: pad(BAND) },
+    uSway: { value: new THREE.Vector3() }, uSwayT: { value: 0 }, uFlutter: { value: 0 } };
   m.userData.u = U;
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, U);
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float aMat;\nattribute float aEdge;\nattribute float aRim;\nvarying float vMat;\nvarying float vEdgeM;\nvarying float vRimM;\nvarying vec3 vRest;\nvarying vec3 vRestN;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvMat = aMat;\nvEdgeM = aEdge * 0.25;\nvRimM = aRim * 8.0;\nvRest = position;\nvRestN = normal;');
+      .replace('#include <common>', '#include <common>\nattribute float aMat;\nattribute float aEdge;\nattribute float aRim;\nuniform vec3 uSway;\nuniform float uSwayT;\nuniform float uFlutter;\nvarying float vMat;\nvarying float vEdgeM;\nvarying float vRimM;\nvarying vec3 vRest;\nvarying vec3 vRestN;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvMat = aMat;\nvEdgeM = aEdge * 0.25;\nvRimM = aRim * 8.0;\nvRest = position;\nvRestN = normal;')
+      // 옷자락 관성(v0.4.6): 뼈대 변형 뒤 액터 공간에서 헐렁한 곳(색 B)만 민다. 달릴 때는 잔물결이 인다
+      .replace('#include <skinning_vertex>', `#include <skinning_vertex>
+        {
+          float lz = pow( clamp( color.b, 0.0, 1.0 ), 1.4 );
+          transformed += uSway * lz;
+          float ph = uSwayT * 9.0 + position.y * 11.0 + position.x * 7.0;
+          transformed.xz += vec2( sin( ph ), cos( ph * 0.8 ) ) * 0.006 * lz * uFlutter;
+        }`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
         uniform vec3 uTint[${NT}];
         uniform vec4 uSlot[${NT}];
         uniform vec4 uBand[${NT}];
         uniform sampler2D uDetail;
+        uniform sampler2D uDetail2;
         varying float vMat;
         varying float vEdgeM;
         varying float vRimM;
@@ -102,6 +112,9 @@ export function clothMaterial(detail) {
         float gClothH = 0.0;
         float gClothAO = 1.0;
         float gGap = 1.0;
+        float gWear = 0.0;
+        float gDirt = 0.0;
+        float gGrime = 0.0;
         // 사슬: 엇갈린 줄의 작은 고리(높이 0~1)
         float mailP( vec2 p ) {
           vec2 q = p;
@@ -134,7 +147,15 @@ export function clothMaterial(detail) {
           vec4 b = texture2D( uDetail, p.xz * f );
           vec4 c = texture2D( uDetail, p.xy * f );
           vec4 t = a * w.x + b * w.y + c * w.z;
-          return ( kind == 0 ) ? t.r : ( kind == 1 ) ? t.g : ( kind == 2 ) ? t.b : t.a * 0.3;
+          if ( kind == 3 ) {
+            float g2 = texture2D( uDetail2, p.zy * f * 0.6 ).g * w.x + texture2D( uDetail2, p.xz * f * 0.6 ).g * w.y + texture2D( uDetail2, p.xy * f * 0.6 ).g * w.z;
+            return 0.35 + 0.5 * g2 + 0.15 * t.a;
+          }
+          if ( kind == 2 ) {
+            float cr = texture2D( uDetail2, p.zy * f * 0.35 ).a * w.x + texture2D( uDetail2, p.xz * f * 0.35 ).a * w.y + texture2D( uDetail2, p.xy * f * 0.35 ).a * w.z;
+            return t.b * mix( 0.55, 1.0, cr );
+          }
+          return ( kind == 0 ) ? t.r : t.g;
         }`)
       .replace('#include <color_fragment>', `
         int slot = int( vMat + 0.5 );
@@ -142,7 +163,7 @@ export function clothMaterial(detail) {
         vec4 bd = uBand[ slot ];
         int kind = int( sp.y + 0.5 );
         gClothAO = vColor.a;
-        vec3 cBase = uTint[ slot ] * vColor.rgb * 1.4;
+        vec3 cBase = uTint[ slot ] * vColor.r * 1.4;
         gClothH = detailH( vRest, normalize( vRestN ), kind, sp.z );
         float dFq = ( kind == 4 ) ? 160.0 : ( kind == 5 ) ? 24.0 : ( kind == 0 ) ? 26.0 : ( kind == 1 ) ? 20.0 : ( kind == 2 ) ? 9.0 : 4.0;
         float texPerPx = length( fwidth( vRest ) ) * dFq * sp.z * 512.0;
@@ -159,6 +180,28 @@ export function clothMaterial(detail) {
         }
         gClothH = mix( kind == 4 ? gGap : 0.5, gClothH, dFade );
         cBase *= 0.93 + 0.14 * gClothH;
+        // 쓰던 흔적(v0.4.6): 볼록한 모서리는 닳고, 오목한 골엔 때, 땅에 가까울수록 먼지·흙. 큰 얼룩으로 고르지 않게
+        {
+          float conv = vColor.g;
+          float big = texture2D( uDetail2, vRest.xz * 1.3 + vRest.yy * 0.7 ).r;
+          float mid = texture2D( uDetail2, vRest.zy * 4.1 + vRest.xx * 2.3 ).b;
+          bool metal = sp.w > 0.5;
+          gWear = smoothstep( 0.57, 0.8, conv ) * smoothstep( 0.32, 0.72, mid );
+          gGrime = ( 1.0 - smoothstep( 0.22, 0.47, conv ) ) * ( 0.55 + 0.45 * big );
+          gDirt = ( 1.0 - smoothstep( 0.03, 0.5, vRest.y ) ) * ( 0.45 + 0.55 * big ) * ( metal ? 0.45 : 1.0 );
+          if ( kind == 2 ) {
+            cBase = mix( cBase, cBase * 1.5 + vec3( 0.02, 0.015, 0.01 ), gWear * 0.55 );
+          } else if ( metal ) {
+            cBase = mix( cBase, cBase * 1.3 + 0.03, gWear * 0.6 );
+            cBase = mix( cBase, vec3( 0.2, 0.11, 0.05 ), gGrime * 0.4 * ( slot == 8 ? 0.4 : 1.0 ) );
+          } else {
+            float l = dot( cBase, vec3( 0.3, 0.59, 0.11 ) );
+            cBase = mix( cBase, mix( cBase, vec3( l ), 0.35 ) * 1.22, gWear * 0.4 );
+          }
+          cBase *= 1.0 - gGrime * 0.22;
+          cBase = mix( cBase, vec3( 0.27, 0.22, 0.16 ) * ( 0.85 + 0.3 * mid ), gDirt * 0.5 );
+          cBase *= 0.9 + 0.2 * big;
+        }
         // 수 띠(테두리를 따라 마름모 사슬 무늬)
         if ( bd.x > 0.0 && vEdgeM < bd.x ) {
           float bt = vEdgeM / bd.x;
@@ -170,7 +213,7 @@ export function clothMaterial(detail) {
           float hole = ( 1.0 - smoothstep( 0.26, 0.32, dm ) ) * mid;
           float th = clamp( border + dia - hole, 0.0, 1.0 );
           float bandK = 1.0 - smoothstep( 0.96, 0.99, bt );
-          vec3 ground = uTint[ 22 ] * vColor.rgb * 1.4;
+          vec3 ground = uTint[ 22 ] * vColor.r * 1.4;
           vec3 thread = uTint[ 21 ] * mix( 0.8, 1.15, gClothH );
           cBase = mix( cBase, ground, bandK );
           cBase = mix( cBase, thread, th * bandK * dFade + th * bandK * ( 1.0 - dFade ) * 0.5 );
@@ -189,7 +232,7 @@ export function clothMaterial(detail) {
         float edgeW = 1.0 - smoothstep( 0.0, 0.004, vEdgeM );
         diffuseColor.rgb *= 1.0 - 0.14 * edgeW;
         if ( !gl_FrontFacing ) diffuseColor.rgb *= 0.45;`)
-      .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = clamp( sp.x + ( gClothH - 0.5 ) * 0.12 + ( kind == 4 ? ( 1.0 - gGap ) * 0.4 : 0.0 ), 0.05, 1.0 );')
+      .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = clamp( sp.x + ( gClothH - 0.5 ) * 0.12 + ( kind == 4 ? ( 1.0 - gGap ) * 0.4 : 0.0 ) + gDirt * 0.25 + gGrime * 0.15 - ( sp.w > 0.5 ? gWear * 0.14 : -gWear * 0.06 ), 0.05, 1.0 );')
       .replace('#include <metalnessmap_fragment>', 'float metalnessFactor = sp.w;')
       .replace('#include <normal_fragment_maps>', `
         {
@@ -211,7 +254,7 @@ export function clothMaterial(detail) {
           reflectedLight.indirectDiffuse += diffuseColor.rgb * fr * 0.35 * gClothAO;
         }`);
   };
-  m.customProgramCacheKey = () => 'char-cloth2';
+  m.customProgramCacheKey = () => 'char-cloth3';
   return m;
 }
 
@@ -254,13 +297,14 @@ export function hairMaterial(tex, soft = false) {
   } else {
     m.alphaTest = 0.5;
   }
-  const U = { uHair: { value: new THREE.Color(0.08, 0.05, 0.035) } };
+  const U = { uHair: { value: new THREE.Color(0.08, 0.05, 0.035) }, uSway: { value: new THREE.Vector3() } };
   m.userData.u = U;
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, U);
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute vec3 aTan;\nvarying vec3 vTanV;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvTanV = normalize( ( modelViewMatrix * vec4( aTan, 0.0 ) ).xyz );');
+      .replace('#include <common>', '#include <common>\nattribute vec3 aTan;\nuniform vec3 uSway;\nvarying vec3 vTanV;')
+      // 가닥 끝(uv.y 0)일수록 머리 공간 흔들림을 받는다
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvTanV = normalize( ( modelViewMatrix * vec4( aTan, 0.0 ) ).xyz );\ntransformed += uSway * pow( clamp( 1.0 - uv.y, 0.0, 1.0 ), 1.6 );');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', '#include <common>\nuniform vec3 uHair;\nvarying vec3 vTanV;\nfloat gHairSh = 0.5;\nfloat gHairAO = 1.0;')
       .replace('#include <map_fragment>', `

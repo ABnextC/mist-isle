@@ -99,12 +99,16 @@ def part(m, slot):
     g['edge'] = np.full(n, 0.05)
     g['rimc'] = np.zeros(n)
     g['part'] = np.ones(n)
+    if 'loose' not in g:
+        g['loose'] = np.zeros(n)
     return g
 
 
 def tag(g, part_flag=0.0):
     if 'part' not in g:
         g['part'] = np.full(len(g['pos']), part_flag)
+    if 'loose' not in g:
+        g['loose'] = np.zeros(len(g['pos']))
     return g
 
 
@@ -169,6 +173,7 @@ def chest_robe(ctx, L, female):
     D = (0.014 + chest) * (1 - arm) + sl * arm
     S = shell(ctx, c, D, SLOT['robe'], smooth=40)
     body = from_shell(S)
+    body['loose'] = 0.45 * smoothstep(1.3, 1.9, interp(L.s_arm, S['src'])) * (interp(L.w_arm, S['src']) > 0.5)
     parts = []
     # 치마: 허리띠 위에서 무릎 아래까지, 앞이 트인 A자
     kn = ctx.bpos['knL']
@@ -209,7 +214,7 @@ def chest_robe(ctx, L, female):
     # 무릎 아래 가중치는 반만(정강이를 따라 너무 접히지 않게)
     th_g = np.tile(np.linspace(0, 2 * np.pi, A, endpoint=False), R)
     ring = np.repeat(np.arange(R), A)
-    sk = G(pos, tris, W)
+    sk = G(pos, tris, W, loose=np.clip(tt[ring], 0, 1) ** 1.3)
     # 앞트임: 위에서 2cm → 밑단 16cm(호 길이)
     gap = np.interp(tt[ring], [0, 0.15, 1], [0.0, 0.03, 0.17])
     thw = np.where(th_g > np.pi, th_g - 2 * np.pi, th_g)
@@ -311,7 +316,7 @@ def ribbon(ctx, path, width, nrm_hint, thick, slot, side='L'):
     t = np.repeat(np.linspace(0, 1, n), 4)
     W[:, ctx.bi['hips']] = 1 - 0.7 * t
     W[:, ctx.bi[th]] = 0.7 * t
-    g = G(pos, tris, W)
+    g = G(pos, tris, W, loose=t ** 1.2)
     return part(g, slot)
 
 
@@ -493,7 +498,7 @@ def head_robe(ctx, L, female, B=None):
     W = body_weights(ctx, pos, sel=(ctx.w('head', 'neck', 'chest', 'clavL', 'clavR', 'spine') > 0.5) & (L.w_arm < 0.2), k=10)
     W = smooth_attr(tris, W, len(pos), iters=20)
     W = restrict_weights(ctx, W, ['head', 'neck', 'chest', 'clavL', 'clavR'])
-    g = G(pos, tris, W)
+    g = G(pos, tris, W, loose=0.35 * smoothstep(kn - 0.04, kn - 0.13, pos[:, 1]))
     c = face_opening(pos, HF, 0.085 if not female else 0.08, HF['chin'] - 0.012, HF['eye_y'] + 0.06, round_k=0.75)
     g = clip_mesh(g, c)
     hood = finish(g, 'hood', 0.004, band=0.09, keep=0.7, bulge=0.6)
@@ -851,9 +856,9 @@ def hip_skirt(ctx, L, y_top, y_hem, off, R=24, A=72, slits=None, seed=3, segment
     W = body_weights(ctx, pos, sel=sel, k=14)
     W = smooth_attr(tris, W, len(pos), iters=25)
     W = restrict_weights(ctx, W, ['hips', 'spine', 'thL', 'thR', 'knL', 'knR'])
-    g = G(pos, tris, W)
     th_g = np.tile(np.linspace(0, 2 * np.pi, A, endpoint=False), R)
     ring = np.repeat(np.arange(R), A)
+    g = G(pos, tris, W, loose=np.clip(tt[ring], 0, 1) ** 1.3)
     thw = np.where(th_g > np.pi, th_g - 2 * np.pi, th_g)
     r_here = np.linalg.norm(pos[:, [0, 2]] - centers[ring][:, [0, 2]], axis=1)
     c = np.full(len(pos), 1.0)

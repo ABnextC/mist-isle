@@ -42,10 +42,12 @@ export function prepareActorBase() {
   pending = (async () => {
     const t0 = performance.now();
     const out = { bodies: {} };
-    const shared = await Promise.all([loadTex(BASE_URL + 'eye.webp', true), loadTex(BASE_URL + 'lash.png', true), loadTex(BASE_URL + 'detail.webp', false)]);
-    const [eye, lash, detail] = shared;
+    const shared = await Promise.all([loadTex(BASE_URL + 'eye.webp', true), loadTex(BASE_URL + 'lash.png', true), loadTex(BASE_URL + 'detail.webp', false),
+      loadTex(BASE_URL + 'detail2.webp', false).catch(() => null)]);
+    const [eye, lash, detail, detail2] = shared;
     detail.wrapS = detail.wrapT = THREE.RepeatWrapping;
-    out.tex = { eye, lash, detail };
+    if (detail2) detail2.wrapS = detail2.wrapT = THREE.RepeatWrapping;
+    out.tex = { eye, lash, detail, detail2 };
     await Promise.all(Object.entries(BODIES).map(async ([k, id]) => {
       let pk;
       try {
@@ -113,7 +115,7 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
   const skinM = skinMaterial(B.A, B.B);
   skinM.userData.u.uTone.value.copy(tone);
   skinM.userData.u.uHair.value.copy(hairC);
-  const clothM = clothMaterial(BASE.tex.detail);
+  const clothM = clothMaterial(BASE.tex.detail, BASE.tex.detail2);
   const tints = clothM.userData.u.uTint.value;
   const lin = (hex) => new THREE.Color(hex);
   const set = (i, c) => tints[i].copy(c);
@@ -310,6 +312,8 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
     leather: new THREE.MeshStandardMaterial({ color: 0x4b3020, roughness: 0.62 }),
     stoneM: new THREE.MeshStandardMaterial({ color: 0x7d7870, roughness: 0.9 }),
     body: skinM,
+    cloth: clothM,
+    hair: hair ? [hair.material, hair.userData.soft?.material].filter(Boolean) : [],
   };
   const mesh = (geo, m) => {
     const o = new THREE.Mesh(geo, m);
@@ -369,7 +373,7 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
     root, hips: by.hips, spine: by.spine, chest: by.chest, neck: by.neck, head: by.head,
     armL, armR, legL, legR, tools, weapons, materials: M, eyes, setMorph, kind, lod, setOutfit,
     get outfit() { return { ...want }; },
-    hipsY: by.hips.position.y, buildMs: BASE.ms,
+    hipsY: by.hips.position.y, hipsRest: by.hips.position.clone(), bones: by, buildMs: BASE.ms,
     tris: Object.fromEntries(Object.entries(pk.meshes).map(([k, m]) => [k, m.geometry.index.count / 3])),
   };
 }

@@ -138,9 +138,43 @@ def smooth_ao(g, ao):
     return np.where(g['part'] > 0.5, np.maximum(out, 0.7), out)
 
 
+def convexity(pos, tris):
+    """꼭짓점 볼록함(0.5 평평, 1 볼록 모서리, 0 오목 골): 이웃이 접평면 아래면 볼록"""
+    from meshutil import neighbors
+    key = np.round(pos * 4000).astype(np.int64)
+    _, weld = np.unique(key, axis=0, return_inverse=True)
+    weld = weld.ravel()
+    nw = weld.max() + 1
+    P = np.zeros((nw, 3))
+    cnt = np.zeros(nw)
+    np.add.at(P, weld, pos)
+    np.add.at(cnt, weld, 1)
+    P /= cnt[:, None]
+    Tw = weld[tris]
+    N = vertex_normals(P, Tw)
+    e, _ = neighbors(Tw, nw)
+    d = P[e[:, 1]] - P[e[:, 0]]
+    l2 = np.maximum((d * d).sum(1), 1e-10)
+    h = (N[e[:, 0]] * d).sum(1) / l2
+    H = np.zeros(nw)
+    c = np.zeros(nw)
+    np.add.at(H, e[:, 0], h)
+    np.add.at(c, e[:, 0], 1)
+    H /= np.maximum(c, 1)
+    conv = np.clip(0.5 - H * 0.012, 0, 1)
+    for _ in range(2):
+        s_ = np.zeros(nw)
+        np.add.at(s_, e[:, 0], conv[e[:, 1]])
+        conv = 0.5 * conv + 0.5 * s_ / np.maximum(c, 1)
+    return conv[weld]
+
+
 def piece_attrs(g, ao, seed):
     var = piece_color(g, seed)
-    col = np.clip(var[:, None] * np.stack([ao, ao, ao], 1) ** 0.85, 0, 1.4) / 1.4
+    lum = np.clip(var * ao ** 0.85, 0, 1.4) / 1.4
+    conv = convexity(g['pos'], g['tris'])
+    loose = np.clip(g.get('loose', np.zeros(len(g['pos']))), 0, 1)
+    col = np.stack([lum, conv, loose], 1)
     ci, cw = top4(g['w'])
     return {'position': (g['pos'], 'f32'), 'normal': (vertex_normals(g['pos'], g['tris']), 'i16n'),
             'color': (np.concatenate([col, ao[:, None]], 1), 'u8n'), 'aMat': (g['mat'][:, None], 'u8'),

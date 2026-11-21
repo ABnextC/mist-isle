@@ -17,6 +17,7 @@ export function createShotsView(scene, game, hf) {
     const g = new THREE.Group();
     const spin = new THREE.Group();
     g.add(spin);
+    g.scale.setScalar(1.35); // 날아오는 걸 알아보고 피할 수 있게 조금 크게
     for (const [geo, m] of [[handle, wood], [head, metal], [blade, metal]]) {
       const o = new THREE.Mesh(geo, m);
       o.castShadow = true;

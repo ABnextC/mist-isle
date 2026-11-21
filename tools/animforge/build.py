@@ -272,6 +272,160 @@ def plant(c, reach=0.03, soft=0.035):
     return dict(c, q=q2)
 
 
+def _frame_to(r_rest, x_rest, r_world, x_world):
+    """쉬는 자세의 뼈 방향 r_rest와 경첩 x_rest를 세계의 r_world·x_world로 옮기는 회전 (F,3,3)"""
+    def basis(r, x):
+        a1 = nrm(r)
+        a2 = nrm(x - (x * a1).sum(-1, keepdims=True) * a1)
+        return np.stack([a1, a2, np.cross(a1, a2)], -1)
+    Fr = basis(np.broadcast_to(r_rest, r_world.shape), np.broadcast_to(x_rest, x_world.shape))
+    Fw = basis(r_world, x_world)
+    return Fw @ np.transpose(Fr, (0, 2, 1))
+
+
+def fix_legs(c, info=None):
+    """다리 비틀림·무릎 방향 바로잡기(v0.4.10).
+    옮긴 동작 일부(79_01)는 넓적다리·정강이가 제 축으로 180° 돌고 발이 거꾸로 되돌려 앞을 봤다.
+    세계 위치는 맞아 보여도 피부가 엉덩이·발목에서 꼬여 허벅지가 깨져 보였고, 무릎은 뒤로 접혔다.
+    엉덩이·발목 자리와 발 방향은 그대로 두고, 무릎은 늘 앞(엉덩이·발끝 쪽)으로 굽게 두 마디 IK로 다시 풀며
+    비틀림은 무릎 경첩 면에서 정한다."""
+    from retarget import PARENT, mat_to_quat
+    q, h, n = c['q'], c['h'], c['n']
+    G, pos = fk_full(q, h)
+    fix = {}
+    rep = {}
+    ex = np.array([1.0, 0, 0])
+    for s_ in 'LR':
+        th, kn, ft = 'th' + s_, 'kn' + s_, 'ft' + s_
+        r1 = np.array(REST[kn]) - np.array(REST[th])
+        r2 = np.array(REST[ft]) - np.array(REST[kn])
+        l1, l2 = np.linalg.norm(r1), np.linalg.norm(r2)
+        H, K, A = pos[th], pos[kn], pos[ft]
+        Gp, Gf = G[PARENT[th]], G[ft]
+        lk = (c.get('lock') or {}).get(s_)
+        if lk is not None:
+            # 제자리 동작: 발을 한 장(lk)의 자리·방향에 묶는다(곡괭이질 중 발을 옮겨 다리가 엇갈리던 것)
+            A = np.broadcast_to(A[lk], A.shape).copy()
+            Gf = np.broadcast_to(Gf[lk], Gf.shape).copy()
+        D = np.clip(np.linalg.norm(A - H, axis=1), abs(l1 - l2) + 1e-4, l1 + l2 - 1e-4)
+        d = nrm(A - H)
+        # 무릎이 갈 쪽(앞): 엉덩이 앞과 발끝 앞을 섞어 엉덩이-발목 선에 수직으로
+        f = nrm(0.4 * Gp[:, :, 2] + 0.6 * Gf[:, :, 2])
+        fp = f - (f * d).sum(1, keepdims=True) * d
+        fp = nrm(fp + 1e-6 * np.cross(d, ex))
+        po = (K - H) - ((K - H) * d).sum(1, keepdims=True) * d
+        m = np.linalg.norm(po, axis=1)
+        back = (po * fp).sum(1) < 0
+        pn = nrm(np.where(back[:, None], -po, po) + 1e-9)
+        w = np.clip((m - 0.01) / 0.03, 0, 1)
+        w = w * w * (3 - 2 * w)
+        if lk is not None:
+            w = np.zeros(n)  # 발을 묶으면 원래 무릎 자리는 다른 발목에 맞춘 것이라 쓰지 않는다
+        pole = nrm(w[:, None] * pn + (1 - w)[:, None] * fp)
+        pole = nrm(pole - (pole * d).sum(1, keepdims=True) * d)
+        ca = np.clip((l1 ** 2 + D ** 2 - l2 ** 2) / (2 * l1 * D), -1, 1)
+        K2 = H + d * (l1 * ca)[:, None] + pole * (l1 * np.sqrt(1 - ca ** 2))[:, None]
+        A2 = H + d * D[:, None]
+        u, v = nrm(K2 - H), nrm(A2 - K2)
+        hinge = nrm(np.cross(pole, d))
+        Gth = _frame_to(r1, ex, u, hinge)
+        Gkn = _frame_to(r2, ex, v, hinge)
+        fix[th] = mat_to_quat(np.transpose(Gp, (0, 2, 1)) @ Gth)
+        fix[kn] = mat_to_quat(np.transpose(Gth, (0, 2, 1)) @ Gkn)
+        fix[ft] = mat_to_quat(np.transpose(Gkn, (0, 2, 1)) @ Gf)
+        rep[s_] = dict(back=int((back & (m > 0.01)).sum()), moved=round(float(np.linalg.norm(K2 - K, axis=1).max() * 100), 1))
+    q2 = dict(q)
+    q2.update(fix)
+    if info is not None:
+        info.update(rep)
+    return dict(c, q=q2, legfix=rep)
+
+
+def _twist_angle(R, axis):
+    """회전 행렬 R(F,3,3)의 axis(지역) 둘레 비틀림 각(라디안)"""
+    from retarget import mat_to_quat
+    qq = mat_to_quat(R)
+    a = np.asarray(axis, float)
+    p = (qq[:, :3] @ a)
+    ang = 2 * np.arctan2(p, qq[:, 3])
+    return (ang + np.pi) % (2 * np.pi) - np.pi
+
+
+def _axis_rot(axis, ang):
+    """지역 축 axis 둘레 ang(F,) 회전 행렬 (F,3,3)"""
+    a = np.asarray(axis, float)
+    a = a / np.linalg.norm(a)
+    K = np.array([[0, -a[2], a[1]], [a[2], 0, -a[0]], [-a[1], a[0], 0]])
+    s_, c_ = np.sin(ang)[:, None, None], np.cos(ang)[:, None, None]
+    return np.eye(3)[None] + s_ * K[None] + (1 - c_) * (K @ K)[None]
+
+
+def fix_arms(c):
+    """팔 비틀림 바로잡기(v0.4.10).
+    손끝 IK로 만든 동작은 손 방향을 세계에 붙든 채 팔만 옮겨 손목이 100~150° 비틀리고(소매·손목 살이 꼬임),
+    아래팔도 팔꿈치에서 통째로 돌았다. 어깨·팔꿈치·손목 자리와 손 방향은 그대로 두고,
+    위팔 비틀림은 팔꿈치 경첩 면에서 정하고, 아래팔 돌림(엎침·뒤침)은 팔꿈치와 손목이 반씩 나눠 진다.
+    팔꿈치가 뒤로 꺾인 장은 어깨-손목 선 너머로 뒤집어 앞으로 굽힌다."""
+    from retarget import PARENT, mat_to_quat
+    q, h, n = c['q'], c['h'], c['n']
+    G, pos = fk_full(q, h)
+    fix = {}
+    rep = {}
+    ex = np.array([1.0, 0, 0])
+    for s_ in 'LR':
+        sh, el, hd = 'sh' + s_, 'el' + s_, 'hand' + s_
+        r1 = np.array(REST[el]) - np.array(REST[sh])
+        r2 = np.array(REST[hd]) - np.array(REST[el])
+        l1, l2 = np.linalg.norm(r1), np.linalg.norm(r2)
+        S, E, Hd = pos[sh], pos[el], pos[hd]
+        Gp, Gh = G[PARENT[sh]], G[hd]
+        D = np.clip(np.linalg.norm(Hd - S, axis=1), abs(l1 - l2) + 1e-4, l1 + l2 - 1e-4)
+        d = nrm(Hd - S)
+        # 팔꿈치가 갈 쪽: 원래 위팔 뼈의 뒤(-z)를 어깨-손목 선에 수직으로(팔은 굽히면 팔꿈치가 몸 뒤·바깥으로 간다)
+        back_ref = -G[sh][:, :, 2]
+        bp = nrm(back_ref - (back_ref * d).sum(1, keepdims=True) * d + 1e-6 * np.cross(d, ex))
+        po = (E - S) - ((E - S) * d).sum(1, keepdims=True) * d
+        m = np.linalg.norm(po, axis=1)
+        # 굽힘 방향 검사: 아래팔이 위팔의 앞(+z, 원래 위팔 뼈 기준)으로 가야 정상
+        u0, v0 = nrm(E - S), nrm(Hd - E)
+        fwd = (np.einsum('fji,fj->fi', G[sh], v0))[:, 2]
+        bend = np.degrees(np.arccos(np.clip((u0 * v0).sum(1), -1, 1)))
+        hyper = np.zeros(n, bool)
+        pn = nrm(po + 1e-9)
+        w = np.clip((m - 0.01) / 0.03, 0, 1)
+        w = w * w * (3 - 2 * w)
+        pole = nrm(w[:, None] * pn + (1 - w)[:, None] * bp)
+        pole = nrm(pole - (pole * d).sum(1, keepdims=True) * d)
+        ca = np.clip((l1 ** 2 + D ** 2 - l2 ** 2) / (2 * l1 * D), -1, 1)
+        E2 = S + d * (l1 * ca)[:, None] + pole * (l1 * np.sqrt(1 - ca ** 2))[:, None]
+        H2 = S + d * D[:, None]
+        u, v = nrm(E2 - S), nrm(H2 - E2)
+        # 팔꿈치 굽힘은 위팔 지역 -x 둘레 양의 회전 → 위팔 +x = -(u×v) 쪽. 곧은 팔은 원래 위팔 +x를 쓴다
+        hinge_bent = nrm(np.cross(d, pole))  # 위팔 +x = -(u×v) = d×pole (팔꿈치가 pole 쪽으로 나갈 때)
+        x_orig = G[sh][:, :, 0]
+        x_orig = nrm(x_orig - (x_orig * u).sum(1, keepdims=True) * u + 1e-6 * hinge_bent)
+        xa = nrm(w[:, None] * hinge_bent + (1 - w)[:, None] * x_orig)
+        Gsh = _frame_to(r1, ex, u, xa)
+        Gel0 = _frame_to(r2, ex, v, xa)
+        # 아래팔 돌림: 손 방향을 지키며 팔꿈치·손목이 반씩
+        rf = r2 / l2
+        Lh = np.transpose(Gel0, (0, 2, 1)) @ Gh
+        tau = _twist_angle(Lh, rf)
+        # 아래팔 돌림은 ±110°까지(사람 팔의 엎침·뒤침 폭). 넘치는 몫은 손을 되돌린다 — 든 것의 방향은
+        # 클립 도구 트랙·두 손 선으로 따로 정하므로 손등 돌림만 바뀐다
+        tc = np.clip(tau, -np.radians(110), np.radians(110))
+        Gh = Gel0 @ _axis_rot(rf, tc - tau) @ Lh
+        tau = tc
+        Gel = Gel0 @ _axis_rot(rf, 0.5 * tau)
+        fix[sh] = mat_to_quat(np.transpose(Gp, (0, 2, 1)) @ Gsh)
+        fix[el] = mat_to_quat(np.transpose(Gsh, (0, 2, 1)) @ Gel)
+        fix[hd] = mat_to_quat(np.transpose(Gel, (0, 2, 1)) @ Gh)
+        rep[s_] = dict(hyper=int(hyper.sum()), tw=int(np.degrees(np.abs(tau)).max()), moved=round(float(np.linalg.norm(E2 - E, axis=1).max() * 100), 1))
+    q2 = dict(q)
+    q2.update(fix)
+    return dict(c, q=q2, armfix=rep)
+
+
 def resample(c, n_out, target=None):
     """고리 클립을 n_out장으로 다시 뽑는다.
     target(한 주기 보폭)이 있으면 딛는 동안은 빠르게·떠 있는 동안은 느리게 위상을 비틀어
@@ -347,8 +501,11 @@ if __name__ == '__main__':
     from actions import build_actions
     for k, c in build_actions(ROOT, clips['idle']).items():
         clips[k] = c
+    # 다리 비틀림·무릎 방향 바로잡기(v0.4.10): 모든 동작 마지막에
+    for k in list(clips):
+        clips[k] = fix_arms(fix_legs(clips[k]))
     for k, c in clips.items():
-        print(k, 'frames', c['n'], 'dur', round(c['dur'], 3), 'stride', round(c['stride'], 3), c.get('win', ''), c.get('warp', ''), c.get('plant', ''), c.get('info', ''), c.get('ev', ''), c.get('straightened', ''), 'hips y', np.round(c['h'][:, 1].min(), 3), np.round(c['h'][:, 1].max(), 3))
+        print(k, 'frames', c['n'], 'dur', round(c['dur'], 3), 'stride', round(c['stride'], 3), c.get('win', ''), c.get('warp', ''), c.get('plant', ''), c.get('info', ''), c.get('ev', ''), c.get('straightened', ''), c.get('legfix', ''), c.get('armfix', ''), 'hips y', np.round(c['h'][:, 1].min(), 3), np.round(c['h'][:, 1].max(), 3))
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     data = {'fps': FPS, 'bones': BONES, 'clips': {k: pack(c) for k, c in clips.items()},
             'credit': 'CMU Graphics Lab Motion Capture Database (mocap.cs.cmu.edu), BVH: Bruce Hahne (cgspeed)'}

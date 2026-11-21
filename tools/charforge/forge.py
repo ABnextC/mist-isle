@@ -328,6 +328,10 @@ def forge(name, preset, female, skin_size=1024, seed=1):
     from tiles import tiles
     if not os.path.exists(f'{OUT}/detail.webp'):
         tiles().save(f'{OUT}/detail.webp', quality=90, method=6)
+    # 옷 무게 마무리(v0.4.10): 사타구니 이음매 고르기 + 겹친 옷 무게 맞추기
+    from fixweights import fix_pack
+    for p in [f'{OUT}/{name}.json'] + [f'{OUT}/{name}-{c}.json' for c in ('robe', 'light', 'heavy')]:
+        log('weights', os.path.basename(p), fix_pack(p))
     log('done')
 
 if __name__ == '__main__':

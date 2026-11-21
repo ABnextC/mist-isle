@@ -14,6 +14,8 @@ import { deliver, countDeliverable } from './orders.js';
 import { addXp } from './systems/progress.js';
 import { startAttack, startDodge, interrupt, equipped, equipLoad } from './systems/combat.js';
 import { corpseOpen, skinLoot, skinSeconds } from './systems/mobs.js';
+import { talkDue, talk, useDue, useObj, available, startQuest, nearNpc, TALK_RANGE, USE_RANGE, BOARD_RANGE } from './systems/quests.js';
+import { objPos } from './world.js';
 
 // ── 도우미 ─────────────────────────────────────────────
 function matchSlot(data, e, slot) {
@@ -735,7 +737,71 @@ const CONTRIBUTE = {
   },
 };
 
+// ── 퀘스트(v0.5) ────────────────────────────────────
+// NPC와 대화: 이 NPC와 이야기해야 넘어가는 퀘스트 단계를 넘긴다(없으면 그냥 인사)
+const TALK = {
+  validate(ctx, a, c) {
+    if (!ctx.data.npcs[c.npc]) return 'no_npc';
+    const bad = alive(ctx, a);
+    if (bad) return bad;
+    if (!nearNpc(ctx, a, c.npc, TALK_RANGE)) return 'too_far';
+    return { due: talkDue(ctx, a, c.npc) };
+  },
+  execute(ctx, a, c, p) {
+    talk(ctx, a, p.due);
+    ctx.emit('talk', { actor: a.id, npc: c.npc, quests: p.due });
+  },
+};
+
+// 현상금·부가 퀘스트 받기: 주는 NPC 곁이나 게시판 앞에서
+const QUEST_ACCEPT = {
+  validate(ctx, a, c) {
+    const q = ctx.data.quests[c.quest];
+    if (!q) return 'no_quest';
+    if (!a.quests || !available(ctx, a, q)) return 'not_available';
+    if (q.giver === 'board') {
+      if (!ctx.statics.some((o) => o.kind === 'board' && Math.hypot(o.x - a.x, o.z - a.z) <= BOARD_RANGE)) return 'too_far';
+    } else if (q.giver && !nearNpc(ctx, a, q.giver)) return 'too_far';
+    return { q };
+  },
+  execute(ctx, a, c, p) {
+    startQuest(ctx, a, p.q.id);
+  },
+};
+
+// 퀘스트 물체 쓰기(궤짝 열기·상자 되찾기·탁자 뒤지기)
+const QUEST_USE = {
+  validate(ctx, a, c) {
+    if (!ctx.data.objects[c.obj]) return 'no_obj';
+    const bad = alive(ctx, a);
+    if (bad) return bad;
+    const pos = objPos(ctx, c.obj);
+    if (Math.hypot(a.x - pos.x, a.z - pos.z) > USE_RANGE) return 'too_far';
+    const id = useDue(ctx, a, c.obj);
+    if (!id) return 'not_quest_obj';
+    return { id };
+  },
+  execute(ctx, a, c, p) {
+    a.move = null;
+    a.dest = null;
+    a.nav = null;
+    useObj(ctx, a, p.id, c.obj);
+  },
+};
+
+// 화면에 따라다닐 퀘스트 고르기
+const QUEST_TRACK = {
+  validate(ctx, a, c) {
+    if (!a.quests?.active[c.quest]) return 'no_quest';
+    return {};
+  },
+  execute(ctx, a, c) {
+    a.quests.track = c.quest;
+  },
+};
+
 const HANDLERS = {
+  TALK, QUEST_ACCEPT, QUEST_USE, QUEST_TRACK,
   MOVE, MOVE_INPUT, GATHER, CRAFT, EAT, STORE, TAKE, SET_AUTOPILOT, RECALL,
   MARKET_SELL, MARKET_BUY, MARKET_CANCEL, MARKET_DUMP, ORDER_DELIVER, REPAIR,
   EQUIP, UNEQUIP, ATTACK, DODGE, BLOCK, SKIN, SET_HOME, SHIP, CONTRIBUTE,

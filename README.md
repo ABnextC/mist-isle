@@ -18,21 +18,23 @@ node tools/personas.js --days 7 --seed 2026           # 페르소나 7명 자동
 node tools/headless.js --days 3 --seed 42             # 화면 없이 게임 3일 돌리기
 node tools/headless.js --days 10 --seed 7 --bots 3    # 봇 3명
 node tools/economy.js --days 60 --seed 7              # AI 개척민 섬 경제 점검 (--bots 1, --json 가능)
-node tools/combat.js --trials 30                      # 헤드리스 결투: 장비·실력별 승률
+node tools/combat.js --trials 30                      # 헤드리스 결투: 장비·실력별 승률 (--foes raider,raider_captain · --site camp)
 python3 -m http.server 8000                           # http://localhost:8000 에서 게임 열기
 ```
 
 Node 18 이상. 코어와 도구는 외부 패키지가 없다.
 화면은 `vendor/three/`에 묶어 둔 Three.js r187(MIT)과 그 애드온(하늘·후처리)을 쓴다. 빌드 단계는 없다.
-시험할 때는 `?seed=7&fresh`를 붙이면 세이브를 무시하고 정해진 섬을 새로 연다.
+시험할 때는 `?seed=7&fresh`를 붙이면 세이브를 무시하고 정해진 섬을 새로 연다. `&nowarm`은 섬 미리 그리기를 건너뛴다(소프트웨어 렌더러 시험용).
 화질은 설정 창에서 자동·높음·중간·낮음을 고른다(브라우저에 기억한다).
 
 ## 조작
 
-- PC: WASD 이동 · 마우스 끌기 시점 · 휠 거리 · E 상호작용 · H 귀환 · I 가방 · C 제작 · K 스킬 · L 기록 · Esc 닫기
+- PC: WASD 이동 · 마우스 끌기 시점 · 휠 거리 · E 상호작용·대화 · J 일지 · H 귀환 · I 가방 · C 제작 · K 스킬 · L 기록 · Esc 닫기
 - 거래소(마을 서쪽 좌판)·마을 게시판(주문·마을 사업·산지 소문)·대장간(제작·수리)은 앞에 서서 E로 연다
 - 정착지(v0.4): 등대 마을에서 북쪽 길 끝이 숲머리다. 창고·거래소·게시판은 마을마다 따로다. 가방 창의 🚚로 다른 마을 창고에 보내고, ‘귀환 지점으로’로 귀환할 마을을 정한다
 - 전투(v0.3): 왼쪽 클릭 약공 · 길게 눌렀다 떼면 강공 · 오른쪽 버튼이나 Q 막기 · Space 구르기 · 쓰러뜨린 짐승 앞에서 E 손질. 휴대폰은 ⚔️🛡️🌀 단추
+- 퀘스트(v0.5): 왼쪽 위 추적 줄과 금빛 화살표가 지금 할 일을 가리킨다. NPC 머리 위 `!`·`?`에 다가가 E로 대화한다. 현상금은 마을 게시판 ‘현상금’ 탭에서 받는다
+- 적(v0.5): 검은 돛 약탈단은 막기를 쓴다(강공으로 깬다). 머리 위 붉은 ‼는 센 공격, ⛔는 막을 수 없는 공격이다. 밤에는 마을 사이 들판에 안개 늑대가 나온다
 - 모바일: 왼쪽 엄지로 이동 · 오른쪽 끌기로 시점 · 두 손가락으로 거리 · 손 단추로 상호작용
 
 ## 구조
@@ -42,16 +44,17 @@ core/          순수 시뮬레이션 (화면 코드 금지 · Math.random 금�
   game.js      진입점: createGame / loadGame / dispatch / advance
   commands.js  명령 검증·실행 (MOVE MOVE_INPUT GATHER CRAFT EAT STORE TAKE SET_AUTOPILOT RECALL
                MARKET_SELL MARKET_BUY MARKET_CANCEL MARKET_DUMP ORDER_DELIVER REPAIR
-               EQUIP UNEQUIP ATTACK DODGE BLOCK SKIN SET_HOME SHIP CONTRIBUTE)
+               EQUIP UNEQUIP ATTACK DODGE BLOCK SKIN SET_HOME SHIP CONTRIBUTE
+               TALK QUEST_ACCEPT QUEST_USE QUEST_TRACK)
   market.js    거래소: 마을마다 따로인 호가창·체결·수수료(명성 할인)·시세, 수리비
   settlements.js 정착지: 인구·번영도·수요, 마을 사업, 작업대 유지비, 운송비
   orders.js    주문 게시판(마을마다 의뢰 붙이기·납품)
   terrain.js   절차 생성 지형 (코어와 화면이 같이 쓴다)
   formulas.js  산출·스탯 공식
-  systems/     틱마다 도는 시스템 (이동·채집, 제작 대기열, 노드, 산지, 집중력, AI, 섬 경제, 전투, 짐승)
+  systems/     틱마다 도는 시스템 (이동·채집, 제작 대기열, 노드, 산지, 집중력, AI, 섬 경제, 전투, 짐승·약탈단, 퀘스트)
   ai/          개척민·페르소나 봇, 싸움 요령(fighter.js)
   ai/          AI 개척민 정책 (플레이어와 같은 명령만 쓴다)
-data/          JSON 정의 (아이템·레시피·노드·스킬·지역·작업대·AI·페르소나·마을 사업·설정)
+data/          JSON 정의 (아이템·레시피·노드·스킬·지역·작업대·AI·페르소나·마을 사업·짐승·NPC·퀘스트·설정)
 client/game/   3D 화면 (Three.js): 카메라·입력·HUD·미니맵, 노드·마을·캐릭터·효과 그리기
   gfx/         하늘·안개·후처리·화질 단계, 절차 생성 텍스처, 지형·바다·풀밭·장식 식물
   models/      모형 만들기(자원 노드·마을·캐릭터). 사람이 만든 3D 파일 없이 코드로 만든다

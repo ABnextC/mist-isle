@@ -536,9 +536,18 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
     g.position.copy(gripRv).lerp(_o, k);
   }
 
+  // 옷 칸 색 바꾸기(v0.5: 약탈단·NPC): { vest: '#1e1b1a', scarf: '#7a1a14', ... } — 칸 이름은 묶음의 gid
+  const GID = meta.extra.gid || {};
+  function setTints(map) {
+    for (const [name, hex] of Object.entries(map || {})) {
+      const i = GID[name];
+      if (i != null && tints[i]) tints[i].set(hex);
+    }
+  }
+
   return {
     root, hips: by.hips, spine: by.spine, chest: by.chest, neck: by.neck, head: by.head,
-    armL, armR, legL, legR, tools, weapons, props, showProp, materials: M, eyes, setMorph, kind, lod, setOutfit, aimHeld,
+    armL, armR, legL, legR, tools, weapons, props, showProp, materials: M, eyes, setMorph, kind, lod, setOutfit, aimHeld, setTints,
     get outfit() { return { ...want }; },
     hipsY: by.hips.position.y, hipsRest: by.hips.position.clone(), bones: by, buildMs: BASE.ms,
     tris: Object.fromEntries(Object.entries(pk.meshes).map(([k, m]) => [k, m.geometry.index.count / 3])),

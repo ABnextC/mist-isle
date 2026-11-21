@@ -11,7 +11,8 @@ import {
 import { keyOf, effectiveProps } from '../core/inventory.js';
 import { fitsHabitat } from '../core/terrain.js';
 import { allOrders, bookOf } from '../core/market.js';
-import { storeOf, nearestSettlement } from '../core/world.js';
+import { storeOf, nearestSettlement, npcPos, sitePos, objPos } from '../core/world.js';
+import { yawTo } from '../core/systems/combat.js';
 import { settlementDaily } from '../core/settlements.js';
 import { readFileSync } from 'node:fs';
 
@@ -863,6 +864,265 @@ test('v0.3 세이브를 불러오면 창고·거래소·의뢰가 등대 마을 
   ok(bookOf({ state: st }, FR).bids.some((b) => b.kind === 'town'), '숲머리 수요가 선다');
   const again = loadGame({ data, save: old });
   again.advance(3600);
+  eq(again.hash(), g.hash(), '이관 뒤에도 재현된다');
+});
+
+console.log('검은 돛·메인 퀘스트 (v0.5)');
+// 한 마리만 남긴 싸움터(자리 무리 안의 어느 종류든)
+function lone(typeId, seed = 21) {
+  const g = createGame({ data, seed, actors: [{ id: 'p1', kind: 'player' }] });
+  g.state.econ = null;
+  const m = Object.values(g.state.mobs).find((x) => x.type === typeId);
+  const grp = g.state.mobGroups[m.group];
+  for (const o of Object.values(g.state.mobs)) if (o !== m) delete g.state.mobs[o.id];
+  for (const id of Object.keys(g.state.mobGroups)) if (id !== grp.id) delete g.state.mobGroups[id];
+  grp.mobs = [m.id];
+  return { g, a: g.state.actors.p1, m, grp };
+}
+const world = (g) => ({ data, terrain: g.terrain });
+
+test('약탈자 막기: 앞에서 오는 약공은 75% 줄고, 강공은 막기를 깨뜨려 비틀거리게 한다', () => {
+  const { g, a, m } = lone('raider');
+  const w = kit('wpn_sword_copper', 50, 'u_w1');
+  a.bag.push(w);
+  g.dispatch({ type: 'EQUIP', actor: 'p1', uid: 'u_w1' });
+  place(g, a, m, 1.6);
+  const T = data.creatures.raider;
+  const guard = () => {
+    m.target = 'p1';
+    m.mode = 'guard';
+    m.until = g.state.t + 5;
+    m.yaw = yawTo(m, a);
+  };
+  guard();
+  let hp0 = m.hp;
+  ok(g.dispatch({ type: 'ATTACK', actor: 'p1', kind: 'light' }).ok, '약공');
+  g.advance(0.3);
+  const full = w.stats.attack * (1 - T.armor / (T.armor + cfg.combat.armorK));
+  near(hp0 - m.hp, Math.max(0.5, Math.round(Math.round(full * 10) / 10 * 0.25 * 10) / 10), 1e-6, '막은 피해');
+  g.advance(0.4);
+  guard();
+  hp0 = m.hp;
+  let broke = false;
+  g.on('mob.guardbreak', () => { broke = true; });
+  ok(g.dispatch({ type: 'ATTACK', actor: 'p1', kind: 'heavy' }).ok, '강공');
+  g.advance(0.55);
+  ok(broke, '막기가 깨진다');
+  eq(m.mode, 'recover', '비틀거림');
+  near(hp0 - m.hp, Math.round(full * cfg.combat.heavyMult * 10) / 10, 0.11, '강공은 다 들어간다');
+});
+
+test('투척꾼의 손도끼: 날아가 맞히고, 구르는 앞부분이면 피한다', () => {
+  const { g, a, m } = lone('raider_thrower');
+  place(g, a, m, 9);
+  m.target = 'p1';
+  m.mode = 'chase';
+  m.cd = 0;
+  let fired = 0;
+  g.on('shot.fire', () => fired++);
+  for (let i = 0; i < 90 && a.cb.hp === cfg.combat.hp; i++) g.advance(0.1);
+  ok(fired >= 1, '던진다');
+  near(cfg.combat.hp - a.cb.hp, data.creatures.raider_thrower.dmg, 1e-6, '손도끼 피해(갑옷 없음)');
+  // 다음 손도끼: 1.6m 앞까지 오면 옆으로 구른다
+  a.cb.hp = cfg.combat.hp;
+  a.cb.lastHitAt = -99;
+  let dodged = false;
+  for (let i = 0; i < 300 && !dodged; i++) {
+    g.advance(1 / 30);
+    const s = g.state.shots.find((x) => Math.hypot(x.x - a.x, x.z - a.z) < 1.6);
+    if (s) {
+      ok(g.dispatch({ type: 'DODGE', actor: 'p1', yaw: Math.atan2(s.vz, -s.vx) }).ok, '구르기');
+      dodged = true;
+    }
+  }
+  ok(dodged, '두 번째 손도끼');
+  g.advance(0.5);
+  eq(a.cb.hp, cfg.combat.hp, '피했다');
+  ok(a.stats.evaded >= 1, '피함 기록');
+});
+
+test('두목: 체력 절반에 부하 둘을 부르고, 상대가 쓰러지면 둥지로 돌아가 처음 단계로·부하는 사라진다', () => {
+  const { g, a, m, grp } = lone('raider_captain');
+  const w = kit('wpn_battleaxe_iron', 50, 'u_w1');
+  const C = data.creatures.raider_captain;
+  w.stats.attack = Math.round((C.hp * 0.7) / (1 - C.armor / (C.armor + cfg.combat.armorK)) / cfg.combat.weapons.axe.mult); // 한 방에 체력 30%만 남게
+  a.bag.push(w);
+  g.dispatch({ type: 'EQUIP', actor: 'p1', uid: 'u_w1' });
+  a.cb.hp = a.cb.maxHp = 1e6;
+  place(g, a, m, 1.8);
+  let said = null;
+  g.on('mob.phase', (ev) => { said = ev.say; });
+  ok(g.dispatch({ type: 'ATTACK', actor: 'p1', kind: 'light' }).ok, '공격');
+  g.advance(0.3);
+  ok(m.hp < data.creatures.raider_captain.hp / 2 && m.phase === 1, `단계 ${m.phase} hp ${m.hp}`);
+  ok(said && said.length > 4, '대사');
+  const adds = () => grp.mobs.map((id) => g.state.mobs[id]).filter((x) => x && x.by === m.id);
+  eq(adds().length, 2, '부하 둘');
+  ok(adds().every((x) => x.target === 'p1' && x.temp), '부하가 덤빈다');
+  a.cb.hp = 1;
+  a.cb.downUntil = g.state.t + 60; // 쓰러진 셈
+  g.advance(25);
+  eq(m.mode === 'idle' || m.mode === 'wander', true, `두목 상태 ${m.mode}`);
+  eq(m.hp, data.creatures.raider_captain.hp, '체력 회복');
+  eq(m.phase, 0, '처음 단계');
+  eq(adds().length, 0, '부하는 사라진다');
+});
+
+test('두목의 내려찍기는 막아도 다 들어오고, 휩쓸기는 막으면 줄어든다', () => {
+  const { g, a, m } = lone('raider_captain');
+  const C = data.creatures.raider_captain;
+  a.cb.hp = a.cb.maxHp = 1000;
+  place(g, a, m, 1.6);
+  ok(g.dispatch({ type: 'BLOCK', actor: 'p1', on: true }).ok, '막기');
+  const hit = (id) => {
+    const hp0 = a.cb.hp;
+    m.target = 'p1';
+    m.yaw = yawTo(m, a);
+    m.atk = { i: C.attacks.findIndex((x) => x.id === id), t0: g.state.t };
+    m.mode = 'windup';
+    m.until = g.state.t + 0.05;
+    g.advance(0.1);
+    a.cb.st = cfg.combat.stamina;
+    return hp0 - a.cb.hp;
+  };
+  const smash = C.attacks.find((x) => x.id === 'smash');
+  const sweep = C.attacks.find((x) => x.id === 'sweep');
+  near(hit('smash'), C.dmg * smash.mult, 0.11, '내려찍기(막기 무시)');
+  near(hit('sweep'), C.dmg * sweep.mult * (1 - cfg.combat.blockCut), 0.11, '휩쓸기(막음)');
+});
+
+test('안개 늑대는 밤에만 나온다: 낮엔 숨고, 밤에 마을 사이 들판에 나왔다가 해가 뜨면 사라진다', () => {
+  const g = createGame({ data, seed: 7, actors: [{ id: 'p1', kind: 'player' }] });
+  g.state.econ = null;
+  const wolves = () => Object.values(g.state.mobs).filter((x) => x.type === 'mist_wolf');
+  ok(wolves().length >= 8, `늑대 수 ${wolves().length}`);
+  ok(wolves().every((x) => x.mode === 'away'), '낮에는 숨는다');
+  const T = data.config.time;
+  g.advance((T.dayFraction - T.startPhase) * T.secondsPerGameDay + 5);
+  ok(g.clock.isNight(g.state.t), '밤');
+  ok(wolves().every((x) => x.mode !== 'away'), '밤에는 나온다');
+  const [lo, hi] = data.creatures.mist_wolf.zband;
+  ok(Object.values(g.state.mobGroups).filter((x) => x.type === 'mist_wolf').every((x) => x.z >= lo && x.z <= hi), '들판 띠');
+  g.advance((1 - T.dayFraction) * T.secondsPerGameDay + 5);
+  ok(!g.clock.isNight(g.state.t), '아침');
+  ok(wolves().every((x) => x.mode === 'away'), '해가 뜨면 사라진다');
+});
+
+test('1장 「검은 돛」을 처음부터 끝까지: 막히는 단계 없이 8개 퀘스트, 보상과 현상금까지', () => {
+  const g = createGame({ data, seed: 7, actors: [{ id: 'p1', kind: 'player' }] });
+  g.state.econ = null;
+  const st = g.state;
+  const a = st.actors.p1;
+  const W = world(g);
+  const w = kit('wpn_sword_iron', 60, 'u_god');
+  w.stats.attack = 5000;
+  a.bag.push(w);
+  g.dispatch({ type: 'EQUIP', actor: 'p1', uid: 'u_god' });
+  a.cb.hp = a.cb.maxHp = 1e6;
+  const warp = (x, z) => Object.assign(a, { x, z, move: null, dest: null, nav: null });
+  const slay = (m) => {
+    warp(m.x + Math.sin(m.yaw) * 1.2, m.z + Math.cos(m.yaw) * 1.2);
+    a.yaw = Math.atan2(m.x - a.x, m.z - a.z);
+    a.cb.act = null;
+    ok(g.dispatch({ type: 'ATTACK', actor: 'p1', kind: 'light', yaw: a.yaw }).ok, '공격 거절');
+    g.advance(0.6);
+  };
+  const events = [];
+  for (const k of ['quest.done', 'chapter.done', 'quest.wave', 'quest.fail', 'loot']) g.on(k, (ev) => events.push(ev));
+  const main = data.chapters[0].quests;
+  let guard = 0;
+  let midSave = null;
+  while (guard++ < 400) {
+    const id = main.find((q) => a.quests.active[q]);
+    if (!id) break;
+    const p = a.quests.active[id];
+    const step = data.quests[id].steps[p.step];
+    if (step.type === 'talk') {
+      const n = npcPos(data, step.npc);
+      warp(n.x + 1.2, n.z);
+      ok(g.dispatch({ type: 'TALK', actor: 'p1', npc: step.npc }).ok, `${id} 대화`);
+    } else if (step.type === 'go') {
+      const s = sitePos(W, step.site);
+      warp(s.x, s.z);
+      g.advance(1.1);
+    } else if (step.type === 'use') {
+      const o = step.objs.find((x) => !p.used.includes(x));
+      const pos = objPos(W, o);
+      warp(pos.x + 1.0, pos.z);
+      ok(g.dispatch({ type: 'QUEST_USE', actor: 'p1', obj: o }).ok, `${id} ${o}`);
+    } else if (step.type === 'kill') {
+      const s = step.site ? sitePos(W, step.site) : null;
+      const m = Object.values(st.mobs).filter((x) => x.mode !== 'dead' && x.mode !== 'away' && step.mobs.includes(x.type) && (!s || Math.hypot(x.x - s.x, x.z - s.z) < s.r + 20))
+        .sort((x, y) => Math.hypot(x.x - a.x, x.z - a.z) - Math.hypot(y.x - a.x, y.z - a.z))[0];
+      ok(m, `${id}: 쓰러뜨릴 ${step.mobs.join('/')}가 없다`);
+      slay(m);
+    } else if (step.type === 'defend') {
+      const s = sitePos(W, step.site);
+      if (!p.ev) {
+        warp(s.x, s.z);
+        g.advance(1.1);
+        ok(p.ev, '습격대가 온다');
+        if (!midSave) {
+          midSave = g.save();
+          const copy = loadGame({ data, save: midSave });
+          const h0 = copy.hash();
+          eq(h0, g.hash(), '습격 중 저장 왕복');
+        }
+        continue;
+      }
+      const left = Object.values(st.mobs).filter((x) => x.event === p.ev.id && x.mode !== 'dead');
+      if (left.length) slay(left[0]);
+      else g.advance(1.1);
+    }
+  }
+  for (const q of main) ok(a.quests.done[q] != null, `${q} 못 끝냄`);
+  eq(Object.keys(a.quests.items).length, 0, '퀘스트 물건은 돌려줬다');
+  ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch1'), '1장 끝');
+  eq(events.filter((e) => e.type === 'quest.wave').length, 2, '습격 두 물결');
+  ok(a.bag.some((e) => e.item === 'wpn_club' && e.crafter === '해림'), '해림의 몽둥이');
+  ok(a.bag.some((e) => e.item === 'ingot_iron') && a.bag.some((e) => e.item === 'leather'), '재료 보상');
+  const silver = data.lists.quests.filter((q) => q.kind === 'main').reduce((s, q) => s + (q.reward?.silver || 0), 0);
+  ok(a.silver >= cfg.market.startSilver + silver, `은화 ${a.silver}`);
+  ok(events.some((e) => e.type === 'loot' && e.silver > 0), '약탈자 전리품');
+  // 현상금: 게시판 앞에서 받고, 다 채우면 바로 끝난다. 하루 한 번
+  const board = g.statics.find((o) => o.kind === 'board');
+  warp(board.x + 1.5, board.z);
+  ok(g.dispatch({ type: 'QUEST_ACCEPT', actor: 'p1', quest: 'b_raider' }).ok, '현상금 받기');
+  eq(g.dispatch({ type: 'QUEST_ACCEPT', actor: 'p1', quest: 'b_raider' }).error, 'not_available', '두 번은 못 받는다');
+  const s0 = a.silver;
+  g.advance(320); // 야영지 약탈자가 다시 난다
+  for (let i = 0; i < 5; i++) {
+    const m = Object.values(st.mobs).filter((x) => x.mode !== 'dead' && x.mode !== 'away' && data.creatures[x.type].faction === 'blacksail' && x.type !== 'raider_captain')[0];
+    ok(m, '약탈자가 남아 있다');
+    slay(m);
+  }
+  ok(a.quests.done.b_raider != null && !a.quests.active.b_raider, '현상금 끝');
+  ok(a.silver - s0 >= data.quests.b_raider.reward.silver, '현상금 은화');
+  warp(board.x + 1.5, board.z);
+  eq(g.dispatch({ type: 'QUEST_ACCEPT', actor: 'p1', quest: 'b_raider' }).error, 'not_available', '오늘은 끝');
+});
+
+test('v0.4 세이브를 불러오면 1장 첫 퀘스트가 생기고, 약탈단 자리·안개 늑대가 더해지며 있던 무리는 그대로다', () => {
+  const old = readFileSync(new URL('./fixtures/save-v0.4.json', import.meta.url), 'utf8');
+  const before = JSON.parse(old).state;
+  const g = loadGame({ data, save: old });
+  const st = g.state;
+  eq(st.meta.dataVersion, cfg.dataVersion);
+  ok(st.actors.p1.quests.active.q1_ashore, '첫 퀘스트');
+  const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site).length;
+  for (const t of ['crab', 'deer', 'boar', 'wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
+  eq(count(st.mobGroups, 'mist_wolf'), data.creatures.mist_wolf.groups, '안개 늑대 무리');
+  for (const s of ['lookout', 'camp', 'cove']) ok(Object.values(st.mobGroups).some((x) => x.site === s), `${s} 무리`);
+  const W = world(g);
+  for (const s of ['lookout', 'camp', 'cove']) {
+    const c = sitePos(W, s);
+    for (const grp of Object.values(st.mobGroups)) if (!grp.site) ok(Math.hypot(grp.x - c.x, grp.z - c.z) > c.r + 10, `${s} 곁 ${grp.type} 무리`);
+    for (const n of Object.values(st.nodes)) ok(Math.hypot(n.x - c.x, n.z - c.z) > c.r + 3, `${s} 안 노드 ${n.type}`);
+  }
+  ok(Array.isArray(st.shots), '손도끼 칸');
+  g.advance(900);
+  const again = loadGame({ data, save: old });
+  again.advance(900);
   eq(again.hash(), g.hash(), '이관 뒤에도 재현된다');
 });
 

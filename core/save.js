@@ -7,6 +7,7 @@ import { stationLayout } from './world.js';
 import { pickCenter, pickNodeSpot, openVein } from './systems/veins.js';
 import { initCombat, emptyEquip } from './systems/combat.js';
 import { initMobs, groupSpot } from './systems/mobs.js';
+import { emptyQuests, startQuest, firstQuest } from './systems/quests.js';
 import { makeClock } from './clock.js';
 import { newSettlement, initProjects, settlementDaily } from './settlements.js';
 
@@ -249,6 +250,50 @@ const MIGRATIONS = [
       // 새 마을의 첫 수요와 의뢰
       for (const s of Object.values(st.settlements)) {
         if (!Object.keys(s.demand.want).length) settlementDaily(ctx, s);
+      }
+    },
+  },
+  {
+    // v0.4.x → v0.5: 검은 돛 약탈단(망루·야영지·정박지), 밤의 안개 늑대, 메인 퀘스트·현상금, 날아가는 손도끼
+    from: 6,
+    to: 7,
+    run(st, data) {
+      st.meta.engine = '0.5.0';
+      const region = data.lists.regions[0];
+      const ctx = migrationCtx(st, data, 0x5b1ac7e3);
+      st.shots = st.shots || [];
+      // 야영지 자리에 있던 노드·짐승 무리를 옮긴다
+      relocateNodes(st, data, ctx);
+      const taken = Object.values(st.mobGroups || {});
+      const sites = (region.sites || []).filter((s) => s.members).map((s) => {
+        const [x, z] = s.beach ? ctx.terrain.beachPoint(s.beach[0], s.beach[1]) : [s.x, s.z];
+        return { x, z, r: s.r };
+      });
+      for (const g of taken) {
+        const type = data.creatures[g.type];
+        if (!sites.some((s) => Math.hypot(g.x - s.x, g.z - s.z) < s.r + 20 + type.radius)) continue;
+        const spot = groupSpot(ctx, region, type, taken.filter((x) => x !== g));
+        if (!spot) continue;
+        const [dx, dz] = [spot[0] - g.x, spot[1] - g.z];
+        g.x = spot[0];
+        g.z = spot[1];
+        for (const id of g.mobs) {
+          const mob = st.mobs[id];
+          if (!mob) continue;
+          mob.x = Math.round((mob.x + dx) * 1000) / 1000;
+          mob.z = Math.round((mob.z + dz) * 1000) / 1000;
+          mob.mode = 'idle';
+          mob.target = null;
+          mob.dest = null;
+        }
+      }
+      // 새 무리(안개 늑대)와 자리 무리(약탈단)를 더한다. 있던 짐승 무리는 그대로
+      initMobs(ctx);
+      // 퀘스트: 사람 개척자는 1장 첫 퀘스트부터
+      const q0 = firstQuest(data);
+      for (const a of Object.values(st.actors)) {
+        a.quests = a.quests || emptyQuests();
+        if (a.kind === 'player' && q0 && !Object.keys(a.quests.active).length && !Object.keys(a.quests.done).length) startQuest(ctx, a, q0);
       }
     },
   },

@@ -56,6 +56,12 @@ export const ERR = {
   no_project: '이 마을 사업이 아님',
   project_closed: '아직 열리지 않았거나 끝난 사업',
   not_needed: '그 사업에 더 필요 없음',
+  // 퀘스트(v0.5)
+  no_npc: '그런 사람은 없음',
+  no_quest: '없는 퀘스트',
+  not_available: '지금은 받을 수 없음',
+  no_obj: '없는 물체',
+  not_quest_obj: '지금은 손댈 일이 없음',
 };
 
 // 갑옷 종류(v0.4.5)
@@ -160,8 +166,34 @@ export function describeEvent(ev, game) {
     case 'eat':
       if (ev.heal != null) return `${p}🍖 ${itemName(data, ev.item)} — 체력 +${ev.heal}`;
       return `${p}🍽️ ${itemName(data, ev.item)} — 채집량 +${Math.round(ev.value * 100)}%, ${ev.minutes}분`;
-    case 'mob.die':
-      return state.actors[ev.actor] ? `${p}⚔️ ${data.creatures[ev.species]?.name ?? ev.species} 쓰러뜨림 — 다가가 손질하자` : null;
+    case 'mob.die': {
+      const T = data.creatures[ev.species];
+      if (!state.actors[ev.actor]) return null;
+      return `${p}⚔️ ${T?.name ?? ev.species} 쓰러뜨림${T?.hunt ? ' — 다가가 손질하자' : ''}`;
+    }
+    case 'loot': {
+      const parts = [];
+      if (ev.silver) parts.push(`은화 ${ev.silver}`);
+      for (const x of ev.items) parts.push(`${itemName(data, x.item)} ${x.qty}`);
+      if (ev.lost) parts.push(`가방이 차서 ${ev.lost}개 버림`);
+      return `${p}🪙 전리품: ${parts.join(' · ')}`;
+    }
+    case 'quest.start': {
+      const q = data.quests[ev.quest];
+      return q ? `${p}📜 ${q.kind === 'main' ? '메인 퀘스트' : '현상금'} 「${q.name}」 시작` : null;
+    }
+    case 'quest.done': {
+      const q = data.quests[ev.quest];
+      const r = ev.reward || {};
+      const got = [...(r.silver ? [`은화 ${r.silver}`] : []), ...(r.items || []).map((x) => `${itemName(data, x.item)} ${x.qty}`), ...(r.stored || []).map((x) => `${itemName(data, x.item)} ${x.qty}(창고로)`)];
+      return q ? `${p}✅ 「${q.name}」 완료${got.length ? ` — ${got.join(' · ')}` : ''}` : null;
+    }
+    case 'quest.fail':
+      return `${p}⚠️ 「${data.quests[ev.quest]?.name ?? ''}」 ${ev.reason === 'down' ? '쓰러져서' : '자리를 떠나서'} 습격을 막지 못했다. 다시 가면 처음부터`;
+    case 'chapter.done': {
+      const ch = data.chapters.find((c) => c.id === ev.chapter);
+      return ch ? `${p}🏁 ${ch.name} 끝. ${ch.after || ''}` : null;
+    }
     case 'skin.done':
       return `${p}🔪 ${data.creatures[ev.species]?.name ?? ev.species} 손질: ${ev.items.map((x) => `${itemName(data, x.item)} ${x.qty}`).join(' · ')}`;
     case 'actor.down':

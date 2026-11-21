@@ -70,7 +70,7 @@ export const toolTier = (ctx, entry) => (entry ? ctx.data.items[entry.item].tool
 
 // 정착지 건물·장식처럼 움직이지 않는 것들의 자리. 화면과 충돌 판정이 같이 쓴다.
 // built: 끝난 마을 사업 id 모음. 사업으로 짓는 건물(build)은 끝난 뒤에만 들어간다.
-export function layoutStatics(region, terrain, built = null) {
+export function layoutStatics(region, terrain, built = null, npcs = []) {
   const out = [];
   for (const s of region.settlements) {
     for (const st of s.structures || []) {
@@ -82,7 +82,45 @@ export function layoutStatics(region, terrain, built = null) {
     const [x, z] = terrain.beachPoint(d.x, d.inland);
     out.push({ kind: d.kind, x, z, r: d.r, rot: d.rot || 0 });
   }
+  // 자리(v0.5): 야영지 소품과 퀘스트 물체(궤짝·보급 상자·탁자)
+  for (const s of region.sites || []) {
+    const [sx, sz] = siteXZ(terrain, s);
+    for (const st of s.structures || []) out.push({ kind: st.kind, x: sx + st.dx, z: sz + st.dz, r: st.r || 0, rot: st.rot || 0, site: s.id, len: st.len || null });
+    for (const o of s.objects || []) out.push({ kind: o.kind, x: sx + o.dx, z: sz + o.dz, r: OBJ_R[o.kind] ?? 0.5, rot: o.rot || 0, site: s.id, obj: o.id });
+  }
+  // NPC(v0.5): 서 있는 자리에 작은 원(몸이 겹치지 않게)
+  for (const n of npcs) {
+    const t = region.settlements.find((x) => x.id === n.at);
+    if (t) out.push({ kind: 'npc', x: t.x + n.dx, z: t.z + n.dz, r: 0.35, rot: n.yaw || 0, at: t.id, npc: n.id });
+  }
   return out;
+}
+
+const OBJ_R = { chest: 0.55, supply: 0.6, papers: 0.75 };
+
+// 자리 가운데(v0.5). beach: [x, 뭍으로 m]이면 해안선에서 잰다
+export function siteXZ(terrain, s) {
+  return s.beach ? terrain.beachPoint(s.beach[0], s.beach[1]) : [s.x, s.z];
+}
+
+export function sitePos(ctx, id) {
+  const s = ctx.data.sites[id];
+  if (!s) return null;
+  const [x, z] = siteXZ(ctx.terrain, s);
+  return { x, z, r: s.r, name: s.name, id };
+}
+
+export function npcPos(data, id) {
+  const n = data.npcs[id];
+  const s = n && data.settlements[n.at];
+  return s ? { x: s.x + n.dx, z: s.z + n.dz, yaw: n.yaw || 0 } : null;
+}
+
+export function objPos(ctx, id) {
+  const o = ctx.data.objects[id];
+  if (!o) return null;
+  const [x, z] = siteXZ(ctx.terrain, ctx.data.sites[o.site]);
+  return { x: x + o.dx, z: z + o.dz };
 }
 
 // 처음부터 있는 작업대. 마을 사업으로 짓는 작업대(build)는 빠진다.

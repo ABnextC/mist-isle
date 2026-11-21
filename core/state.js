@@ -8,8 +8,9 @@ import { dailyOrders } from './orders.js';
 import { initCombat, emptyEquip } from './systems/combat.js';
 import { initMobs } from './systems/mobs.js';
 import { newSettlement, initProjects, settlementsDaily } from './settlements.js';
+import { emptyQuests, startQuest, firstQuest } from './systems/quests.js';
 
-export const ENGINE_VERSION = '0.4.10';
+export const ENGINE_VERSION = '0.5.0';
 
 export function spawnPoint(region, terrain) {
   const [x, inland] = region.spawn;
@@ -35,6 +36,7 @@ export function newActor(data, spec, at) {
     ai: spec.ai ? { on: true, profile: spec.ai, mem: {} } : null,
     stats: { gather: {}, craft: {}, eat: 0, focusUsed: 0, masterwork: 0, kills: {}, skin: {}, downs: 0, dmgDealt: 0, dmgTaken: 0 },
     milestones: {},
+    quests: emptyQuests(),
   };
 }
 
@@ -47,7 +49,7 @@ export function createState(data, seed) {
     clock: { hour: 0, day: 0 },
     rng: seedState(seed),
     nextId: 1,
-    regions: {}, lots: {}, veins: {}, nodes: {}, settlements: {}, projects: {}, actors: {}, mobs: {}, mobGroups: {},
+    regions: {}, lots: {}, veins: {}, nodes: {}, settlements: {}, projects: {}, actors: {}, mobs: {}, mobGroups: {}, shots: [],
     market: emptyMarket(), orders: [], econ: null,
   };
 }
@@ -69,6 +71,9 @@ export function populate(ctx, actorSpecs) {
   const home = data.lists.regions[0];
   const at = spawnPoint(home, ctx.terrain);
   for (const spec of actorSpecs) state.actors[spec.id] = newActor(data, spec, at);
+  // 사람 개척자는 1장 첫 퀘스트를 들고 시작한다(봇은 퀘스트를 하지 않는다)
+  const q0 = firstQuest(data);
+  for (const a of Object.values(state.actors)) if (a.kind === 'player' && q0) startQuest(ctx, a, q0);
   state.projects = initProjects(data);
   initMobs(ctx);
   state.econ = initEcon(ctx);

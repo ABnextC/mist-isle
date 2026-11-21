@@ -2,12 +2,13 @@
 // v0.3: 무기 들기, 약공·강공 휘두르기, 창 찌르기, 구르기, 막기, 쓰러짐, 맞을 때 움찔.
 // v0.5: 실제 사람 몸 모형. 동작 값은 예전 그대로 쓰고 pose()에서 해부학 좌우(오른손 = -x)로 거울 변환한다.
 //       눈 깜빡임·눈동자 움직임, 팔을 높이 들면 쇄골이 따라 올라감, 허리·가슴에 나눠 굽힘.
+// v0.5: 검은 돛 약탈단과 NPC도 같은 몸·옷·동작으로 그린다(코어의 짐승 상태 → 가짜 행위자).
 // v0.4.6~: 서기·걷기·달리기는 모션 캡처(anim.js). v0.4.8: 채집·전투·구르기·쓰러짐·시전도 모션 캡처 동작(actionOf). v0.4.9: 노드별 채집·손질·먹기·작업대·무기별 막기·중갑 회피.
 //       손으로 짠 pose()는 동작 묶음을 못 읽었을 때와 무기 든 오른팔(arm)에만 쓴다.
 
 import * as THREE from 'three';
 import { tickLerp } from './interp.js';
-import { workSpots } from '../../core/world.js';
+import { workSpots, npcPos } from '../../core/world.js';
 import { makeActorModel } from './models/actor.js';
 import { loadClips, clips as animClips, sample as animSample, sampleOnce as animOnce, sampleTool, hasClip, blend as animBlend, smoothstep, NB } from './anim.js';
 
@@ -49,6 +50,7 @@ export function createActorsView(scene, game, hf, camera = null) {
   const botOf = new Map();
   // 낀 갑옷의 종류(로브·경갑·중갑)를 칸마다. 부서진 갑옷도 입은 모습은 그대로 둔다
   function outfitOf(a) {
+    if (a.outfit) return a.outfit;
     const cls = (slot) => {
       const uid = a.equip?.[slot];
       if (!uid) return null;
@@ -60,17 +62,19 @@ export function createActorsView(scene, game, hf, camera = null) {
   const outfitKey = (o) => `${o.head}|${o.chest}|${o.legs}`;
   function make(a, keep) {
     const player = a.kind === 'player';
+    const look = a.look || null;
     let idx = 0;
-    if (!player) {
+    if (!player && !look) {
       if (!botOf.has(a.id)) botOf.set(a.id, botIdx++);
       idx = botOf.get(a.id);
     }
     const model = makeActorModel({
-      tunic: player ? 0x2a6e68 : TUNICS[idx % TUNICS.length],
-      trousers: player ? 0x3b3f4a : TROUSERS[idx % TROUSERS.length],
-      seed: player ? 2 : 3 + idx,
-      body: player ? playerBody() : BODY_PATTERN[idx % BODY_PATTERN.length],
+      tunic: look ? 0x2a2624 : player ? 0x2a6e68 : TUNICS[idx % TUNICS.length],
+      trousers: look ? 0x2b2724 : player ? 0x3b3f4a : TROUSERS[idx % TROUSERS.length],
+      seed: look ? look.seed ?? 5 : player ? 2 : 3 + idx,
+      body: look ? look.body || 'm' : player ? playerBody() : BODY_PATTERN[idx % BODY_PATTERN.length],
     });
+    if (look?.tint) model.setTints(look.tint);
     scene.add(model.root);
     const v = { m: model, pos: new THREE.Vector3(a.x, hf.height(a.x, a.z), a.z), yaw: a.yaw || 0, phase: 0, swing: 0, speed: 0, breathe: Math.random() * 6, hurt: 0, fall: 0,
       blinkIn: 1 + Math.random() * 3, blink: -1, gaze: new THREE.Vector2(), gazeTo: new THREE.Vector2(), gazeIn: Math.random() * 2 };
@@ -347,6 +351,7 @@ export function createActorsView(scene, game, hf, camera = null) {
   const strikes = []; // 도구가 닿은 순간들(main.js가 가져가 조각을 튀긴다)
   // 장비 무게 단계(가벼움·보통·무거움·과적) — 무거우면 구르지 않고 짧게 뛰어 비킨다
   function loadTier(a) {
+    if (a.look) return 'medium';
     const data = game.data;
     let kg = 0;
     // core/systems/combat.js equipLoad와 같은 칸(무기+갑옷)만 센다
@@ -414,7 +419,7 @@ export function createActorsView(scene, game, hf, camera = null) {
     // 휘두르기: 동작의 '맞는 순간'이 코어의 hitAt에 오게 시간을 나눠 맞춘다
     const act = cb?.act;
     if (act && stI < act.endAt + 0.05) {
-      const name = attackClip(wDef, act.kind);
+      const name = act.clip || attackClip(wDef, act.kind);
       if (hasClip(name)) {
         const hp = animClips().clips[name].ev?.hit ?? 0.5;
         const t = stI < act.hitAt
@@ -432,6 +437,15 @@ export function createActorsView(scene, game, hf, camera = null) {
         if (t < 1) return { name, t, once: true, mode: 'upper', prop };
       }
       v.eatQ = null;
+    }
+    if (v.useQ) {
+      const c = animClips().clips.pick_ground;
+      if (c && !a.move) {
+        if (v.useQ.t0 === null) v.useQ.t0 = stI;
+        const t = (stI - v.useQ.t0) / c.dur;
+        if (t < 1) return { name: 'pick_ground', t, once: true, mode: 'full' };
+      }
+      v.useQ = null;
     }
     if (cb?.block) {
       // 무기마다 막는 자세(맨손은 권투 자세)
@@ -590,6 +604,11 @@ export function createActorsView(scene, game, hf, camera = null) {
       const v = views.get(ev.actor);
       if (v) v.eatQ = { item: ev.item, t0: null };
     }
+    // 퀘스트 물체를 뒤질 때(v0.5): 쪼그려 앉아 줍는 동작 한 번
+    if (ev.type === 'quest.use') {
+      const v = views.get(ev.actor);
+      if (v) v.useQ = { t0: null };
+    }
     if (ev.type === 'combat.hurt') {
       const v = views.get(ev.actor);
       if (v) {
@@ -597,11 +616,131 @@ export function createActorsView(scene, game, hf, camera = null) {
         v.hurtT = 0;
       }
     }
+    // 약탈자가 맞으면 움찔(막았으면 덜)
+    if (ev.type === 'combat.hit') {
+      const v = views.get(ev.mob);
+      if (v && !ev.blocked) v.hurtT = 0;
+    }
+  }
+
+  // ── 사람 모양 적·NPC(v0.5) ─────────────────────────
+  // 코어의 짐승 상태(m.atk·mode)를 개척자 모양 가짜 행위자로 옮긴다. 같은 동작 묶음을 그대로 쓴다.
+  const pseudo = new Map();
+  const CORPSE_SEC = 40; // 쓰러진 약탈자는 40초 뒤 땅으로 꺼지며 사라진다
+  let FAR_M = 120; // 이보다 멀면 그리지도 움직이지도 않는다(휴대폰은 줄인다)
+  function hasteOf(m, type) {
+    let k = 1;
+    for (let i = 0; i < (m.phase || 0); i++) k *= type.phases?.[i]?.haste || 1;
+    return k;
+  }
+  function baseLook(id, look, extra) {
+    const w = look.weapon ? game.data.items[look.weapon]?.weapon || null : null;
+    return {
+      id, look, weaponDef: w, outfit: { head: look.head || null, chest: look.chest || null, legs: look.legs || null },
+      equip: {}, bag: [], queue: [], buffs: [], action: null, move: null, dest: null,
+      cb: { act: null, dodge: null, block: false, downUntil: 0 }, ...extra,
+    };
+  }
+  function mobActor(m, type) {
+    let p = pseudo.get(m.id);
+    if (!p) {
+      p = baseLook(m.id, type.look || {}, { kind: 'mob' });
+      pseudo.set(m.id, p);
+    }
+    p.x = m.x;
+    p.z = m.z;
+    p.yaw = m.yaw;
+    p.mob = m;
+    const cb = p.cb;
+    cb.block = m.mode === 'guard';
+    cb.downUntil = m.mode === 'dead' ? 1 : 0;
+    cb.act = null;
+    p.heldTool = p.look.tool || null;
+    if (m.atk && (m.mode === 'windup' || m.mode === 'charge' || m.mode === 'recover')) {
+      const at = type.attacks[m.atk.i] || type.attacks[0];
+      const hitAt = m.atk.t0 + at.windup / hasteOf(m, type) + (at.charge ? at.charge.time * 0.5 : 0);
+      cb.act = { kind: at.heavy ? 'heavy' : 'light', clip: at.clip, t0: m.atk.t0, hitAt, endAt: hitAt + (at.recover ?? 0.4) };
+      // 던진 손도끼는 날아가는 동안 손에 없다
+      if (at.shot && game.state.t >= hitAt - 0.03 && game.state.t < hitAt + 0.55) p.heldTool = null;
+    }
+    return p;
+  }
+  function npcActor(n, me) {
+    const id = `npc:${n.id}`;
+    let p = pseudo.get(id);
+    if (!p) {
+      const pos = npcPos(game.data, n.id);
+      p = baseLook(id, n.look || {}, { kind: 'npc', npc: n.id, x: pos.x, z: pos.z, yaw: pos.yaw, home: pos.yaw });
+      pseudo.set(id, p);
+    }
+    // 가까이 오면 개척자 쪽을 본다
+    p.yaw = me && Math.hypot(me.x - p.x, me.z - p.z) < 7 ? Math.atan2(me.x - p.x, me.z - p.z) : p.home;
+    return p;
+  }
+  const listBuf = [];
+  let sweepT = 0;
+  // 이번 장면에 그릴 행위자: 진짜 행위자 + 가까운 약탈자 + NPC
+  function cast() {
+    const { state, data } = game;
+    listBuf.length = 0;
+    for (const a of Object.values(state.actors)) listBuf.push(a);
+    const me = state.actors.p1 || listBuf[0];
+    const cx = camera ? camera.position.x : me?.x ?? 0;
+    const cz = camera ? camera.position.z : me?.z ?? 0;
+    for (const m of Object.values(state.mobs)) {
+      const type = data.creatures[m.type];
+      if (!type.body) continue;
+      const v = views.get(m.id);
+      const far = Math.abs(m.x - cx) > FAR_M || Math.abs(m.z - cz) > FAR_M;
+      const gone = m.mode === 'away' || (m.mode === 'dead' && state.t > m.deadAt + CORPSE_SEC + 3);
+      if (far || gone) {
+        if (v) {
+          v.m.root.visible = false;
+          v.tk = undefined;
+        }
+        continue;
+      }
+      if (v) v.m.root.visible = true;
+      listBuf.push(mobActor(m, type));
+    }
+    for (const n of data.lists.npcs || []) {
+      const p = npcActor(n, me);
+      const v = views.get(p.id);
+      const far = Math.abs(p.x - cx) > FAR_M || Math.abs(p.z - cz) > FAR_M;
+      if (v) v.m.root.visible = !far;
+      if (!far) listBuf.push(p);
+    }
+    return listBuf;
+  }
+  // 약탈단·NPC 모형을 미리 만들어 숨겨 둔다(야영지에 다가갈 때 한꺼번에 만들며 끊기지 않게)
+  function prewarm() {
+    for (const m of Object.values(game.state.mobs)) {
+      const type = game.data.creatures[m.type];
+      if (!type.body || views.has(m.id)) continue;
+      const v = make(mobActor(m, type));
+      v.m.root.visible = false;
+      views.set(m.id, v);
+    }
+  }
+  // 사라진 약탈자(습격대·부하)의 모형을 치운다
+  function sweep() {
+    const { state } = game;
+    for (const [id, v] of views) {
+      if (state.actors[id] || state.mobs[id] || id.startsWith('npc:')) continue;
+      scene.remove(v.m.root);
+      views.delete(id);
+      pseudo.delete(id);
+    }
   }
 
   function update(dt, t) {
     const { state, data } = game;
-    for (const a of Object.values(state.actors)) {
+    sweepT -= dt;
+    if (sweepT <= 0) {
+      sweepT = 1;
+      sweep();
+    }
+    for (const a of cast()) {
       let v = views.get(a.id);
       if (!v) {
         v = make(a);
@@ -641,11 +780,13 @@ export function createActorsView(scene, game, hf, camera = null) {
       v.yaw = lerpAngle(v.yaw, yaw, 1 - Math.exp(-dt * 12));
       v.m.root.position.copy(v.pos);
       v.m.root.rotation.y = v.yaw;
+      // 쓰러진 약탈자: 한동안 누워 있다가 땅으로 꺼진다
+      if (a.mob && a.mob.mode === 'dead') v.m.root.position.y -= Math.max(0, state.t - a.mob.deadAt - CORPSE_SEC) * 0.45;
 
-      const skill = work?.tool || null;
+      const skill = work?.tool || a.heldTool || null;
       for (const [kname, tool] of Object.entries(v.m.tools)) tool.visible = kname === skill;
       const wE = a.equip?.weapon ? a.bag.find((e) => e.uid === a.equip.weapon) : null;
-      const wDef = wE ? data.items[wE.item].weapon : null;
+      const wDef = a.weaponDef !== undefined ? a.weaponDef : wE ? data.items[wE.item].weapon : null;
       const wKey = wDef ? `${wDef.type}_${wDef.tier}` : null;
       // 오른손이 다른 걸 쥐면(채집·가죽·제작·먹기) 무기는 넣어 둔다
       const handBusy = !!work || !!v.eatQ;
@@ -709,6 +850,8 @@ export function createActorsView(scene, game, hf, camera = null) {
     views,
     takeStrikes: () => strikes.splice(0, strikes.length),
     setDetail(d) { detailNear = d; },
+    setFar(d) { FAR_M = d; },
+    prewarm,
     positionOf: (id) => views.get(id)?.pos,
   };
 }

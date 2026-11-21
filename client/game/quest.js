@@ -1,7 +1,24 @@
-// 개척 일지(첫 목표)와 길잡이 목표(v0.4.3). HUD 문구와 3D 화살표·미니맵이 같은 단계를 본다.
+// 퀘스트 길잡이(v0.5): HUD 추적 줄·3D 화살표·미니맵이 지금 따라가는 퀘스트 단계를 본다.
+// 메인 퀘스트(장)가 먼저, 없으면 현상금. 예전 생산 단계(개척 일지, v0.4.3)는 일지의 '생활 안내'로 옮겼다(lifeSteps).
 // 목표 자리는 그때그때 가장 가까운 것을 고른다(노드는 남은 것만, 작업대는 그 작업대가 있는 가까운 마을).
 
 import { countItem } from '../../core/inventory.js';
+import { stepGoal, stepText } from '../../core/systems/quests.js';
+
+// 코어 도우미에 넘기는 읽기 전용 문맥
+export const questCtx = (game) => ({ state: game.state, data: game.data, terrain: game.terrain, clock: game.clock, cfg: game.data.config });
+
+export function currentQuest(game, a) {
+  const Q = a.quests;
+  if (!Q) return null;
+  const ids = Object.keys(Q.active);
+  if (!ids.length) return null;
+  const main = (id) => (game.data.quests[id].kind === 'main' ? 0 : 1);
+  const id = Q.track && Q.active[Q.track] ? Q.track : ids.sort((x, y) => main(x) - main(y))[0];
+  const ctx = questCtx(game);
+  const q = game.data.quests[id];
+  return { id, kind: q.kind, title: q.name, text: stepText(ctx, a, id), goal: stepGoal(ctx, a, id) };
+}
 
 function nearest(a, list) {
   let best = null;
@@ -37,7 +54,8 @@ function boardGoal(game, a, label) {
   return nearest(a, list);
 }
 
-export function currentQuest(game, a) {
+// 생활 안내(예전 개척 일지): 단계마다 { text, done }
+export function lifeSteps(game, a) {
   const stores = Object.values(a.storages || {});
   const lists = [a.bag, ...stores];
   const c = (id) => countItem(lists, id);
@@ -76,7 +94,5 @@ export function currentQuest(game, a) {
       goal: () => stationGoal(game, a, 'storage', '창고', Object.keys(game.state.settlements).find((sid) => sid !== firstTown)),
     },
   ];
-  const next = steps.find((s) => !s.done);
-  if (!next) return null;
-  return { text: next.text, goal: next.goal() };
+  return steps.map((s) => ({ text: s.text, done: !!s.done }));
 }

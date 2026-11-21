@@ -477,7 +477,7 @@ export function lampPost() {
 
 // ── 숲머리(v0.4) ───────────────────────────────────
 // 천막: 맞배 모양 캔버스, 마룻대·기둥·버팀줄·말뚝. 앞은 열려 있어 안쪽이 어둡게 보인다.
-export function tent(seed) {
+export function tent(seed, cloth = null) {
   const { parts, fx, add } = kit();
   const R = rng(seed);
   const L = 3.0;
@@ -485,7 +485,7 @@ export function tent(seed) {
   const H = 1.95;
   const S = Math.hypot(hw, H);
   const th = Math.atan2(H, hw);
-  const mat = R() < 0.35 ? 'clothDyed' : 'cloth';
+  const mat = cloth || (R() < 0.35 ? 'clothDyed' : 'cloth');
   for (const sx of [-1, 1]) add(mat, box(S + 0.08, 0.03, L, { x: (sx * hw) / 2, y: H / 2, rz: sx * -th + (sx > 0 ? Math.PI : 0) }));
   // 뒤판(삼각)과 앞의 어두운 안쪽
   const tri = (w, h) => {
@@ -619,6 +619,154 @@ export function fence(len) {
   const R = rng(Math.floor(len * 100));
   for (let x = 0; x <= len; x += 1.6) add('barkDark', taperTube([V(x, -0.2, 0), V(x, 1.0 + R() * 0.1, 0)], [0.06, 0.05], { radial: 6, vScale: 1, cap: true }));
   for (const y of [0.45, 0.85]) add('planksDark', box(len + 0.2, 0.08, 0.05, { x: len / 2, y }));
+  return { parts, fx };
+}
+
+// ── 검은 돛 약탈단(v0.5) ──────────────────────────
+// 검은 돛 깃발: 장대 끝에 가로대, 타르 먹인 검은 천(끝이 찢겨 있다)과 붉은 줄
+export function banner(seed = 1) {
+  const { parts, fx, add } = kit();
+  const R = rng(seed + 300);
+  add('barkDark', taperTube([V(0, -0.3, 0), V(0.04, 4.2, 0)], [0.075, 0.05], { radial: 7, vScale: 1.2, cap: true }));
+  add('barkDark', taperTube([V(-0.05, 3.95, 0), V(1.35, 3.95, 0.02)], [0.035, 0.03], { radial: 6, vScale: 1, cap: true }));
+  const sh = new THREE.Shape();
+  sh.moveTo(0, 0);
+  sh.lineTo(1.25, 0);
+  // 아래 끝은 너덜너덜
+  const n = 7;
+  for (let i = n; i >= 0; i--) sh.lineTo((i / n) * 1.25, -1.75 - (i % 2 ? 0.22 : 0) - R() * 0.12);
+  sh.closePath();
+  add('sailBlack', xf(prep(new THREE.ShapeGeometry(sh)), { x: 0.05, y: 3.92, z: 0.02 }));
+  add('clothRed', box(1.2, 0.12, 0.01, { x: 0.68, y: 3.3, z: 0.03 }));
+  add('rope', taperTube([V(0.04, 4.15, 0), V(1.3, 3.97, 0.02)], [0.01, 0.01], { radial: 4, vScale: 1 }));
+  return { parts, fx };
+}
+
+// 끝을 깎은 말뚝 울타리(약탈단 야영지)
+export function palisade(len = 8) {
+  const { parts, fx, add } = kit();
+  const R = rng(Math.floor(len * 37));
+  for (let x = 0; x <= len; x += 0.42) {
+    const h = 1.6 + R() * 0.45;
+    const lean = (R() - 0.5) * 0.08;
+    add('barkDark', taperTube([V(x, -0.3, 0), V(x + lean, h, 0)], [0.11, 0.1], { radial: 7, vScale: 1.2 }));
+    add('planksDark', P(new THREE.ConeGeometry(0.1, 0.32, 7), 0xffffff, { x: x + lean, y: h + 0.16 }));
+  }
+  for (const y of [0.5, 1.25]) add('rope', taperTube([V(-0.1, y, 0.11), V(len + 0.1, y, 0.11)], [0.018, 0.018], { radial: 4, vScale: 1 }));
+  return { parts, fx };
+}
+
+// 상자 더미: 상자 셋·통 하나·자루
+export function crates(seed = 1) {
+  const { parts, fx, add } = kit();
+  const R = rng(seed + 900);
+  crate(add, 0.7, { x: -0.4, y: 0.35, ry: R() * 0.3 });
+  crate(add, 0.6, { x: 0.35, y: 0.3, z: 0.15, ry: -R() * 0.4 });
+  crate(add, 0.5, { x: -0.3, y: 0.95, z: 0.05, ry: R() * 0.6 });
+  barrel(add, { x: 0.45, z: -0.6 }, R);
+  add('sack', lathe([[0, 0], [0.2, 0.02], [0.24, 0.2], [0.2, 0.42], [0.08, 0.52], [0.0, 0.53]], 10).translate(-0.9, 0, -0.4));
+  return { parts, fx };
+}
+
+// 망루: 통나무 기둥 넷, 4m 높이 발판·난간, 사다리, 꼭대기 검은 깃발과 횃불
+export function watchtower() {
+  const { parts, fx, add } = kit();
+  const H = 3.6;
+  const w = 1.25;
+  const corners = [[-w, -w], [w, -w], [w, w], [-w, w]];
+  for (const [x, z] of corners) add('barkDark', taperTube([V(x * 1.12, -0.3, z * 1.12), V(x * 0.92, H + 1.15, z * 0.92)], [0.13, 0.1], { radial: 8, vScale: 1.4, cap: true }));
+  // 엇갈린 버팀대
+  for (let i = 0; i < 4; i++) {
+    const [ax, az] = corners[i];
+    const [bx, bz] = corners[(i + 1) % 4];
+    add('barkDark', taperTube([V(ax * 1.08, 0.3, az * 1.08), V(bx * 0.96, H - 0.4, bz * 0.96)], [0.06, 0.06], { radial: 5, vScale: 1 }));
+  }
+  add('planks', box(w * 2.3, 0.12, w * 2.3, { y: H }));
+  for (let i = 0; i < 4; i++) {
+    const [ax, az] = corners[i];
+    const [bx, bz] = corners[(i + 1) % 4];
+    add('planksDark', taperTube([V(ax * 0.95, H + 0.95, az * 0.95), V(bx * 0.95, H + 0.95, bz * 0.95)], [0.05, 0.05], { radial: 5, vScale: 1 }));
+    if (i !== 2) add('planksDark', box(Math.hypot(bx - ax, bz - az) * 0.95, 0.5, 0.05, { x: (ax + bx) * 0.475, y: H + 0.4, z: (az + bz) * 0.475, ry: Math.atan2(-(bz - az), bx - ax) }));
+  }
+  // 사다리(앞쪽)
+  for (const x of [-0.28, 0.28]) add('barkDark', taperTube([V(x, -0.1, w * 1.55), V(x, H + 0.2, w * 1.05)], [0.04, 0.04], { radial: 5, vScale: 1 }));
+  for (let k = 1; k < 10; k++) {
+    const f = k / 10;
+    add('planksDark', taperTube([V(-0.3, f * H, w * (1.55 - 0.5 * f)), V(0.3, f * H, w * (1.55 - 0.5 * f))], [0.025, 0.025], { radial: 4, vScale: 1 }));
+  }
+  // 지붕 대신 걸어 둔 검은 천
+  add('sailBlack', box(w * 2.2, 0.03, w * 2.2, { y: H + 1.25, rx: 0.08 }));
+  const b = banner(7);
+  for (const [mat, list] of Object.entries(b.parts)) for (const g of list) add(mat, xf(g, { x: -w * 0.9, y: H - 0.2, z: -w * 0.9, sx: 0.6, sy: 0.6, sz: 0.6 }));
+  fx.fires.push({ p: V(w * 0.9, H + 1.35, w * 0.9), s: 0.4, low: true });
+  fx.lights.push({ kind: 'torch', p: V(w * 0.9, H + 1.5, w * 0.9) });
+  add('iron', lathe([[0, 0], [0.12, 0.02], [0.15, 0.14], [0.13, 0.16], [0, 0.1]], 10).translate(w * 0.9, H + 1.2, w * 0.9));
+  return { parts, fx };
+}
+
+// 정박한 검은 돛 배: 모래톱에 얹힌 선체에 높은 돛대와 검은 돛
+export function shipBlack() {
+  const base = wreck();
+  const { parts, fx } = base;
+  const add = (mat, g) => (parts[mat] ||= []).push(g);
+  add('barkDark', taperTube([V(0.6, 0.2, 0), V(0.55, 8.2, 0)], [0.2, 0.12], { radial: 9, vScale: 1.5, cap: true }));
+  add('barkDark', taperTube([V(0.55, 7.2, -2.4), V(0.55, 7.2, 2.4)], [0.08, 0.07], { radial: 6, vScale: 1, cap: true }));
+  add('barkDark', taperTube([V(0.58, 3.4, -2.0), V(0.58, 3.4, 2.0)], [0.07, 0.07], { radial: 6, vScale: 1, cap: true }));
+  // 돛: 바람에 조금 부푼 사각 천
+  const sail = new THREE.PlaneGeometry(4.4, 3.6, 8, 6);
+  const pos = sail.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const u = pos.getX(i) / 2.2;
+    const v = pos.getY(i) / 1.8;
+    pos.setZ(i, (1 - u * u) * (1 - v * v * 0.6) * 0.45);
+  }
+  sail.computeVertexNormals();
+  add('sailBlack', xf(sail, { x: 0.75, y: 5.3, ry: Math.PI / 2 }));
+  for (const z of [-2.3, 2.3]) add('rope', taperTube([V(0.55, 8.0, 0), V(4.6, 0.5, z)], [0.015, 0.015], { radial: 4, vScale: 1 }));
+  add('rope', taperTube([V(0.55, 8.0, 0), V(-4.8, 0.6, 0)], [0.015, 0.015], { radial: 4, vScale: 1 }));
+  return { parts, fx };
+}
+
+// 퀘스트 물체(v0.5) ─ 바다 궤짝: 쇠띠를 두른 나무 궤짝, 뚜껑은 반달
+export function chest(seed = 1) {
+  const { parts, fx, add } = kit();
+  const W = 0.9;
+  const D = 0.55;
+  add('planksDark', box(W, 0.45, D, { y: 0.225 }));
+  add('planksDark', P(new THREE.CylinderGeometry(D / 2, D / 2, W, 12, 1, false, 0, Math.PI), 0xffffff, { y: 0.45, rz: Math.PI / 2, ry: 0 }));
+  for (const x of [-0.3, 0.3]) {
+    add('iron', box(0.06, 0.47, D + 0.02, { x, y: 0.235 }));
+    add('iron', P(new THREE.CylinderGeometry(D / 2 + 0.012, D / 2 + 0.012, 0.06, 12, 1, true, 0, Math.PI), 0xffffff, { x, y: 0.45, rz: Math.PI / 2 }));
+  }
+  add('copperMetal', box(0.12, 0.14, 0.03, { y: 0.4, z: D / 2 + 0.01 }));
+  // 둘레에 엉킨 해초 한 줌
+  const R = rng(seed + 50);
+  for (let i = 0; i < 3; i++) add('rope', taperTube(bentPath(V(-0.4 + i * 0.35, 0.02, D / 2 + 0.05), V(0.2, 0.1, 0.3), 0.5, 5, V(0, -0.1, 0), R), new Array(6).fill(0.012), { radial: 4 }));
+  return { parts, fx };
+}
+
+// 숲머리 보급 상자: 초록 천을 묶고 숲머리 표식(나무 꼴)을 그은 상자
+export function supply() {
+  const { parts, fx, add } = kit();
+  crate(add, 0.72, { y: 0.36 });
+  add('clothGreen', box(0.74, 0.12, 0.76, { y: 0.48 }));
+  add('clothGreen', box(0.12, 0.74, 0.76, { y: 0.36 }));
+  add('rope', P(new THREE.TorusGeometry(0.42, 0.015, 4, 16), 0xffffff, { y: 0.36, ry: Math.PI / 2 }));
+  add('paper', box(0.22, 0.26, 0.01, { y: 0.5, z: 0.37 }));
+  return { parts, fx };
+}
+
+// 망루 탁자: 받침 둘에 판자, 펼친 종이·장부·등잔
+export function papers() {
+  const { parts, fx, add } = kit();
+  trestle(add, -0.5);
+  trestle(add, 0.5);
+  add('planks', box(1.5, 0.06, 0.7, { y: 0.6 }));
+  const R = rng(77);
+  for (let i = 0; i < 5; i++) add('paper', box(0.24 + R() * 0.1, 0.006, 0.32, { x: -0.45 + i * 0.22, y: 0.635, z: (R() - 0.5) * 0.2, ry: (R() - 0.5) * 0.6 }));
+  add('leather', box(0.26, 0.05, 0.34, { x: 0.5, y: 0.655, z: 0.1, ry: 0.3 }));
+  add('iron', lathe([[0, 0], [0.06, 0], [0.07, 0.05], [0.04, 0.12], [0.05, 0.16], [0, 0.17]], 10).translate(-0.55, 0.63, -0.2));
+  fx.glows.push(V(-0.55, 0.77, -0.2));
   return { parts, fx };
 }
 

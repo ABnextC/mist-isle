@@ -1,7 +1,7 @@
 // 데이터 정의(JSON)를 색인하고 서로 맞물리는지 검사한다.
 // 브라우저는 fetch로, Node는 fs로 읽은 원본을 넘긴다.
 
-export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects'];
+export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects', 'npcs', 'quests'];
 
 export function buildData(raw) {
   const problems = [];
@@ -128,10 +128,60 @@ export function buildData(raw) {
   const creatures = index(raw.creatures || [], '짐승');
   const zoneIds = new Set(raw.regions.flatMap((r) => (r.zones || []).map((z) => z.id)));
   for (const c of raw.creatures || []) {
+    c.loot = c.loot || [];
+    // 공격은 여러 개(attacks)로 다룬다. 예전 짐승의 attack 하나는 attacks[0]이 된다(v0.5)
+    if (!c.attacks && c.attack) c.attacks = [{ id: 'bite', mult: 1, ...c.attack }];
+    if (!c.attack && c.attacks) c.attack = c.attacks[0];
+    // 다가가 멈출 거리: 돌진·던지기를 뺀 가장 긴 근접 사거리(없으면 첫 공격 사거리)
+    if (c.attacks && c.engage == null) {
+      let r = 0;
+      for (const at of c.attacks) if (!at.charge && !at.shot) r = Math.max(r, at.range);
+      c.engage = r || c.attacks[0].range;
+    }
     for (const lt of c.loot) if (!items[lt.item]) problems.push(`짐승 ${c.id}: 전리품 ${lt.item} 없음`);
+    for (const d of c.drops?.items || []) if (!items[d.item]) problems.push(`짐승 ${c.id}: 떨굼 ${d.item} 없음`);
     if (c.zone && !zoneIds.has(c.zone)) problems.push(`짐승 ${c.id}: 구역 ${c.zone} 없음`);
+    for (const w of [c.look?.weapon].filter(Boolean)) if (!items[w]?.weapon) problems.push(`짐승 ${c.id}: 무기 ${w} 없음`);
+    for (const ph of c.phases || []) for (const t of Object.keys(ph.summon || {})) if (!raw.creatures.some((x) => x.id === t)) problems.push(`짐승 ${c.id}: 부를 ${t} 없음`);
   }
   for (const n of raw.nodes) if (n.zone && !zoneIds.has(n.zone)) problems.push(`노드 ${n.id}: 구역 ${n.zone} 없음`);
+  // 자리(v0.5): 야영지·퀘스트 물체
+  const sites = {};
+  const objects = {};
+  for (const g of raw.regions) {
+    for (const s of g.sites || []) {
+      if (sites[s.id]) problems.push(`자리 id 중복: ${s.id}`);
+      sites[s.id] = s;
+      for (const m of s.members || []) if (!creatures[m.type]) problems.push(`자리 ${s.id}: 짐승 ${m.type} 없음`);
+      for (const o of s.objects || []) {
+        if (objects[o.id]) problems.push(`물체 id 중복: ${o.id}`);
+        objects[o.id] = { ...o, site: s.id };
+      }
+    }
+  }
+  // NPC·퀘스트(v0.5)
+  const npcList = raw.npcs || [];
+  const npcs = index(npcList, 'NPC');
+  for (const n of npcList) if (!settlements[n.at]) problems.push(`NPC ${n.id}: 정착지 ${n.at} 없음`);
+  const Q = raw.quests || { chapters: [], items: {}, quests: [] };
+  const quests = index(Q.quests, '퀘스트');
+  for (const q of Q.quests) {
+    for (const r of q.requires || []) if (!quests[r]) problems.push(`퀘스트 ${q.id}: 앞 퀘스트 ${r} 없음`);
+    if (q.next && !quests[q.next]) problems.push(`퀘스트 ${q.id}: 다음 ${q.next} 없음`);
+    if (q.giver && q.giver !== 'board' && !npcs[q.giver]) problems.push(`퀘스트 ${q.id}: 주는 이 ${q.giver} 없음`);
+    if (!q.steps?.length) problems.push(`퀘스트 ${q.id}: 단계 없음`);
+    for (const st of q.steps || []) {
+      if (st.type === 'talk' && !npcs[st.npc]) problems.push(`퀘스트 ${q.id}: NPC ${st.npc} 없음`);
+      if ((st.type === 'go' || st.type === 'defend' || st.site) && !sites[st.site]) problems.push(`퀘스트 ${q.id}: 자리 ${st.site} 없음`);
+      if (st.type === 'kill') for (const m of st.mobs || []) if (!creatures[m]) problems.push(`퀘스트 ${q.id}: 짐승 ${m} 없음`);
+      if (st.type === 'use') for (const o of st.objs || []) if (!objects[o]) problems.push(`퀘스트 ${q.id}: 물체 ${o} 없음`);
+      if (st.type === 'defend') for (const w of st.waves || []) for (const t of Object.keys(w)) if (!creatures[t]) problems.push(`퀘스트 ${q.id}: 습격 ${t} 없음`);
+      if (st.gives && !Q.items[st.gives]) problems.push(`퀘스트 ${q.id}: 퀘스트 물건 ${st.gives} 없음`);
+      if (!['talk', 'go', 'kill', 'use', 'defend'].includes(st.type)) problems.push(`퀘스트 ${q.id}: 모르는 단계 ${st.type}`);
+    }
+    for (const it of q.reward?.items || []) if (!items[it.item]) problems.push(`퀘스트 ${q.id}: 보상 ${it.item} 없음`);
+  }
+  for (const ch of Q.chapters) for (const id of ch.quests) if (!quests[id]) problems.push(`장 ${ch.id}: 퀘스트 ${id} 없음`);
 
   if (problems.length) throw new Error('데이터 오류\n- ' + problems.join('\n- '));
 
@@ -148,6 +198,12 @@ export function buildData(raw) {
     creatures,
     projects,
     settlements,
+    sites,
+    objects,
+    npcs,
+    quests,
+    questItems: Q.items,
+    chapters: Q.chapters,
     lists: {
       projects: projectList,
       creatures: raw.creatures || [],
@@ -156,6 +212,8 @@ export function buildData(raw) {
       recipes: raw.recipes,
       nodes: raw.nodes,
       regions: raw.regions,
+      npcs: npcList,
+      quests: Q.quests,
     },
   };
 }

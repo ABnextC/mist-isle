@@ -1,0 +1,32 @@
+[
+  {
+    "id": "haerim", "name": "해림", "title": "등대지기", "at": "s_lighthouse", "dx": -16.5, "dz": -12.5, "yaw": 0.92,
+    "look": { "body": "f", "seed": 41, "chest": "robe", "head": "robe",
+      "tint": { "robe": "#3a4a5c", "sash": "#c8a050", "hood": "#34404e", "shirt": "#d0c6b0", "trousers": "#3a3632" } },
+    "chat": [
+      "안개가 짙은 날엔 등불을 더 높이 올린다네.",
+      "밤길은 조심하게. 안개 늑대는 불빛을 꺼려도 겁은 없어.",
+      "작업대에서 손을 놀려 보게. 이 섬에선 손이 곧 칼일세."
+    ]
+  },
+  {
+    "id": "gangdu", "name": "강두", "title": "경비대장", "at": "s_lighthouse", "dx": -3.2, "dz": 6.2, "yaw": 2.3,
+    "look": { "body": "m", "seed": 43, "chest": "light", "legs": "light", "weapon": "wpn_spear_copper",
+      "tint": { "scarf": "#3e6a8a", "lthr": "#5a3a22", "linen": "#6a6a5a", "pad": "#4a4236" } },
+    "chat": [
+      "막기만 믿지 마라. 기력이 바닥나면 비틀거린다.",
+      "검은 돛 놈들은 크게 휘두를 때 꼭 뜸을 들인다. 그때 굴러.",
+      "갑옷은 무거울수록 단단하지만, 무거우면 구르기도 굼떠."
+    ]
+  },
+  {
+    "id": "yeoul", "name": "여울", "title": "사냥꾼", "at": "s_forest", "dx": -4.0, "dz": 4.6, "yaw": 2.1,
+    "look": { "body": "f", "seed": 47, "chest": "light", "head": "light",
+      "tint": { "lthr": "#4a3a28", "linen": "#5a6a3a", "hood": "#3e5a30", "pad": "#4a5232", "scarf": "#8a6a2a" } },
+    "chat": [
+      "숲 깊은 곳 늑대는 무리로 다녀요. 하나 건드리면 다 와요.",
+      "사냥감은 손질해야 가죽이 나와요. 수렵 솜씨가 모자라면 못 하고요.",
+      "밤에 들판에 나가면 푸른 눈을 조심하세요."
+    ]
+  }
+]

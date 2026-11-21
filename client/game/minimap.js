@@ -48,11 +48,44 @@ export function createMinimap(canvas, game, terrain) {
     }
     g.setLineDash([]);
     for (const m of Object.values(state.mobs || {})) {
-      if (m.mode === 'dead' || Math.abs(m.x - a.x) > 60 || Math.abs(m.z - a.z) > 60) continue;
+      if (m.mode === 'dead' || m.mode === 'away' || Math.abs(m.x - a.x) > 60 || Math.abs(m.z - a.z) > 60) continue;
       const [mx, my] = toPx(m.x, m.z);
-      g.fillStyle = m.target ? '#ff5040' : 'rgba(255, 200, 120, 0.8)';
+      const T = data.creatures[m.type];
+      // 약탈단·밤 짐승은 늘 붉게(v0.5), 두목은 크게
+      g.fillStyle = m.target ? '#ff5040' : T.faction || T.night ? 'rgba(235, 90, 70, 0.9)' : 'rgba(255, 200, 120, 0.8)';
       g.beginPath();
-      g.arc(mx, my, 1.8, 0, Math.PI * 2);
+      g.arc(mx, my, T.boss || T.elite ? 3 : 1.8, 0, Math.PI * 2);
+      g.fill();
+    }
+    // 약탈단 자리(v0.5): 검은 깃발 표시와 이름
+    for (const s of data.lists.regions[0].sites || []) {
+      if (!s.members) continue;
+      const [sx0, sz0] = s.beach ? terrain.beachPoint(s.beach[0], s.beach[1]) : [s.x, s.z];
+      const [px, py] = toPx(sx0, sz0);
+      g.fillStyle = '#1d1b1c';
+      g.strokeStyle = '#e05a4f';
+      g.beginPath();
+      g.moveTo(px - 3, py + 5);
+      g.lineTo(px - 3, py - 6);
+      g.lineTo(px + 5, py - 3);
+      g.lineTo(px - 3, py);
+      g.closePath();
+      g.fill();
+      g.stroke();
+      g.fillStyle = 'rgba(255, 190, 170, 0.9)';
+      g.font = '10px sans-serif';
+      g.fillText(s.name, px + 6, py + 3);
+    }
+    // NPC: 할 이야기가 있으면 금빛
+    for (const n of data.lists.npcs || []) {
+      const t = state.settlements[n.at];
+      if (!t) continue;
+      const [px, py] = toPx(t.x + n.dx, t.z + n.dz);
+      const due = Object.keys(a.quests?.active || {}).some((id) => { const q = data.quests[id]; const st = q.steps[a.quests.active[id].step]; return st?.type === 'talk' && st.npc === n.id; });
+      if (!due) continue;
+      g.fillStyle = '#ffd24a';
+      g.beginPath();
+      g.arc(px, py, 3.2, 0, Math.PI * 2);
       g.fill();
     }
     for (const n of Object.values(state.nodes)) {

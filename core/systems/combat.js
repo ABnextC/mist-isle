@@ -1,7 +1,7 @@
 // 전투: 체력·기력·공격·회피·막기·쓰러짐 (설계 11장, 이번 범위는 docs/v0.3-combat.md).
 // 모든 판정은 코어가 30Hz로 한다. 화면은 이벤트(combat.*)를 보고 연출만 한다.
 
-import { hurtMob } from './mobs.js';
+import { hurtMob, isAlive } from './mobs.js';
 import { nearestSettlement } from '../world.js';
 
 const DEG = Math.PI / 180;
@@ -154,7 +154,7 @@ function swing(ctx, a) {
   const half = (w.spec.arc * DEG) / 2;
   const cands = [];
   for (const m of Object.values(ctx.state.mobs)) {
-    if (m.mode === 'dead') continue;
+    if (!isAlive(m)) continue;
     const type = ctx.data.creatures[m.type];
     const d = Math.hypot(m.x - a.x, m.z - a.z);
     if (d > w.spec.range + type.r) continue;
@@ -173,7 +173,8 @@ function swing(ctx, a) {
 }
 
 // 짐승이 사람을 때린다. 구르는 앞부분이면 피하고, 앞을 막고 있으면 줄인다.
-export function hurtActor(ctx, a, mob, raw) {
+// opts.unblockable(v0.5): 두목의 내려찍기처럼 막아도 소용없는 공격
+export function hurtActor(ctx, a, mob, raw, opts = null) {
   const C = ctx.cfg.combat;
   const t = ctx.state.t;
   const cb = a.cb;
@@ -185,7 +186,7 @@ export function hurtActor(ctx, a, mob, raw) {
   }
   let dmg = raw;
   let blocked = false;
-  if (cb.block && cb.stunUntil <= t && angDiff(yawTo(a, mob), a.yaw) <= (C.blockArc * DEG) / 2) {
+  if (cb.block && !opts?.unblockable && cb.stunUntil <= t && angDiff(yawTo(a, mob), a.yaw) <= (C.blockArc * DEG) / 2) {
     blocked = true;
     const ld = equipLoad(ctx, a).tier;
     cb.st = r2(cb.st - raw * ld.blockCost);

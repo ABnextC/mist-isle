@@ -39,7 +39,7 @@ function legIK(l1, l2, z, y, front) {
   return front ? [th - a, Math.PI - b] : [th + a, -(Math.PI - b)];
 }
 
-export function createMobsView(scene, game, hf, overlay) {
+export function createMobsView(scene, game, hf, overlay, { posOf = null } = {}) {
   const views = new Map();
   const tmp = new THREE.Vector3();
   const bars = new Map();
@@ -80,15 +80,21 @@ export function createMobsView(scene, game, hf, overlay) {
     const H = window.innerHeight;
     const seen = new Set();
     for (const m of Object.values(state.mobs)) {
+      const type = data.creatures[m.type];
+      // 사람 모양 적(v0.5)은 actors-view가 그린다. 여기서는 체력 막대와 이름만
+      if (type.body) {
+        seen.add(m.id);
+        humanBar(m, type, camera, W, H);
+        continue;
+      }
       let v = views.get(m.id);
       if (!v) {
         v = make(m);
         views.set(m.id, v);
       }
       seen.add(m.id);
-      const type = data.creatures[m.type];
       const dead = m.mode === 'dead';
-      const gone = dead && (m.skinned || t > m.deadAt + data.config.combat.corpseSec);
+      const gone = m.mode === 'away' || (dead && (m.skinned || t > m.deadAt + data.config.combat.corpseSec));
       v.fade = gone ? Math.max(0, v.fade - dt * 1.5) : dead ? v.fade : Math.min(1, v.fade + dt * 2);
       v.q.root.visible = v.fade > 0.02;
       if (!dead && v.fall > 0 && v.fade < 0.1) v.fall = 0;
@@ -273,6 +279,38 @@ export function createMobsView(scene, game, hf, overlay) {
       bars.get(id)?.remove();
       bars.delete(id);
     }
+    for (const [id, el] of bars) {
+      if (seen.has(id)) continue;
+      el.remove();
+      bars.delete(id);
+    }
+  }
+
+  // 약탈단 체력 막대: 다쳤거나 덤빌 때. 부두목·두목은 이름에 칭호
+  function humanBar(m, type, camera, W, H) {
+    const dead = m.mode === 'dead' || m.mode === 'away';
+    const show = !dead && (m.hp < type.hp || m.target) && Math.hypot(m.x - camera.position.x, m.z - camera.position.z) < 45;
+    const el = show ? bar(m.id) : bars.get(m.id);
+    if (!el) return;
+    if (!show) {
+      el.classList.remove('on');
+      return;
+    }
+    const p = posOf?.(m.id);
+    if (p) tmp.set(p.x, p.y + 2.15, p.z);
+    else tmp.set(m.x, hf.height(m.x, m.z) + 2.15, m.z);
+    tmp.project(camera);
+    if (tmp.z > 1) {
+      el.classList.remove('on');
+      return;
+    }
+    el.classList.add('on');
+    el.classList.toggle('hostile', !!m.target);
+    el.classList.toggle('elite', !!(type.elite || type.boss));
+    el.classList.toggle('guard', m.mode === 'guard');
+    el.style.transform = `translate(${((tmp.x + 1) / 2) * W}px, ${((1 - tmp.y) / 2) * H}px)`;
+    el.firstChild.style.width = `${Math.max(0, (m.hp / type.hp) * 100)}%`;
+    el.lastChild.textContent = m.mode === 'guard' ? `${type.name} 🛡️` : type.name;
   }
 
   return { update, onEvent, views, positionOf: (id) => views.get(id)?.pos };

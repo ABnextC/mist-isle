@@ -1,0 +1,215 @@
+{
+  "chapters": [
+    {
+      "id": "ch1", "name": "1장 · 검은 돛",
+      "quests": ["q1_ashore", "q2_chest", "q3_lookout", "q4_forest", "q5_supplies", "q6_lt", "q7_raid", "q8_captain"],
+      "after": "2장 「안개의 심장」은 준비 중이다."
+    }
+  ],
+  "items": {
+    "qi_log": { "name": "물에 젖은 항해일지", "icon": "📔" },
+    "qi_ledger": { "name": "찢긴 보급 장부", "icon": "📒" },
+    "qi_crate": { "name": "숲머리 보급 상자", "icon": "📦" },
+    "qi_orders": { "name": "두목의 명령서", "icon": "📜" },
+    "qi_chart": { "name": "검은 돛 해도", "icon": "🗺️" }
+  },
+  "quests": [
+    {
+      "id": "q1_ashore", "chapter": "ch1", "kind": "main", "name": "뭍에 오르다",
+      "summary": "난파선에서 겨우 살아 나왔다. 언덕 위 등대에 사람이 산다고 한다.",
+      "intro": ["난파선에서 겨우 뭍에 올랐다.", "언덕 위 등대에 불이 켜져 있다. 사람이 사는 모양이다."],
+      "steps": [
+        { "type": "talk", "npc": "haerim", "text": "등대지기 해림 찾아가기",
+          "say": [
+            "정신이 드나? 바다가 자네를 뱉어 냈구먼.",
+            "이 안개를 뚫고 살아 온 사람은 오랜만일세. 여긴 안개섬이야. 지도에 없는 섬이지.",
+            "자네 배 뒤로 검은 돛이 따라붙는 걸 봤네. 요즘은 밤마다 그 돛이 섬을 맴돌아.",
+            "빈손으로는 해안도 위험해. 이 몽둥이라도 쥐고 다니게."
+          ],
+          "reply": "고맙습니다" }
+      ],
+      "reward": { "silver": 20, "items": [{ "item": "wpn_club", "score": 42 }] },
+      "next": "q2_chest"
+    },
+    {
+      "id": "q2_chest", "chapter": "ch1", "kind": "main", "name": "떠밀려 온 궤짝",
+      "summary": "난파선 짐이 해안에 떠밀려 왔다. 게들을 쫓아내고 궤짝을 찾아보자.",
+      "intro": [
+        "자네 배 짐이 난파선 뒤편 모래밭에 떠밀려 왔다더군.",
+        "그런데 게들이 해안을 차지했어. 몇 마리 혼내 주고 궤짝을 찾아보게. 몽둥이는 가방(I)에서 끼면 되네."
+      ],
+      "steps": [
+        { "type": "kill", "mobs": ["crab"], "count": 3, "text": "해안 게 쓰러뜨리기" },
+        { "type": "use", "objs": ["o_sea_chest"], "count": 1, "text": "난파선 뒤편의 궤짝 열기", "gives": "qi_log" },
+        { "type": "talk", "npc": "haerim", "text": "해림에게 항해일지 보여 주기",
+          "say": [
+            "어디 보세… 물에 젖었어도 마지막 장은 읽히는군.",
+            "‘검은 돛이 사흘째 따라붙는다. 놈들은 섬의 심장을 찾는다고 떠든다.’",
+            "섬의 심장이라… 늙은이들 옛이야기에나 나오는 말일세.",
+            "이건 경비대장 강두가 알아야 해. 마을 모닥불 곁에 있을 걸세."
+          ],
+          "reply": "강두를 찾아가겠습니다" }
+      ],
+      "takes": ["qi_log"],
+      "reward": { "silver": 30, "items": [{ "item": "food_meat", "qty": 3, "score": 45 }] },
+      "next": "q3_lookout"
+    },
+    {
+      "id": "q3_lookout", "chapter": "ch1", "kind": "main", "name": "서쪽 들판의 망루",
+      "summary": "경비대장 강두에게 검은 돛 소식을 전하자. 서쪽 들판에 놈들 망루가 섰다는 소문이다.",
+      "intro": ["무뚝뚝해도 속은 깊은 사람일세. 일지를 보여 주면 알아들을 거야."],
+      "steps": [
+        { "type": "talk", "npc": "gangdu", "text": "경비대장 강두 만나기",
+          "say": [
+            "할멈이 보냈다고? …항해일지라.",
+            "흥. 검은 돛이 우리 섬에 눈독 들인 지 꽤 됐지. 서쪽 들판에 놈들 망루가 섰다는 말이 돌았어.",
+            "가서 확인해 봐. 몇 놈인지, 뭘 노리는지. 정 위험하면 물러나고."
+          ],
+          "reply": "다녀오겠습니다" },
+        { "type": "go", "site": "lookout", "text": "서쪽 들판의 검은 돛 망루 찾기" },
+        { "type": "kill", "mobs": ["raider_scout", "raider_thrower"], "count": 4, "site": "lookout", "text": "망루의 약탈자 쓰러뜨리기" },
+        { "type": "use", "objs": ["o_lookout_table"], "count": 1, "text": "망루 탁자 뒤지기", "gives": "qi_ledger" },
+        { "type": "talk", "npc": "gangdu", "text": "강두에게 돌아가기",
+          "say": [
+            "넷을 혼자서? …제법이군. 할멈이 사람 보는 눈은 있어.",
+            "이 장부를 보니 놈들, 숲머리로 가는 보급 수레를 털고 있었어.",
+            "가죽이랑 구리주괴를 좀 챙겨 주지. 갑주 작업대랑 대장간에 가면 쓸 만한 걸 만들 수 있을 거다."
+          ],
+          "reply": "고맙습니다" }
+      ],
+      "takes": ["qi_ledger"],
+      "reward": { "silver": 80, "items": [{ "item": "leather", "qty": 4 }, { "item": "ingot_copper", "qty": 3 }] },
+      "next": "q4_forest"
+    },
+    {
+      "id": "q4_forest", "chapter": "ch1", "kind": "main", "name": "숲머리로",
+      "summary": "숲머리와 소식이 끊겼다. 숲 가장자리 마을에 가서 사냥꾼 여울을 만나자.",
+      "intro": [
+        "숲머리에 사냥꾼 여울이 있다. 그쪽 소식이 며칠째 없어.",
+        "길은 북쪽으로 쭉 가면 된다. 멀고, 밤에는 안개 늑대가 돈다. 몸조심해."
+      ],
+      "steps": [
+        { "type": "talk", "npc": "yeoul", "text": "숲머리의 사냥꾼 여울 만나기",
+          "say": [
+            "등대 마을에서 오셨어요? 마침 잘 오셨어요!",
+            "사흘 전에 보급 수레가 털렸어요. 연장이랑 소금, 약초까지 몽땅요.",
+            "발자국은 동쪽 들판, 약탈단 야영지로 이어져요. 다들 겁먹어서 아무도 못 가고 있어요."
+          ],
+          "reply": "제가 가 볼게요" }
+      ],
+      "reward": { "silver": 40 },
+      "next": "q5_supplies"
+    },
+    {
+      "id": "q5_supplies", "chapter": "ch1", "kind": "main", "name": "빼앗긴 보급품",
+      "summary": "약탈단 야영지에서 숲머리 보급 상자를 되찾자.",
+      "intro": ["정말요? 야영지는 꽤 커요. 한꺼번에 덤비지 않게 하나씩 끌어내세요."],
+      "steps": [
+        { "type": "go", "site": "camp", "text": "동쪽 들판의 약탈단 야영지로 가기" },
+        { "type": "kill", "mobs": ["raider", "raider_spear", "raider_axe", "raider_thrower"], "count": 6, "site": "camp", "text": "야영지의 약탈자 쓰러뜨리기" },
+        { "type": "use", "objs": ["o_crate_1", "o_crate_2", "o_crate_3"], "count": 3, "text": "숲머리 보급 상자 되찾기", "gives": "qi_crate" },
+        { "type": "talk", "npc": "yeoul", "text": "여울에게 보급품 돌려주기",
+          "say": [
+            "세상에, 정말 다 찾아오셨네요! 이걸로 한동안은 버틸 수 있어요.",
+            "그런데 상자 하나에 이런 쪽지가 끼워져 있었어요.",
+            "‘부두목 혁에게. 두목의 명이다. 숲머리를 굶겨라.’ …우두머리가 따로 있나 봐요."
+          ],
+          "reply": "그 부두목을 찾아야겠군요" }
+      ],
+      "takes": ["qi_crate"],
+      "reward": { "silver": 120, "items": [{ "item": "ingot_iron", "qty": 2 }, { "item": "lumber_oak", "qty": 4 }] },
+      "next": "q6_lt"
+    },
+    {
+      "id": "q6_lt", "chapter": "ch1", "kind": "main", "name": "칼바람",
+      "summary": "약탈단 부두목 ‘칼바람’ 혁을 쓰러뜨리고 두목의 명을 알아내자.",
+      "intro": [
+        "야영지 가운데 붉은 천막 보셨어요? 거기 칼 쓰는 사내가 있대요. 다들 ‘칼바람’이라고 불러요.",
+        "막기를 잘한대요. 막을 땐 세게 내려쳐서(강공) 깨세요."
+      ],
+      "steps": [
+        { "type": "kill", "mobs": ["raider_lt"], "count": 1, "site": "camp", "text": "부두목 ‘칼바람’ 혁 쓰러뜨리기", "gives": "qi_orders" },
+        { "type": "talk", "npc": "yeoul", "text": "여울에게 명령서 보여 주기",
+          "say": [
+            "명령서요? 제가 읽어 볼게요.",
+            "‘안개가 가장 짙은 밤, 등대를 불태워라. 등대가 꺼지면 본토 배는 다시는 섬을 찾지 못한다.’",
+            "등대를요?! 강두 대장님께 빨리 알려야 해요. 저도 활 챙겨서 뒤따라갈게요!"
+          ],
+          "reply": "등대 마을로 가겠습니다" }
+      ],
+      "takes": ["qi_orders"],
+      "reward": { "silver": 100 },
+      "next": "q7_raid"
+    },
+    {
+      "id": "q7_raid", "chapter": "ch1", "kind": "main", "name": "등대를 지켜라",
+      "summary": "검은 돛이 등대를 불태우러 온다. 동쪽 언덕길에서 막자.",
+      "intro": ["어서요! 등대 마을까지는 남쪽으로 한참이에요."],
+      "steps": [
+        { "type": "talk", "npc": "gangdu", "text": "강두에게 습격 소식 알리기",
+          "say": [
+            "등대를 불태운다고? 미친놈들.",
+            "놈들이 올 길은 동쪽 언덕길뿐이다. 거기서 막는다.",
+            "먼저 가 있어. 마을 사람들 불러 모아서 곧 따라가지."
+          ],
+          "reply": "동쪽 언덕길로 가겠습니다" },
+        { "type": "defend", "site": "village_east", "text": "동쪽 언덕길에서 습격대 막기",
+          "waves": [
+            { "raider_scout": 2, "raider": 1 },
+            { "raider": 2, "raider_spear": 1, "raider_axe": 1, "raider_thrower": 1 }
+          ] },
+        { "type": "talk", "npc": "gangdu", "text": "강두에게 돌아가기",
+          "say": [
+            "후… 막아 냈군. 넌 이제 우리 마을 사람이다.",
+            "쓰러진 놈 하나가 실토했어. 두목 ‘갈고리’ 도철이 동쪽 바닷가에 배를 대 놓고 있다더군.",
+            "놈을 치지 않으면 이 일은 끝나지 않아."
+          ],
+          "reply": "제가 가겠습니다" }
+      ],
+      "reward": { "silver": 150, "items": [{ "item": "ingot_iron", "qty": 3 }] },
+      "next": "q8_captain"
+    },
+    {
+      "id": "q8_captain", "chapter": "ch1", "kind": "main", "name": "갈고리 도철",
+      "summary": "동쪽 바닷가 검은 돛 정박지에서 두목 ‘갈고리’ 도철을 쓰러뜨리자.",
+      "intro": [
+        "준비가 되면 가라. 음식이랑 갑옷을 챙겨. 놈은 지금까지 상대한 놈들과 달라.",
+        "도끼를 크게 치켜들면 반드시 굴러서 피해. 막아도 소용없다."
+      ],
+      "steps": [
+        { "type": "go", "site": "cove", "text": "동쪽 바닷가의 검은 돛 정박지로 가기" },
+        { "type": "kill", "mobs": ["raider_captain"], "count": 1, "site": "cove", "text": "두목 ‘갈고리’ 도철 쓰러뜨리기" },
+        { "type": "use", "objs": ["o_captain_chest"], "count": 1, "text": "도철의 궤짝 뒤지기", "gives": "qi_chart" },
+        { "type": "talk", "npc": "haerim", "text": "해림에게 돌아가기",
+          "say": [
+            "돌아왔구먼. 등대도 마을도 자네 덕에 무사하네.",
+            "이게 놈들 해도인가… 섬 한가운데, 안개가 솟는 자리에 붉은 표시가 있군. ‘안개의 심장’.",
+            "옛이야기가 참말이었던 게야. 검은 돛이 끝이 아닐세. 그 심장을 노리는 게 놈들만은 아니야.",
+            "오늘은 좀 쉬게. 다음 일은 다음에 이야기하세."
+          ],
+          "reply": "알겠습니다" }
+      ],
+      "takes": ["qi_chart"],
+      "reward": { "silver": 300, "items": [{ "item": "ingot_iron", "qty": 4 }, { "item": "gem_rough", "qty": 2 }] },
+      "next": null
+    },
+    {
+      "id": "b_crab", "kind": "bounty", "giver": "board", "repeat": "daily", "requires": ["q2_chest"], "name": "현상금: 해안 게",
+      "summary": "게들이 그물을 끊어 놓는다. 어부들이 현상금을 걸었다.",
+      "steps": [{ "type": "kill", "mobs": ["crab"], "count": 5, "text": "해안 게 쓰러뜨리기" }],
+      "reward": { "silver": 25 }
+    },
+    {
+      "id": "b_raider", "kind": "bounty", "giver": "board", "repeat": "daily", "requires": ["q3_lookout"], "name": "현상금: 검은 돛",
+      "summary": "검은 돛 약탈자를 쓰러뜨리면 경비대가 은화를 준다.",
+      "steps": [{ "type": "kill", "mobs": ["raider_scout", "raider", "raider_spear", "raider_axe", "raider_thrower"], "count": 5, "text": "검은 돛 약탈자 쓰러뜨리기" }],
+      "reward": { "silver": 60 }
+    },
+    {
+      "id": "b_mistwolf", "kind": "bounty", "giver": "board", "repeat": "daily", "requires": ["q4_forest"], "name": "현상금: 안개 늑대",
+      "summary": "밤길의 안개 늑대 때문에 수레가 못 다닌다. 밤에 마을 사이 들판으로 나가자.",
+      "steps": [{ "type": "kill", "mobs": ["mist_wolf"], "count": 3, "text": "안개 늑대 쓰러뜨리기" }],
+      "reward": { "silver": 70 }
+    }
+  ]
+}

@@ -31,7 +31,11 @@ import { refPrice, npcPrice, bestBid, bookOf, entryStar as marketStar } from '..
 import { createMinimap } from './minimap.js';
 import { createGuide } from './guide.js';
 import { createPerf } from './perf.js';
-import { currentQuest } from './quest.js';
+import { currentQuest, questCtx } from './quest.js';
+import { talkDue, useDue, boardOffers } from '../../core/systems/quests.js';
+import { npcPos, objPos } from '../../core/world.js';
+import { createShotsView } from './shots-view.js';
+import { createNpcLabels } from './npc-labels.js';
 
 const SAVE_KEY = 'mist-isle:v1';
 const OLD_KEY = 'mist-isle:v0';
@@ -98,11 +102,15 @@ async function boot() {
   await say('🌫️ 개척자를 준비하는 중…');
   await actorBase;
   const actorsView = createActorsView(view.scene, game, ground.hf, view.camera);
+  actorsView.setFar(touch ? 80 : 120);
+  actorsView.prewarm();
   const floaters = document.createElement('div');
   floaters.id = 'floaters';
   document.body.appendChild(floaters);
-  const mobsView = createMobsView(view.scene, game, ground.hf, floaters);
+  const mobsView = createMobsView(view.scene, game, ground.hf, floaters, { posOf: actorsView.positionOf });
   window.__mist.mobsView = mobsView;
+  const shotsView = createShotsView(view.scene, game, ground.hf);
+  const npcLabels = createNpcLabels(floaters, game, actorsView.positionOf);
   // 떠오르는 숫자(준 피해·받은 피해·회피)
   const floats = [];
   const fv = new THREE.Vector3();
@@ -133,8 +141,46 @@ async function boot() {
   }
   game.on('combat.hit', (ev) => {
     mobsView.onEvent(ev);
+    actorsView.onEvent(ev);
     const m = game.state.mobs[ev.mob];
-    if (m && ev.actor === PID) floatText(m.x, ground.hf.height(m.x, m.z) + 1.4, m.z, String(Math.round(ev.dmg)), ev.heavy ? 'big' : '');
+    const tall = m && data.creatures[m.type].body ? 2.0 : 1.4;
+    if (m && ev.actor === PID) floatText(m.x, ground.hf.height(m.x, m.z) + tall, m.z, ev.blocked ? `${Math.round(ev.dmg * 10) / 10} 막음` : String(Math.round(ev.dmg)), ev.blocked ? 'evade' : ev.heavy ? 'big' : '');
+  });
+  game.on('mob.guardbreak', (ev) => {
+    const m = game.state.mobs[ev.mob];
+    if (m && ev.actor === PID) floatText(m.x, ground.hf.height(m.x, m.z) + 2.3, m.z, '막기 깨짐!', 'big');
+  });
+  // 약탈단 말(v0.5): 처음 덤빌 때 한마디, 두목은 단계가 바뀔 때
+  const barkAt = new Map();
+  function bark(m, line, cls = 'bark') {
+    if (!line || !m) return;
+    const now = performance.now();
+    if (now - (barkAt.get(m.id) || 0) < 8000) return;
+    barkAt.set(m.id, now);
+    floatText(m.x, ground.hf.height(m.x, m.z) + 2.5, m.z, line, cls);
+  }
+  game.on('mob.aggro', (ev) => {
+    const m = game.state.mobs[ev.mob];
+    const T = m && data.creatures[m.type];
+    if (!T?.barks || ev.actor !== PID || Math.hypot(m.x - me().x, m.z - me().z) > 30 || Math.random() > 0.6) return;
+    bark(m, T.barks[Math.floor(Math.random() * T.barks.length)]);
+  });
+  // 센 공격 예고(v0.5): 사람 모양 적이 크게 휘두르려 하면 머리 위에 붉은 '!!'. 막을 수 없는 공격은 '⛔'
+  game.on('mob.windup', (ev) => {
+    if (!ev.heavy || ev.actor !== PID) return;
+    const m = game.state.mobs[ev.mob];
+    const T = m && data.creatures[m.type];
+    if (!T?.body) return;
+    const at = T.attacks.find((x) => x.id === ev.atk);
+    floatText(m.x, ground.hf.height(m.x, m.z) + 2.35, m.z, at?.unblockable ? '⛔' : '‼', 'tele');
+  });
+  game.on('mob.phase', (ev) => {
+    const m = game.state.mobs[ev.mob];
+    if (m && ev.say) {
+      barkAt.delete(m.id);
+      bark(m, ev.say, 'bark big');
+      hud.banner(`☠️ ${data.creatures[m.type].name}: “${ev.say}”`);
+    }
   });
   game.on('combat.hurt', (ev) => {
     actorsView.onEvent(ev);
@@ -163,14 +209,11 @@ async function boot() {
     const a = game.state.actors[PID];
     let yaw = a.yaw || 0;
     if (game.state.t < 2) {
-      const d = (n) => Math.hypot(n.x - a.x, n.z - a.z);
-      const near = Object.values(game.state.nodes)
-        .filter((n) => (n.type === 'node_driftwood' || n.type === 'node_stone') && d(n) < 45)
-        .sort((p, q) => d(p) - d(q))
-        .slice(0, 5);
+      // 새 게임은 첫 퀘스트 목표(등대지기) 쪽을 바라보고 시작한다
+      const q = currentQuest(game, a);
       const town = region.settlements[0];
-      const tx = near.length ? near.reduce((s, n) => s + n.x, 0) / near.length : town.x;
-      const tz = near.length ? near.reduce((s, n) => s + n.z, 0) / near.length : town.z;
+      const tx = q?.goal ? q.goal.x : town.x;
+      const tz = q?.goal ? q.goal.z : town.z;
       yaw = Math.atan2(tx - a.x, tz - a.z);
     }
     cam.st.yaw = yaw;
@@ -219,7 +262,7 @@ async function boot() {
     let best = null;
     let bs = Infinity;
     for (const m of Object.values(game.state.mobs)) {
-      if (m.mode === 'dead') continue;
+      if (m.mode === 'dead' || m.mode === 'away') continue;
       const d = Math.hypot(m.x - a.x, m.z - a.z);
       if (d > reach + 2.5) continue;
       const yy = Math.atan2(m.x - a.x, m.z - a.z);
@@ -264,7 +307,12 @@ async function boot() {
     else if (t.kind === 'station') {
       if (t.id === 'storage') hud.open('bag');
       else hud.open('craft', { station: t.id });
-    } else if (t.kind === 'board') hud.open('board');
+    } else if (t.kind === 'npc') {
+      game.dispatch({ type: 'MOVE_INPUT', actor: PID, dx: 0, dz: 0 });
+      hud.open('talk', { npc: t.id });
+    } else if (t.kind === 'obj') {
+      game.dispatch({ type: 'QUEST_USE', actor: PID, obj: t.id });
+    } else if (t.kind === 'board') hud.open('board', { tab: boardOffers(questCtx(game), me()).length ? 'bounty' : undefined });
     else if (t.kind === 'market') hud.open('market');
   }
 
@@ -353,6 +401,19 @@ async function boot() {
       case 'craft': hud.toggle('craft', { station: nearestStationType(a) }); break;
       case 'skills': hud.toggle('skills'); break;
       case 'log': hud.toggle('log'); break;
+      case 'journal': hud.toggle('journal'); break;
+      case 'talk-do': {
+        // 이야기를 넘긴다: 끝난 퀘스트·이어진 퀘스트를 대화창 뒷장에 보여 준다
+        doneBuf.length = 0;
+        const due = talkDue(questCtx(game), a, v);
+        const steps = due.map((id) => ({ id, step: a.quests.active[id].step }));
+        if (game.dispatch({ type: 'TALK', actor: PID, npc: v }).ok) hud.open('talk', { npc: v, after: { done: doneBuf.splice(0), steps } });
+        break;
+      }
+      case 'quest-accept':
+        if (game.dispatch({ type: 'QUEST_ACCEPT', actor: PID, quest: v }).ok) hud.toast(`📜 「${data.quests[v].name}」을(를) 받았다`, 'good');
+        break;
+      case 'quest-track': game.dispatch({ type: 'QUEST_TRACK', actor: PID, quest: v }); break;
       case 'menu': hud.toggle('menu'); break;
       case 'close': hud.close(); break;
       case 'craft-do':
@@ -515,6 +576,20 @@ async function boot() {
       const d = Math.hypot(dx, dz);
       if (d <= 2.6) consider(d - 0.5, dx, dz, { kind: 'corpse', id: m.id, x: m.x, z: m.z, m });
     }
+    // NPC(v0.5)와 지금 퀘스트에 필요한 물체(궤짝·보급 상자·탁자)
+    for (const o of game.statics) {
+      if (o.kind === 'npc') {
+        const dx = o.x - a.x;
+        const dz = o.z - a.z;
+        const d = Math.hypot(dx, dz);
+        if (d <= 3.3) consider(d - 0.6, dx, dz, { kind: 'npc', id: o.npc, x: o.x, z: o.z });
+      } else if (o.obj) {
+        const dx = o.x - a.x;
+        const dz = o.z - a.z;
+        const d = Math.hypot(dx, dz);
+        if (d <= 2.5 && useDue(questCtx(game), a, o.obj)) consider(d - 0.8, dx, dz, { kind: 'obj', id: o.obj, x: o.x, z: o.z, okind: o.kind });
+      }
+    }
     for (const o of game.statics) {
       if (o.kind !== 'board' && o.kind !== 'market') continue;
       const dx = o.x - a.x;
@@ -551,6 +626,16 @@ async function boot() {
       best.verb = '손질';
       best.radius = type.r + 0.4;
       if (a.skills.hunting.level < type.hunt.level) best.why = `수렵 ${type.hunt.level} 필요`;
+    } else if (best.kind === 'npc') {
+      const n = data.npcs[best.id];
+      const due = talkDue(questCtx(game), a, best.id).length;
+      best.label = `${n.title} ${n.name}${due ? ' — 할 이야기가 있다' : ''}`;
+      best.verb = '대화';
+      best.radius = 0.6;
+    } else if (best.kind === 'obj') {
+      best.label = data.objects[best.id].name;
+      best.verb = { chest: '열기', supply: '되찾기', papers: '뒤지기' }[best.okind] || '살피기';
+      best.radius = 0.8;
     } else if (best.kind === 'market') {
       const town = settlementAt({ state }, a);
       best.label = `${town ? town.name + ' ' : ''}거래소`;
@@ -558,12 +643,77 @@ async function boot() {
       best.radius = 2.0;
     } else {
       const town = settlementAt({ state }, a);
-      best.label = `${town ? town.name + ' ' : '마을 '}게시판 — 주문·마을 사업·산지 소문`;
+      best.label = `${town ? town.name + ' ' : '마을 '}게시판 — 주문·현상금·마을 사업·산지 소문`;
       best.verb = '보기';
       best.radius = 1.2;
     }
     return best;
   }
+
+  // 화면 위 큰 체력 막대(v0.5): 나와 싸우는 부두목·두목
+  function bossNow(a) {
+    let best = null;
+    for (const m of Object.values(game.state.mobs)) {
+      const T = data.creatures[m.type];
+      if (!(T.boss || T.elite) || m.mode === 'dead' || m.mode === 'away') continue;
+      if (m.target !== PID && m.hp >= T.hp) continue;
+      if (Math.hypot(m.x - a.x, m.z - a.z) > 35) continue;
+      if (!best || T.boss) best = { name: T.name, hp: m.hp, max: T.hp, boss: !!T.boss, phase: m.phase || 0 };
+    }
+    return best;
+  }
+
+  // 퀘스트 알림(v0.5)
+  const doneBuf = [];
+  game.on('quest.done', (ev) => {
+    if (ev.actor !== PID) return;
+    doneBuf.push(ev);
+    const q = data.quests[ev.quest];
+    hud.banner(`✅ 퀘스트 완료 · ${q.name}`);
+  });
+  game.on('quest.start', (ev) => {
+    if (ev.actor !== PID || game.state.t < 2) return;
+    const q = data.quests[ev.quest];
+    if (q.kind !== 'main') return;
+    setTimeout(() => hud.toast(`📜 ${q.name} — ${q.steps[0].text}`, 'info'), 2400);
+  });
+  game.on('quest.step', (ev) => {
+    if (ev.actor !== PID) return;
+    const q = data.quests[ev.quest];
+    hud.toast(`📜 ${q.steps[ev.step].text}`, 'info');
+  });
+  game.on('quest.use', (ev) => {
+    if (ev.actor !== PID) return;
+    const it = ev.gives && data.questItems[ev.gives];
+    hud.feed(it ? `${it.icon} ${it.name}${ev.need > 1 ? ` (${ev.n}/${ev.need})` : ''}` : `✔ ${data.objects[ev.obj].name}`);
+    actorsView.onEvent(ev);
+  });
+  game.on('quest.progress', (ev) => {
+    if (ev.actor !== PID) return;
+    const q = data.quests[ev.quest];
+    const st = q.steps[me().quests.active[ev.quest]?.step ?? 0];
+    if (st && ev.n < ev.need) hud.feed(`📜 ${st.text} ${ev.n}/${ev.need}`);
+  });
+  game.on('quest.wave', (ev) => {
+    if (ev.actor === PID) hud.banner(`⚔️ 습격대가 온다! (${ev.wave}/${ev.waves}물결)`);
+  });
+  game.on('quest.fail', (ev) => {
+    if (ev.actor === PID) hud.toast(`⚠️ 습격을 막지 못했다. 동쪽 언덕길로 다시 가면 처음부터 막는다`, 'warn');
+  });
+  game.on('chapter.done', (ev) => {
+    if (ev.actor !== PID) return;
+    const ch = data.chapters.find((c) => c.id === ev.chapter);
+    setTimeout(() => hud.banner(`🏁 ${ch.name} 끝 — ${ch.after}`), 2600);
+  });
+  game.on('loot', (ev) => {
+    if (ev.actor !== PID) return;
+    const parts = [];
+    if (ev.silver) parts.push(`🪙 +${ev.silver}`);
+    for (const x of ev.items) parts.push(`${data.items[x.item].icon || ''} ${data.items[x.item].name} ×${x.qty}`);
+    if (parts.length) hud.feed(parts.join(' · '));
+    if (ev.lost) hud.toast('🎒 가방이 가득 차서 전리품 일부를 버렸다', 'warn');
+  });
+  game.on('shot.end', (ev) => fx.burst(ev.x, ground.hf.height(ev.x, ev.z) + 0.2, ev.z, 0x7a6a58, 4, { lift: 0, spread: 0.1, speed: 0.4, dust: true }));
 
   let last = performance.now();
   let lastSave = performance.now();
@@ -668,7 +818,15 @@ async function boot() {
     actorsView.update(dt, now / 1000);
     strikeFx();
     mobsView.update(dt, view.camera);
+    shotsView.update();
+    npcLabels.update(view.camera, a);
     updateFloats(dt);
+    // 밤이 오면 한 번 알린다(안개 늑대)
+    {
+      const night = game.clock.isNight(game.state.t);
+      if (night && ui.night === false) hud.toast('🌙 밤이 왔다. 마을 사이 들판에 안개 늑대가 돈다.', 'warn');
+      ui.night = night;
+    }
     {
       const z = zoneAt(region, a.x, a.z);
       if ((z?.id || null) !== ui.zone) {
@@ -705,7 +863,7 @@ async function boot() {
     const goal = questNow?.goal || null;
     guide.update(now / 1000, p, goal);
     perf.lap('view');
-    hud.update(dt, { target: ui.target, gathering: !!ui.gather, quest: questNow, questDist: goal ? Math.hypot(goal.x - p.x, goal.z - p.z) : null });
+    hud.update(dt, { target: ui.target, gathering: !!ui.gather, quest: questNow, questDist: goal ? Math.hypot(goal.x - p.x, goal.z - p.z) : null, boss: bossNow(a) });
     if (now - lastMap > 200) {
       minimap.draw(PID, cam.st.yaw, goal, now / 1000);
       lastMap = now;
@@ -728,7 +886,10 @@ async function boot() {
       booted = true;
       firstFrame = false;
       bootEl.remove();
-      if (game.state.t < 2) hud.toast('🌫️ 난파선에서 겨우 뭍에 올랐다. 바닷가의 표류목과 돌부터 주워 보자.', 'info');
+      if (game.state.t < 2) {
+        const q0 = data.quests[data.chapters[0].quests[0]];
+        hud.toast(`🌫️ ${q0.intro.join(' ')}`, 'info');
+      }
     }
     requestAnimationFrame(frame);
   }
@@ -737,7 +898,8 @@ async function boot() {
   await say('🌫️ 셰이더를 미리 준비하는 중… (컴퓨터에 따라 수십 초 걸릴 수 있다)');
   mobsView.update(0, view.camera);
   frame(performance.now(), true);
-  const warmInfo = await view.warm({ extra: actorsView.warmExtras?.() || [], say: () => say('🌫️ 섬 전체를 한 번 그려 보는 중…') });
+  // ?nowarm: 시험용(소프트웨어 렌더러에서 섬 전체 미리 그리기를 건너뛴다)
+  const warmInfo = params.has('nowarm') ? { skipped: true } : await view.warm({ extra: actorsView.warmExtras?.() || [], say: () => say('🌫️ 섬 전체를 한 번 그려 보는 중…') });
   window.__mist.warm = warmInfo;
   console.info('[warm]', warmInfo);
   // 갑옷 옷 조각 묶음은 게임을 시작한 뒤 천천히 미리 받아 둔다(갈아입을 때 바로 바뀌게)

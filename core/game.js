@@ -25,6 +25,7 @@ import { mobsTick } from './systems/mobs.js';
 import { combatTick } from './systems/combat.js';
 import { fightersTick } from './ai/fighter.js';
 import { agentsTick } from './systems/agents.js';
+import { questsTick } from './systems/quests.js';
 
 const DEFAULT_ACTORS = [{ id: 'p1', name: '개척자', kind: 'player' }];
 
@@ -38,7 +39,7 @@ function makeCtx(state, data, bus) {
     clock: makeClock(data.config),
     rng: makeRng(state.rng),
     terrain,
-    statics: layoutStatics(region, terrain, builtSet(state)),
+    statics: layoutStatics(region, terrain, builtSet(state), data.lists.npcs),
     obstacles: null,
     obstaclesDirty: true,
     newId: (p) => `${p}_${state.nextId++}`,
@@ -46,7 +47,7 @@ function makeCtx(state, data, bus) {
   };
   // 마을 사업으로 건물이 서면 정적 배치를 다시 잰다(충돌·화면이 같이 쓴다)
   ctx.refreshStatics = () => {
-    ctx.statics = layoutStatics(region, terrain, builtSet(state));
+    ctx.statics = layoutStatics(region, terrain, builtSet(state), data.lists.npcs);
     ctx.obstaclesDirty = true;
   };
   const cmds = makeCommands(ctx);
@@ -83,6 +84,7 @@ function wrap(ctx, bus) {
     if (state.tick % HZ === 0) {
       nodesTick(ctx);
       focusTick(ctx);
+      questsTick(ctx);
       const h = ctx.clock.hour(state.t);
       if (h !== state.clock.hour) {
         state.clock.hour = h;

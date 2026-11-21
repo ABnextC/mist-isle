@@ -3,6 +3,7 @@
 // 채집할 수 없는 장식이라 충돌이 없다. 화질 단계에 따라 개수를 줄인다.
 
 import * as THREE from 'three';
+import { siteXZ } from '../../../core/world.js';
 import { mergeVertices, toCreasedNormals } from 'three-addons';
 import { rng, xf, merge, prep, taperTube, bentPath, rockGeo, leafCard, n3 } from '../models/build.js';
 import { AREA } from './terrain.js';
@@ -220,7 +221,11 @@ export function createFlora(scene, { hf, paths, ground, region, tier, mats, ctex
   const k = tier.flora;
   const [bx0, bz0, bx1, bz1] = region.bounds;
   const edge = region.terrain.edge ?? 12;
-  const towns = region.settlements;
+  // 마을과 약탈단 자리(v0.5) 안에는 덤불·바위를 두지 않는다
+  const towns = [...region.settlements, ...(region.sites || []).filter((st) => st.members || st.structures).map((st) => {
+    const [x, z] = siteXZ(game.terrain, st);
+    return { x, z, radius: st.r };
+  })];
   const nodes = Object.values(game.state.nodes);
   const nearNode = (x, z, r) => nodes.some((n) => Math.abs(n.x - x) < r && Math.abs(n.z - z) < r && Math.hypot(n.x - x, n.z - z) < r);
 

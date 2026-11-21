@@ -4,7 +4,8 @@
 // 모닥불·대장간·횃불 불빛은 점광원 두 개를 돌려 쓴다(가까운 곳에만 켠다. 광원 수가 늘면 모든 재질이 무거워진다).
 
 import * as THREE from 'three';
-import { STATIONS, house, lighthouse, board, market, campfire, wreck, pier, lampPost, fence, bake, tent, cabin, site, pennant, torch } from './models/town.js';
+import { STATIONS, house, lighthouse, board, market, campfire, wreck, pier, lampPost, fence, bake, tent, cabin, site, pennant, torch,
+  banner, palisade, crates, watchtower, shipBlack, chest, supply, papers } from './models/town.js';
 
 const BEAM_V = `
 varying float vAlong;
@@ -137,6 +138,17 @@ export function createTownView(scene, game, hf, { mats, terrain, region }) {
       else if (o.kind === 'tent') place(tent(houseSeed++ * 31), o.x, o.z, o.rot);
       else if (o.kind === 'cabin') place(cabin(houseSeed++ * 53), o.x, o.z, o.rot);
       else if (o.kind === 'wreck') place(wreck(), o.x, o.z, o.rot, { dy: -0.55, tilt: [0.05, 0.16] });
+      // 검은 돛 약탈단 자리(v0.5)와 퀘스트 물체
+      else if (o.kind === 'tent_black') place(tent(houseSeed++ * 31, 'sailBlack'), o.x, o.z, o.rot);
+      else if (o.kind === 'tent_red') place(tent(77, 'clothRed'), o.x, o.z, o.rot);
+      else if (o.kind === 'watchtower') place(watchtower(), o.x, o.z, o.rot);
+      else if (o.kind === 'banner') place(banner(houseSeed++), o.x, o.z, o.rot);
+      else if (o.kind === 'palisade') place(palisade(o.len || 8), o.x, o.z, o.rot);
+      else if (o.kind === 'crates') place(crates(houseSeed++), o.x, o.z, o.rot);
+      else if (o.kind === 'ship_black') place(shipBlack(), o.x, o.z, o.rot, { dy: -0.75, tilt: [0.03, 0.12] });
+      else if (o.kind === 'chest') place(chest(houseSeed++), o.x, o.z, o.rot);
+      else if (o.kind === 'supply') place(supply(), o.x, o.z, o.rot);
+      else if (o.kind === 'papers') place(papers(), o.x, o.z, o.rot);
     }
   }
   syncStatics();

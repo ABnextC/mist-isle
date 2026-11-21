@@ -2,6 +2,7 @@
 // 페르소나 봇과 헤드리스 결투(tools/combat.js)가 같은 코드를 쓴다. 명령은 모두 ctx.command로 낸다.
 
 import { weaponOf, yawTo, isDown } from '../systems/combat.js';
+import { isAlive } from '../systems/mobs.js';
 import { keyOf } from '../inventory.js';
 
 const DODGE_AT = 0.16; // 준비 동작이 이만큼 남았을 때 구른다
@@ -20,7 +21,7 @@ export const stopFight = (a) => {
 function threats(ctx, a) {
   const out = [];
   for (const m of Object.values(ctx.state.mobs)) {
-    if (m.mode === 'dead' || m.target !== a.id) continue;
+    if (!isAlive(m) || m.target !== a.id) continue;
     out.push(m);
   }
   return out;
@@ -29,7 +30,7 @@ function threats(ctx, a) {
 function chooseTarget(ctx, a, f) {
   const cur = ctx.state.mobs[f.target];
   const skittish = cur && ctx.data.creatures[cur.type].temper === 'skittish';
-  if (cur && cur.mode !== 'dead' && (cur.mode !== 'return' || skittish)) return cur;
+  if (isAlive(cur) && (cur.mode !== 'return' || skittish)) return cur;
   // 덤비는 놈부터 정리한다
   let best = null;
   let bd = Infinity;

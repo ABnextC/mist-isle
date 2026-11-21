@@ -11,6 +11,9 @@ import { settlementAt, storeOf, standingTier } from '../../core/world.js';
 import { openProjects, projectOpen, needLeft, silverLeft, projectProgress, shipFee, upkeepOf } from '../../core/settlements.js';
 import { zoneAt } from '../../core/terrain.js';
 import { ENGINE_VERSION } from '../../core/state.js';
+import { stepText, talkDue, boardOffers, available, TALK_RANGE } from '../../core/systems/quests.js';
+import { npcPos } from '../../core/world.js';
+import { questCtx, lifeSteps } from './quest.js';
 
 const PID = 'p1';
 const FAMILY = { wood: '나무', metal: '금속', stone: '돌', fiber: '섬유', food: '식재료', herb: '약초' };
@@ -41,8 +44,9 @@ export function createHud(root, game, { touch, onAct }) {
       <div class="focus"><span data-k="focusbar"></span><em data-k="focus"></em></div>
       <div class="silver" data-k="silver"></div>
       <div class="buffs" data-k="buffs"></div>
-      <div class="quest" data-k="quest"></div>
+      <div class="quest" data-k="quest" data-act="journal" title="일지 (J)"></div>
     </div>
+    <div class="bossbar" data-k="boss"><b data-k="bossname"></b><i><span data-k="bossfill"></span></i></div>
     <div class="tr"><canvas class="minimap"></canvas><div class="where" data-k="where"></div></div>
     <div class="feed" data-k="feed"></div>
     <div class="banner" data-k="banner"></div>
@@ -55,10 +59,11 @@ export function createHud(root, game, { touch, onAct }) {
         <button data-act="bag" title="가방 (I)">🎒<small>가방</small></button>
         <button data-act="craft" title="제작 (C)">🔨<small>제작</small></button>
         <button data-act="skills" title="스킬 (K)">📈<small>스킬</small></button>
+        <button data-act="journal" title="일지 (J)">📖<small>일지</small></button>
         <button data-act="log" title="기록 (L)">📜<small>기록</small></button>
         <button data-act="menu" title="설정">⚙️<small>설정</small></button>
       </div>
-      ${touch ? '' : '<div class="keys">WASD 이동 · 드래그 시점 · 휠 거리 · E 상호작용 · H 귀환 · I 가방 · C 제작 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기</div>'}
+      ${touch ? '' : '<div class="keys">WASD 이동 · 드래그 시점 · 휠 거리 · E 상호작용·대화 · J 일지 · H 귀환 · I 가방 · C 제작 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기</div>'}
     </div>
     ${touch ? '<button class="act-btn" data-act="interact" data-k="actbtn">✋</button><div class="cbtns"><button data-hold="attack" title="공격(길게 강공)">⚔️</button><button data-hold="block" title="막기">🛡️</button><button data-tap="dodge" title="구르기">🌀</button></div>' : ''}
     <div class="downed" data-k="downed"></div>
@@ -73,6 +78,7 @@ export function createHud(root, game, { touch, onAct }) {
     vitals: $('vitals'), hp: $('hp'), hpbar: $('hpbar'), stbar: $('stbar'), downed: $('downed'), hurtfx: $('hurtfx'), focusbar: $('focusbar'), buffs: $('buffs'), quest: $('quest'),
     where: $('where'), feed: $('feed'), banner: $('banner'), progress: $('progress'), prompt: $('prompt'),
     actbtn: $('actbtn'), ptitle: $('ptitle'), pbody: $('pbody'), toast: $('toast'), recall: $('recall'),
+    boss: $('boss'), bossname: $('bossname'), bossfill: $('bossfill'),
   };
   const panelEl = root.querySelector('.panel');
   const set = (node, text) => {
@@ -130,6 +136,8 @@ export function createHud(root, game, { touch, onAct }) {
     e.stopPropagation();
     if (b.dataset.act === 'ui-tab') {
       if (panel) panel.tab = b.dataset.v;
+    } else if (b.dataset.act === 'ui-talk-next') {
+      if (panel) panel.after = null;
     } else if (b.dataset.act === 'ui-price') {
       // 내놓을 값 조정: 한 번에 시세의 약 5%씩
       const key = b.dataset.v;
@@ -211,7 +219,7 @@ export function createHud(root, game, { touch, onAct }) {
   const townName = (sid) => game.state.settlements[sid]?.name ?? sid;
 
   // ── 매 프레임 ───────────────────────────────────────
-  function update(dt, { target, gathering, quest: q = null, questDist = null }) {
+  function update(dt, { target, gathering, quest: q = null, questDist = null, boss = null }) {
     const now = performance.now();
     fps = fps ? fps * 0.95 + (1 / Math.max(dt, 1e-3)) * 0.05 : 60;
     const a = game.state.actors[PID];
@@ -238,7 +246,19 @@ export function createHud(root, game, { touch, onAct }) {
     set(el.buffs, [...ldTag, ...a.buffs.map((b) => `🍽️ 채집량 +${Math.round(b.value * 100)}% · ${Math.ceil((b.endsAt - game.state.t) / 60)}분`)].join('  '));
     // 목표까지 거리: 멀면 5m 단위로(글자가 덜 바뀌게)
     const qd = questDist == null ? '' : questDist < 30 ? ` · ${Math.round(questDist)}m` : ` · ${Math.round(questDist / 5) * 5}m`;
-    set(el.quest, q ? `📜 ${q.text}${q.goal ? `${qd} ➜ ${q.goal.label}` : ''}` : '');
+    setHtml(el.quest, q ? `<b>${q.kind === 'main' ? '📜' : '🎯'} ${esc(q.title)}</b><span>${esc(q.text)}${q.goal ? `${qd} ➜ ${esc(q.goal.label)}` : ''}</span>` : '');
+    // 부두목·두목 체력 막대(v0.5)
+    el.boss.classList.toggle('on', !!boss);
+    if (boss) {
+      set(el.bossname, `${boss.boss ? '☠️' : '⚔️'} ${boss.name}${boss.phase ? ' — 성났다!' : ''}`);
+      el.bossfill.style.width = `${Math.max(0, (boss.hp / boss.max) * 100)}%`;
+      el.boss.classList.toggle('boss', boss.boss);
+    }
+    // 대화창은 NPC에게서 멀어지면 닫는다
+    if (panel?.kind === 'talk') {
+      const np = npcPos(data, panel.npc);
+      if (!np || Math.hypot(np.x - a.x, np.z - a.z) > TALK_RANGE + 2.5) close();
+    }
     const town = settlementAt({ state: game.state }, a);
     const zone = zoneAt(data.lists.regions[0], a.x, a.z);
     set(el.where, town ? `🏘️ ${town.name}${a.home === town.id ? ' 🏠' : ''}` : zone ? `🌲 ${zone.name}` : '🌫️ 난파 해안');
@@ -563,8 +583,114 @@ export function createHud(root, game, { touch, onAct }) {
 
   function boardHtml(a) {
     const tab = panel.tab || 'orders';
-    const body = tab === 'orders' ? ordersHtml(a) : tab === 'town' ? townHtml(a) : veinsHtml(a);
-    return tabsHtml([['orders', '주문'], ['town', '마을'], ['veins', '산지 소문']], tab) + body;
+    const body = tab === 'orders' ? ordersHtml(a) : tab === 'bounty' ? bountyHtml(a) : tab === 'town' ? townHtml(a) : veinsHtml(a);
+    const n = boardOffers(questCtx(game), a).length;
+    return tabsHtml([['orders', '주문'], ['bounty', `현상금${n ? ` ${n}` : ''}`], ['town', '마을'], ['veins', '산지 소문']], tab) + body;
+  }
+
+  // ── 퀘스트(v0.5): 대화·일지·현상금 ─────────────────
+  const itemLabel = (id) => `${data.items[id].icon || ''} ${data.items[id].name}`;
+  function rewardText(r = {}) {
+    const out = [];
+    if (r.silver) out.push(`🪙 ${r.silver}`);
+    for (const it of r.items || []) out.push(`${itemLabel(it.item)}${(it.qty || 1) > 1 ? ` ×${it.qty}` : ''}`);
+    return out.join(' · ') || '없음';
+  }
+  function rewardHtml(r = {}) {
+    const rows = [];
+    if (r.silver) rows.push(`<li>🪙 은화 ${r.silver}</li>`);
+    for (const it of r.items || []) rows.push(`<li>${itemLabel(it.item)} ×${it.qty}</li>`);
+    for (const it of r.stored || []) rows.push(`<li>${itemLabel(it.item)} ×${it.qty} <small class="muted">가방이 차서 귀환 지점 창고로</small></li>`);
+    return rows.length ? `<ul class="reward">${rows.join('')}</ul>` : '';
+  }
+  function questItemsHtml(a) {
+    const list = Object.entries(a.quests?.items || {});
+    if (!list.length) return '';
+    return `<div class="qitems">${list.map(([k, n]) => `<span>${data.questItems[k]?.icon || '📦'} ${esc(data.questItems[k]?.name || k)}${n > 1 ? ` ×${n}` : ''}</span>`).join('')}</div>`;
+  }
+  function activeQuestHtml(a, id) {
+    const ctx = questCtx(game);
+    const q = data.quests[id];
+    const p = a.quests.active[id];
+    const steps = q.steps.map((st, i) => (i < p.step ? `<li class="done">✔ ${esc(st.text)}</li>` : i === p.step ? `<li class="now">▶ ${esc(stepText(ctx, a, id))}</li>` : '')).join('');
+    const track = a.quests.track === id ? ' <small class="tracking">📍 따라가는 중</small>' : ` <button class="mini" data-act="quest-track" data-v="${id}">따라가기</button>`;
+    return `<li class="qactive"><b>${esc(q.name)}</b>${track}<p class="muted">${esc(q.summary)}</p><ul class="steps">${steps}</ul><small>보상: ${rewardText(q.reward)}</small></li>`;
+  }
+  function bountyHtml(a) {
+    const ctx = questCtx(game);
+    const Q = a.quests || { active: {}, daily: {} };
+    const day = game.clock.day(game.state.t);
+    const active = Object.keys(Q.active).filter((id) => data.quests[id].kind === 'bounty');
+    let html = '<p class="muted">현상금은 게임 하루에 한 번 받을 수 있다. 다 채우면 그 자리에서 은화가 들어온다.</p>';
+    if (active.length) html += `<h3>하는 중</h3><ul class="qlist">${active.map((id) => activeQuestHtml(a, id)).join('')}</ul>`;
+    const offers = boardOffers(ctx, a);
+    html += '<h3>받을 수 있는 현상금</h3>';
+    html += offers.length
+      ? `<ul class="list">${offers.map((q) => `<li><div><b>🎯 ${esc(q.name)}</b><small>${esc(q.summary)} · ${q.steps.map((st) => `${esc(st.text)} ${st.count || ''}`).join(', ')} · 🪙 ${q.reward?.silver || 0}</small></div><button data-act="quest-accept" data-v="${q.id}">받기</button></li>`).join('')}</ul>`
+      : '<p class="muted">지금 받을 수 있는 현상금이 없다. 메인 퀘스트를 따라가면 늘어난다.</p>';
+    const today = data.lists.quests.filter((q) => q.kind === 'bounty' && Q.daily?.[q.id] === day);
+    if (today.length) html += `<p class="muted">오늘 끝낸 현상금: ${today.map((q) => esc(q.name)).join(', ')}</p>`;
+    return html;
+  }
+  function talkHtml(a) {
+    const ctx = questCtx(game);
+    const npc = data.npcs[panel.npc];
+    const head = `<div class="npchead"><b>${esc(npc.name)}</b> <small>${esc(npc.title)}</small></div>`;
+    const after = panel.after;
+    if (after) {
+      // 뒷장: 끝낸 퀘스트와 보상, 이어진 퀘스트의 안내
+      let html = '';
+      for (const ev of after.done) {
+        const q = data.quests[ev.quest];
+        html += `<div class="qdone">✅ <b>${esc(q.name)}</b> 완료</div>${rewardHtml(ev.reward)}`;
+        if (ev.next) {
+          const nq = data.quests[ev.next];
+          html += `<div class="qnext">📜 다음 이야기 · <b>${esc(nq.name)}</b></div>${(nq.intro || []).map((l) => `<p class="say">${esc(l)}</p>`).join('')}<p class="muted">▶ ${esc(nq.steps[0].text)}</p>`;
+        } else if (q.kind === 'main') {
+          const ch = data.chapters.find((c) => c.id === q.chapter);
+          html += `<div class="qnext">🏁 ${esc(ch?.name || '')} 끝</div><p class="muted">${esc(ch?.after || '')}</p>`;
+        }
+      }
+      for (const s0 of after.steps) {
+        if (after.done.some((d) => d.quest === s0.id) || !a.quests.active[s0.id]) continue;
+        html += `<div class="qnext">📜 ${esc(data.quests[s0.id].name)}</div><p class="muted">▶ 다음: ${esc(stepText(ctx, a, s0.id))}</p>`;
+      }
+      const more = talkDue(ctx, a, panel.npc).length;
+      return `${head}${html}<div class="btns">${more ? '<button data-act="ui-talk-next">이야기 더 듣기</button>' : ''}<button data-act="close">알겠다</button></div>`;
+    }
+    const due = talkDue(ctx, a, panel.npc);
+    if (due.length) {
+      const id = due[0];
+      const q = data.quests[id];
+      const st = q.steps[a.quests.active[id].step];
+      const ch = data.chapters.find((c) => c.id === q.chapter);
+      return `${head}<div class="qtag">${esc(ch ? ch.name : '의뢰')} · ${esc(q.name)}</div>${st.say.map((l) => `<p class="say">${esc(l)}</p>`).join('')}<div class="btns"><button data-act="talk-do" data-v="${panel.npc}">${esc(st.reply || '알겠다')}</button></div>`;
+    }
+    panel.chat ??= Math.floor(Math.random() * npc.chat.length);
+    return `${head}<p class="say">${esc(npc.chat[panel.chat % npc.chat.length])}</p><div class="btns"><button data-act="close">잘 있어요</button></div>`;
+  }
+  function journalHtml(a) {
+    const tab = panel.tab || 'main';
+    const Q = a.quests || { active: {}, done: {}, items: {} };
+    let body = '';
+    if (tab === 'main') {
+      for (const ch of data.chapters) {
+        const list = ch.quests.filter((id) => Q.done[id] != null || Q.active[id]);
+        if (!list.length) continue;
+        body += `<h3>${esc(ch.name)}</h3><ul class="qlist">`;
+        for (const id of list) body += Q.active[id] ? activeQuestHtml(a, id) : `<li class="done">✔ ${esc(data.quests[id].name)}</li>`;
+        body += '</ul>';
+        if (ch.quests.every((id) => Q.done[id] != null)) body += `<p class="muted">🏁 ${esc(ch.name)} 끝. ${esc(ch.after || '')}</p>`;
+      }
+      if (!body) body = '<p class="muted">아직 기록이 없다.</p>';
+      body += questItemsHtml(a);
+    } else if (tab === 'bounty') {
+      body = bountyHtml(a).replace(/<button data-act="quest-accept"[^>]*>받기<\/button>/g, '<small class="muted">게시판에서</small>');
+    } else {
+      const steps = lifeSteps(game, a);
+      body = `<p class="muted">채집·정제·제작을 익히는 길잡이다. 순서는 자유롭다.</p><ul class="life">${steps.map((st) => `<li class="${st.done ? 'done' : ''}">${st.done ? '✔' : '○'} ${esc(st.text)}</li>`).join('')}</ul>`;
+    }
+    return tabsHtml([['main', '메인'], ['bounty', '현상금'], ['life', '생활 안내']], tab) + body;
   }
 
   // ── 거래소 ─────────────────────────────────────────
@@ -701,7 +827,7 @@ export function createHud(root, game, { touch, onAct }) {
       <div class="row"><a href="patchnotes.html">패치노트</a><a href="debug.html">엔진 점검판</a><span class="muted">v${ENGINE_VERSION}</span></div>`;
   }
 
-  const TITLES = { bag: '🎒 가방', skills: '📈 생활 스킬', log: '📜 기록', board: '📋 마을 게시판', market: '⚖️ 등대 마을 거래소', menu: '⚙️ 설정' };
+  const TITLES = { bag: '🎒 가방', skills: '📈 생활 스킬', log: '📜 기록', board: '📋 마을 게시판', market: '⚖️ 등대 마을 거래소', menu: '⚙️ 설정', journal: '📖 일지' };
 
   function renderPanel(force) {
     if (!panel) return;
@@ -727,6 +853,11 @@ export function createHud(root, game, { touch, onAct }) {
       html = marketHtml(a);
     }
     else if (panel.kind === 'menu') html = menuHtml(a);
+    else if (panel.kind === 'journal') html = journalHtml(a);
+    else if (panel.kind === 'talk') {
+      title = `💬 ${data.npcs[panel.npc]?.name ?? ''}`;
+      html = talkHtml(a);
+    }
     set(el.ptitle, title);
     setHtml(el.pbody, html);
   }
@@ -744,6 +875,8 @@ export function createHud(root, game, { touch, onAct }) {
     close,
     toggle,
     toast,
+    banner,
+    feed: pushFeed,
     hurt,
     settings,
     get panel() { return panel; },

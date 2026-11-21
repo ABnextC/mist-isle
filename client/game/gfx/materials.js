@@ -266,6 +266,11 @@ export function makeMaterials(tex, ctex) {
     clay: plainMaterial(0x8e5236, { roughness: 0.8 }),
     sack: plainMaterial(0xb09a72, { roughness: 1 }),
     sawdust: plainMaterial(0xc4a474, { roughness: 1 }),
+    // 검은 돛 약탈단(v0.5): 타르 먹인 검은 천, 부두목 천막의 붉은 천, 숲머리 상자에 묶은 초록 천
+    sailBlack: plainMaterial(0x1d1b1c, { roughness: 0.92, side: THREE.DoubleSide }),
+    clothRed: plainMaterial(0x6e1e18, { roughness: 0.95, side: THREE.DoubleSide }),
+    clothGreen: plainMaterial(0x3e5a2c, { roughness: 0.95, side: THREE.DoubleSide }),
+    bone: plainMaterial(0xd8ccb4, { roughness: 0.7 }),
   };
   m.plasterTint = m.plaster;
   m.wreckWood = boxMaterial(tex.driftwood, { scale: 1.5, tint: 0x8a7a66 });

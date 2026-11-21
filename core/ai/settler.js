@@ -15,7 +15,7 @@ import { entryStar, tradable, baseValue, bestBid, bestAsk, npcPrice, repairCost,
 import { countDeliverable } from '../orders.js';
 import { openProjects, needLeft, silverLeft, shipFee } from '../settlements.js';
 import { startFight } from './fighter.js';
-import { corpseOpen } from '../systems/mobs.js';
+import { corpseOpen, isAlive } from '../systems/mobs.js';
 
 const REFINES = ['rc_ingot_copper', 'rc_lumber_birch', 'rc_lumber_drift', 'rc_cloth_reed', 'rc_leather', 'rc_ingot_iron', 'rc_lumber_oak'];
 const WEAPON_RC = { sword: ['rc_sword_copper', 'rc_sword_iron'], axe: ['rc_battleaxe_copper', 'rc_battleaxe_iron'], spear: ['rc_spear_copper', 'rc_spear_iron'] };
@@ -54,7 +54,7 @@ export function thinkSettler(ctx, actor) {
   }
   // 덤비는 짐승이 있으면 맞서 싸운다(싸우는 동안은 ai/fighter.js가 몸을 쓴다)
   for (const m of Object.values(ctx.state.mobs)) {
-    if (m.target === actor.id && m.mode !== 'dead' && m.mode !== 'return') {
+    if (m.target === actor.id && isAlive(m) && m.mode !== 'return') {
       startFight(actor, m.id, fightOpts(prof));
       return;
     }
@@ -114,6 +114,7 @@ function armorCount(ctx, actor) {
 
 // 사냥감 고르기: 손질할 수 있는(수렵 레벨) 짐승만. 늑대·멧돼지는 쇠붙이 무기와 갑옷을 갖췄을 때만(무진은 무기만 있으면 간다).
 function huntable(ctx, actor, prof, type) {
+  if (!type.hunt || type.night || type.body) return false; // 사람 모양 적·밤 짐승은 사냥감이 아니다(v0.5)
   if (actor.skills.hunting.level < type.hunt.level) return false;
   const wt = gearTier(ctx, bestGear(ctx, actor, 'weapon'), 'weapon');
   if (type.id === 'deer') return wt >= 1;
@@ -127,7 +128,7 @@ function chooseHuntGroup(ctx, actor, prof) {
   for (const g of Object.values(state.mobGroups)) {
     const type = data.creatures[g.type];
     if (!huntable(ctx, actor, prof, type)) continue;
-    const alive = g.mobs.filter((id) => state.mobs[id] && state.mobs[id].mode !== 'dead' && state.mobs[id].mode !== 'return').length;
+    const alive = g.mobs.filter((id) => isAlive(state.mobs[id]) && state.mobs[id].mode !== 'return').length;
     if (!alive) continue;
     const lot = state.lots[Object.values(g.lots)[0]];
     const score = dist(actor, g) - type.hunt.level * 4 - (avgProps(lot?.props || {}) - 40) * (prof.quality ?? 1);
@@ -206,7 +207,7 @@ function huntStep(ctx, actor, prof, mem) {
     return;
   }
   let g = h.group ? state.mobGroups[h.group] : null;
-  const aliveOf = (grp) => grp.mobs.map((id) => state.mobs[id]).filter((m) => m && m.mode !== 'dead' && m.mode !== 'return');
+  const aliveOf = (grp) => grp.mobs.map((id) => state.mobs[id]).filter((m) => isAlive(m) && m.mode !== 'return');
   if (!g || !aliveOf(g).length) {
     g = chooseHuntGroup(ctx, actor, prof);
     if (!g) {

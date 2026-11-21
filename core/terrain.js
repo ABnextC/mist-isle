@@ -119,6 +119,12 @@ export function fitsHabitat(terrain, region, nodeType, x, z) {
   const m = Math.max(14, (region.terrain.edge ?? 0) + 2);
   if (x < x0 + m || x > x1 - m || z < z0 + 2 || z > z1 - m) return false;
   for (const t of region.settlements) if (Math.hypot(x - t.x, z - t.z) < t.radius + 6) return false;
+  // 야영지·정박지(v0.5) 안에는 나지 않는다
+  for (const s of region.sites || []) {
+    if (!s.members) continue;
+    const [sx, sz] = s.beach ? terrain.beachPoint(s.beach[0], s.beach[1]) : [s.x, s.z];
+    if (Math.hypot(x - sx, z - sz) < s.r + 4) return false;
+  }
   const zone = zoneAt(region, x, z);
   if (nodeType.zone) {
     if (!zone || zone.id !== nodeType.zone) return false;

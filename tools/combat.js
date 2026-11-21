@@ -35,12 +35,21 @@ export function duel(kitName, typeId, seed, packSize = null) {
   const st = game.state;
   const a = st.actors.p1;
   a.skills.hunting.level = 30;
-  const groups = Object.values(st.mobGroups).filter((g) => g.type === typeId && (!packSize || g.mobs.length === packSize));
-  if (!groups.length) return null;
+  let groups = Object.values(st.mobGroups).filter((g) => g.type === typeId && !g.site && (!packSize || g.mobs.length === packSize));
+  let only = null;
+  if (!groups.length) {
+    // 자리 무리(약탈단) 안의 한 종류: 그 한 놈만 남겨 1:1로 잰다(v0.5)
+    const m = Object.values(st.mobs).find((x) => x.type === typeId);
+    if (!m) return null;
+    groups = [st.mobGroups[m.group]];
+    only = m.id;
+  }
   const g = groups[seed % groups.length];
   // 다른 짐승은 치운다(결투만 잰다)
-  for (const m of Object.values(st.mobs)) if (m.group !== g.id) delete st.mobs[m.id];
+  for (const m of Object.values(st.mobs)) if (m.group !== g.id || (only && m.id !== only)) delete st.mobs[m.id];
   for (const id of Object.keys(st.mobGroups)) if (id !== g.id) delete st.mobGroups[id];
+  if (only) g.mobs = [only];
+  const LIMIT = data.creatures[typeId].boss ? 400 : 160;
   const first = st.mobs[g.mobs[0]];
   const ang = (seed * 1.7) % (Math.PI * 2);
   for (let k = 0; k < 12; k++) {
@@ -68,7 +77,7 @@ export function duel(kitName, typeId, seed, packSize = null) {
   game.on('eat', () => eaten++);
   let dmgTaken = 0;
   game.on('combat.hurt', (ev) => { dmgTaken += ev.dmg; });
-  while (st.t - t0 < 120) {
+  while (st.t - t0 < LIMIT) {
     game.advance(0.2);
     if (a.cb.downUntil > 0) return { win: false, sec: st.t - t0, dmgTaken, eaten };
     if (g.mobs.every((id) => st.mobs[id].mode === 'dead')) return { win: true, sec: st.t - t0, dmgTaken, eaten, wpnDur: a.bag[0].maxDur ? a.bag[0].maxDur - a.bag[0].dur : 0 };
@@ -79,13 +88,82 @@ export function duel(kitName, typeId, seed, packSize = null) {
       if (next) f.target = next.id;
     }
   }
-  return { win: false, sec: 120, dmgTaken, eaten, timeout: true };
+  return { win: false, sec: LIMIT, dmgTaken, eaten, timeout: true };
+}
+
+// 자리 하나(망루·야영지·정박지)를 통째로: 다가가면 보초들이 덤빈다. 모두 쓰러뜨리면 이긴다
+export function siteRun(kitName, siteId, seed) {
+  const kit = KITS[kitName];
+  const game = createGame({ data, seed, actors: [{ id: 'p1', name: '시험', kind: 'player' }] });
+  const st = game.state;
+  st.econ = null;
+  const a = st.actors.p1;
+  const g = Object.values(st.mobGroups).find((x) => x.site === siteId);
+  for (const m of Object.values(st.mobs)) if (m.group !== g.id) delete st.mobs[m.id];
+  for (const id of Object.keys(st.mobGroups)) if (id !== g.id) delete st.mobGroups[id];
+  const ang = (seed * 1.7) % (Math.PI * 2);
+  for (let k = 0; k < 12; k++) {
+    const x = g.x + Math.sin(ang + k * 0.5) * (g.radius + 8);
+    const z = g.z + Math.cos(ang + k * 0.5) * (g.radius + 8);
+    if (game.terrain.walkable(x, z)) { a.x = x; a.z = z; break; }
+  }
+  if (kit.weapon) {
+    const w = gear(kit.weapon, kit.score, 1);
+    a.bag.push(w);
+    game.dispatch({ type: 'EQUIP', actor: 'p1', uid: w.uid });
+  }
+  if (kit.armor) {
+    for (const id of ['arm_leather_hood', 'arm_leather_vest', 'arm_leather_pants']) {
+      const e = gear(id, kit.armor, 1);
+      a.bag.push(e);
+      game.dispatch({ type: 'EQUIP', actor: 'p1', uid: e.uid });
+    }
+  }
+  a.bag.push({ item: 'food_meat', lot: null, bonus: null, stats: { heal: 42 }, star: 2, qty: (kit.food || 0) + 3 });
+  let dmgTaken = 0;
+  game.on('combat.hurt', (ev) => { dmgTaken += ev.dmg; });
+  let eaten = 0;
+  game.on('eat', () => eaten++);
+  const t0 = st.t;
+  const alive = () => g.mobs.map((id) => st.mobs[id]).filter((m) => m && m.mode !== 'dead');
+  // 가까운 놈부터 하나씩
+  while (st.t - t0 < 400) {
+    if (a.cb.downUntil > 0) return { win: false, sec: st.t - t0, dmgTaken, eaten, left: alive().length };
+    const left = alive();
+    if (!left.length) return { win: true, sec: st.t - t0, dmgTaken, eaten };
+    const f = a.ai?.mem?.fight;
+    if (!f || !st.mobs[f.target] || st.mobs[f.target].mode === 'dead') {
+      const m = left.sort((p, q) => Math.hypot(p.x - a.x, p.z - a.z) - Math.hypot(q.x - a.x, q.z - a.z))[0];
+      startFight(a, m.id, { read: kit.read, block: kit.block });
+      a.ai.manual = true;
+    }
+    game.advance(0.2);
+  }
+  return { win: false, sec: 400, dmgTaken, eaten, timeout: true, left: alive().length };
 }
 
 function main() {
+  if (args.site) {
+    console.log(`자리 ${args.site}: 장비·실력 | 승률 | 걸린 시간 | 받은 피해 | 먹은 고기 | 남은 적(진 판)`);
+    for (const kitName of args.kits ? String(args.kits).split(',') : Object.keys(KITS)) {
+      let win = 0; let sec = 0; let dmg = 0; let eaten = 0; let left = 0;
+      for (let i = 0; i < TRIALS; i++) {
+        const r = siteRun(kitName, args.site, SEED + i * 13);
+        if (r.win) { win++; sec += r.sec; } else left += r.left;
+        dmg += r.dmgTaken;
+        eaten += r.eaten;
+      }
+      console.log(`${kitName.padEnd(14)} | ${String(Math.round((win / TRIALS) * 100)).padStart(3)}% | ${win ? Math.round(sec / win) : '-'}초 | ${Math.round(dmg / TRIALS)} | ${Math.round((eaten / TRIALS) * 10) / 10} | ${TRIALS - win ? Math.round((left / (TRIALS - win)) * 10) / 10 : '-'}`);
+    }
+    return;
+  }
   const rows = [];
-  const cases = [['crab', null], ['deer', null], ['boar', null], ['wolf', 2], ['wolf', 3]];
-  for (const kitName of Object.keys(KITS)) {
+  const all = [['crab', null], ['deer', null], ['boar', null], ['wolf', 2], ['wolf', 3],
+    ['raider_scout', null], ['raider', null], ['raider_spear', null], ['raider_axe', null], ['raider_thrower', null], ['raider_lt', null], ['raider_captain', null]];
+  const want = args.foes ? new Set(String(args.foes).split(',')) : null;
+  const cases = want ? all.filter(([t]) => want.has(t)) : all;
+  const kits = args.kits ? String(args.kits).split(',') : Object.keys(KITS);
+  for (const kitName of kits) {
     for (const [type, pack] of cases) {
       let win = 0; let n = 0; let sec = 0; let dmg = 0; let eaten = 0; let timeouts = 0;
       for (let i = 0; i < TRIALS; i++) {
@@ -102,7 +180,7 @@ function main() {
     }
   }
   console.log('장비·실력 | 상대 | 승률 | 걸린 시간 | 받은 피해 | 먹은 고기 | 시간 초과');
-  for (const r of rows) console.log(`${r.kit.padEnd(14)} | ${r.foe.padEnd(6)} | ${String(r.win).padStart(3)}% | ${String(r.sec ?? '-').padStart(5)}초 | ${String(r.dmg).padStart(4)} | ${r.eaten} | ${r.timeouts}/${r.n}`);
+  for (const r of rows) console.log(`${r.kit.padEnd(14)} | ${r.foe.padEnd(14)} | ${String(r.win).padStart(3)}% | ${String(r.sec ?? '-').padStart(5)}초 | ${String(r.dmg).padStart(4)} | ${r.eaten} | ${r.timeouts}/${r.n}`);
   if (args.json) console.log(JSON.stringify(rows));
 }
 

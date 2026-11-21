@@ -164,7 +164,32 @@ function crab(seed) {
   return { m, root, torso, legs, neck: null, head, tail: null, claws, R };
 }
 
-const MAKERS = { crab, deer, boar, wolf };
+// 안개 늑대(v0.5): 늑대보다 크고 잿빛·푸른 기가 도는 털, 어둠 속에서 푸르게 빛나는 눈
+function mistWolf(seed) {
+  const R = rng(seed);
+  const fur = C(0x4a5058).lerp(C(0x5c6670), R() * 0.6);
+  const q = quadruped({ L: 1.12, H: 0.8, R: 0.27, lr: 0.06, body: fur, belly: C(0x8a929a), dark: C(0x22262b), legLen: 0.76, headLen: 0.35, neckUp: 0.33, seed });
+  q.neck.add(mesh(merge([cyl(0.17, 0.13, 0.4, fur, { rx: Math.PI / 2 - 0.2, z: 0.12 }), ell(0.2, 0.17, 0.2, C(0x3e444b), { z: 0.02, y: 0.04 })]), q.m));
+  q.head.add(mesh(merge([
+    ell(0.155, 0.14, 0.18, fur),
+    cyl(0.075, 0.048, 0.26, fur, { rx: Math.PI / 2, z: 0.21, y: -0.03 }),
+    ell(0.032, 0.026, 0.032, C(0x0c0d0f), { z: 0.34, y: -0.02 }),
+    cone(0.05, 0.16, C(0x30353a), { x: -0.085, y: 0.16, z: -0.03 }),
+    cone(0.05, 0.16, C(0x30353a), { x: 0.085, y: 0.16, z: -0.03 }),
+  ]), q.m));
+  // 빛나는 눈: 조명을 받지 않는 재질(밤에도 보인다)
+  const glow = new THREE.MeshBasicMaterial({ color: 0x8fd8ff });
+  const eyes = new THREE.Mesh(merge([
+    ell(0.024, 0.018, 0.012, C(0xffffff), { x: -0.064, y: 0.045, z: 0.14 }),
+    ell(0.024, 0.018, 0.012, C(0xffffff), { x: 0.064, y: 0.045, z: 0.14 }),
+  ]), glow);
+  q.head.add(eyes);
+  q.glow = glow;
+  q.tail.add(mesh(merge([ell(0.08, 0.08, 0.34, fur, { z: -0.27, y: -0.1, rx: 0.5 }), ell(0.055, 0.055, 0.12, C(0x22262b), { z: -0.57, y: -0.26, rx: 0.5 })]), q.m));
+  return q;
+}
+
+const MAKERS = { crab, deer, boar, wolf, mist_wolf: mistWolf };
 
 export function makeCreature(type, seed) {
   const q = MAKERS[type](seed);

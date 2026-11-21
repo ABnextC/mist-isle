@@ -2,13 +2,14 @@
 // v0.3: 무기 들기, 약공·강공 휘두르기, 창 찌르기, 구르기, 막기, 쓰러짐, 맞을 때 움찔.
 // v0.5: 실제 사람 몸 모형. 동작 값은 예전 그대로 쓰고 pose()에서 해부학 좌우(오른손 = -x)로 거울 변환한다.
 //       눈 깜빡임·눈동자 움직임, 팔을 높이 들면 쇄골이 따라 올라감, 허리·가슴에 나눠 굽힘.
-// v0.4.6~: 서기·걷기·달리기는 모션 캡처(anim.js). v0.4.8: 채집·전투·구르기·쓰러짐·시전도 모션 캡처 동작(actionOf).
+// v0.4.6~: 서기·걷기·달리기는 모션 캡처(anim.js). v0.4.8: 채집·전투·구르기·쓰러짐·시전도 모션 캡처 동작(actionOf). v0.4.9: 노드별 채집·손질·먹기·작업대·무기별 막기·중갑 회피.
 //       손으로 짠 pose()는 동작 묶음을 못 읽었을 때와 무기 든 오른팔(arm)에만 쓴다.
 
 import * as THREE from 'three';
 import { tickLerp } from './interp.js';
+import { workSpots } from '../../core/world.js';
 import { makeActorModel } from './models/actor.js';
-import { loadClips, clips as animClips, sample as animSample, sampleOnce as animOnce, hasClip, blend as animBlend, smoothstep, NB } from './anim.js';
+import { loadClips, clips as animClips, sample as animSample, sampleOnce as animOnce, sampleTool, hasClip, blend as animBlend, smoothstep, NB } from './anim.js';
 
 loadClips(new URL('../assets/anim/clips.json', import.meta.url).href);
 const LOWER = new Set(['hips', 'thL', 'knL', 'ftL', 'thR', 'knR', 'ftR']);
@@ -104,6 +105,8 @@ export function createActorsView(scene, game, hf, camera = null) {
     v.loopT = 0;
     v.rollT0 = undefined;
     v.downT0 = undefined;
+    v.eatQ = null; // 먹기: { item, t0 }
+    v.tov = { dir: [0, 0, 1], up: null, at: 'R' }; // 손에 든 것의 자루 방향(동작 묶음이 정할 때)
     return v;
   }
 
@@ -336,11 +339,53 @@ export function createActorsView(scene, game, hf, camera = null) {
     return kind === 'heavy' ? 'atk_heavy' : 'atk_light';
   }
   const GATHER_CLIP = { logging: 'chop', mining: 'mine', harvesting: 'harvest' };
+  // v0.4.9 적절성 검토: 작업대마다 하는 일, 손에 드는 소품, 먹을 것마다 동작·소품
+  const CRAFT_ANIM = { forge: 'hammer', armorbench: 'hammer', workbench: 'hammer', sawbench: 'saw', kitchen: 'stir', smelter: 'stir', loom: 'weave', tannery: 'scrape', hand: 'handwork' };
+  const CRAFT_PROP = { hammer: 'hammer', saw: 'saw', stir: 'ladle', scrape: 'knife' };
+  const GUARD = { spear: 'guard_spear', sword: 'guard_sword', club: 'guard_sword', axe: 'guard_axe' };
+  const FOOD = { food_soup: ['drink', 'bowl'], food_berry: ['eat', 'berry'], food_meat: ['eat', 'meat'] };
+  const strikes = []; // 도구가 닿은 순간들(main.js가 가져가 조각을 튀긴다)
+  // 장비 무게 단계(가벼움·보통·무거움·과적) — 무거우면 구르지 않고 짧게 뛰어 비킨다
+  function loadTier(a) {
+    const data = game.data;
+    let kg = 0;
+    // core/systems/combat.js equipLoad와 같은 칸(무기+갑옷)만 센다
+    for (const slot of ['weapon', 'head', 'chest', 'legs']) {
+      const uid = a.equip?.[slot];
+      const e = uid && a.bag.find((x) => x.uid === uid);
+      if (e) kg += data.items[e.item].weight || 0;
+    }
+    kg = Math.round(kg * 10) / 10;
+    const tiers = data.config.load.tiers;
+    return (tiers.find((t) => kg <= t.max) || tiers[tiers.length - 1]).id;
+  }
+  // 제작: 쉬고 있고, 지금 돌아가는 일감의 작업대 '일하는 자리'(stations.json work)에 서 있으면
+  // 그 작업대 일을 한다. 자리를 벗어나면 허공에 하지 않게 아무 동작도 하지 않는다(v0.4.9).
+  function craftAt(a, v) {
+    const data = game.data;
+    if (a.action || a.move || a.dest || (v.rawSpeed ?? 0) > 0.2) return null;
+    const cb = a.cb;
+    if (cb && (cb.act || cb.block || cb.dodge || cb.downUntil > 0)) return null;
+    const job = a.queue?.[0];
+    if (!job || job.startsAt > game.state.t) return null;
+    const r = data.recipes[job.recipe];
+    if (!r) return null;
+    if (r.station === 'hand') return { anim: 'handwork', at: null };
+    for (const s of Object.values(game.state.settlements)) {
+      for (const st of s.stations) {
+        if (st.type !== r.station || Math.abs(st.x - a.x) > 4 || Math.abs(st.z - a.z) > 4) continue;
+        for (const p of workSpots(data, st)) {
+          if (Math.hypot(p.x - a.x, p.z - a.z) < 0.6) return { anim: CRAFT_ANIM[r.station], at: { x: p.ax, z: p.az } };
+        }
+      }
+    }
+    return null;
+  }
   const ROLL_SPLIT = 0.78; // 구르기 동작에서 굴러 웅크린 채 일어나기 시작할 때까지(움직이는 동안)
   const ROLL_RISE = 0.25; // 남은 일어나기에 쓰는 시간(초)
 
   // 지금 해야 할 손 동작: { name, t(0~1), once, mode: full|upper } 또는 null
-  function actionOf(v, a, wDef, skill, casting, stI, dt) {
+  function actionOf(v, a, wDef, work, casting, stI, dt) {
     const cb = a.cb;
     const C = game.data.config.combat;
     // 쓰러짐: 넘어지는 동작을 한 번, 끝 장(누운 자세)에서 멈춘다
@@ -357,9 +402,13 @@ export function createActorsView(scene, game, hf, camera = null) {
       const el = stI - v.rollT0;
       const busy = (a.move && el > D) || cb?.act || cb?.block;
       if (el < D + ROLL_RISE && !busy) {
-        const t = el < D ? (Math.max(0, el) / D) * ROLL_SPLIT : ROLL_SPLIT + ((el - D) / ROLL_RISE) * (1 - ROLL_SPLIT);
-        return { name: 'roll', t, once: true, mode: 'full' };
+        // 무거운 갑옷이면 구르지 않고 몸을 낮춰 짧게 뛰어 비켜 딛는다
+        if (v.rollName === undefined || el < 0.02) v.rollName = hasClip('hop') && /heavy|over/.test(loadTier(a)) ? 'hop' : 'roll';
+        const split = v.rollName === 'hop' ? 0.8 : ROLL_SPLIT;
+        const t = el < D ? (Math.max(0, el) / D) * split : split + ((el - D) / ROLL_RISE) * (1 - split);
+        return { name: v.rollName, t, once: true, mode: 'full' };
       }
+      v.rollName = undefined;
       v.rollT0 = undefined;
     }
     // 휘두르기: 동작의 '맞는 순간'이 코어의 hitAt에 오게 시간을 나눠 맞춘다
@@ -374,18 +423,47 @@ export function createActorsView(scene, game, hf, camera = null) {
         return { name, t, once: true, mode: 'upper' };
       }
     }
-    if (cb?.block && hasClip('guard')) return loopAct(v, 'guard', dt, 'upper');
-    if (skill && GATHER_CLIP[skill] && hasClip(GATHER_CLIP[skill])) return loopAct(v, GATHER_CLIP[skill], dt, 'full');
+    // 먹기·마시기: 한 번, 윗몸만(걸으면서도). 먹는 동안 오른손에 음식
+    if (v.eatQ) {
+      const [name, prop] = FOOD[v.eatQ.item] || ['eat', null];
+      if (hasClip(name)) {
+        if (v.eatQ.t0 === null) v.eatQ.t0 = stI;
+        const t = (stI - v.eatQ.t0) / animClips().clips[name].dur;
+        if (t < 1) return { name, t, once: true, mode: 'upper', prop };
+      }
+      v.eatQ = null;
+    }
+    if (cb?.block) {
+      // 무기마다 막는 자세(맨손은 권투 자세)
+      const want = GUARD[wDef?.type] || 'guard';
+      const g = hasClip(want) ? want : 'guard';
+      if (hasClip(g)) return loopAct(v, g, dt, 'upper');
+    }
+    if (work?.anim && hasClip(work.anim)) {
+      const act = loopAct(v, work.anim, dt, 'full');
+      act.prop = work.prop || null;
+      return act;
+    }
     if (casting && hasClip('cast')) return loopAct(v, 'cast', dt, 'full');
     v.loopName = null;
     return null;
   }
   function loopAct(v, name, dt, mode) {
     const c = animClips().clips[name];
+    const prev = v.loopT;
     if (v.loopName !== name) {
       v.loopName = name;
       v.loopT = 0;
-    } else v.loopT = (v.loopT + dt / c.dur) % 1;
+    } else {
+      v.loopT = (v.loopT + dt / c.dur) % 1;
+      if (c.ev) {
+        for (const e of [c.ev.hit, c.ev.hit2]) {
+          if (e === undefined) continue;
+          const crossed = prev <= v.loopT ? prev < e && e <= v.loopT : e > prev || e <= v.loopT;
+          if (crossed) v.struck = true;
+        }
+      }
+    }
     return { name, t: v.loopT, once: false, mode };
   }
 
@@ -508,6 +586,10 @@ export function createActorsView(scene, game, hf, camera = null) {
   }
 
   function onEvent(ev) {
+    if (ev.type === 'eat') {
+      const v = views.get(ev.actor);
+      if (v) v.eatQ = { item: ev.item, t0: null };
+    }
     if (ev.type === 'combat.hurt') {
       const v = views.get(ev.actor);
       if (v) {
@@ -542,18 +624,32 @@ export function createActorsView(scene, game, hf, camera = null) {
       v.speed = damp(v.speed, Math.min(sp, 7), 1 - Math.exp(-dt * (sp < v.speed ? 16 : 10)));
       let yaw = a.yaw || 0;
       const node = a.action?.type === 'gather' ? state.nodes[a.action.node] : null;
+      const corpse = a.action?.type === 'skin' ? state.mobs?.[a.action.mob] : null;
       const casting = a.action?.type === 'recall';
-      if (node) yaw = Math.atan2(node.x - a.x, node.z - a.z);
+      const nodeDef = node ? data.nodes[node.type] : null;
+      // 하는 일: 채집(노드마다 동작), 가죽 벗기기, 제작(작업대 곁에서 쉴 때)
+      let work = null;
+      if (nodeDef) {
+        const anim = nodeDef.anim || GATHER_CLIP[nodeDef.skill];
+        work = { anim, tool: anim === 'pick_bush' || anim === 'pick_ground' ? null : nodeDef.skill, at: node };
+      } else if (corpse) work = { anim: 'skin', prop: 'knife', at: corpse };
+      else if (!casting) {
+        const cr = craftAt(a, v);
+        if (cr) work = { anim: cr.anim, prop: CRAFT_PROP[cr.anim] || null, at: cr.at };
+      }
+      if (work?.at) yaw = Math.atan2(work.at.x - a.x, work.at.z - a.z);
       v.yaw = lerpAngle(v.yaw, yaw, 1 - Math.exp(-dt * 12));
       v.m.root.position.copy(v.pos);
       v.m.root.rotation.y = v.yaw;
 
-      const skill = node ? data.nodes[node.type].skill : null;
+      const skill = work?.tool || null;
       for (const [kname, tool] of Object.entries(v.m.tools)) tool.visible = kname === skill;
       const wE = a.equip?.weapon ? a.bag.find((e) => e.uid === a.equip.weapon) : null;
       const wDef = wE ? data.items[wE.item].weapon : null;
       const wKey = wDef ? `${wDef.type}_${wDef.tier}` : null;
-      for (const [kname, g] of Object.entries(v.m.weapons)) g.visible = !skill && kname === wKey;
+      // 오른손이 다른 걸 쥐면(채집·가죽·제작·먹기) 무기는 넣어 둔다
+      const handBusy = !!work || !!v.eatQ;
+      for (const [kname, g] of Object.entries(v.m.weapons)) g.visible = !handBusy && kname === wKey;
 
       const A = animClips();
       // 손으로 짠 동작(예전 방식): 동작 묶음이 아직 없으면 걷기도 이걸로 한다
@@ -578,14 +674,27 @@ export function createActorsView(scene, game, hf, camera = null) {
         locomotion(v, dt, A);
         // 틱 사이 시각(위치 보간과 같게 틱 하나 늦춘다)
         const stI = state.t + ((game.alpha ?? 1) - 1) / HZ;
-        const act = actionOf(v, a, wDef, skill, casting, stI, dt);
+        v.struck = false;
+        const act = actionOf(v, a, wDef, work, casting, stI, dt);
         if (act) {
           applyAction(v, act);
           v.actW = 0; // 손으로 짠 덮기는 끈다(바뀌는 순간은 crossfade가 잇는다)
         } else overlay(v, p, mode, dt);
         crossfade(v, act ? act.name : 'loco', dt);
         flinch(v, dt);
-        if (skill || wDef) v.m.aimHeld();
+        v.m.showProp(act?.prop || null);
+        if (skill || wDef || act?.prop) {
+          const over = act && sampleTool(act.name, act.t, act.once, v.tov) ? v.tov : null;
+          v.m.aimHeld(over);
+        }
+        // 도구가 닿은 순간: 도구 머리(없으면 오른손) 자리를 남긴다
+        if (v.struck && work) {
+          const tool = skill ? v.m.tools[skill] : act?.prop ? v.m.props[act.prop] : null;
+          const at = new THREE.Vector3();
+          if (tool) tool.localToWorld(at.set(0, skill === 'harvesting' ? 0.3 : 0.58, 0.06));
+          else v.m.armR.hand.getWorldPosition(at);
+          strikes.push({ actor: a.id, kind: work.anim, node: node?.id || null, nodeType: node?.type || null, x: at.x, y: at.y, z: at.z });
+        }
       } else pose(v, p);
       clothSway(v, dt, t);
       if (camera) v.m.lod(camera.position.distanceTo(v.pos), detailNear);
@@ -598,6 +707,7 @@ export function createActorsView(scene, game, hf, camera = null) {
     onEvent,
     rebuild,
     views,
+    takeStrikes: () => strikes.splice(0, strikes.length),
     setDetail(d) { detailNear = d; },
     positionOf: (id) => views.get(id)?.pos,
   };

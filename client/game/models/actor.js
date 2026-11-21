@@ -369,6 +369,56 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
       [[P(new THREE.ConeGeometry(0.045, 0.26, 4), 0xffffff, { y: 1.37, sz: 0.3 }), P(new THREE.CylinderGeometry(0.026, 0.026, 0.06, 8), 0xffffff, { y: 1.23 })], metal],
     ]);
   }
+  // 손에 드는 소품(v0.4.9): 가죽 칼·망치·톱·국자, 먹을 것(고기·산딸기 말랭이·국그릇)
+  const props = {};
+  const pr = (key, list) => {
+    const g = new THREE.Group();
+    for (const [geo, m] of list) g.add(mesh(merge(geo), m));
+    g.visible = false;
+    g.rotation.x = Math.PI / 2;
+    g.position.set(grip[0], grip[1], grip[2]);
+    armR.hand.add(g);
+    props[key] = g;
+  };
+  const red = new THREE.MeshStandardMaterial({ color: 0x9a1c2c, roughness: 0.45 });
+  const meat = new THREE.MeshStandardMaterial({ color: 0x7a3e22, roughness: 0.55 });
+  const bone = new THREE.MeshStandardMaterial({ color: 0xe6dcc4, roughness: 0.6 });
+  const soup = new THREE.MeshStandardMaterial({ color: 0x5a6a2a, roughness: 0.3 });
+  pr('knife', [
+    [[P(new THREE.CylinderGeometry(0.016, 0.018, 0.11, 8), 0xffffff, { y: 0.0 })], M.leather],
+    [[P(new THREE.BoxGeometry(0.008, 0.17, 0.032), 0xffffff, { y: 0.14, z: 0.006 }), P(new THREE.ConeGeometry(0.016, 0.05, 4), 0xffffff, { y: 0.245, sz: 0.25 })], M.metal],
+  ]);
+  pr('hammer', [
+    [[P(new THREE.CylinderGeometry(0.016, 0.02, 0.36, 8), 0xffffff, { y: 0.1 })], M.wood],
+    [[P(new THREE.BoxGeometry(0.05, 0.06, 0.13), 0xffffff, { y: 0.27, z: 0.01 })], M.metal],
+  ]);
+  pr('saw', [
+    [[P(new THREE.BoxGeometry(0.04, 0.12, 0.05), 0xffffff, { y: 0.0 })], M.wood],
+    [[P(new THREE.BoxGeometry(0.004, 0.5, 0.1), 0xffffff, { y: 0.3, z: 0.03 })], M.metal],
+  ]);
+  pr('ladle', [
+    [[P(new THREE.CylinderGeometry(0.012, 0.014, 0.5, 6), 0xffffff, { y: 0.2 }), P(new THREE.SphereGeometry(0.045, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), 0xffffff, { y: 0.46, rx: Math.PI })], M.wood],
+  ]);
+  pr('meat', [
+    [[P(new THREE.SphereGeometry(0.05, 10, 8), 0xffffff, { y: 0.07, sy: 1.4 })], meat],
+    [[P(new THREE.CylinderGeometry(0.012, 0.014, 0.08, 6), 0xffffff, { y: -0.01 })], bone],
+  ]);
+  pr('berry', [
+    [[...[[0, 0.03, 0], [0.025, 0.04, 0.01], [-0.02, 0.045, -0.01], [0.005, 0.06, 0.02], [-0.01, 0.025, 0.025]].map(([x, y, z]) => P(new THREE.SphereGeometry(0.016, 8, 6), 0xffffff, { x, y, z }))], red],
+  ]);
+  pr('bowl', [
+    [[P(new THREE.CylinderGeometry(0.075, 0.05, 0.055, 14, 1, true), 0xffffff, { y: 0.03 }), P(new THREE.CylinderGeometry(0.05, 0.05, 0.008, 14), 0xffffff, { y: 0.004 })], M.wood],
+    [[P(new THREE.CylinderGeometry(0.07, 0.07, 0.006, 14), 0xffffff, { y: 0.045 })], soup],
+  ]);
+  for (const g of Object.values(props)) g.traverse((o) => { if (o.material) o.material.side = THREE.DoubleSide; });
+  let shownProp = null;
+  function showProp(key) {
+    if (key === shownProp) return;
+    if (shownProp && props[shownProp]) props[shownProp].visible = false;
+    shownProp = key && props[key] ? key : null;
+    if (shownProp) props[shownProp].visible = true;
+  }
+
   // 두 손으로 쥐는 도구·무기(v0.4.8): 손잡이가 두 손을 지나게 돌린다.
   // 모션 캡처 손목은 아래팔을 따르기만 해서, 오른손에만 붙이면 도끼날이 엉뚱한 쪽을 본다.
   // from→to 방향이 손잡이(+y), 몸 옆축이 날의 면(+x)이 되게. 두 손이 멀면(한 손 동작) 오른손 방향 그대로.
@@ -377,6 +427,8 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
     axe_1: { mode: 'radial' }, axe_2: { mode: 'radial' }, club_0: { mode: 'radial' },
     sword_1: { mode: 'radial', far: 0.3 }, sword_2: { mode: 'radial', far: 0.3 },
     spear_1: { mode: 'line', far: 0.9 }, spear_2: { mode: 'line', far: 0.9 },
+    // 한 손 소품: 오른어깨 → 오른손 쪽으로(톱날·국자가 앞·아래를 본다)
+    saw: { mode: 'arm' }, ladle: { mode: 'arm' }, knife: { mode: 'arm', tilt: 0.5 },
   };
   const gripL = new THREE.Vector3(-grip[0], grip[1], grip[2]);
   const gripRv = new THREE.Vector3(grip[0], grip[1], grip[2]);
@@ -394,17 +446,60 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
   const _t = new THREE.Vector3();
   // radial: 손잡이 = 두 어깨 가운데 → 두 손 가운데 방향(내려찍을 때 날이 앞·아래로, 들 때 머리 위로)
   // line: 손잡이 = 오른손 → 왼손(창처럼 두 손이 길게 벌어진 경우)
-  function aimHeld() {
+  // over: 동작 묶음이 정한 자루 방향 { dir: [x,y,z](뿌리 공간), up: 날 면 방향, at: 'R'|'L'|'mid' }
+  function aimHeld(over = null) {
     let g = null;
     let key = null;
-    for (const [k, t] of Object.entries(tools)) if (t.visible) { g = t; key = k; }
+    if (shownProp) {
+      g = props[shownProp];
+      key = shownProp;
+    }
+    if (!g) for (const [k, t] of Object.entries(tools)) if (t.visible) { g = t; key = k; }
     if (!g) for (const [k, t] of Object.entries(weapons)) if (t.visible) { g = t; key = k; }
     if (!g) return;
     const cfg = TWO[key];
-    if (!cfg) return;
+    if (!cfg && !over) return;
     root.updateMatrixWorld(true);
     _pR.copy(gripRv).applyMatrix4(armR.hand.matrixWorld);
     _pL.copy(gripL).applyMatrix4(armL.hand.matrixWorld);
+    if (over) {
+      _d.set(over.dir[0], over.dir[1], over.dir[2]).applyQuaternion(root.quaternion);
+      if (over.at === 'mid') _o.addVectors(_pR, _pL).multiplyScalar(0.5).addScaledVector(_d, -0.12);
+      else _o.copy(over.at === 'L' ? _pL : _pR);
+      const up = over.up || [1, 0, 0];
+      _x.set(up[0], up[1], up[2]).applyQuaternion(root.quaternion);
+      _x.addScaledVector(_d, -_x.dot(_d));
+      if (_x.lengthSq() < 1e-6) _x.set(0, 0, 1).applyQuaternion(root.quaternion);
+      _x.normalize();
+      _z.crossVectors(_x, _d);
+      _m.makeBasis(_x, _d, _z);
+      _qw.setFromRotationMatrix(_m);
+      armR.hand.getWorldQuaternion(_qp).invert();
+      g.quaternion.copy(_qw.premultiply(_qp));
+      armR.hand.worldToLocal(_o);
+      g.position.copy(_o);
+      return;
+    }
+    if (cfg.mode === 'arm') {
+      // 아래팔 방향을 따라 앞으로 뻗게(손목을 곧게 편 모양), tilt만큼 아래로
+      armR.el.getWorldPosition(_s);
+      _d.subVectors(_pR, _s).normalize();
+      _t.set(0, -1, 0);
+      _d.addScaledVector(_t, cfg.tilt ?? 0.25).normalize();
+      _o.copy(_pR);
+      _x.set(1, 0, 0).applyQuaternion(root.quaternion);
+      _x.addScaledVector(_d, -_x.dot(_d));
+      if (_x.lengthSq() < 1e-6) _x.set(0, 0, 1).applyQuaternion(root.quaternion);
+      _x.normalize();
+      _z.crossVectors(_x, _d);
+      _m.makeBasis(_x, _d, _z);
+      _qw.setFromRotationMatrix(_m);
+      armR.hand.getWorldQuaternion(_qp).invert();
+      g.quaternion.copy(_qw.premultiply(_qp));
+      armR.hand.worldToLocal(_o);
+      g.position.copy(_o);
+      return;
+    }
     const dist = _pR.distanceTo(_pL);
     let k;
     if (cfg.mode === 'line') k = 1; // 창은 늘 겨눈다: 두 손이 붙어 있으면 몸 앞쪽 수평으로
@@ -443,7 +538,7 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
 
   return {
     root, hips: by.hips, spine: by.spine, chest: by.chest, neck: by.neck, head: by.head,
-    armL, armR, legL, legR, tools, weapons, materials: M, eyes, setMorph, kind, lod, setOutfit, aimHeld,
+    armL, armR, legL, legR, tools, weapons, props, showProp, materials: M, eyes, setMorph, kind, lod, setOutfit, aimHeld,
     get outfit() { return { ...want }; },
     hipsY: by.hips.position.y, hipsRest: by.hips.position.clone(), bones: by, buildMs: BASE.ms,
     tris: Object.fromEntries(Object.entries(pk.meshes).map(([k, m]) => [k, m.geometry.index.count / 3])),

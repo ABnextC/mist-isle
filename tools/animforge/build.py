@@ -325,6 +325,11 @@ def pack(c):
         out['loop'] = bool(c['loop'])
     if c.get('ev'):
         out['ev'] = c['ev']
+    if c.get('td') is not None:
+        # 손에 든 것의 자루 방향(뿌리 공간, 장마다), 날 면 방향, 붙는 손
+        out['td'] = [round(float(x), 3) for x in np.asarray(c['td']).reshape(-1)]
+        out['tn'] = [round(float(x), 3) for x in c['tn']]
+        out['to'] = c['to']
     return out
 
 

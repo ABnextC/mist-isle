@@ -4,6 +4,7 @@
 
 import { rollProps, round1 } from '../formulas.js';
 import { fitsHabitat } from '../terrain.js';
+import { workSpots } from '../world.js';
 
 function pickPlace(ctx, region, nodeId) {
   const used = new Set(
@@ -69,7 +70,10 @@ export function makeSpacing(ctx) {
   const list = [];
   for (const n of Object.values(state.nodes)) list.push({ x: n.x, z: n.z, r: data.nodes[n.type].solid || 0 });
   for (const s of Object.values(state.settlements)) {
-    for (const st of s.stations) list.push({ x: st.x, z: st.z, r: data.stations[st.type].r || 0.8 });
+    for (const st of s.stations) {
+      list.push({ x: st.x, z: st.z, r: data.stations[st.type].r || 0.8 });
+      for (const p of workSpots(data, st)) list.push({ x: p.x, z: p.z, r: 0.4 }); // 일하는 자리는 비워 둔다(v0.4.9)
+    }
   }
   for (const o of ctx.statics || []) if (o.r > 0) list.push({ x: o.x, z: o.z, r: o.r });
   const region = ctx.data.lists.regions[0];

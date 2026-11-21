@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { DATA_FILES, buildData } from '../../core/data.js';
 import { createGame, loadGame } from '../../core/game.js';
-import { dist, settlementAt, storeOf } from '../../core/world.js';
+import { dist, settlementAt, storeOf, workSpots } from '../../core/world.js';
 import { avgProps, keyOf } from '../../core/inventory.js';
 import { starOf } from '../../core/formulas.js';
 import { stars } from '../../core/text.js';
@@ -176,7 +176,8 @@ async function boot() {
     cam.st.yaw = yaw;
   }
 
-  const ui = { gather: null, last: { x: 0, z: 0, moving: false }, target: null };
+  const ui = { gather: null, skin: null, walked: null, last: { x: 0, z: 0, moving: false }, target: null };
+  window.__mist.ui = ui; // 확인 도구용
 
   function save(say) {
     try {
@@ -234,15 +235,32 @@ async function boot() {
     return best ?? fy;
   }
 
+  // 다가가기: 대상 가운데에서 dist만큼 떨어진, 지금 서 있는 쪽 자리로 걷는다
+  function walkTo(x, z) {
+    game.dispatch({ type: 'MOVE', actor: PID, x, z });
+  }
+  function walkNear(x, z, d) {
+    const a = game.state.actors[PID];
+    const dx = a.x - x;
+    const dz = a.z - z;
+    const l = Math.hypot(dx, dz) || 1;
+    walkTo(x + (dx / l) * d, z + (dz / l) * d);
+  }
+
   function interact() {
     const t = ui.target;
     if (!t || t.why || t.idle) return;
     stopBot();
     if (t.kind === 'corpse') {
-      game.dispatch({ type: 'SKIN', actor: PID, mob: t.id });
+      // 사체 옆(칼이 닿는 거리)으로 걸어가서 벗긴다 — 아래 '이어서 캐기'에서
+      ui.skin = t.id;
+      ui.walked = null;
       return;
     }
-    if (t.kind === 'node') ui.gather = t.id;
+    if (t.kind === 'node') {
+      ui.gather = t.id;
+      ui.walked = null;
+    }
     else if (t.kind === 'station') {
       if (t.id === 'storage') hud.open('bag');
       else hud.open('craft', { station: t.id });
@@ -441,6 +459,18 @@ async function boot() {
   const input = createInput(canvas, { joyEl: hud.joyEl, knobEl: hud.knobEl });
   const minimap = createMinimap(hud.minimapCanvas, game, game.terrain);
 
+  game.on('eat', (ev) => actorsView.onEvent(ev));
+  // 도구가 닿을 때마다 작게 튄다(나무 부스러기·돌 조각·잎·열매), 나무·덤불은 잠깐 떤다(v0.4.9)
+  const STRIKE_FX = { chop: 5, chop_tree: 6, mine: 6, harvest: 3, pick_bush: 2, pick_ground: 2, skin: 2 };
+  function strikeFx() {
+    for (const s of actorsView.takeStrikes()) {
+      const n = STRIKE_FX[s.kind];
+      if (!n) continue;
+      const color = s.nodeType ? NODE_CHIP[s.nodeType] : 0x7a3a2a;
+      fx.burst(s.x, s.y, s.z, color, n, { lift: 0, spread: 0.12, speed: 0.45, dust: s.kind === 'mine' || s.kind === 'chop' });
+      if (s.node) nodesView.shake(s.node);
+    }
+  }
   game.on('gather.done', (ev) => {
     const node = game.state.nodes[ev.node];
     if (node) fx.burst(node.x, ground.hf.height(node.x, node.z), node.z, NODE_CHIP[ev.nodeType]);
@@ -566,17 +596,67 @@ async function boot() {
     }
     for (const act of inp.acts) onAct(act);
 
-    // 2) 이어서 캐기
+    // 2) 이어서 캐기 — 도구가 닿는 거리(nodes.json work)로 먼저 걸어간다(v0.4.9)
+    if (moving) ui.skin = null;
     if (ui.gather) {
       const n = game.state.nodes[ui.gather];
       if (!n || n.charges <= 0) ui.gather = null;
       else if (!a.action && !a.move && !a.dest) {
-        if (dist(a, n) > data.config.gather.rangeM) ui.gather = null;
-        else {
+        const d = dist(a, n);
+        const work = data.nodes[n.type].work ?? 1;
+        if (d > data.config.gather.rangeM) ui.gather = null;
+        else if (Math.abs(d - work) > data.config.gather.workSlackM && ui.walked !== n.id) {
+          ui.walked = n.id;
+          walkNear(n.x, n.z, work);
+        } else {
           const useFocus = hud.settings.focus && a.focus >= data.config.focus.cost.gather;
           if (!game.dispatch({ type: 'GATHER', actor: PID, node: n.id, focus: useFocus }).ok) ui.gather = null;
         }
       }
+    }
+    if (ui.skin) {
+      const m = game.state.mobs[ui.skin];
+      if (!m || m.mode !== 'dead' || m.skinned) ui.skin = null;
+      else if (!a.action && !a.move && !a.dest) {
+        const d = dist(a, m);
+        const work = data.config.gather.skinWorkM;
+        if (d > 3) ui.skin = null;
+        else if (Math.abs(d - work) > data.config.gather.workSlackM && ui.walked !== m.id) {
+          ui.walked = m.id;
+          // 몸통 옆쪽(등뼈와 직각, 내가 있는 쪽)에 무릎 꿇는다
+          const sx = Math.cos(m.yaw);
+          const sz = -Math.sin(m.yaw);
+          const side = (a.x - m.x) * sx + (a.z - m.z) * sz >= 0 ? 1 : -1;
+          walkTo(m.x + sx * side * work, m.z + sz * side * work);
+        } else {
+          game.dispatch({ type: 'SKIN', actor: PID, mob: m.id });
+          ui.skin = null;
+        }
+      }
+    }
+    // 제작: 작업대 일감이 돌기 시작했는데 4m 안에서 쉬고 있으면, 그 작업대의 빈 일자리로 한 번 걸어간다(v0.4.9)
+    const job = a.queue?.[0];
+    if (job && ui.craftWalked !== job.id && !moving && !ui.gather && !ui.skin && !a.action && !a.move && !a.dest && job.startsAt <= game.state.t) {
+      ui.craftWalked = job.id;
+      const r = data.recipes[job.recipe];
+      let best = null;
+      let bd = data.config.craft.rangeM;
+      if (r && r.station !== 'hand') {
+        for (const s of Object.values(game.state.settlements)) {
+          for (const st of s.stations) {
+            if (st.type !== r.station || dist(a, st) > data.config.craft.rangeM) continue;
+            for (const p of workSpots(data, st)) {
+              const taken = Object.values(game.state.actors).some((o) => o.id !== PID && Math.hypot(o.x - p.x, o.z - p.z) < 0.6);
+              const d = Math.hypot(a.x - p.x, a.z - p.z);
+              if (!taken && d < bd) {
+                bd = d;
+                best = p;
+              }
+            }
+          }
+        }
+      }
+      if (best && bd > 0.3) walkTo(best.x, best.z);
     }
 
     // 3) 시뮬레이션
@@ -586,6 +666,7 @@ async function boot() {
 
     // 4) 화면
     actorsView.update(dt, now / 1000);
+    strikeFx();
     mobsView.update(dt, view.camera);
     updateFloats(dt);
     {

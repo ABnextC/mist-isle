@@ -10,7 +10,7 @@
 //   tune        도구를 만들 때 집중력으로 조율하는가
 
 import { keyOf, avgProps, countItem, qtyOf } from '../inventory.js';
-import { dist, settlementAt, nearestSettlement, nearestStation, bestTool, toolTier, storeOf, hasStation, stationIn } from '../world.js';
+import { dist, settlementAt, nearestSettlement, nearestStation, bestTool, toolTier, storeOf, hasStation, stationIn, workSpots } from '../world.js';
 import { entryStar, tradable, baseValue, bestBid, bestAsk, npcPrice, repairCost, refPrice, bookOf, ordersOf } from '../market.js';
 import { countDeliverable } from '../orders.js';
 import { openProjects, needLeft, silverLeft, shipFee } from '../settlements.js';
@@ -150,8 +150,13 @@ function skinNearby(ctx, actor, range) {
     }
   }
   if (!best) return false;
-  if (bd > 2.2) moveNear(ctx, actor, best, 1.2);
-  else ctx.command({ type: 'SKIN', actor: actor.id, mob: best.id });
+  // v0.4.9: 사체 옆(칼이 닿는 거리)으로 한 번 걸어간 뒤 벗긴다
+  const mem = actor.ai.mem;
+  if (Math.abs(bd - ctx.cfg.gather.skinWorkM) > ctx.cfg.gather.workSlackM && mem.skinWalk !== best.id) {
+    mem.skinWalk = best.id;
+    moveNear(ctx, actor, best, ctx.cfg.gather.skinWorkM);
+  } else if (bd <= 2.6) ctx.command({ type: 'SKIN', actor: actor.id, mob: best.id });
+  else moveNear(ctx, actor, best, ctx.cfg.gather.skinWorkM);
   return true;
 }
 
@@ -186,8 +191,12 @@ function huntStep(ctx, actor, prof, mem) {
     }
   }
   if (corpse && cfg.bag.slots - actor.bag.length > 2) {
-    if (cd > 2.2) moveNear(ctx, actor, corpse, 1.2);
-    else ctx.command({ type: 'SKIN', actor: actor.id, mob: corpse.id });
+    // v0.4.9: 사체 바로 옆(무릎 꿇고 칼이 닿는 거리)으로 가서 벗긴다. 한 번 걸어갔는데도 못 붙으면 그 자리에서
+    if (Math.abs(cd - cfg.gather.skinWorkM) > cfg.gather.workSlackM && mem.skinWalk !== corpse.id) {
+      mem.skinWalk = corpse.id;
+      moveNear(ctx, actor, corpse, cfg.gather.skinWorkM);
+    } else if (cd <= 2.6) ctx.command({ type: 'SKIN', actor: actor.id, mob: corpse.id });
+    else moveNear(ctx, actor, corpse, cfg.gather.skinWorkM);
     return;
   }
   if (done) {
@@ -232,6 +241,23 @@ function clearSpot(ctx, x, z) {
   const R = ctx.cfg.move.radius + 0.05;
   for (const o of ctx.obstacles.near(x, z)) if (Math.hypot(x - o.x, z - o.z) < o.r + R) return false;
   return true;
+}
+
+// 작업대의 빈 일자리 중 가장 가까운 곳(v0.4.9). 남이 서 있거나 그리로 가는 자리는 건너뛴다.
+function freeSpot(ctx, actor, st) {
+  let best = null;
+  let bd = Infinity;
+  for (const p of workSpots(ctx.data, st)) {
+    const taken = Object.values(ctx.state.actors).some((o) => o !== actor
+      && (Math.hypot(o.x - p.x, o.z - p.z) < 0.6 || (o.dest && Math.hypot(o.dest[0] - p.x, o.dest[1] - p.z) < 0.3)));
+    if (taken) continue;
+    const d = Math.hypot(actor.x - p.x, actor.z - p.z);
+    if (d < bd) {
+      bd = d;
+      best = p;
+    }
+  }
+  return best;
 }
 
 function moveNear(ctx, actor, target, standoff) {
@@ -425,8 +451,10 @@ function gatherStep(ctx, actor, prof, mem) {
   }
   mem.misses = 0;
   mem.target = target.node.id;
-  if (dist(actor, target.node) > cfg.gather.rangeM - 0.4) {
-    moveNear(ctx, actor, target.node, (target.type.solid || 0) + 0.9);
+  // v0.4.9: 도구가 노드에 닿는 거리(nodes.json work)에 서서 캔다
+  const work = target.type.work ?? (target.type.solid || 0) + 0.9;
+  if (Math.abs(dist(actor, target.node) - work) > cfg.gather.workSlackM) {
+    moveNear(ctx, actor, target.node, work);
   }
 }
 
@@ -950,14 +978,18 @@ function craftStep(ctx, actor, prof, mem) {
         mem.plan.shift();
         continue;
       }
-      if (dist(actor, st) > cfg.craft.rangeM - 0.5) {
-        if (step.walked) {
-          mem.plan.shift();
-          continue;
-        }
+      // 작업대의 일하는 자리로 간다(v0.4.9). 자리가 다 찼으면 예전처럼 곁에 선다.
+      const far = dist(actor, st) > cfg.craft.rangeM - 0.5;
+      const spot = step.walked ? null : freeSpot(ctx, actor, st);
+      if (!step.walked && (far || (spot && Math.hypot(actor.x - spot.x, actor.z - spot.z) > 0.5))) {
         step.walked = true;
-        moveNear(ctx, actor, st, (data.stations[st.type].r || 0.8) + 1.2);
+        if (spot) ctx.command({ type: 'MOVE', actor: actor.id, x: spot.x, z: spot.z });
+        else moveNear(ctx, actor, st, (data.stations[st.type].r || 0.8) + 1.2);
         return;
+      }
+      if (far) {
+        mem.plan.shift();
+        continue;
       }
     }
     let done = 0;

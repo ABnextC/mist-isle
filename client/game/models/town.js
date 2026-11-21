@@ -256,6 +256,9 @@ function smelter() {
   add('stone', lathe([[0, 0], [0.95, 0], [0.9, 0.8], [0.7, 1.6], [0.5, 2.25], [0.42, 2.45], [0.3, 2.45], [0.3, 2.2], [0, 2.2]], 14));
   add('coal', box(0.45, 0.32, 0.12, { y: 0.32, z: 0.86 }));
   add('stone', box(0.7, 0.12, 0.3, { y: 0.55, z: 0.9 }));
+  // 도가니(v0.4.9): 돌턱 위에서 쇳물을 젓는다
+  add('clay', lathe([[0, 0], [0.1, 0], [0.13, 0.08], [0.14, 0.17], [0.12, 0.17], [0.11, 0.1], [0, 0.1]], 12).translate(0, 0.61, 0.9));
+  add('coal', cyl(0.115, 0.115, 0.012, 12, { y: 0.755, z: 0.9 }));
   add('planksDark', box(0.6, 0.12, 0.35, { x: 1.2, y: 0.55, ry: 0.3 }));
   add('leather', box(0.5, 0.22, 0.3, { x: 1.2, y: 0.7, ry: 0.3 }));
   add('planksDark', box(0.08, 0.08, 0.7, { x: 1.0, y: 0.6, z: 0.35, ry: 0.3 }));
@@ -267,34 +270,35 @@ function smelter() {
 }
 
 function trestle(add, x) {
-  for (const sz of [-1, 1]) add('planksDark', box(0.08, 0.95, 0.08, { x, y: 0.42, z: sz * 0.25, rx: sz * 0.28 }));
-  add('planksDark', box(0.12, 0.1, 0.5, { x, y: 0.86 }));
+  for (const sz of [-1, 1]) add('planksDark', box(0.08, 0.6, 0.08, { x, y: 0.26, z: sz * 0.17, rx: sz * 0.3 }));
+  add('planksDark', box(0.12, 0.1, 0.44, { x, y: 0.52 }));
 }
 
 function sawbench() {
   const { parts, fx, add } = kit();
   trestle(add, -0.75);
   trestle(add, 0.75);
-  add('barkDark', taperTube([V(-1.2, 1.12, 0), V(1.25, 1.12, 0.02)], [0.24, 0.22], { radial: 12, vScale: 1.2, cap: true }));
-  add('woodBox', cyl(0.215, 0.215, 0.02, 16, { x: 1.26, y: 1.12, rz: Math.PI / 2 }));
-  add('metal', box(1.0, 0.16, 0.012, { x: 0.3, y: 1.42, z: 0.0, rz: 0.2 }));
-  add('planksDark', box(0.06, 0.18, 0.05, { x: -0.25, y: 1.54, rz: 0.2 }));
+  add('barkDark', taperTube([V(-1.2, 0.79, 0), V(1.25, 0.79, 0.02)], [0.24, 0.22], { radial: 12, vScale: 1.2, cap: true }));
+  add('woodBox', cyl(0.215, 0.215, 0.02, 16, { x: 1.26, y: 0.79, rz: Math.PI / 2 }));
+  add('metal', box(1.0, 0.16, 0.012, { x: 0.3, y: 1.09, z: 0.0, rz: 0.2 }));
+  add('planksDark', box(0.06, 0.18, 0.05, { x: -0.25, y: 1.21, rz: 0.2 }));
   add('sawdust', cyl(0.6, 0.75, 0.04, 16, { y: 0.0, x: 0.3, sz: 0.6 }));
-  for (let i = 0; i < 4; i++) add('planks', box(1.6, 0.05, 0.26, { x: 0, y: 0.03 + i * 0.055, z: 0.85, ry: (i % 2) * 0.05 }));
+  // 켠 널은 일하는 자리(앞)와 겹치지 않게 뒤편에 쌓는다
+  for (let i = 0; i < 4; i++) add('planks', box(1.6, 0.05, 0.26, { x: 0, y: 0.03 + i * 0.055, z: -1.05, ry: (i % 2) * 0.05 }));
   return { parts, fx };
 }
 
 function workbench() {
   const { parts, fx, add } = kit();
-  add('planks', box(2.0, 0.1, 0.85, { y: 0.92 }));
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) add('planksDark', box(0.1, 0.88, 0.1, { x: sx * 0.88, y: 0.44, z: sz * 0.33 }));
-  add('planksDark', box(1.8, 0.05, 0.6, { y: 0.25 }));
-  add('iron', box(0.18, 0.2, 0.22, { x: -0.8, y: 1.07, z: 0.32 }));
-  add('metal', cyl(0.015, 0.015, 0.4, 5, { x: -0.8, y: 1.08, z: 0.48, rx: Math.PI / 2 }));
-  add('planksDark', box(0.28, 0.1, 0.1, { x: 0.4, y: 1.02, z: 0.1 }));
-  add('planksDark', cyl(0.02, 0.02, 0.3, 5, { x: 0.4, y: 1.02, z: 0.28, rx: Math.PI / 2 }));
-  add('metal', box(0.02, 0.02, 0.22, { x: 0.1, y: 0.98, z: -0.1, ry: 0.6 }));
-  for (let i = 0; i < 3; i++) add('planks', box(1.4, 0.04, 0.2, { x: 0.1, y: 0.3 + i * 0.045, z: (i - 1) * 0.04 }));
+  add('planks', box(2.0, 0.1, 0.85, { y: 0.83 }));
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) add('planksDark', box(0.1, 0.79, 0.1, { x: sx * 0.88, y: 0.395, z: sz * 0.33 }));
+  add('planksDark', box(1.8, 0.05, 0.6, { y: 0.22 }));
+  add('iron', box(0.18, 0.2, 0.22, { x: -0.8, y: 0.98, z: 0.32 }));
+  add('metal', cyl(0.015, 0.015, 0.4, 5, { x: -0.8, y: 0.99, z: 0.48, rx: Math.PI / 2 }));
+  add('planksDark', box(0.28, 0.1, 0.1, { x: 0.4, y: 0.93, z: -0.1 }));
+  add('planksDark', cyl(0.02, 0.02, 0.3, 5, { x: 0.4, y: 0.93, z: 0.08, rx: Math.PI / 2 }));
+  add('metal', box(0.02, 0.02, 0.22, { x: 0.68, y: 0.89, z: 0.22, ry: 0.6 }));
+  for (let i = 0; i < 3; i++) add('planks', box(1.4, 0.04, 0.2, { x: 0.1, y: 0.27 + i * 0.045, z: (i - 1) * 0.04 }));
   add('sawdust', cyl(0.5, 0.6, 0.03, 14, { x: 0.2, y: 0.0, z: 0.2, sz: 0.7 }));
   return { parts, fx };
 }
@@ -312,8 +316,8 @@ function loom() {
   for (let i = 0; i < 26; i++) add('thread', cyl(0.005, 0.005, 1.45, 3, { x: -0.72 + i * 0.058, y: 1.1, z: -0.2 }));
   add('clothDyed', box(1.5, 0.55, 0.012, { y: 0.66, z: -0.2 }));
   add('clothDyed', cyl(0.1, 0.1, 1.55, 12, { y: 1.0, z: 0.45, rz: Math.PI / 2 }));
-  add('planks', box(0.9, 0.08, 0.3, { y: 0.48, z: 0.95 }));
-  for (const x of [-0.35, 0.35]) add('planksDark', box(0.08, 0.46, 0.22, { x, y: 0.23, z: 0.95 }));
+  add('planks', box(0.3, 0.08, 0.9, { x: 1.45, y: 0.48, z: 0.5 }));
+  for (const z of [0.15, 0.85]) add('planksDark', box(0.22, 0.46, 0.08, { x: 1.45, y: 0.23, z }));
   return { parts, fx };
 }
 

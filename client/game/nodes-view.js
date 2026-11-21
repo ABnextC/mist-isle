@@ -64,17 +64,30 @@ export function createNodesView(scene, game, hf, { mats, ctex }) {
     dirty = false;
   }
 
+  // 도구가 닿으면 나무·덤불·갈대가 잠깐 떤다(v0.4.9). 바위·통나무는 그대로
+  const SWAY = { node_birch: 0.014, node_oak: 0.01, node_berry: 0.06, node_reed: 0.07, node_seaweed: 0.03, node_mushroom: 0.0 };
+  function shake(id) {
+    const e = index.get(id);
+    if (e && SWAY[e.type]) e.shakeAt = performance.now();
+  }
   function update() {
     if (dirty) rebuild();
+    const now = performance.now();
     for (const [id, e] of index) {
       const n = game.state.nodes[id];
       if (!n) continue;
       const empty = n.charges <= 0;
+      let sw = 0;
+      if (e.shakeAt !== undefined) {
+        const age = (now - e.shakeAt) / 1000;
+        if (age > 1.2) e.shakeAt = undefined;
+        else sw = SWAY[e.type] * Math.exp(-age * 4) * Math.sin(age * 26);
+      }
       for (const { part, mesh } of groups[e.type][e.v]) {
         const show = part.when === 'both' || (part.when === 'live') !== empty;
         const s = show ? e.s * (empty ? part.shrink ?? 1 : 1) : 0;
         dummy.position.set(n.x, e.y - 0.03, n.z);
-        dummy.rotation.set(e.tilt, e.ry, e.tilt * 0.7);
+        dummy.rotation.set(e.tilt + sw, e.ry, e.tilt * 0.7 + sw * 0.6);
         dummy.scale.set(s, s, s);
         dummy.updateMatrix();
         mesh.setMatrixAt(e.i, dummy.matrix);
@@ -91,5 +104,5 @@ export function createNodesView(scene, game, hf, { mats, ctex }) {
     }
   }
 
-  return { update };
+  return { update, shake };
 }

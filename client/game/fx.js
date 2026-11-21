@@ -178,17 +178,22 @@ export function createFx(scene, { textures, hf, town, terrain, region }) {
   const fireflies = Array.from({ length: 40 }, () => ({ p: new THREE.Vector3(), ph: Math.random() * 100, base: new THREE.Vector3() }));
   let fliesCenter = new THREE.Vector3(1e9, 0, 0);
 
-  function burst(x, y, z, color, count = 10) {
+  // o: { lift, spread, speed, dust } — 도구가 닿은 자리에서 작게 튈 때는 lift 0·spread 작게(v0.4.9)
+  function burst(x, y, z, color, count = 10, o = {}) {
+    const lift = o.lift ?? 0.5;
+    const spread = o.spread ?? 0.6;
+    const sp = o.speed ?? 1;
     for (let k = 0; k < count; k++) {
       const p = parts[next];
       p.life = 0.7 + Math.random() * 0.4;
-      p.p.set(x + (Math.random() - 0.5) * 0.6, y + 0.5 + Math.random() * 0.7, z + (Math.random() - 0.5) * 0.6);
-      p.v.set((Math.random() - 0.5) * 3.5, 2.2 + Math.random() * 2.4, (Math.random() - 0.5) * 3.5);
+      p.p.set(x + (Math.random() - 0.5) * spread, y + lift + Math.random() * (lift ? 0.7 : 0.08), z + (Math.random() - 0.5) * spread);
+      p.v.set((Math.random() - 0.5) * 3.5 * sp, (2.2 + Math.random() * 2.4) * sp, (Math.random() - 0.5) * 3.5 * sp);
       p.r = Math.random() * 6;
       chips.setColorAt(next, col.set(color).offsetHSL(0, 0, (Math.random() - 0.5) * 0.15));
       next = (next + 1) % N;
     }
     chips.instanceColor.needsUpdate = true;
+    if (o.dust === false) return;
     for (let k = 0; k < 4; k++) dusts.push({ p: new THREE.Vector3(x + (Math.random() - 0.5) * 0.8, y + 0.3, z + (Math.random() - 0.5) * 0.8), age: 0, life: 1.2 + Math.random() * 0.6, rot: Math.random() * 6 });
   }
 

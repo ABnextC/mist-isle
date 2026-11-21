@@ -18,6 +18,10 @@ CMU 모션 캡처 데이터베이스(BVH 변환본)에서 동작을 골라 게�
 - `actions.py`(v0.4.8): 손 동작. ACTIONS 표(파일·창·고리 여부·방향 맞출 순간·뿌리 처리)로 채집·전투·구르기·넘어짐을 자른다.
   때리는 순간(손이 가장 빨리 내려오거나 뻗는 순간)을 ev.hit로 적는다. 낫질·시전·창 찌르기는 바탕 자세 위에 팔 끝 위치를 IK로 그려 합성한다.
   방향은 엉덩이 옆축으로 잰다(구르거나 누워도 흔들리지 않게).
+- `actions.py`(v0.4.9 적절성 검토): `review_clips()`가 열쇠 합성 클립을 만든다. 바탕 자세 한 장(서기·쪼그림·내려찍기 앞 자세·권투 자세) 위에
+  엉덩이·허리 숙임·비틀기·목과 두 손 끝 위치를 열쇠(Catmull-Rom)로 그려 IK로 푼다. 도구가 있으면 방향 트랙(td)·날 면(tn)·잡는 곳(to)도 낸다.
+  선 나무 베기·열매 따기·버섯 따기·손질·먹기·마시기·망치질·젓기·베 짜기·긁기·맨손 제작·무기별 막기를 이렇게 만든다.
+  톱질은 62_03(손톱질)에서 처음·끝이 닮은 창을 골라 고리로 만들고, 중갑 회피(hop)는 웅크림→뜀→착지를 다리 IK로 그린다.
 - `check.py`: 소스와 게임 뼈대를 막대 사람으로 겹쳐 그린다
 
 다시 만들기:
@@ -25,7 +29,8 @@ CMU 모션 캡처 데이터베이스(BVH 변환본)에서 동작을 골라 게�
 ```
 git clone --depth 1 --filter=blob:none --no-checkout https://github.com/meshula/cmu-mocap.git cmu
 cd cmu && git checkout HEAD -- data/077/77_02.bvh data/035/35_01.bvh data/016/16_46.bvh \
-  data/079/79_01.bvh data/002/02_05.bvh data/143/143_23.bvh data/127/127_23.bvh data/090/90_18.bvh data/069/69_70.bvh
+  data/079/79_01.bvh data/002/02_05.bvh data/143/143_23.bvh data/127/127_23.bvh data/090/90_18.bvh data/069/69_70.bvh \
+  data/062/62_03.bvh
 python3 tools/animforge/build.py <cmu>/data
 ```
 

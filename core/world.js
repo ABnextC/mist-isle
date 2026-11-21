@@ -94,6 +94,33 @@ export function stationAt(sdef, st, tier = st.tier ?? 1) {
   return { type: st.type, tier, base: tier, x: sdef.x + st.dx, z: sdef.z + st.dz, rot: st.rot || 0 };
 }
 
+// 작업대 좌표(모형 기준, 회전 전) → 월드. 화면의 rotation.y와 같은 방향으로 돈다.
+export function stationPoint(st, lx, lz) {
+  const c = Math.cos(st.rot || 0);
+  const s = Math.sin(st.rot || 0);
+  return [st.x + lx * c + lz * s, st.z - lx * s + lz * c];
+}
+
+// 몸이 못 들어가는 원들(v0.4.9). 모양대로 여러 원을 두어 탁자 앞에 바짝 설 수 있게 한다.
+export function stationSolids(data, st) {
+  const def = data.stations[st.type];
+  if (!def.solid) return [{ x: st.x, z: st.z, r: def.r || 0.8 }];
+  return def.solid.map(([lx, lz, r]) => {
+    const [x, z] = stationPoint(st, lx, lz);
+    return { x, z, r };
+  });
+}
+
+// 일하는 자리(v0.4.9): 선 곳과 바라보는 점. 작업 동작이 작업면에 닿도록 작업대마다 정했다.
+export function workSpots(data, st) {
+  const def = data.stations[st.type];
+  return (def.work || []).map(([lx, lz, fx, fz]) => {
+    const [x, z] = stationPoint(st, lx, lz);
+    const [ax, az] = stationPoint(st, fx, fz);
+    return { x, z, ax, az };
+  });
+}
+
 // 끝난 마을 사업 id 모음(상태에서 읽는다)
 export function builtSet(state) {
   return new Set(Object.values(state.projects || {}).filter((p) => p.done).map((p) => p.id));
@@ -149,7 +176,7 @@ export function buildObstacles(ctx) {
     if (r > 0) add(n.x, n.z, r);
   }
   for (const s of Object.values(ctx.state.settlements)) {
-    for (const st of s.stations) add(st.x, st.z, ctx.data.stations[st.type].r || 0.8);
+    for (const st of s.stations) for (const o of stationSolids(ctx.data, st)) add(o.x, o.z, o.r);
   }
   for (const o of ctx.statics) if (o.r > 0) add(o.x, o.z, o.r);
   return {

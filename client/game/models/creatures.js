@@ -56,6 +56,7 @@ function quadruped({ L, H, R, lr, body, belly, dark, legLen, headLen, neckUp, se
   torso.add(neck);
   const head = new THREE.Group();
   head.position.set(0, 0, headLen * 0.7);
+  head.rotation.x = neckUp * 0.8; // 목이 서도 머리는 거의 수평(v0.4.9: 사슴이 하늘을 보던 자세)
   neck.add(head);
   const tail = new THREE.Group();
   tail.position.set(0, R * 0.3, -L * 0.5);
@@ -148,13 +149,19 @@ function crab(seed) {
   const head = new THREE.Group();
   head.position.set(0, 0, 0.22);
   torso.add(head);
+  // 집게: 팔 밑동을 축으로 돌 수 있게 따로 묶는다(v0.4.9 — 들기·집기)
+  const claws = [];
   for (const sx of [-1, 1]) {
-    head.add(mesh(merge([
-      cyl(0.025, 0.02, 0.18, shell, { x: sx * 0.16, z: 0.06, rx: Math.PI / 2, rz: sx * 0.4 }),
-      ell(0.09, 0.06, 0.12, shell, { x: sx * 0.22, z: 0.18 }),
+    const g = new THREE.Group();
+    g.position.set(sx * 0.12, 0, 0);
+    head.add(g);
+    g.add(mesh(merge([
+      cyl(0.025, 0.02, 0.18, shell, { x: sx * 0.04, z: 0.06, rx: Math.PI / 2, rz: sx * 0.4 }),
+      ell(0.09, 0.06, 0.12, shell, { x: sx * 0.1, z: 0.18 }),
     ]), m));
+    claws.push({ g, sx });
   }
-  return { m, root, torso, legs, neck: null, head, tail: null, R };
+  return { m, root, torso, legs, neck: null, head, tail: null, claws, R };
 }
 
 const MAKERS = { crab, deer, boar, wolf };

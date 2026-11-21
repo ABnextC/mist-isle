@@ -325,6 +325,9 @@ def build_actions(root, idle):
     cst = cast_clip(root, idle)
     cst['note'] = '귀환 시전(서기 + 두 손 모으기)'
     out['cast'] = cst
+    out.update(review_clips(root, idle, out))
+    out.update(saw_clip(root))
+    out.update(hop_clip(root, out))
     return out
 
 
@@ -358,3 +361,286 @@ def spear_clip(base, reach=0.42, low=0.0):
     b = arm_ik(b, 'L', TL, pole=np.tile([0.7, -0.7, -0.1], (n, 1)))
     b['src'] = base.get('src', '') + '+창'
     return b
+
+
+# ── 열쇠 자세로 그리는 합성(v0.4.9): 바탕 자세 한 장 + 시간 열쇠(몸통 비틀기·숙이기·고개·엉덩이·두 손 위치) ──
+def keys_at(keys, n, loop, dim):
+    """keys: [(t 0~1, 값)] → (n, dim). 열쇠 사이는 Catmull-Rom 곡선(고리면 끝과 처음을 잇는다)"""
+    ks = sorted(keys, key=lambda k: k[0])
+    T = np.array([k[0] for k in ks], float)
+    V = np.array([np.atleast_1d(np.asarray(k[1], float)) for k in ks])
+    if loop:
+        T = np.concatenate([T[-2:] - 1, T, T[:2] + 1])
+        V = np.concatenate([V[-2:], V, V[:2]])
+    else:
+        T = np.concatenate([[T[0] - 1e-3], T, [T[-1] + 1e-3]])
+        V = np.concatenate([V[:1], V, V[-1:]])
+    ts = np.arange(n) / (n if loop else max(1, n - 1))
+    out = np.zeros((n, dim))
+    for i, t in enumerate(ts):
+        j = int(np.searchsorted(T, t, side='right')) - 1
+        j = min(max(j, 1), len(T) - 3)
+        t0, t1 = T[j], T[j + 1]
+        u = 0.0 if t1 - t0 < 1e-9 else (t - t0) / (t1 - t0)
+        p0, p1, p2, p3 = V[j - 1], V[j], V[j + 1], V[j + 2]
+        m1 = (p2 - p0) / max(1e-6, T[j + 1] - T[j - 1]) * (t1 - t0)
+        m2 = (p3 - p1) / max(1e-6, T[j + 2] - T[j]) * (t1 - t0)
+        u2, u3 = u * u, u * u * u
+        out[i] = (2 * u3 - 3 * u2 + 1) * p1 + (u3 - 2 * u2 + u) * m1 + (-2 * u3 + 3 * u2) * p2 + (u3 - u2) * m2
+    return out
+
+
+def keyed_clip(base, dur, keys, fps=30, loop=True, ev=None, src=''):
+    """base: 바탕 자세(한 장이면 늘이고, 여러 장이면 그대로 n에 맞춰 다시 뽑는다)"""
+    n = int(round(dur * fps)) if loop else int(round(dur * fps)) + 1
+    if base['n'] == 1:
+        b = {**base, 'q': {k: np.repeat(v[:1], n, 0) for k, v in base['q'].items()}, 'h': np.repeat(base['h'][:1], n, 0), 'n': n}
+    else:
+        b = resample_n(dict(base), n)
+    b = dict(b, dur=dur, loop=loop, stride=0.0)
+    if 'hips' in keys:
+        b['h'] = b['h'] + keys_at(keys['hips'], n, loop, 3)
+    if 'pitch' in keys:
+        a = keys_at(keys['pitch'], n, loop, 1)[:, 0]
+        b = turn_bone(b, 'spine', [1, 0, 0], a * 0.5)
+        b = turn_bone(b, 'chest', [1, 0, 0], a * 0.5)
+    if 'twist' in keys:
+        a = keys_at(keys['twist'], n, loop, 1)[:, 0]
+        b = turn_bone(b, 'spine', [0, 1, 0], a * 0.5)
+        b = turn_bone(b, 'chest', [0, 1, 0], a * 0.5)
+    if 'neck' in keys:
+        a = keys_at(keys['neck'], n, loop, 1)[:, 0]
+        b = turn_bone(b, 'neck', [1, 0, 0], a)
+    for side in ('R', 'L'):
+        if side in keys:
+            T = keys_at(keys[side], n, loop, 3)
+            sx = -1 if side == 'R' else 1
+            pole = np.tile(keys.get('pole' + side, [sx * 0.7, -0.6, -0.2]), (n, 1))
+            b = arm_ik(b, side, T, pole=pole)
+    if 'tool' in keys:
+        td = keys_at(keys['tool'], n, loop, 3)
+        b['td'] = td / np.linalg.norm(td, axis=1, keepdims=True)
+        b['tn'] = list(keys.get('toolUp', [1, 0, 0]))
+        b['to'] = keys.get('toolAt', 'R')
+    b['ev'] = ev or {}
+    b['src'] = src
+    return b
+
+
+def one_frame(c, t):
+    """클립의 한 순간(0~1)을 한 장짜리 바탕으로"""
+    k = int(round(t * (c['n'] - 1)))
+    return dict(c, q={b: c['q'][b][k:k + 1] for b in BONES}, h=c['h'][k:k + 1], n=1)
+
+
+def squat_base(root):
+    import build
+    c = action_clip(f'{root}/069/69_70.bvh', 2.6, 3.6, loop=False, face=3.05)
+    build.ground(c)
+    hy = c['h'][:, 1]
+    k = int(np.argmin(np.abs(hy - (hy.min() + 0.10))[: int(np.argmin(hy)) + 1]))
+    return one_frame(c, k / (c['n'] - 1))
+
+
+def review_clips(root, idle, out):
+    """v0.4.9 적절성 검토로 더한 동작들"""
+    import build
+    stand = one_frame(idle, 0.0)
+    wide = one_frame(out['mine'], 0.0)  # 79_01 내려찍기 앞 자세(발을 벌리고 선)
+    sq = squat_base(root)
+    R = {}
+    # 선 나무 베기: 오른어깨 뒤로 들었다가 허리 높이에서 비스듬히 앞·왼쪽으로 벤다(0.58에 닿음), 잠깐 박혔다 뺀다
+    R['chop_tree'] = keyed_clip(wide, 1.4, {
+        'twist': [(0, 0.0), (0.4, -0.6), (0.5, -0.35), (0.58, 0.14), (0.66, 0.16), (0.85, 0.04)],
+        'pitch': [(0, 0.08), (0.4, -0.02), (0.58, 0.22), (0.66, 0.24), (0.85, 0.12)],
+        'R': [(0, (-0.07, 1.0, 0.42)), (0.4, (-0.42, 1.46, -0.02)), (0.5, (-0.3, 1.22, 0.32)), (0.58, (-0.01, 1.02, 0.52)), (0.66, (0.01, 1.0, 0.5)), (0.85, (-0.05, 1.03, 0.45))],
+        'L': [(0, (0.03, 0.95, 0.41)), (0.4, (-0.33, 1.38, 0.02)), (0.5, (-0.22, 1.15, 0.33)), (0.58, (0.07, 0.96, 0.5)), (0.66, (0.09, 0.94, 0.48)), (0.85, (0.03, 0.98, 0.44))],
+        'neck': [(0, 0.1), (0.4, 0.0), (0.58, 0.15), (1.0, 0.1)],
+        # 도끼 자루 방향(뿌리 공간): 앞아래 → 오른어깨 뒤 수평 → 오른쪽 → 앞·왼쪽 수평(줄기에 박힘) → 앞아래
+        'tool': [(0, (-0.3, -0.55, 0.78)), (0.4, (-0.62, 0.22, -0.75)), (0.5, (-0.92, 0.05, 0.25)), (0.58, (0.42, -0.08, 0.9)), (0.66, (0.44, -0.1, 0.89)), (0.85, (-0.1, -0.45, 0.88))],
+        'toolUp': [0, 1, 0], 'toolAt': 'mid',
+    }, ev={'hit': 0.58}, src='79_01+열쇠')
+    # 산딸기: 몸을 숙여 덤불 속으로 손을 넣어 따고 왼손(주머니)에 담는다. 두 번
+    R['pick_bush'] = keyed_clip(stand, 1.8, {
+        'pitch': [(0, 0.6), (0.15, 0.7), (0.4, 0.55), (0.65, 0.72), (0.9, 0.55)],
+        'neck': [(0, 0.12), (0.5, 0.08)],
+        'twist': [(0, -0.08), (0.15, -0.14), (0.4, 0.0), (0.65, 0.12), (0.9, 0.0)],
+        'R': [(0, (-0.13, 0.95, 0.36)), (0.15, (-0.17, 0.84, 0.44)), (0.25, (-0.15, 0.87, 0.4)), (0.4, (-0.01, 1.0, 0.26)), (0.5, (-0.01, 1.0, 0.26)),
+              (0.65, (0.03, 0.82, 0.45)), (0.75, (0.02, 0.86, 0.41)), (0.9, (-0.01, 1.0, 0.26))],
+        'L': [(0, (0.1, 1.0, 0.24)), (0.45, (0.07, 1.02, 0.26)), (0.6, (0.11, 0.98, 0.24)), (0.95, (0.07, 1.02, 0.26))],
+    }, ev={'hit': 0.15, 'hit2': 0.65}, src='77_02+열쇠')
+    # 버섯: 쪼그려 앉아 손으로 비틀어 뽑고 왼손에 모은다. 두 번
+    R['pick_ground'] = keyed_clip(sq, 1.6, {
+        'R': [(0, (0.0, 0.26, 0.38)), (0.2, (-0.05, 0.09, 0.46)), (0.27, (-0.02, 0.1, 0.44)), (0.34, (-0.05, 0.1, 0.45)), (0.45, (-0.02, 0.22, 0.42)),
+              (0.58, (0.1, 0.32, 0.3)), (0.66, (0.1, 0.32, 0.3)), (0.8, (0.06, 0.1, 0.5)), (0.86, (0.08, 0.1, 0.48)), (0.95, (0.05, 0.22, 0.44))],
+        'L': [(0, (0.15, 0.33, 0.3)), (0.6, (0.13, 0.35, 0.3))],
+        'twist': [(0, 0.0), (0.2, -0.08), (0.6, 0.06), (0.85, 0.08)],
+    }, ev={'hit': 0.3, 'hit2': 0.86}, src='69_70+열쇠')
+    # 가죽 벗기기: 쪼그려 앉아 왼손으로 가죽을 잡아당기며 오른손 칼로 길게 가른다
+    R['skin'] = keyed_clip(sq, 1.5, {
+        'R': [(0, (-0.2, 0.3, 0.46)), (0.35, (0.12, 0.2, 0.52)), (0.45, (0.15, 0.22, 0.5)), (0.7, (-0.18, 0.33, 0.44))],
+        'L': [(0, (0.18, 0.26, 0.42)), (0.35, (0.2, 0.35, 0.37)), (0.7, (0.18, 0.28, 0.42))],
+        'twist': [(0, -0.1), (0.35, 0.08), (0.7, -0.06)],
+        'pitch': [(0, 0.06), (0.35, 0.12)],
+    }, ev={'hit': 0.25}, src='69_70+열쇠')
+    # 먹기: 오른손을 입에 두 번 가져간다(한 번 재생)
+    R['eat'] = keyed_clip(stand, 1.8, {
+        'R': [(0, (-0.2, 0.95, 0.1)), (0.22, (-0.06, 1.42, 0.17)), (0.34, (-0.04, 1.46, 0.14)), (0.42, (-0.06, 1.42, 0.18)), (0.54, (-0.04, 1.46, 0.14)),
+              (0.64, (-0.07, 1.4, 0.19)), (0.86, (-0.16, 1.05, 0.2)), (1.0, (-0.2, 0.95, 0.1))],
+        'neck': [(0, 0.0), (0.3, 0.12), (0.4, 0.04), (0.52, 0.12), (0.7, 0.02), (1.0, 0.0)],
+        'poleR': [-0.6, -0.8, 0.0],
+    }, loop=False, ev={'bite': 0.34}, src='77_02+열쇠')
+    # 마시기: 두 손으로 그릇을 들어 입에 대고 고개를 젖힌다(한 번 재생)
+    R['drink'] = keyed_clip(stand, 2.2, {
+        'R': [(0, (-0.18, 0.95, 0.12)), (0.25, (-0.06, 1.38, 0.24)), (0.35, (-0.05, 1.44, 0.2)), (0.7, (-0.05, 1.46, 0.19)), (0.85, (-0.07, 1.12, 0.28)), (1.0, (-0.18, 0.95, 0.12))],
+        'L': [(0, (0.18, 0.95, 0.12)), (0.25, (0.07, 1.36, 0.25)), (0.35, (0.06, 1.42, 0.21)), (0.7, (0.06, 1.44, 0.2)), (0.85, (0.08, 1.1, 0.28)), (1.0, (0.18, 0.95, 0.12))],
+        'neck': [(0, 0.0), (0.3, 0.02), (0.45, -0.28), (0.7, -0.3), (0.85, 0.0), (1.0, 0.0)],
+        'poleR': [-0.6, -0.8, 0.0], 'poleL': [0.6, -0.8, 0.0],
+        'tool': [(0, (0, 1, 0)), (0.3, (0, 1, 0.1)), (0.45, (0, 0.62, -0.78)), (0.7, (0, 0.55, -0.83)), (0.85, (0, 1, 0)), (1.0, (0, 1, 0))],
+        'toolUp': [1, 0, 0], 'toolAt': 'mid',
+    }, loop=False, src='77_02+열쇠')
+    # 망치질(대장간·갑주·목공대): 모루 앞에서 들었다 내려치기 두 번
+    R['hammer'] = keyed_clip(stand, 1.4, {
+        'pitch': [(0, 0.16), (0.3, 0.2), (0.8, 0.2)],
+        'neck': [(0, 0.25)],
+        'R': [(0, (-0.18, 1.02, 0.4)), (0.18, (-0.24, 1.38, 0.26)), (0.3, (-0.15, 1.02, 0.44)), (0.42, (-0.19, 1.16, 0.38)), (0.68, (-0.24, 1.38, 0.26)), (0.8, (-0.15, 1.02, 0.44)), (0.92, (-0.19, 1.12, 0.39))],
+        'L': [(0, (0.08, 0.99, 0.4)), (0.5, (0.07, 1.0, 0.42)), (0.95, (0.08, 0.99, 0.4))],
+        # 망치 자루: 들 때 위·뒤, 칠 때 앞·아래(머리가 모루에 닿게)
+        'tool': [(0, (0.05, -0.35, 0.94)), (0.18, (0.0, 0.75, -0.66)), (0.3, (0.05, -0.4, 0.92)), (0.42, (0.03, 0.2, 0.98)), (0.68, (0.0, 0.75, -0.66)), (0.8, (0.05, -0.4, 0.92)), (0.92, (0.03, 0.15, 0.99))],
+        'toolAt': 'R',
+    }, ev={'hit': 0.3, 'hit2': 0.8}, src='77_02+열쇠')
+    # 젓기(조리대·제련로): 오른손 국자로 솥을 원을 그리며 젓고 왼손은 솥 가장자리를 잡는다
+    th = np.linspace(0, 1, 9)[:-1]
+    R['stir'] = keyed_clip(stand, 1.6, {
+        'pitch': [(0, 0.14)], 'neck': [(0, 0.3)],
+        'R': [(t, (-0.1 + 0.08 * np.cos(2 * np.pi * t), 1.05 + 0.012 * np.sin(4 * np.pi * t), 0.36 + 0.07 * np.sin(2 * np.pi * t))) for t in th],
+        'L': [(0, (0.15, 1.0, 0.34)), (0.5, (0.15, 1.01, 0.35))],
+        'tool': [(t, (0.15 * np.cos(2 * np.pi * t), -0.9, 0.42 + 0.1 * np.sin(2 * np.pi * t))) for t in th],
+        'toolAt': 'R',
+        'twist': [(t, 0.06 * np.cos(2 * np.pi * t)) for t in th],
+    }, src='77_02+열쇠')
+    # 베 짜기: 바디를 당기고(두 손) 북을 오른손→왼손으로 넘긴다
+    R['weave'] = keyed_clip(stand, 1.8, {
+        'pitch': [(0, 0.08)], 'neck': [(0, 0.22)],
+        'R': [(0, (-0.18, 1.14, 0.44)), (0.12, (-0.18, 1.12, 0.3)), (0.25, (-0.18, 1.14, 0.44)), (0.45, (0.06, 1.1, 0.42)), (0.6, (-0.12, 1.08, 0.42)), (0.85, (-0.18, 1.14, 0.44))],
+        'L': [(0, (0.18, 1.14, 0.44)), (0.12, (0.18, 1.12, 0.3)), (0.25, (0.18, 1.14, 0.44)), (0.45, (0.1, 1.1, 0.42)), (0.6, (0.18, 1.1, 0.42)), (0.85, (0.18, 1.14, 0.44))],
+    }, src='77_02+열쇠')
+    # 무두질: 틀에 걸린 가죽을 두 손 칼로 위에서 아래로 훑어 내린다
+    R['scrape'] = keyed_clip(stand, 1.4, {
+        'pitch': [(0, 0.18), (0.45, 0.3)], 'neck': [(0, 0.15)],
+        'R': [(0, (-0.1, 1.3, 0.38)), (0.45, (-0.08, 1.0, 0.43)), (0.6, (-0.09, 1.04, 0.4)), (0.9, (-0.1, 1.28, 0.37))],
+        'L': [(0, (0.1, 1.28, 0.38)), (0.45, (0.09, 0.99, 0.43)), (0.6, (0.09, 1.02, 0.4)), (0.9, (0.1, 1.26, 0.37))],
+    }, src='77_02+열쇠')
+    # 손으로 짓기(작업대 없이): 배 앞에서 두 손으로 꼬고 묶는다
+    R['handwork'] = keyed_clip(stand, 2.0, {
+        'pitch': [(0, 0.1)], 'neck': [(0, 0.35)],
+        'R': [(0, (-0.08, 1.02, 0.3)), (0.25, (-0.05, 1.05, 0.33)), (0.5, (-0.1, 1.0, 0.31)), (0.75, (-0.06, 1.04, 0.28))],
+        'L': [(0, (0.08, 1.02, 0.3)), (0.25, (0.1, 1.0, 0.29)), (0.5, (0.06, 1.05, 0.32)), (0.75, (0.1, 1.01, 0.3))],
+    }, src='77_02+열쇠')
+    # 무기 막기(v0.4.9): 권투 자세의 다리 위에, 무기를 몸 앞에 비스듬히 가로질러 든다.
+    # 뒤(카메라)에서 봐도 대각선으로 읽히게 손끝 위치와 날 방향을 정한다.
+    guard0 = one_frame(out['guard'], 0.0)
+    sway = lambda p, d: [(0, p), (0.5, tuple(p[i] + d[i] for i in range(3)))]
+    # 창: 오른손은 오른허리 앞, 왼손은 왼어깨 앞 — 창대가 몸 앞을 왼쪽 위로 가로지른다
+    R['guard_spear'] = keyed_clip(guard0, 1.6, {
+        'R': sway((-0.24, 1.04, 0.28), (0, 0.01, 0)),
+        'L': sway((0.22, 1.36, 0.34), (0, 0.012, -0.005)),
+    }, src='143_23+열쇠')
+    # 한손검·몽둥이: 칼자루를 오른가슴 앞에 두고 날을 왼쪽 위로 세운다(머리 앞을 가린다), 왼주먹은 배 앞
+    R['guard_sword'] = keyed_clip(guard0, 1.6, {
+        'R': sway((-0.1, 1.28, 0.34), (0, 0.012, 0)),
+        'L': sway((0.16, 1.12, 0.26), (0, 0.01, 0)),
+        'tool': [(0, (0.45, 0.8, 0.3)), (0.5, (0.46, 0.79, 0.31))],
+        'toolUp': [1, 0, 0], 'toolAt': 'R',
+    }, src='143_23+열쇠')
+    # 전투 도끼: 오른손은 자루 끝을 오른허리 앞에, 왼손은 자루 위쪽을 왼가슴 앞에 — 날은 앞을 본다
+    ad = np.array([0.34, 0.28, 0.06])
+    ad = ad / np.linalg.norm(ad)
+    aR = np.array([-0.22, 1.02, 0.3])
+    aL = aR + 0.42 * ad
+    R['guard_axe'] = keyed_clip(guard0, 1.6, {
+        'R': sway(tuple(aR), (0, 0.01, 0)),
+        'L': sway(tuple(aL), (0, 0.01, 0)),
+        'tool': [(0, tuple(ad)), (0.5, tuple(ad))],
+        'toolUp': [0, 0, 1], 'toolAt': 'R',  # 전투 도끼 날은 묶음의 x쪽으로 뻗는다 → x를 앞으로
+    }, src='143_23+열쇠')
+    for k, c in R.items():
+        if k in ('chop_tree', 'hammer', 'stir', 'weave', 'scrape', 'handwork'):
+            build.ground(c)
+            R[k] = build.plant(c)
+    return R
+
+
+def leg_ik(c, side, T, pole=None):
+    """side 발목을 T(n,3, 뿌리 공간)로. 무릎은 pole(기본: 앞) 쪽으로 굽고 발 방향은 그대로"""
+    from build import fk_full, rot_between
+    q, h, n = c['q'], c['h'], c['n']
+    G, pos = fk_full(q, h)
+    th, kn, ft = 'th' + side, 'kn' + side, 'ft' + side
+    A, B, C = pos[th], pos[kn], pos[ft]
+    l1 = np.linalg.norm(B - A, axis=1)
+    l2 = np.linalg.norm(C - B, axis=1)
+    d = np.clip(np.linalg.norm(T - A, axis=1), np.abs(l1 - l2) + 1e-4, l1 + l2 - 1e-3)
+    u = nrm(T - A)
+    pv = np.tile([0.0, 0.0, 1.0], (n, 1)) if pole is None else pole
+    pv = pv - (pv * u).sum(1, keepdims=True) * u
+    pv = nrm(pv)
+    ca = np.clip((l1 ** 2 + d ** 2 - l2 ** 2) / (2 * l1 * d), -1, 1)
+    B2 = A + u * (l1 * ca)[:, None] + pv * (l1 * np.sqrt(1 - ca ** 2))[:, None]
+    C2 = A + u * d[:, None]
+    R1 = rot_between(B - A, B2 - A)
+    Gth = R1 @ G[th]
+    R2 = rot_between(np.einsum('fij,fj->fi', R1, C - B), C2 - B2)
+    Gkn = R2 @ R1 @ G[kn]
+    q2 = dict(q)
+    q2[th] = mat_to_quat(np.transpose(G[PARENT[th]], (0, 2, 1)) @ Gth)
+    q2[kn] = mat_to_quat(np.transpose(Gth, (0, 2, 1)) @ Gkn)
+    q2[ft] = mat_to_quat(np.transpose(Gkn, (0, 2, 1)) @ G[ft])
+    return dict(c, q=q2)
+
+
+def hop_clip(root, out):
+    """무거운 갑옷 피하기: 구르지 않고 몸을 낮췄다가 짧게 뛰어 비켜 딛는다(한 번 재생).
+    0~0.18 웅크림 → 0.5 공중(두 발 들림) → 0.78 착지 웅크림 → 1 일어섬"""
+    import build
+    from build import fk_full
+    stand = one_frame(out['guard'], 0.0)
+    n = int(round(0.75 * 30)) + 1
+    c = keyed_clip(stand, 0.75, {
+        'hips': [(0, (0, 0, 0)), (0.18, (0, -0.13, 0)), (0.5, (0, 0.05, 0)), (0.78, (0, -0.12, 0)), (1.0, (0, 0, 0))],
+        'pitch': [(0, 0.05), (0.18, 0.34), (0.5, 0.24), (0.78, 0.3), (1.0, 0.06)],
+        'R': [(0, (-0.13, 1.24, 0.26)), (0.5, (-0.16, 1.2, 0.2)), (1.0, (-0.13, 1.24, 0.26))],
+        'L': [(0, (0.12, 1.28, 0.28)), (0.5, (0.16, 1.22, 0.22)), (1.0, (0.12, 1.28, 0.28))],
+    }, loop=False, src='143_23+열쇠')
+    _, pos = fk_full(c['q'], c['h'])
+    t = np.arange(n) / (n - 1)
+    lift = np.clip(np.sin(np.clip((t - 0.26) / 0.44, 0, 1) * np.pi), 0, None) * 0.2
+    for side, dz in (('L', 0.12), ('R', -0.12)):
+        f0 = pos['ft' + side][0]
+        stride = dz * np.clip((t - 0.2) / 0.6, 0, 1)
+        T = np.stack([np.full(n, f0[0]), np.full(n, f0[1]) + lift, f0[2] + stride], 1)
+        c = leg_ik(c, side, T, pole=np.tile([0.15 * (1 if side == 'L' else -1), 0.0, 1.0], (n, 1)))
+    c['ev'] = {}
+    return {'hop': c}
+
+
+def saw_clip(root):
+    """톱질(제재대): 62_03 손톱질에서 처음·끝이 닮은 1~1.6초 창을 골라 고리로"""
+    import build
+    f = f'{root}/062/62_03.bvh'
+    J, D, dt = parse(f)
+    r = retarget(f, build.REST, heading=None)
+    L = r['L']
+    feat = np.concatenate([L[b] for b in ('spine', 'chest', 'shR', 'elR', 'shL', 'elL', 'thL', 'thR')], 1)
+    best = None
+    for i in range(int(4.2 / dt), int(8.4 / dt), 3):
+        for j in range(i + int(1.0 / dt), i + int(1.6 / dt), 3):
+            dd = np.abs(np.abs((feat[i].reshape(-1, 4) * feat[j].reshape(-1, 4)).sum(1)) - 1).sum()
+            if best is None or dd < best[0]:
+                best = (dd, i, j)
+    _, i, j = best
+    c = action_clip(f, i * dt, j * dt, loop=True)
+    build.ground(c)
+    c = build.plant(c)
+    c['ev'] = {}
+    return {'saw': c}

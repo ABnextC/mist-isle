@@ -13,6 +13,7 @@ export function loadClips(url) {
       for (const c of Object.values(d.clips)) {
         c.q = new Float32Array(c.q);
         c.h = new Float32Array(c.h);
+        if (c.td) c.td = new Float32Array(c.td);
       }
       DATA = d;
       return d;
@@ -56,6 +57,36 @@ export function sampleOnce(name, t, out, outH) {
 }
 
 export const hasClip = (name) => !!DATA?.clips[name];
+
+// 손에 든 것의 자루 방향(뿌리 공간) — 동작 묶음에 td가 있을 때만. once면 끝에서 멈추고 아니면 고리
+export function sampleTool(name, t, once, out) {
+  const c = DATA?.clips[name];
+  if (!c || !c.td) return false;
+  const n = c.n;
+  let f;
+  let i0;
+  let i1;
+  if (once) {
+    f = Math.min(1, Math.max(0, t)) * (n - 1);
+    i0 = Math.min(n - 2, Math.floor(f));
+    i1 = i0 + 1;
+  } else {
+    f = (((t % 1) + 1) % 1) * n;
+    i0 = Math.floor(f) % n;
+    i1 = (i0 + 1) % n;
+  }
+  const u = f - Math.floor(f);
+  const x = c.td[i0 * 3] * (1 - u) + c.td[i1 * 3] * u;
+  const y = c.td[i0 * 3 + 1] * (1 - u) + c.td[i1 * 3 + 1] * u;
+  const z = c.td[i0 * 3 + 2] * (1 - u) + c.td[i1 * 3 + 2] * u;
+  const l = Math.hypot(x, y, z) || 1;
+  out.dir[0] = x / l;
+  out.dir[1] = y / l;
+  out.dir[2] = z / l;
+  out.up = c.tn;
+  out.at = c.to;
+  return true;
+}
 
 // a ← a·(1−t) + b·t (뼈마다 구면 보간)
 export function blend(a, aH, b, bH, t) {

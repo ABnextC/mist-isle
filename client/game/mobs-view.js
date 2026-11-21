@@ -136,6 +136,9 @@ export function createMobsView(scene, game, hf, overlay) {
         v.cyc = (v.cyc + (dt * v.speed) / strideM) % 1;
         const bob = G.bob * walk;
         const lower = 0.04 * q.legs[0].l1 + (winding ? 0.08 * (1 - left) : 0) + (charging ? 0.05 : 0);
+        // 풀 뜯을 땐 몸통 앞을 숙인다(앞다리는 굽히고 뒷다리는 편다) — 지난 장의 graze 값을 쓴다
+        const gPitch = (v.graze ?? 0) * (m.type === 'deer' ? 0.14 : m.type === 'boar' ? 0.06 : 0);
+        const gTilt = Math.sin(gPitch) * q.L * 0.4;
         for (let i = 0; i < q.legs.length; i++) {
           const L = q.legs[i];
           const reach = L.l1 + L.l2;
@@ -152,7 +155,7 @@ export function createMobsView(scene, game, hf, overlay) {
             y = G.lift * reach * Math.sin(Math.PI * u) * walk;
           }
           // 엉덩이 높이 = 다리 길이 - 몸 낮춤 - 출렁임
-          const hipY = reach - lower - bob * Math.cos(v.cyc * Math.PI * (v.gait === 'gallop' ? 2 : 4));
+          const hipY = reach - lower - bob * Math.cos(v.cyc * Math.PI * (v.gait === 'gallop' ? 2 : 4)) - (L.front ? gTilt : -gTilt);
           let [a0, a1] = legIK(L.l1, L.l2, z, y - hipY, L.front);
           if (v.gaitK < 1 && v.prevA[i]) {
             const k = smooth(v.gaitK);
@@ -166,7 +169,7 @@ export function createMobsView(scene, game, hf, overlay) {
         q.torso.position.y = y0 - lower - bob * Math.cos(v.cyc * Math.PI * (v.gait === 'gallop' ? 2 : 4)) + Math.sin(v.breathe) * 0.004;
         q.torso.position.z = 0.18 * lungeK;
         // 몸통: 질주하면 앞뒤로 흔들리고, 준비 동작에 웅크리고(뒤로 앉듯), 돌진은 머리를 숙이고, 맞으면 움찔
-        q.torso.rotation.x = (winding ? -0.12 * (1 - left) : charging ? 0.12 : 0) + G.pitch * walk * Math.sin(v.cyc * Math.PI * 2) + 0.16 * lungeK - 0.12 * hurtK;
+        q.torso.rotation.x = (winding ? -0.12 * (1 - left) : charging ? 0.12 : 0) + G.pitch * walk * Math.sin(v.cyc * Math.PI * 2) + 0.16 * lungeK - 0.12 * hurtK + gPitch;
         q.torso.rotation.z = 0.1 * hurtK * (v.flashSide || 1);
       } else if (!dead) {
         // 게: 옆으로 종종걸음(세 다리씩 번갈아)
@@ -188,19 +191,47 @@ export function createMobsView(scene, game, hf, overlay) {
           if (L.kn) L.kn.rotation.x = L.kn.rotation.x * (1 - Math.min(1, dt * 4)) + (L.front ? 0.5 : -0.5) * Math.min(1, dt * 4) * v.fall;
         }
       }
+      // 풀 뜯기(사슴·멧돼지, v0.4.9): 가만히 있을 때 이따금 고개를 땅으로 숙이고 씹는다
+      const grazer = m.type === 'deer' || m.type === 'boar';
+      if (grazer && m.mode === 'idle' && walk < 0.1 && !dead) {
+        v.grazeIn = (v.grazeIn ?? Math.random() * 3) - dt;
+        if (v.grazeIn <= 0) {
+          v.grazing = !v.grazing;
+          v.grazeIn = v.grazing ? 3 + Math.random() * 4 : 2 + Math.random() * 4;
+        }
+      } else v.grazing = false;
+      v.graze = (v.graze ?? 0) + ((v.grazing ? 1 : 0) - (v.graze ?? 0)) * (1 - Math.exp(-dt * 2.5));
       // 고개: 서 있을 땐 이따금 두리번, 달리면 앞을 보고 걸음에 맞춰 끄덕, 물 때 숙인다
       v.lookIn -= dt;
       if (v.lookIn <= 0) {
         v.lookIn = 1.5 + Math.random() * 3;
         v.lookTo = m.mode === 'idle' ? (Math.random() - 0.5) * 1.1 : 0;
       }
-      v.look += (v.lookTo * (1 - walk) - v.look) * (1 - Math.exp(-dt * 3));
+      v.look += (v.lookTo * (1 - walk) * (1 - v.graze) - v.look) * (1 - Math.exp(-dt * 3));
       if (q.neck) {
         q.neck.rotation.y = v.look + Math.sin(v.cyc * Math.PI * 2) * 0.05 * walk;
         q.neck.userData.x0 ??= q.neck.rotation.x;
-        q.neck.rotation.x = q.neck.userData.x0 + 0.25 * lungeK + (winding ? 0.12 * (1 - left) : 0) + Math.sin(v.cyc * Math.PI * 4) * 0.04 * walk + Math.sin(v.breathe * 0.5) * 0.02;
+        q.neck.rotation.x = q.neck.userData.x0 + 0.25 * lungeK + (winding ? 0.12 * (1 - left) : 0) + Math.sin(v.cyc * Math.PI * 4) * 0.04 * walk + Math.sin(v.breathe * 0.5) * 0.02
+          + v.graze * (m.type === 'deer' ? 2.3 : 0.55);
+      }
+      if (q.head && grazer) {
+        q.head.userData.x0 ??= q.head.rotation.x;
+        q.head.userData.z0 ??= q.head.position.z;
+        // 사슴은 목 끝까지 머리를 내밀어 땅에 닿게 한다(서 있을 땐 머리가 목 가운데쯤에 붙어 있다)
+        if (m.type === 'deer') q.head.position.z = q.head.userData.z0 + v.graze * 0.22;
+        // 목을 내린 만큼 머리는 땅을 보게(사슴은 목이 길어 머리를 조금 든다), 씹을 땐 끄덕
+        q.head.rotation.x = q.head.userData.x0 + v.graze * ((m.type === 'deer' ? -0.4 : 0.3) + 0.05 * Math.sin(t * 13));
       }
       if (q.head && m.type === 'crab') q.head.rotation.x = winding ? -0.5 * (1 - left) : -0.3 * lungeK;
+      if (q.claws) {
+        // 집게: 노릴 땐 벌렸다가 덮칠 때 확 오므리고, 쉴 땐 이따금 딸깍인다
+        v.clackIn = (v.clackIn ?? 1 + Math.random() * 3) - dt;
+        if (v.clackIn <= 0) { v.clackIn = 1.5 + Math.random() * 3.5; v.clackT = t; }
+        const clack = !dead && v.clackT != null && t - v.clackT < 0.5 ? Math.abs(Math.sin((t - v.clackT) * Math.PI * 4)) : 0;
+        const open = dead ? 0.15 : winding ? 0.35 * (1 - left) : m.mode === 'chase' ? 0.18 : 0;
+        const pinch = open - 0.3 * lungeK - 0.14 * clack;
+        for (const c of q.claws) c.g.rotation.y = c.sx * pinch;
+      }
       // 꼬리: 쫓을 땐 빠르게, 쉴 땐 느리게, 달리면 뒤로 뻗는다
       if (q.tail) {
         q.tail.rotation.y = Math.sin(t * (m.mode === 'chase' ? 9 : 2.4)) * (0.35 - 0.2 * walk);

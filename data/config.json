@@ -35,7 +35,7 @@
     "handSpeed": 0.6,
     "tierPenalty": 0.6,
     "skillBonusPerLevel": 0.005,
-    "skillBonusMax": 0.25
+    "skillBonusMax": 0.25, "skinWorkM": 0.8, "workSlackM": 0.35
   },
   "craft": {
     "rangeM": 4,

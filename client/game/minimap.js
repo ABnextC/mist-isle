@@ -1,6 +1,8 @@
 // 미니맵: 위가 북쪽(z가 큰 쪽). 산지 소문은 점선 고리, 가까운 노드는 점으로.
 
 import { valueNoise } from '../../core/terrain.js';
+import { npcPos } from '../../core/world.js';
+import { hasMark } from '../../core/systems/quests.js';
 
 const DOT = { logging: '#f2ead2', mining: '#ff9a4a', harvesting: '#a6ec74', hunting: '#e0a070' };
 
@@ -24,7 +26,9 @@ export function createMinimap(canvas, game, terrain) {
     g.drawImage(bg, 0, 0);
     g.lineWidth = 1;
     g.setLineDash([3, 3]);
-    g.strokeStyle = 'rgba(255, 238, 170, 0.7)';
+    // 등불의 각인(v0.5.1): 영맥이 느껴진다 — 산지 고리가 푸르고, 더 먼 노드까지 보인다
+    const mark = hasMark(a, 'lantern_mark');
+    g.strokeStyle = mark ? 'rgba(140, 225, 255, 0.85)' : 'rgba(255, 238, 170, 0.7)';
     for (const v of Object.values(state.veins)) {
       if (v.common || !v.center) continue;
       const [px, py] = toPx(v.center[0], v.center[1]);
@@ -57,11 +61,27 @@ export function createMinimap(canvas, game, terrain) {
       g.arc(mx, my, T.boss || T.elite ? 3 : 1.8, 0, Math.PI * 2);
       g.fill();
     }
-    // 약탈단 자리(v0.5): 검은 깃발 표시와 이름
+    // 약탈단 자리(v0.5): 검은 깃발 표시와 이름. 옛터(v0.5.1)는 푸른 불꽃
     for (const s of data.lists.regions[0].sites || []) {
       if (!s.members) continue;
       const [sx0, sz0] = s.beach ? terrain.beachPoint(s.beach[0], s.beach[1]) : [s.x, s.z];
       const [px, py] = toPx(sx0, sz0);
+      if (!s.members.some((x) => data.creatures[x.type].faction)) {
+        g.fillStyle = '#9fe6ff';
+        g.strokeStyle = '#173040';
+        g.beginPath();
+        g.moveTo(px, py - 6);
+        g.quadraticCurveTo(px + 4.5, py - 1, px + 2.5, py + 3.5);
+        g.lineTo(px - 2.5, py + 3.5);
+        g.quadraticCurveTo(px - 4.5, py - 1, px, py - 6);
+        g.closePath();
+        g.fill();
+        g.stroke();
+        g.fillStyle = 'rgba(200, 238, 255, 0.95)';
+        g.font = '10px sans-serif';
+        g.fillText(s.name, px + 6, py + 3);
+        continue;
+      }
       g.fillStyle = '#1d1b1c';
       g.strokeStyle = '#e05a4f';
       g.beginPath();
@@ -78,9 +98,9 @@ export function createMinimap(canvas, game, terrain) {
     }
     // NPC: 할 이야기가 있으면 금빛
     for (const n of data.lists.npcs || []) {
-      const t = state.settlements[n.at];
-      if (!t) continue;
-      const [px, py] = toPx(t.x + n.dx, t.z + n.dz);
+      const np = npcPos(game, n.id);
+      if (!np) continue;
+      const [px, py] = toPx(np.x, np.z);
       const due = Object.keys(a.quests?.active || {}).some((id) => { const q = data.quests[id]; const st = q.steps[a.quests.active[id].step]; return st?.type === 'talk' && st.npc === n.id; });
       if (!due) continue;
       g.fillStyle = '#ffd24a';
@@ -88,9 +108,16 @@ export function createMinimap(canvas, game, terrain) {
       g.arc(px, py, 3.2, 0, Math.PI * 2);
       g.fill();
     }
+    const near = mark ? 130 : 70;
     for (const n of Object.values(state.nodes)) {
-      if (n.charges <= 0 || Math.abs(n.x - a.x) > 70 || Math.abs(n.z - a.z) > 70) continue;
+      if (n.charges <= 0 || Math.abs(n.x - a.x) > near || Math.abs(n.z - a.z) > near) continue;
       const [px, py] = toPx(n.x, n.z);
+      // 각인이 있으면 산지(소문난 영맥) 노드는 푸르게 반짝인다
+      if (mark && !state.veins[n.vein]?.common) {
+        g.fillStyle = `rgba(140, 225, 255, ${0.65 + 0.35 * Math.sin(time * 3 + n.x)})`;
+        g.fillRect(px - 1.6, py - 1.6, 3.2, 3.2);
+        continue;
+      }
       g.fillStyle = DOT[data.nodes[n.type].skill];
       g.fillRect(px - 1, py - 1, 2.2, 2.2);
     }

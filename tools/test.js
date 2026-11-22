@@ -879,7 +879,7 @@ function lone(typeId, seed = 21) {
   grp.mobs = [m.id];
   return { g, a: g.state.actors.p1, m, grp };
 }
-const world = (g) => ({ data, terrain: g.terrain });
+const world = (g) => ({ data, terrain: g.terrain, statics: g.statics });
 
 test('약탈자 막기: 앞에서 오는 약공은 75% 줄고, 강공은 막기를 깨뜨려 비틀거리게 한다', () => {
   const { g, a, m } = lone('raider');
@@ -1008,7 +1008,7 @@ test('안개 늑대는 밤에만 나온다: 낮엔 숨고, 밤에 마을 사이 
   ok(wolves().every((x) => x.mode === 'away'), '해가 뜨면 사라진다');
 });
 
-test('1장 「검은 돛」을 처음부터 끝까지: 막히는 단계 없이 8개 퀘스트, 보상과 현상금까지', () => {
+test('1·2장을 처음부터 끝까지: 막히는 단계 없이 메인 퀘스트 15개, 등불의 각인·보상·현상금까지', () => {
   const g = createGame({ data, seed: 7, actors: [{ id: 'p1', kind: 'player' }] });
   g.state.econ = null;
   const st = g.state;
@@ -1028,8 +1028,8 @@ test('1장 「검은 돛」을 처음부터 끝까지: 막히는 단계 없이 8
     g.advance(0.6);
   };
   const events = [];
-  for (const k of ['quest.done', 'chapter.done', 'quest.wave', 'quest.fail', 'loot']) g.on(k, (ev) => events.push(ev));
-  const main = data.chapters[0].quests;
+  for (const k of ['quest.done', 'chapter.done', 'quest.wave', 'quest.fail', 'loot', 'quest.grant']) g.on(k, (ev) => events.push(ev));
+  const main = data.chapters.flatMap((c) => c.quests);
   let guard = 0;
   let midSave = null;
   while (guard++ < 400) {
@@ -1038,7 +1038,7 @@ test('1장 「검은 돛」을 처음부터 끝까지: 막히는 단계 없이 8
     const p = a.quests.active[id];
     const step = data.quests[id].steps[p.step];
     if (step.type === 'talk') {
-      const n = npcPos(data, step.npc);
+      const n = npcPos(W, step.npc);
       warp(n.x + 1.2, n.z);
       ok(g.dispatch({ type: 'TALK', actor: 'p1', npc: step.npc }).ok, `${id} 대화`);
     } else if (step.type === 'go') {
@@ -1052,8 +1052,15 @@ test('1장 「검은 돛」을 처음부터 끝까지: 막히는 단계 없이 8
       ok(g.dispatch({ type: 'QUEST_USE', actor: 'p1', obj: o }).ok, `${id} ${o}`);
     } else if (step.type === 'kill') {
       const s = step.site ? sitePos(W, step.site) : null;
-      const m = Object.values(st.mobs).filter((x) => x.mode !== 'dead' && x.mode !== 'away' && step.mobs.includes(x.type) && (!s || Math.hypot(x.x - s.x, x.z - s.z) < s.r + 20))
+      const pick = () => Object.values(st.mobs).filter((x) => x.mode !== 'dead' && x.mode !== 'away' && step.mobs.includes(x.type) && (!s || Math.hypot(x.x - s.x, x.z - s.z) < s.r + 20))
         .sort((x, y) => Math.hypot(x.x - a.x, x.z - a.z) - Math.hypot(y.x - a.x, y.z - a.z))[0];
+      let m = pick();
+      // 앞 단계에서 휩쓸려 쓰러졌으면 다시 날 때까지 기다린다
+      for (let k = 0; !m && k < 120; k++) {
+        if (k === 0) process.stdout.write(`    (${id}: ${step.mobs.join('/')} 다시 나기를 기다림)\n`);
+        g.advance(10);
+        m = pick();
+      }
       ok(m, `${id}: 쓰러뜨릴 ${step.mobs.join('/')}가 없다`);
       slay(m);
     } else if (step.type === 'defend') {
@@ -1077,8 +1084,10 @@ test('1장 「검은 돛」을 처음부터 끝까지: 막히는 단계 없이 8
   }
   for (const q of main) ok(a.quests.done[q] != null, `${q} 못 끝냄`);
   eq(Object.keys(a.quests.items).length, 0, '퀘스트 물건은 돌려줬다');
-  ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch1'), '1장 끝');
-  eq(events.filter((e) => e.type === 'quest.wave').length, 2, '습격 두 물결');
+  ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch1' && e.next === 'ch2'), '1장 끝 → 2장');
+  ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch2' && !e.next), '2장 끝');
+  eq(events.filter((e) => e.type === 'quest.wave').length, 4, '습격 두 번 × 두 물결');
+  ok(a.marks?.lantern_mark != null && events.some((e) => e.type === 'quest.grant'), '등불의 각인');
   ok(a.bag.some((e) => e.item === 'wpn_club' && e.crafter === '해림'), '해림의 몽둥이');
   ok(a.bag.some((e) => e.item === 'ingot_iron') && a.bag.some((e) => e.item === 'leather'), '재료 보상');
   const silver = data.lists.quests.filter((q) => q.kind === 'main').reduce((s, q) => s + (q.reward?.silver || 0), 0);
@@ -1102,6 +1111,53 @@ test('1장 「검은 돛」을 처음부터 끝까지: 막히는 단계 없이 8
   eq(g.dispatch({ type: 'QUEST_ACCEPT', actor: 'p1', quest: 'b_raider' }).error, 'not_available', '오늘은 끝');
 });
 
+test('1장을 끝낸 개척자에게 2장이 이어지고, 돌 해태는 이야기를 받기 전엔 돌이며(꼼짝·무적), 받은 뒤 다가가면 몸을 일으킨다', () => {
+  const g = createGame({ data, seed: 7, actors: [{ id: 'p1', kind: 'player' }] });
+  g.state.econ = null;
+  const a = g.state.actors.p1;
+  // v0.5에서 1장을 끝낸 세이브처럼: 끝낸 퀘스트만 있고 하는 것은 없다
+  a.quests.active = {};
+  for (const id of data.chapters[0].quests) a.quests.done[id] = 1;
+  g.advance(1.1);
+  ok(a.quests.active.c2_dim, '2장 첫 퀘스트');
+  const st = g.state;
+  const hae = Object.values(st.mobs).find((m) => m.type === 'stone_haetae');
+  const p0 = [hae.x, hae.z, hae.yaw];
+  g.advance(40);
+  eq([hae.x, hae.z, hae.yaw].join(), p0.join(), '석상은 그대로');
+  // 옛터 망령 하나를 건드려도 해태는 깨지 않는다
+  const w = Object.values(st.mobs).find((m) => m.type === 'mist_wraith' && m.group === hae.group);
+  a.x = w.x + 2;
+  a.z = w.z;
+  a.cb.hp = a.cb.maxHp = 1e6;
+  g.advance(2);
+  ok(w.target === 'p1', '망령이 덤빈다');
+  eq(hae.target, null, '해태는 잔다');
+  // 이야기를 받기 전: 바로 옆에 서도 깨지 않고, 때려도 칼날이 튕겨 나온다
+  const imm = [];
+  g.on('mob.immune', (ev) => imm.push(ev));
+  Object.assign(a, { x: hae.x + Math.sin(hae.yaw) * 1.6, z: hae.z + Math.cos(hae.yaw) * 1.6, move: null, dest: null, nav: null });
+  g.advance(1);
+  eq(hae.target, null, '퀘스트 전엔 깨지 않는다');
+  a.yaw = Math.atan2(hae.x - a.x, hae.z - a.z);
+  a.cb.act = null;
+  ok(g.dispatch({ type: 'ATTACK', actor: 'p1', kind: 'light', yaw: a.yaw }).ok, '공격');
+  g.advance(0.8);
+  eq(hae.hp, data.creatures.stone_haetae.hp, '돌이라 안 다친다');
+  ok(imm.length >= 1, '튕겨 나옴');
+  eq(hae.target, null, '때려도 깨지 않는다');
+  // 「돌 해태」를 받으면 다가갈 때 몸을 일으키고(rise), 다 일어서면 덤빈다
+  a.x = hae.x + 12;
+  g.advance(0.5);
+  a.quests.active.c2_haetae = { step: 0, n: 0, used: [], t: g.state.t };
+  a.x = hae.x + 4;
+  g.advance(0.5);
+  eq(hae.mode, 'rise', '일어서는 중');
+  eq(hae.target, 'p1', '노린다');
+  g.advance(data.creatures.stone_haetae.rise + 0.2);
+  ok(['chase', 'windup', 'recover', 'charge'].includes(hae.mode), `덤빈다 (${hae.mode})`);
+});
+
 test('v0.4 세이브를 불러오면 1장 첫 퀘스트가 생기고, 약탈단 자리·안개 늑대가 더해지며 있던 무리는 그대로다', () => {
   const old = readFileSync(new URL('./fixtures/save-v0.4.json', import.meta.url), 'utf8');
   const before = JSON.parse(old).state;
@@ -1123,6 +1179,46 @@ test('v0.4 세이브를 불러오면 1장 첫 퀘스트가 생기고, 약탈단 
   g.advance(900);
   const again = loadGame({ data, save: old });
   again.advance(900);
+  eq(again.hash(), g.hash(), '이관 뒤에도 재현된다');
+});
+
+test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불터·밤 망령이 더해지며 있던 무리·노드는 그대로다', () => {
+  const old = readFileSync(new URL('./fixtures/save-v0.5.json', import.meta.url), 'utf8');
+  const before = JSON.parse(old).state;
+  const g = loadGame({ data, save: old });
+  const st = g.state;
+  eq(st.meta.dataVersion, cfg.dataVersion);
+  eq(st.meta.engine, '0.5.1');
+  const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site).length;
+  for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
+  eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
+  const ruins = Object.values(st.mobGroups).find((x) => x.site === 'old_lantern');
+  ok(ruins, '옛 등불터 무리');
+  eq(ruins.mobs.map((id) => st.mobs[id].type).sort().join(), 'mist_wraith,mist_wraith,mist_wraith,mist_wraith,mist_wraith,stone_haetae', '해태 하나와 망령 다섯');
+  for (const s of ['lookout', 'camp', 'cove']) eq(Object.values(st.mobGroups).filter((x) => x.site === s).length, 1, `${s} 무리는 하나`);
+  // 있던 짐승 무리는 그 자리(새 자리와 겹친 것만 옮긴다)
+  const W = world(g);
+  const newSites = ['old_lantern', 'mainland_wreck'].map((s) => sitePos(W, s));
+  let kept = 0;
+  for (const [id, grp] of Object.entries(before.mobGroups)) {
+    const now = st.mobGroups[id];
+    ok(now, `무리 ${id} 남음`);
+    if (now.x === grp.x && now.z === grp.z) kept++;
+  }
+  ok(kept >= Object.keys(before.mobGroups).length - 3, `제자리 무리 ${kept}`);
+  for (const c of newSites) {
+    for (const n of Object.values(st.nodes)) ok(Math.hypot(n.x - c.x, n.z - c.z) > c.r + 3, `${c.id} 안 노드 ${n.type}`);
+    for (const grp of Object.values(st.mobGroups)) if (!grp.site && !grp.temp) ok(Math.hypot(grp.x - c.x, grp.z - c.z) > c.r + 10, `${c.id} 곁 ${grp.type} 무리`);
+  }
+  // 1장을 끝낸 개척자: 첫 틱에 2장 첫 퀘스트를 받는다
+  const a = st.actors.p1;
+  ok(!a.quests.active.c2_dim, '불러온 직후엔 아직');
+  g.advance(1.1);
+  ok(a.quests.active.c2_dim, '2장 첫 퀘스트');
+  eq(a.quests.track, 'c2_dim', '추적');
+  g.advance(900);
+  const again = loadGame({ data, save: old });
+  again.advance(901.1);
   eq(again.hash(), g.hash(), '이관 뒤에도 재현된다');
 });
 

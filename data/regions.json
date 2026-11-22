@@ -868,6 +868,244 @@
         "z": 88,
         "r": 12,
         "event": true
+      },
+      {
+        "id": "lighthouse_top",
+        "name": "등대",
+        "x": 179,
+        "z": 46.7,
+        "r": 3,
+        "objects": [
+          {
+            "id": "o_lamp",
+            "kind": "door",
+            "dx": 0,
+            "dz": 0,
+            "rot": 0,
+            "name": "등대 꼭대기 등잔",
+            "verb": "등대에 오르기"
+          }
+        ]
+      },
+      {
+        "id": "mainland_wreck",
+        "name": "부서진 본토 배",
+        "beach": [
+          268,
+          4
+        ],
+        "r": 12,
+        "structures": [
+          {
+            "kind": "wreck",
+            "dx": -1.0,
+            "dz": -5.5,
+            "r": 3.2,
+            "rot": 2.3
+          },
+          {
+            "kind": "banner_blue",
+            "dx": 3.5,
+            "dz": -2.0,
+            "r": 0.25,
+            "rot": 2.6
+          },
+          {
+            "kind": "tent_white",
+            "dx": 10.5,
+            "dz": 9.5,
+            "r": 1.9,
+            "rot": -2.6
+          },
+          {
+            "kind": "campfire",
+            "dx": 6.0,
+            "dz": 4.5,
+            "r": 0.7
+          },
+          {
+            "kind": "crates",
+            "dx": 12.0,
+            "dz": 4.0,
+            "r": 0.8,
+            "rot": 1.1
+          },
+          {
+            "kind": "papers",
+            "dx": 4.0,
+            "dz": 8.5,
+            "r": 0.75,
+            "rot": 0.4
+          }
+        ],
+        "objects": []
+      },
+      {
+        "id": "old_lantern",
+        "name": "옛 등불터",
+        "x": 52,
+        "z": 214,
+        "r": 16,
+        "structures": [
+          {
+            "kind": "altar",
+            "dx": 0,
+            "dz": 0,
+            "r": 1.3,
+            "rot": 1.57
+          },
+          {
+            "kind": "pillar",
+            "dx": 1.89,
+            "dz": 9.31,
+            "r": 0.6,
+            "rot": -0.2
+          },
+          {
+            "kind": "pillar_broken",
+            "dx": 7.92,
+            "dz": 5.25,
+            "r": 0.6,
+            "rot": -0.99
+          },
+          {
+            "kind": "pillar",
+            "dx": 9.31,
+            "dz": -1.89,
+            "r": 0.6,
+            "rot": -1.77
+          },
+          {
+            "kind": "pillar_fallen",
+            "dx": 5.25,
+            "dz": -7.92,
+            "r": 0,
+            "rot": -1.26
+          },
+          {
+            "kind": "pillar",
+            "dx": -1.89,
+            "dz": -9.31,
+            "r": 0.6,
+            "rot": -3.34
+          },
+          {
+            "kind": "pillar_broken",
+            "dx": -7.92,
+            "dz": -5.25,
+            "r": 0.6,
+            "rot": -4.13
+          },
+          {
+            "kind": "pillar",
+            "dx": -9.31,
+            "dz": 1.89,
+            "r": 0.6,
+            "rot": -4.91
+          },
+          {
+            "kind": "pillar_fallen",
+            "dx": -5.25,
+            "dz": 7.92,
+            "r": 0,
+            "rot": -4.4
+          },
+          {
+            "kind": "arch",
+            "dx": 13.5,
+            "dz": 0.5,
+            "r": 0,
+            "rot": 1.57
+          },
+          {
+            "kind": "mural",
+            "dx": -12.5,
+            "dz": 0.0,
+            "r": 1.1,
+            "rot": 1.57
+          },
+          {
+            "kind": "rubble",
+            "dx": -6.0,
+            "dz": -10.5,
+            "r": 0,
+            "rot": 0.4
+          },
+          {
+            "kind": "rubble",
+            "dx": 8.5,
+            "dz": 10.0,
+            "r": 0,
+            "rot": 2.1
+          }
+        ],
+        "objects": [
+          {
+            "id": "o_brazier_1",
+            "kind": "brazier",
+            "dx": 5.6,
+            "dz": 0.0,
+            "rot": 0,
+            "name": "꺼진 옛 화로",
+            "verb": "불 넣기"
+          },
+          {
+            "id": "o_brazier_2",
+            "kind": "brazier",
+            "dx": -2.8,
+            "dz": -4.85,
+            "rot": 0,
+            "name": "꺼진 옛 화로",
+            "verb": "불 넣기"
+          },
+          {
+            "id": "o_brazier_3",
+            "kind": "brazier",
+            "dx": -2.8,
+            "dz": 4.85,
+            "rot": 0,
+            "name": "꺼진 옛 화로",
+            "verb": "불 넣기"
+          }
+        ],
+        "members": [
+          {
+            "type": "stone_haetae",
+            "dx": 3.6,
+            "dz": 0.0,
+            "yaw": 1.57
+          },
+          {
+            "type": "mist_wraith",
+            "dx": 10.5,
+            "dz": 5.5,
+            "yaw": 1.2
+          },
+          {
+            "type": "mist_wraith",
+            "dx": 9.5,
+            "dz": -6.5,
+            "yaw": 2.0
+          },
+          {
+            "type": "mist_wraith",
+            "dx": -3.5,
+            "dz": 11.0,
+            "yaw": 0.2
+          },
+          {
+            "type": "mist_wraith",
+            "dx": -4.0,
+            "dz": -11.5,
+            "yaw": 3.0
+          },
+          {
+            "type": "mist_wraith",
+            "dx": -10.0,
+            "dz": 6.0,
+            "yaw": -0.9
+          }
+        ]
       }
     ]
   }

@@ -607,7 +607,8 @@ export function createActorsView(scene, game, hf, camera = null) {
     // 퀘스트 물체를 뒤질 때(v0.5): 쪼그려 앉아 줍는 동작 한 번
     if (ev.type === 'quest.use') {
       const v = views.get(ev.actor);
-      if (v) v.useQ = { t0: null };
+      // 등대에 오르는 일(문)은 무릎을 꿇지 않는다
+      if (v && game.data.objects[ev.obj]?.kind !== 'door') v.useQ = { t0: null };
     }
     if (ev.type === 'combat.hurt') {
       const v = views.get(ev.actor);
@@ -669,7 +670,7 @@ export function createActorsView(scene, game, hf, camera = null) {
     const id = `npc:${n.id}`;
     let p = pseudo.get(id);
     if (!p) {
-      const pos = npcPos(game.data, n.id);
+      const pos = npcPos(game, n.id);
       p = baseLook(id, n.look || {}, { kind: 'npc', npc: n.id, x: pos.x, z: pos.z, yaw: pos.yaw, home: pos.yaw });
       pseudo.set(id, p);
     }

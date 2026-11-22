@@ -162,7 +162,7 @@ export function buildData(raw) {
   // NPC·퀘스트(v0.5)
   const npcList = raw.npcs || [];
   const npcs = index(npcList, 'NPC');
-  for (const n of npcList) if (!settlements[n.at]) problems.push(`NPC ${n.id}: 정착지 ${n.at} 없음`);
+  for (const n of npcList) if (n.at ? !settlements[n.at] : !sites[n.site]) problems.push(`NPC ${n.id}: 자리 ${n.at || n.site} 없음`);
   const Q = raw.quests || { chapters: [], items: {}, quests: [] };
   const quests = index(Q.quests, '퀘스트');
   for (const q of Q.quests) {
@@ -180,6 +180,7 @@ export function buildData(raw) {
       if (!['talk', 'go', 'kill', 'use', 'defend'].includes(st.type)) problems.push(`퀘스트 ${q.id}: 모르는 단계 ${st.type}`);
     }
     for (const it of q.reward?.items || []) if (!items[it.item]) problems.push(`퀘스트 ${q.id}: 보상 ${it.item} 없음`);
+    for (const g of q.grants || []) if (!['lantern_mark'].includes(g)) problems.push(`퀘스트 ${q.id}: 모르는 표식 ${g}`);
   }
   for (const ch of Q.chapters) for (const id of ch.quests) if (!quests[id]) problems.push(`장 ${ch.id}: 퀘스트 ${id} 없음`);
 

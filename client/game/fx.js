@@ -275,7 +275,8 @@ export function createFx(scene, { textures, hf, town, terrain, region }) {
     fire.begin();
     sparks.begin();
     for (let f = 0; f < firePts.length; f++) {
-      const { p, s, low } = firePts[f];
+      const { p, s, low, off } = firePts[f];
+      if (off) continue;
       const n = low ? 3 : 5;
       for (let k = 0; k < n; k++) {
         const ph = t * (6 + k) + f * 3 + k * 1.7;

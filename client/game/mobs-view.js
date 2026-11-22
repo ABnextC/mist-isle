@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { tickLerp } from './interp.js';
 import { makeCreature } from './models/creatures.js';
 
+const ZERO3 = [0, 0, 0];
 const lerpAngle = (a, b, k) => {
   let d = b - a;
   while (d > Math.PI) d -= Math.PI * 2;
@@ -39,7 +40,11 @@ function legIK(l1, l2, z, y, front) {
   return front ? [th - a, Math.PI - b] : [th + a, -(Math.PI - b)];
 }
 
-export function createMobsView(scene, game, hf, overlay, { posOf = null } = {}) {
+// 석상 앉은 자세(v0.5.1, 돌 해태): 몸 앞을 들고 엉덩이를 땅에 붙인다. 앞다리는 곧게, 뒷다리는 접는다
+const SIT_PITCH = 0.55;
+const lerp = (a, b, k) => a + (b - a) * k;
+
+export function createMobsView(scene, game, hf, overlay, { posOf = null, wakeHint = null } = {}) {
   const views = new Map();
   const tmp = new THREE.Vector3();
   const bars = new Map();
@@ -48,7 +53,8 @@ export function createMobsView(scene, game, hf, overlay, { posOf = null } = {}) 
     const q = makeCreature(m.type, [...m.id].reduce((s, ch) => s + ch.charCodeAt(0), 0));
     scene.add(q.root);
     return { q, pos: new THREE.Vector3(m.x, hf.height(m.x, m.z), m.z), yaw: m.yaw, phase: Math.random() * 6, speed: 0, flash: 0, fall: 0, fade: 1,
-      cyc: Math.random(), gait: 'walk', gaitK: 1, prevA: [], hurt: 0, lunge: 0, lastMode: m.mode, look: 0, lookTo: 0, lookIn: 1, breathe: Math.random() * 6 };
+      cyc: Math.random(), gait: 'walk', gaitK: 1, prevA: [], hurt: 0, lunge: 0, lastMode: m.mode, look: 0, lookTo: 0, lookIn: 1, breathe: Math.random() * 6,
+      wake: m.target || (m.mode !== 'idle' && m.mode !== 'wander') ? 1 : 0, wu: 1, slash: 0 };
   }
 
   function bar(id) {
@@ -94,7 +100,9 @@ export function createMobsView(scene, game, hf, overlay, { posOf = null } = {}) 
       }
       seen.add(m.id);
       const dead = m.mode === 'dead';
-      const gone = m.mode === 'away' || (dead && (m.skinned || t > m.deadAt + data.config.combat.corpseSec));
+      const q0 = v.q;
+      // 망령은 쓰러지면 곧 흩어진다
+      const gone = m.mode === 'away' || (dead && (q0.float ? v.fall >= 1 : m.skinned || t > m.deadAt + data.config.combat.corpseSec));
       v.fade = gone ? Math.max(0, v.fade - dt * 1.5) : dead ? v.fade : Math.min(1, v.fade + dt * 2);
       v.q.root.visible = v.fade > 0.02;
       if (!dead && v.fall > 0 && v.fade < 0.1) v.fall = 0;
@@ -118,9 +126,15 @@ export function createMobsView(scene, game, hf, overlay, { posOf = null } = {}) 
       q.root.rotation.set(0, v.yaw, 0);
       const winding = m.mode === 'windup';
       const charging = m.mode === 'charge';
-      const left = winding ? Math.max(0, (m.until - t) / type.attack.windup) : 0;
+      // 준비 동작 길이: 공격마다 다르고(v0.5.1) 두목은 성나면 빨라지므로, 시작할 때 남은 시간을 잰다
+      if (winding && v.lastMode !== 'windup') v.wu = Math.max(0.05, m.until - t);
+      const left = winding ? Math.max(0, Math.min(1, (m.until - t) / v.wu)) : 0;
+      const atk = type.attacks?.[m.atk?.i ?? 0] || type.attack;
       // 물기: 준비 동작이 끝나 '물고 물러남'으로 바뀌는 순간 앞으로 덤빈다
-      if (v.lastMode === 'windup' && m.mode === 'recover') v.lunge = 1;
+      if (v.lastMode === 'windup' && m.mode === 'recover') {
+        v.lunge = 1;
+        v.slash = 1;
+      }
       v.lastMode = m.mode;
       v.lunge = Math.max(0, v.lunge - dt * 3.2);
       v.hurt = Math.max(0, v.hurt - dt * 4);
@@ -128,7 +142,8 @@ export function createMobsView(scene, game, hf, overlay, { posOf = null } = {}) 
       const hurtK = Math.sin(Math.min(1, v.hurt) * Math.PI * 0.5);
       v.breathe += dt * (m.mode === 'chase' || m.mode === 'flee' ? 5 : 1.6);
       const walk = Math.min(1, v.speed / 0.6);
-      if (q.legs[0]?.kn && !dead) {
+      if (q.float) floatPose(v, q, m, dt, t, { dead, winding, charging, left, atk, walk, lungeK, hurtK });
+      else if (q.legs[0]?.kn && (!dead || q.statue)) {
         // 네발짐승: 걸음새를 골라 발이 땅을 디디게(딛는 동안 발이 뒤로 곧게, 드는 동안 앞으로 호를 그리며)
         const want = gaitOf(type, v.speed);
         if (want !== v.gait) {
@@ -177,6 +192,7 @@ export function createMobsView(scene, game, hf, overlay, { posOf = null } = {}) 
         // 몸통: 질주하면 앞뒤로 흔들리고, 준비 동작에 웅크리고(뒤로 앉듯), 돌진은 머리를 숙이고, 맞으면 움찔
         q.torso.rotation.x = (winding ? -0.12 * (1 - left) : charging ? 0.12 : 0) + G.pitch * walk * Math.sin(v.cyc * Math.PI * 2) + 0.16 * lungeK - 0.12 * hurtK + gPitch;
         q.torso.rotation.z = 0.1 * hurtK * (v.flashSide || 1);
+        if (q.statue) sitPose(v, q, m, dt, type, dead);
       } else if (!dead) {
         // 게: 옆으로 종종걸음(세 다리씩 번갈아)
         v.phase += dt * v.speed * (Math.PI * 2 / 0.5);
@@ -215,10 +231,12 @@ export function createMobsView(scene, game, hf, overlay, { posOf = null } = {}) 
       }
       v.look += (v.lookTo * (1 - walk) * (1 - v.graze) - v.look) * (1 - Math.exp(-dt * 3));
       if (q.neck) {
-        q.neck.rotation.y = v.look + Math.sin(v.cyc * Math.PI * 2) * 0.05 * walk;
         q.neck.userData.x0 ??= q.neck.rotation.x;
-        q.neck.rotation.x = q.neck.userData.x0 + 0.25 * lungeK + (winding ? 0.12 * (1 - left) : 0) + Math.sin(v.cyc * Math.PI * 4) * 0.04 * walk + Math.sin(v.breathe * 0.5) * 0.02
-          + v.graze * (m.type === 'deer' ? 2.3 : 0.55);
+        // 석상: 앉아 있을 땐 고개를 들고 꼼짝하지 않는다. 쓰러지면 고개를 떨군다
+        const sit = q.statue ? 1 - smooth(v.wake) : 0;
+        q.neck.rotation.y = (v.look + Math.sin(v.cyc * Math.PI * 2) * 0.05 * walk) * (1 - sit);
+        q.neck.rotation.x = q.neck.userData.x0 + (0.25 * lungeK + (winding ? 0.12 * (1 - left) : 0) + Math.sin(v.cyc * Math.PI * 4) * 0.04 * walk + Math.sin(v.breathe * 0.5) * 0.02
+          + v.graze * (m.type === 'deer' ? 2.3 : 0.55)) * (1 - sit) + sit * 0.45 + (q.statue && dead ? 0.8 * v.fall : 0);
       }
       if (q.head && grazer) {
         q.head.userData.x0 ??= q.head.rotation.x;
@@ -243,16 +261,21 @@ export function createMobsView(scene, game, hf, overlay, { posOf = null } = {}) 
         q.tail.rotation.y = Math.sin(t * (m.mode === 'chase' ? 9 : 2.4)) * (0.35 - 0.2 * walk);
         q.tail.rotation.x = -0.35 * walk * (v.speed > type.walk * 1.5 ? 1 : 0.4);
       }
-      // 쓰러짐: 옆으로 눕는다
-      if (dead) v.fall = Math.min(1, v.fall + dt * 3);
-      q.root.rotation.z = (m.type === 'crab' ? Math.PI : Math.PI / 2) * v.fall;
-      q.root.position.y = v.pos.y + (m.type === 'crab' ? 0.15 : type.r * 0.6) * v.fall;
+      // 쓰러짐: 옆으로 눕는다. 망령은 흩어지고(floatPose), 석상은 앉은 채 고개를 떨군다
+      if (dead) v.fall = Math.min(1, v.fall + dt * (q.float ? 0.8 : 3));
+      if (!q.float && !q.statue) {
+        q.root.rotation.z = (m.type === 'crab' ? Math.PI : Math.PI / 2) * v.fall;
+        q.root.position.y = v.pos.y + (m.type === 'crab' ? 0.15 : type.r * 0.6) * v.fall;
+      }
       // 번쩍임: 맞으면 흰빛, 준비 동작이면 붉은빛이 깜빡인다
       v.flash = Math.max(0, v.flash - dt * 7);
       const tele = winding ? 0.35 + 0.35 * Math.sin(t * 40) : 0;
-      q.m.emissive.setRGB(v.flash * 0.9 + tele * 0.9, v.flash * 0.9 + tele * 0.12, v.flash * 0.9 + tele * 0.08);
-      q.m.opacity = v.fade;
-      q.m.transparent = v.fade < 0.99;
+      const e0 = q.emis || ZERO3;
+      q.m.emissive.setRGB(e0[0] + v.flash * 0.9 + tele * 0.9, e0[1] + v.flash * 0.9 + tele * 0.12, e0[2] + v.flash * 0.9 + tele * 0.08);
+      const op = (q.alpha ?? 1) * v.fade * (q.float ? 1 - v.fall : 1);
+      q.m.opacity = op;
+      q.m.transparent = q.alpha != null || op < 0.99;
+      if (q.glow) glowOf(v, q, m, t, dead, type);
       // 체력 막대: 다쳤거나 덤비는 짐승만
       const show = !dead && (m.hp < type.hp || m.target) && Math.hypot(m.x - camera.position.x, m.z - camera.position.z) < 40;
       const el = show ? bar(m.id) : bars.get(m.id);
@@ -261,7 +284,7 @@ export function createMobsView(scene, game, hf, overlay, { posOf = null } = {}) 
         el.classList.remove('on');
         continue;
       }
-      tmp.set(v.pos.x, v.pos.y + type.r * 2 + 0.7, v.pos.z).project(camera);
+      tmp.set(v.pos.x, v.pos.y + (q.float ? 2.35 : type.r * 2 + 0.7), v.pos.z).project(camera);
       if (tmp.z > 1) {
         el.classList.remove('on');
         continue;
@@ -284,6 +307,112 @@ export function createMobsView(scene, game, hf, overlay, { posOf = null } = {}) 
       el.remove();
       bars.delete(id);
     }
+  }
+
+  // 떠다니는 망령(v0.5.1): 땅 위에 떠서 출렁이고, 쫓을 땐 몸을 앞으로 숙여 두 팔을 뻗는다.
+  // 할퀴기는 두 팔을 머리 위로 들었다 내리긋고, 덮치기는 팔을 앞으로 뻗은 채 날아든다. 쓰러지면 위로 흩어진다
+  function floatPose(v, q, m, dt, t, { dead, winding, charging, left, atk, walk, lungeK, hurtK }) {
+    const k = 1 - Math.exp(-dt * 10);
+    const hover = 0.32 + Math.sin(v.breathe * 1.3) * 0.07;
+    q.root.position.y = v.pos.y + hover + v.fall * 0.8;
+    const spread = 1 + v.fall * 0.7;
+    q.root.scale.set(spread, 1 - v.fall * 0.35, spread);
+    q.root.rotation.z = 0;
+    const chase = m.mode === 'chase' ? 1 : 0;
+    const lunge = atk?.charge;
+    const lean = dead ? -0.3 * v.fall : 0.25 * chase * walk + (winding ? (lunge ? 0.15 : -0.3) * (1 - left) : 0) + (charging ? 0.55 : 0) + 0.3 * lungeK - 0.25 * hurtK;
+    q.torso.rotation.x += (lean - q.torso.rotation.x) * k;
+    q.torso.rotation.z = Math.sin(v.breathe * 0.7) * 0.05 + 0.15 * hurtK * (v.flashSide || 1);
+    v.slash = Math.max(0, v.slash - dt * 3.2);
+    const cut = smooth(1 - v.slash);
+    for (const A of q.arms) {
+      let sh = 0.1 + Math.sin(v.breathe + A.sx) * 0.12;
+      let el = -0.35;
+      let side = A.sx * 0.12;
+      if (chase) {
+        sh = -0.85 + Math.sin(t * 6 + A.sx) * 0.15;
+        el = -0.45;
+      }
+      if (winding) {
+        const w = 1 - left;
+        if (lunge) {
+          sh = -1.0 - 0.45 * w;
+          el = -0.15;
+          side = A.sx * (0.12 - 0.08 * w);
+        } else {
+          sh = -0.9 - 1.6 * w;
+          el = -1.0 * w;
+          side = A.sx * (0.15 + 0.35 * w);
+        }
+      } else if (charging) {
+        sh = -1.55;
+        el = -0.1;
+        side = A.sx * 0.05;
+      } else if (m.mode === 'recover' && v.slash > 0 && !lunge) {
+        // 내리긋기: 머리 위에서 앞아래로
+        sh = -2.5 + 2.1 * cut;
+        el = -1.0 + 0.7 * cut;
+        side = A.sx * (0.5 - 0.4 * cut);
+      }
+      if (dead) {
+        sh = 0.4 * v.fall;
+        el = -0.2;
+        side = A.sx * (0.12 + 0.6 * v.fall);
+      }
+      A.g.rotation.x += (sh - A.g.rotation.x) * (winding || charging || v.slash > 0 ? 1 - Math.exp(-dt * 22) : k);
+      A.kn.rotation.x += (el - A.kn.rotation.x) * k;
+      A.g.rotation.z += (side - A.g.rotation.z) * k;
+    }
+    if (q.head) q.head.rotation.x = (winding ? -0.2 * (1 - left) : 0) + 0.15 * lungeK;
+  }
+
+  // 석상: 깨어나기 전엔 앉아 있다. 노리는 상대가 생기면(rise) 정해진 시간에 걸쳐 일어선다
+  function sitPose(v, q, m, dt, type, dead) {
+    const want = !dead && (m.target || (m.mode !== 'idle' && m.mode !== 'wander')) ? 1 : 0;
+    const rise = type.rise || 2;
+    v.wake = Math.max(0, Math.min(1, v.wake + (want > v.wake ? dt / rise : want < v.wake ? -dt / 2.5 : 0)));
+    const s = 1 - smooth(v.wake);
+    if (s < 0.001) return;
+    const P = SIT_PITCH;
+    const L0 = q.legs[0];
+    const reach = L0.l1 + L0.l2;
+    const rad = q.rad ?? 0.4;
+    const yFront = -0.2 * rad * Math.cos(P) + 0.36 * q.L * Math.sin(P);
+    q.torso.position.y = lerp(q.torso.position.y, reach - yFront - (dead ? 0.08 * v.fall : 0), s);
+    q.torso.position.z = lerp(q.torso.position.z, 0, s);
+    q.torso.rotation.x = lerp(q.torso.rotation.x, -P + (dead ? 0.12 * v.fall : 0), s);
+    q.torso.rotation.z = lerp(q.torso.rotation.z, 0, s);
+    // 뒷다리: 허벅지는 앞아래로 땅에 눕고(무릎이 땅에 닿게), 정강이는 그 밑으로 접는다
+    const yT = reach - yFront;
+    const hipRear = yT - 0.2 * rad * Math.cos(P) - 0.36 * q.L * Math.sin(P);
+    for (const L of q.legs) {
+      let a0 = P - 0.02;
+      let a1 = 0;
+      if (!L.front) {
+        const thighW = -(Math.PI / 2 - Math.asin(Math.min(1, Math.max(0, hipRear / L.l1))));
+        a0 = thighW + P;
+        a1 = 1.52 - thighW;
+      }
+      L.g.rotation.x = lerp(L.g.rotation.x, a0, s);
+      L.kn.rotation.x = lerp(L.kn.rotation.x, a1, s);
+    }
+  }
+
+  function glowOf(v, q, m, t, dead, type) {
+    if (q.float) {
+      q.glow.opacity = v.fade * (1 - v.fall);
+      // 덤비기 직전엔 눈이 붉게 타오른다(하얀 몸에는 붉은 번쩍임이 잘 안 보인다)
+      if (m.mode === 'windup') q.glow.color.setRGB(1, 0.3 + 0.15 * Math.sin(t * 40), 0.22);
+      else q.glow.color.setRGB(0.62, 0.91, 1);
+      // 두건 속 어둠은 불투명이라, 흩어지거나 사라질 땐 먼저 지운다
+      if (q.face) q.face.visible = v.fall < 0.3 && v.fade > 0.6;
+      return;
+    }
+    // 돌 해태: 깨어나면 눈과 가슴 영석이 새파랗게. 이야기를 받은 개척자에겐 잠든 채로도 희미하게 번뜩인다
+    const hint = !dead && v.wake < 0.05 && wakeHint?.(type) ? 0.3 + 0.12 * Math.sin(t * 2.2) : 0;
+    // 몸을 일으키기 시작하면 바로 눈에 불이 들어온다
+    const k = dead ? Math.max(0, 1 - v.fall * 1.5) * 0.15 : Math.max(Math.min(1, v.wake * 6) * (0.85 + 0.15 * Math.sin(t * 5)), hint);
+    q.glow.color.setRGB(0.18 + 0.4 * k, 0.2 + 0.72 * k, 0.22 + 0.78 * k);
   }
 
   // 약탈단 체력 막대: 다쳤거나 덤빌 때. 부두목·두목은 이름에 칭호

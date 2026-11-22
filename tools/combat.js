@@ -35,11 +35,14 @@ export function duel(kitName, typeId, seed, packSize = null) {
   const st = game.state;
   const a = st.actors.p1;
   a.skills.hunting.level = 30;
-  let groups = Object.values(st.mobGroups).filter((g) => g.type === typeId && !g.site && (!packSize || g.mobs.length === packSize));
+  // 깨울 이야기가 있는 석상(돌 해태, v0.5.1)은 그 퀘스트를 받은 상태로 잰다
+  wakeAll(a);
+  // 밤에만 나오는 들판 무리는 낮엔 숨어 있으니, 늘 있는 자리 무리(옛 등불터 망령)로 잰다
+  let groups = Object.values(st.mobGroups).filter((g) => g.type === typeId && !g.site && (!packSize || g.mobs.length === packSize) && st.mobs[g.mobs[0]]?.mode !== 'away');
   let only = null;
   if (!groups.length) {
     // 자리 무리(약탈단) 안의 한 종류: 그 한 놈만 남겨 1:1로 잰다(v0.5)
-    const m = Object.values(st.mobs).find((x) => x.type === typeId);
+    const m = Object.values(st.mobs).find((x) => x.type === typeId && x.mode !== 'away');
     if (!m) return null;
     groups = [st.mobGroups[m.group]];
     only = m.id;
@@ -79,7 +82,7 @@ export function duel(kitName, typeId, seed, packSize = null) {
   game.on('combat.hurt', (ev) => { dmgTaken += ev.dmg; });
   while (st.t - t0 < LIMIT) {
     game.advance(0.2);
-    if (a.cb.downUntil > 0) return { win: false, sec: st.t - t0, dmgTaken, eaten };
+    if (a.cb.downUntil > 0) return { win: false, sec: st.t - t0, dmgTaken, eaten, foeHp: st.mobs[g.mobs[0]]?.hp };
     if (g.mobs.every((id) => st.mobs[id].mode === 'dead')) return { win: true, sec: st.t - t0, dmgTaken, eaten, wpnDur: a.bag[0].maxDur ? a.bag[0].maxDur - a.bag[0].dur : 0 };
     if (!a.ai.mem.fight) startFight(a, first.id, { read: kit.read, block: kit.block });
     const f = a.ai.mem.fight;
@@ -91,13 +94,18 @@ export function duel(kitName, typeId, seed, packSize = null) {
   return { win: false, sec: LIMIT, dmgTaken, eaten, timeout: true };
 }
 
-// 자리 하나(망루·야영지·정박지)를 통째로: 다가가면 보초들이 덤빈다. 모두 쓰러뜨리면 이긴다
+function wakeAll(a) {
+  for (const c of data.lists.creatures) if (c.wake) a.quests.active[c.wake] ||= { step: 0, n: 0, used: [], t: 0 };
+}
+
+// 자리 하나(망루·야영지·정박지·옛 등불터)를 통째로: 다가가면 보초들이 덤빈다. 모두 쓰러뜨리면 이긴다
 export function siteRun(kitName, siteId, seed) {
   const kit = KITS[kitName];
   const game = createGame({ data, seed, actors: [{ id: 'p1', name: '시험', kind: 'player' }] });
   const st = game.state;
   st.econ = null;
   const a = st.actors.p1;
+  wakeAll(a);
   const g = Object.values(st.mobGroups).find((x) => x.site === siteId);
   for (const m of Object.values(st.mobs)) if (m.group !== g.id) delete st.mobs[m.id];
   for (const id of Object.keys(st.mobGroups)) if (id !== g.id) delete st.mobGroups[id];
@@ -159,7 +167,8 @@ function main() {
   }
   const rows = [];
   const all = [['crab', null], ['deer', null], ['boar', null], ['wolf', 2], ['wolf', 3],
-    ['raider_scout', null], ['raider', null], ['raider_spear', null], ['raider_axe', null], ['raider_thrower', null], ['raider_lt', null], ['raider_captain', null]];
+    ['raider_scout', null], ['raider', null], ['raider_spear', null], ['raider_axe', null], ['raider_thrower', null], ['raider_lt', null], ['raider_captain', null],
+    ['mist_wraith', null], ['stone_haetae', null]];
   const want = args.foes ? new Set(String(args.foes).split(',')) : null;
   const cases = want ? all.filter(([t]) => want.has(t)) : all;
   const kits = args.kits ? String(args.kits).split(',') : Object.keys(KITS);

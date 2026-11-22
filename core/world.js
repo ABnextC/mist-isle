@@ -88,15 +88,17 @@ export function layoutStatics(region, terrain, built = null, npcs = []) {
     for (const st of s.structures || []) out.push({ kind: st.kind, x: sx + st.dx, z: sz + st.dz, r: st.r || 0, rot: st.rot || 0, site: s.id, len: st.len || null });
     for (const o of s.objects || []) out.push({ kind: o.kind, x: sx + o.dx, z: sz + o.dz, r: OBJ_R[o.kind] ?? 0.5, rot: o.rot || 0, site: s.id, obj: o.id });
   }
-  // NPC(v0.5): 서 있는 자리에 작은 원(몸이 겹치지 않게)
+  // NPC(v0.5): 서 있는 자리에 작은 원(몸이 겹치지 않게). 정착지(at)나 자리(site, v0.5.1) 기준
   for (const n of npcs) {
-    const t = region.settlements.find((x) => x.id === n.at);
-    if (t) out.push({ kind: 'npc', x: t.x + n.dx, z: t.z + n.dz, r: 0.35, rot: n.yaw || 0, at: t.id, npc: n.id });
+    const t = n.at ? region.settlements.find((x) => x.id === n.at) : null;
+    const s = n.site ? (region.sites || []).find((x) => x.id === n.site) : null;
+    const base = t ? [t.x, t.z] : s ? siteXZ(terrain, s) : null;
+    if (base) out.push({ kind: 'npc', x: base[0] + n.dx, z: base[1] + n.dz, r: 0.35, rot: n.yaw || 0, at: t?.id || null, site: s?.id || null, npc: n.id });
   }
   return out;
 }
 
-const OBJ_R = { chest: 0.55, supply: 0.6, papers: 0.75 };
+const OBJ_R = { chest: 0.55, supply: 0.6, papers: 0.75, brazier: 0.45, door: 0.25 };
 
 // 자리 가운데(v0.5). beach: [x, 뭍으로 m]이면 해안선에서 잰다
 export function siteXZ(terrain, s) {
@@ -110,9 +112,12 @@ export function sitePos(ctx, id) {
   return { x, z, r: s.r, name: s.name, id };
 }
 
-export function npcPos(data, id) {
-  const n = data.npcs[id];
-  const s = n && data.settlements[n.at];
+// NPC 자리: 놓아 둔 statics에서 읽는다(자리 NPC는 해안선을 따라 놓이므로 지형이 있어야 한다)
+export function npcPos(ctx, id) {
+  const o = ctx.statics?.find((x) => x.npc === id);
+  if (o) return { x: o.x, z: o.z, yaw: o.rot };
+  const n = ctx.data?.npcs[id];
+  const s = n?.at && ctx.data.settlements[n.at];
   return s ? { x: s.x + n.dx, z: s.z + n.dz, yaw: n.yaw || 0 } : null;
 }
 

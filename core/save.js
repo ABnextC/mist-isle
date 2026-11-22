@@ -264,29 +264,7 @@ const MIGRATIONS = [
       st.shots = st.shots || [];
       // 야영지 자리에 있던 노드·짐승 무리를 옮긴다
       relocateNodes(st, data, ctx);
-      const taken = Object.values(st.mobGroups || {});
-      const sites = (region.sites || []).filter((s) => s.members).map((s) => {
-        const [x, z] = s.beach ? ctx.terrain.beachPoint(s.beach[0], s.beach[1]) : [s.x, s.z];
-        return { x, z, r: s.r };
-      });
-      for (const g of taken) {
-        const type = data.creatures[g.type];
-        if (!sites.some((s) => Math.hypot(g.x - s.x, g.z - s.z) < s.r + 20 + type.radius)) continue;
-        const spot = groupSpot(ctx, region, type, taken.filter((x) => x !== g));
-        if (!spot) continue;
-        const [dx, dz] = [spot[0] - g.x, spot[1] - g.z];
-        g.x = spot[0];
-        g.z = spot[1];
-        for (const id of g.mobs) {
-          const mob = st.mobs[id];
-          if (!mob) continue;
-          mob.x = Math.round((mob.x + dx) * 1000) / 1000;
-          mob.z = Math.round((mob.z + dz) * 1000) / 1000;
-          mob.mode = 'idle';
-          mob.target = null;
-          mob.dest = null;
-        }
-      }
+      relocateGroups(st, data, ctx, region);
       // 새 무리(안개 늑대)와 자리 무리(약탈단)를 더한다. 있던 짐승 무리는 그대로
       initMobs(ctx);
       // 퀘스트: 사람 개척자는 1장 첫 퀘스트부터
@@ -297,7 +275,49 @@ const MIGRATIONS = [
       }
     },
   },
+  {
+    // v0.5 → v0.5.1: 2장 「꺼져 가는 등불」 — 본토 배 난파 자리·옛 등불터(망령·돌 해태), 밤 망령.
+    // 1장을 끝낸 사람의 2장 시작은 퀘스트 틱이 잇는다(catchUp)
+    from: 7,
+    to: 8,
+    run(st, data) {
+      st.meta.engine = '0.5.1';
+      const region = data.lists.regions[0];
+      const ctx = migrationCtx(st, data, 0x2c4a9e71);
+      relocateNodes(st, data, ctx);
+      relocateGroups(st, data, ctx, region);
+      initMobs(ctx);
+    },
+  },
 ];
+
+// 자리(야영지·옛터·난파 자리)에 걸린 짐승 무리를 옆으로 옮긴다
+function relocateGroups(st, data, ctx, region) {
+  const taken = Object.values(st.mobGroups || {});
+  const sites = (region.sites || []).filter((s) => s.members || s.structures?.length).map((s) => {
+    const [x, z] = s.beach ? ctx.terrain.beachPoint(s.beach[0], s.beach[1]) : [s.x, s.z];
+    return { x, z, r: s.r };
+  });
+  for (const g of taken) {
+    if (g.site || g.temp) continue;
+    const type = data.creatures[g.type];
+    if (!sites.some((s) => Math.hypot(g.x - s.x, g.z - s.z) < s.r + 20 + type.radius)) continue;
+    const spot = groupSpot(ctx, region, type, taken.filter((x) => x !== g));
+    if (!spot) continue;
+    const [dx, dz] = [spot[0] - g.x, spot[1] - g.z];
+    g.x = spot[0];
+    g.z = spot[1];
+    for (const id of g.mobs) {
+      const mob = st.mobs[id];
+      if (!mob) continue;
+      mob.x = Math.round((mob.x + dx) * 1000) / 1000;
+      mob.z = Math.round((mob.z + dz) * 1000) / 1000;
+      mob.mode = mob.mode === 'away' ? 'away' : 'idle';
+      mob.target = null;
+      mob.dest = null;
+    }
+  }
+}
 
 export function serialize(state) {
   return JSON.stringify({ format: SAVE_FORMAT, dataVersion: state.meta.dataVersion, state });

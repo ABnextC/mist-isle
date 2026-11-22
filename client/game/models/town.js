@@ -134,8 +134,8 @@ export function lighthouse() {
     add('iron', cyl(0.025, 0.025, 0.9, 5, { x: Math.cos(a) * 2.2, y: H1 + 0.62, z: Math.sin(a) * 2.2 }));
   }
   add('iron', P(new THREE.TorusGeometry(2.2, 0.035, 5, 40), 0xffffff, { rx: Math.PI / 2, y: H1 + 1.08 }));
-  // 등명실
-  add('glass', cyl(1.1, 1.1, 1.7, 16, { y: H1 + 1.05 }));
+  // 등명실(v0.5.1: 등명실 유리는 따로 둔다 — 2장에서 불빛이 흐려졌다가 새 등심으로 푸르게 밝아진다)
+  add('lens', cyl(1.1, 1.1, 1.7, 16, { y: H1 + 1.05 }));
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2;
     add('iron', box(0.06, 1.75, 0.06, { x: Math.cos(a) * 1.12, y: H1 + 1.05, z: Math.sin(a) * 1.12, ry: -a }));
@@ -624,7 +624,8 @@ export function fence(len) {
 
 // ── 검은 돛 약탈단(v0.5) ──────────────────────────
 // 검은 돛 깃발: 장대 끝에 가로대, 타르 먹인 검은 천(끝이 찢겨 있다)과 붉은 줄
-export function banner(seed = 1) {
+// 본토 배 깃발(v0.5.1)은 같은 꼴에 푸른 천·흰 줄
+export function banner(seed = 1, cloth = 'sailBlack', stripe = 'clothRed') {
   const { parts, fx, add } = kit();
   const R = rng(seed + 300);
   add('barkDark', taperTube([V(0, -0.3, 0), V(0.04, 4.2, 0)], [0.075, 0.05], { radial: 7, vScale: 1.2, cap: true }));
@@ -636,8 +637,8 @@ export function banner(seed = 1) {
   const n = 7;
   for (let i = n; i >= 0; i--) sh.lineTo((i / n) * 1.25, -1.75 - (i % 2 ? 0.22 : 0) - R() * 0.12);
   sh.closePath();
-  add('sailBlack', xf(prep(new THREE.ShapeGeometry(sh)), { x: 0.05, y: 3.92, z: 0.02 }));
-  add('clothRed', box(1.2, 0.12, 0.01, { x: 0.68, y: 3.3, z: 0.03 }));
+  add(cloth, xf(prep(new THREE.ShapeGeometry(sh)), { x: 0.05, y: 3.92, z: 0.02 }));
+  add(stripe, box(1.2, 0.12, 0.01, { x: 0.68, y: 3.3, z: 0.03 }));
   add('rope', taperTube([V(0.04, 4.15, 0), V(1.3, 3.97, 0.02)], [0.01, 0.01], { radial: 4, vScale: 1 }));
   return { parts, fx };
 }
@@ -767,6 +768,128 @@ export function papers() {
   add('leather', box(0.26, 0.05, 0.34, { x: 0.5, y: 0.655, z: 0.1, ry: 0.3 }));
   add('iron', lathe([[0, 0], [0.06, 0], [0.07, 0.05], [0.04, 0.12], [0.05, 0.16], [0, 0.17]], 10).translate(-0.55, 0.63, -0.2));
   fx.glows.push(V(-0.55, 0.77, -0.2));
+  return { parts, fx };
+}
+
+// ── 옛 등불터(v0.5.1) ─────────────────────────────
+// 등지기 제단: 여덟모 돌 기단 두 단, 가운데 받침 위 불씨 그릇. 기단 모서리에 작은 돌 등잔 넷
+export function altar() {
+  const { parts, fx, add } = kit();
+  add('rock', cyl(1.3, 1.42, 0.3, 8, { y: 0.15 }));
+  add('stone', cyl(0.98, 1.06, 0.28, 8, { y: 0.44 }));
+  add('rock', box(0.95, 0.16, 0.4, { y: 0.38, z: 1.32 }));
+  add('stone', box(0.52, 0.68, 0.52, { y: 0.92 }));
+  add('stone', box(0.74, 0.12, 0.74, { y: 1.32 }));
+  add('stone', lathe([[0, 0], [0.36, 0], [0.45, 0.12], [0.47, 0.22], [0.41, 0.22], [0.34, 0.1], [0, 0.1]], 12).translate(0, 1.38, 0));
+  add('ash', cyl(0.35, 0.35, 0.02, 12, { y: 1.49 }));
+  for (let i = 0; i < 4; i++) {
+    const a = (i * Math.PI) / 2 + Math.PI / 4;
+    add('stone', box(0.16, 0.22, 0.16, { x: Math.sin(a) * 0.82, y: 0.69, z: Math.cos(a) * 0.82, ry: a }));
+    add('stone', box(0.22, 0.05, 0.22, { x: Math.sin(a) * 0.82, y: 0.82, z: Math.cos(a) * 0.82, ry: a }));
+  }
+  return { parts, fx };
+}
+
+// 돌기둥: 받침·몸·기둥머리(작은 돌 등잔). broken은 허리에서 부러졌고, fallen은 마디째 쓰러져 있다
+export function pillar(kind = 'pillar', seed = 1) {
+  const { parts, fx, add } = kit();
+  const R = rng(seed + 610);
+  if (kind === 'pillar_fallen') {
+    add('rock', box(0.8, 0.28, 0.8, { y: 0.14 }));
+    let z = 0.55;
+    for (let i = 0; i < 3; i++) {
+      const len = 0.85 + R() * 0.3;
+      add('rock', box(0.5, 0.5, len, { x: (R() - 0.5) * 0.3, y: 0.24, z: z + len / 2, ry: (R() - 0.5) * 0.35, rz: (R() - 0.5) * 0.25 }));
+      z += len + 0.1 + R() * 0.25;
+    }
+    add('stone', box(0.78, 0.18, 0.78, { x: 0.5, y: 0.12, z: z + 0.3, ry: 0.5, rx: 0.2 }));
+    return { parts, fx };
+  }
+  const broken = kind === 'pillar_broken';
+  const H = broken ? 1.1 + R() * 0.6 : 2.9;
+  add('rock', box(0.86, 0.28, 0.86, { y: 0.14 }));
+  add('stone', box(0.64, 0.12, 0.64, { y: 0.34 }));
+  add('rock', box(0.5, H, 0.5, { y: 0.4 + H / 2 }));
+  add('stone', box(0.55, 0.08, 0.55, { y: 0.4 + Math.min(H - 0.1, 1.8) }));
+  if (!broken) {
+    add('stone', box(0.66, 0.14, 0.66, { y: 0.4 + H + 0.07 }));
+    add('stone', box(0.8, 0.18, 0.8, { y: 0.4 + H + 0.23 }));
+    add('stone', lathe([[0, 0], [0.14, 0], [0.18, 0.1], [0.1, 0.2], [0.13, 0.26], [0, 0.27]], 8).translate(0, 0.4 + H + 0.32, 0));
+  } else {
+    for (let i = 0; i < 3; i++) add('rock', box(0.2 + R() * 0.15, 0.16 + R() * 0.2, 0.2 + R() * 0.15, { x: (R() - 0.5) * 0.28, y: 0.4 + H + 0.04, z: (R() - 0.5) * 0.28, rx: R() * 0.6, rz: R() * 0.6 }));
+    add('rock', box(0.48, 0.48, 0.85, { x: 0.8, y: 0.22, z: 0.35, ry: 0.7, rx: 0.12 }));
+  }
+  return { parts, fx };
+}
+
+// 돌 문: 기둥 둘에 두 겹 들보. 들보 가운데 둥근 등불 새김, 떨어져 나간 들보 끝 한 토막
+export function arch() {
+  const { parts, fx, add } = kit();
+  const W = 1.7;
+  const H = 3.1;
+  for (const sx of [-1, 1]) {
+    add('rock', box(0.78, 0.3, 0.78, { x: sx * W, y: 0.15 }));
+    add('rock', box(0.56, H, 0.56, { x: sx * W, y: 0.3 + H / 2 }));
+    add('stone', box(0.68, 0.14, 0.68, { x: sx * W, y: 0.3 + H + 0.07 }));
+  }
+  add('stone', box(W * 2 + 0.9, 0.36, 0.7, { y: 0.3 + H + 0.32 }));
+  add('rock', box(W * 2 + 0.3, 0.24, 0.55, { x: -0.3, y: 0.3 + H + 0.62 }));
+  add('stone', cyl(0.32, 0.32, 0.08, 16, { y: 0.3 + H + 0.32, z: 0.37, rx: Math.PI / 2 }));
+  add('spiritDim', cyl(0.12, 0.12, 0.09, 12, { y: 0.3 + H + 0.32, z: 0.38, rx: Math.PI / 2 }));
+  add('rock', box(0.62, 0.36, 0.55, { x: W + 1.2, y: 0.18, z: 0.7, ry: 0.5, rz: 0.2 }));
+  return { parts, fx };
+}
+
+// 벽화: 무너진 벽 한 토막. 가운데 둥근 심장과 둘레의 탑 다섯을 돋을새김했다. 서쪽(늪) 탑 하나만 불이 꺼져 있다
+export function mural() {
+  const { parts, fx, add } = kit();
+  add('rock', box(3.0, 0.3, 0.72, { y: 0.15 }));
+  add('stone', box(2.8, 2.1, 0.42, { y: 1.35 }));
+  add('rock', box(1.25, 0.34, 0.44, { x: -0.75, y: 2.55, rz: 0.08 }));
+  add('rock', box(0.7, 0.24, 0.44, { x: 0.95, y: 2.47, rz: -0.12 }));
+  const cy = 1.4;
+  add('muralPaint', P(new THREE.TorusGeometry(0.62, 0.035, 6, 32), 0xffffff, { y: cy, z: 0.22 }));
+  add('muralPaint', P(new THREE.TorusGeometry(0.2, 0.03, 6, 20), 0xffffff, { y: cy, z: 0.22 }));
+  add('spirit', P(new THREE.CircleGeometry(0.15, 16), 0xffffff, { y: cy, z: 0.222 }));
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2;
+    const x = Math.sin(a) * 0.62;
+    const y = cy + Math.cos(a) * 0.62;
+    add('muralPaint', box(0.1, 0.26, 0.03, { x, y: y + 0.02, z: 0.228 }));
+    add('muralPaint', box(0.16, 0.04, 0.03, { x, y: y + 0.16, z: 0.228 }));
+    add(i === 3 ? 'ash' : 'spiritDim', box(0.08, 0.07, 0.035, { x, y: y + 0.22, z: 0.232 }));
+    // 탑에서 심장으로 이어지는 맥(가는 선)
+    add('muralPaint', box(0.02, 0.36, 0.02, { x: x * 0.62, y: cy + (y - cy) * 0.62, z: 0.226, rz: -a }));
+  }
+  return { parts, fx };
+}
+
+// 무너진 돌 더미
+export function rubble(seed = 1) {
+  const { parts, fx, add } = kit();
+  const R = rng(seed + 720);
+  for (let i = 0; i < 8; i++) {
+    const s0 = 0.22 + R() * 0.4;
+    add(i % 3 ? 'rock' : 'stone', box(s0 * (1 + R()), s0, s0 * (0.8 + R() * 0.6), { x: (R() - 0.5) * 2.4, y: s0 * 0.38, z: (R() - 0.5) * 1.8, ry: R() * 3, rx: (R() - 0.5) * 0.5, rz: (R() - 0.5) * 0.5 }));
+  }
+  return { parts, fx };
+}
+
+// 옛 화로(퀘스트 물체): 돌 받침 위 쇠 화로. lit이면 숯이 달아 있고 불이 탄다
+export function brazier(lit = false) {
+  const { parts, fx, add } = kit();
+  add('rock', box(0.62, 0.34, 0.62, { y: 0.17 }));
+  add('stone', cyl(0.15, 0.2, 0.46, 8, { y: 0.57 }));
+  add('iron', lathe([[0, 0], [0.12, 0], [0.34, 0.12], [0.44, 0.3], [0.42, 0.32], [0.3, 0.18], [0, 0.16]], 12).translate(0, 0.8, 0));
+  for (let i = 0; i < 3; i++) {
+    const a = i * 2.094 + 0.5;
+    add('iron', box(0.04, 0.32, 0.04, { x: Math.sin(a) * 0.3, y: 0.92, z: Math.cos(a) * 0.3, rx: Math.cos(a) * 0.45, rz: -Math.sin(a) * 0.45 }));
+  }
+  add(lit ? 'coal' : 'ash', P(new THREE.SphereGeometry(0.3, 10, 6), 0xffffff, { y: 0.98, sy: 0.32 }));
+  if (lit) {
+    fx.fires.push({ p: V(0, 1.04, 0), s: 0.75 });
+    fx.lights.push({ kind: 'torch', p: V(0, 1.5, 0) });
+  }
   return { parts, fx };
 }
 

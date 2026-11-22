@@ -271,6 +271,12 @@ export function makeMaterials(tex, ctex) {
     clothRed: plainMaterial(0x6e1e18, { roughness: 0.95, side: THREE.DoubleSide }),
     clothGreen: plainMaterial(0x3e5a2c, { roughness: 0.95, side: THREE.DoubleSide }),
     bone: plainMaterial(0xd8ccb4, { roughness: 0.7 }),
+    // 옛 등불터(v0.5.1): 벽화 돋을새김의 빛바랜 칠, 영석 빛(밝은·흐린), 등대 등명실 유리
+    muralPaint: plainMaterial(0x5a6e7c, { roughness: 0.85 }),
+    clothBlue: plainMaterial(0x2f5f9e, { roughness: 0.95, side: THREE.DoubleSide }),
+    spirit: plainMaterial(0x9fe6ff, { roughness: 0.3, emissive: 0x5fc8ff, emissiveIntensity: 1.4 }),
+    spiritDim: plainMaterial(0x6f9aae, { roughness: 0.5, emissive: 0x3f8fb8, emissiveIntensity: 0.45 }),
+    lens: new THREE.MeshPhysicalMaterial({ color: 0xfff1c8, roughness: 0.08, metalness: 0, transmission: 0, emissive: 0xffc56a, emissiveIntensity: 0.05 }),
   };
   m.plasterTint = m.plaster;
   m.wreckWood = boxMaterial(tex.driftwood, { scale: 1.5, tint: 0x8a7a66 });

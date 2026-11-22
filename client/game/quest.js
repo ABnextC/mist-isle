@@ -6,7 +6,7 @@ import { countItem } from '../../core/inventory.js';
 import { stepGoal, stepText } from '../../core/systems/quests.js';
 
 // 코어 도우미에 넘기는 읽기 전용 문맥
-export const questCtx = (game) => ({ state: game.state, data: game.data, terrain: game.terrain, clock: game.clock, cfg: game.data.config });
+export const questCtx = (game) => ({ state: game.state, data: game.data, terrain: game.terrain, statics: game.statics, clock: game.clock, cfg: game.data.config });
 
 export function currentQuest(game, a) {
   const Q = a.quests;

@@ -69,11 +69,32 @@ function complete(ctx, a, id) {
   if (q.repeat === 'daily') Q.daily[id] = ctx.clock.day(ctx.state.t);
   for (const it of q.takes || []) delete Q.items[it];
   const reward = giveReward(ctx, a, q);
+  // 표식(v0.5.1): 등불의 각인처럼 이야기로 얻는 능력
+  for (const g of q.grants || []) {
+    a.marks = a.marks || {};
+    if (a.marks[g] == null) {
+      a.marks[g] = ctx.state.t;
+      ctx.emit('quest.grant', { actor: a.id, quest: id, mark: g });
+    }
+  }
   a.stats.quests = (a.stats.quests || 0) + 1;
   ctx.emit('quest.done', { actor: a.id, quest: id, reward, next: q.next || null });
+  const nq = q.next ? ctx.data.quests[q.next] : null;
+  // 장이 바뀌면 끝·시작을 알린다(다음 장이 아직 없으면 끝만)
+  if (q.kind === 'main' && (!nq || nq.chapter !== q.chapter)) ctx.emit('chapter.done', { actor: a.id, chapter: q.chapter, next: nq?.chapter || null });
   if (q.next) startQuest(ctx, a, q.next);
   if (Q.track === id || !Q.active[Q.track]) Q.track = Object.keys(Q.active).sort((x, y) => mainFirst(ctx, x, y))[0] || null;
-  if (q.kind === 'main' && !q.next) ctx.emit('chapter.done', { actor: a.id, chapter: q.chapter });
+}
+
+// 메인 줄기 잇기(v0.5.1): 패치로 다음 퀘스트가 붙으면(1장 끝 → 2장) 이미 끝낸 사람도 이어서 받는다
+function catchUp(ctx, a) {
+  const Q = a.quests;
+  for (const id of Object.keys(Q.done)) {
+    const q = ctx.data.quests[id];
+    if (!q || q.kind !== 'main' || !q.next) continue;
+    if (Q.active[q.next] || Q.done[q.next] != null) continue;
+    startQuest(ctx, a, q.next);
+  }
 }
 
 const mainFirst = (ctx, x, y) => (ctx.data.quests[x].kind === 'main' ? 0 : 1) - (ctx.data.quests[y].kind === 'main' ? 0 : 1) || (x < y ? -1 : 1);
@@ -202,7 +223,7 @@ export const defendTotal = (st) => st.waves.reduce((s, w) => s + Object.values(w
 // ── 막기(습격) ─────────────────────────────────────
 function spawnWave(ctx, a, st, s, p) {
   const site = ctx.data.sites[st.site];
-  const [ox, oz] = site.spawn || [16, 0];
+  const [ox, oz] = st.from?.[p.ev.wave] || site.spawn || [16, 0];
   let g = ctx.state.mobGroups[p.ev.group];
   if (!g) {
     g = tempGroup(ctx, s.x, s.z, { event: p.ev.id });
@@ -250,11 +271,12 @@ function defendTick(ctx, a, id, st, p) {
   ctx.emit('quest.wave', { actor: a.id, quest: id, wave: p.ev.wave + 1, waves: st.waves.length });
 }
 
-// 1초마다: 가기·막기
+// 1초마다: 가기·막기·메인 줄기 잇기
 export function questsTick(ctx) {
   for (const a of Object.values(ctx.state.actors)) {
     const Q = a.quests;
     if (!Q) continue;
+    if (a.kind === 'player') catchUp(ctx, a);
     for (const id of Object.keys(Q.active)) {
       const p = Q.active[id];
       if (!p) continue;
@@ -274,7 +296,7 @@ export function stepGoal(ctx, a, id) {
   const st = stepOf(ctx, a, id);
   if (!st) return null;
   if (st.type === 'talk') {
-    const p = npcPos(ctx.data, st.npc);
+    const p = npcPos(ctx, st.npc);
     const n = ctx.data.npcs[st.npc];
     return { x: p.x, z: p.z, label: `${n.title} ${n.name}`, kind: 'npc', npc: st.npc };
   }
@@ -320,12 +342,12 @@ export function stepText(ctx, a, id) {
 
 // NPC 머리 위 표시: ! 이야기 시작·새 의뢰, ? 이야기 이어 가기(끝내기 포함)
 export function npcMark(ctx, a, npc) {
-  for (const id of talkDue(ctx, a, npc)) {
-    const p = a.quests.active[id];
-    return p.step === 0 ? '!' : '?';
-  }
-  return null;
+  const id = talkDue(ctx, a, npc)[0];
+  if (!id) return null;
+  return a.quests.active[id].step === 0 ? '!' : '?';
 }
+
+export const hasMark = (a, mark) => a?.marks?.[mark] != null;
 
 // 게시판에서 받을 수 있는 현상금
 export function boardOffers(ctx, a) {
@@ -333,6 +355,6 @@ export function boardOffers(ctx, a) {
 }
 
 export const nearNpc = (ctx, a, npc, range = TALK_RANGE) => {
-  const p = npcPos(ctx.data, npc);
+  const p = npcPos(ctx, npc);
   return !!p && Math.hypot(a.x - p.x, a.z - p.z) <= range;
 };

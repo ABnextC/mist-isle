@@ -59,11 +59,13 @@ function spotNear(ctx, region, type, g, r, home = g) {
 }
 
 const homeOf = (m, g) => (m.post ? { x: m.post[0], z: m.post[1] } : g);
+// 밤에만 나오는 무리(v0.5.1): 들판 무리만. 자리(옛 등불터)·임시(습격·부름) 망령은 낮에도 있다
+const nightOnly = (type, g, m) => !!type.night && !g.site && !g.temp && !m?.temp;
 
 function newMob(ctx, region, type, g, post = null) {
   const [x, z] = post ? [round3(post[0]), round3(post[1])] : spotNear(ctx, region, type, g, type.radius);
   const id = ctx.newId('m');
-  const away = type.night && !ctx.clock.isNight(ctx.state.t);
+  const away = nightOnly(type, g) && !ctx.clock.isNight(ctx.state.t);
   const m = {
     id, type: type.id, group: g.id, x, z, yaw: post ? round3(post[2] || 0) : round3(ctx.rng.range(-Math.PI, Math.PI)),
     hp: type.hp, mode: away ? 'away' : 'idle', until: r2(ctx.state.t + ctx.rng.range(1, 5)), dest: null, target: null,
@@ -205,11 +207,17 @@ function kiting(m, type, t) {
   return true;
 }
 
-function nearestActor(ctx, m, r) {
+// 깨울 수 있는 사람(v0.5.1): 석상은 이야기(wake 퀘스트)를 받은 개척자에게만 깨어난다
+export const canWake = (type, a) => !type.wake || !!a?.quests?.active?.[type.wake] || a?.quests?.done?.[type.wake] != null;
+// 잠든 석상: 아직 아무도 노리지 않는 석상
+export const asleep = (type, m) => !!type.statue && !m.target && (m.mode === 'idle' || m.mode === 'wander');
+
+function nearestActor(ctx, m, r, type = null) {
   let best = null;
   let bd = r;
   for (const a of Object.values(ctx.state.actors)) {
     if (isDown(a)) continue;
+    if (type?.wake && !canWake(type, a)) continue;
     const d = Math.hypot(a.x - m.x, a.z - m.z);
     if (d < bd) {
       bd = d;
@@ -240,13 +248,15 @@ function aggro(ctx, m, a) {
 }
 
 // 무리 짐승은 하나가 덤비면 같이 덤빈다(v0.5: assist가 있으면 그 거리 안의 동료만)
+// solo(v0.5.1, 돌 해태): 동료를 부르지도, 동료의 부름에 깨어나지도 않는다
 function packAggro(ctx, m, a) {
   const type = ctx.data.creatures[m.type];
   aggro(ctx, m, a);
-  if (type.temper !== 'aggressive' && type.temper !== 'skittish') return;
+  if (type.solo || (type.temper !== 'aggressive' && type.temper !== 'skittish')) return;
   for (const id of ctx.state.mobGroups[m.group].mobs) {
     const o = ctx.state.mobs[id];
     if (!o || o === m || !isAlive(o) || o.mode === 'return') continue;
+    if (ctx.data.creatures[o.type].solo) continue;
     if (type.assist && Math.hypot(o.x - m.x, o.z - m.z) > type.assist) continue;
     aggro(ctx, o, a);
   }
@@ -265,6 +275,11 @@ const attackOf = (m, type) => type.attacks[m.atk?.i ?? 0] || type.attacks[0];
 export function hurtMob(ctx, m, a, dmg0, heavy) {
   const type = ctx.data.creatures[m.type];
   const t = ctx.state.t;
+  // 잠든 석상은 그냥 돌이다(이야기를 받기 전엔 칼날이 튕겨 나온다)
+  if (asleep(type, m) && !canWake(type, a)) {
+    ctx.emit('mob.immune', { mob: m.id, species: m.type, actor: a.id });
+    return;
+  }
   let dmg = dmg0;
   let blocked = false;
   // 막기(v0.5): 앞에서 오는 약공은 크게 줄이고, 강공은 막기를 깨뜨려 비틀거리게 한다
@@ -291,7 +306,7 @@ export function hurtMob(ctx, m, a, dmg0, heavy) {
       const p = type.phases[m.phase || 0];
       m.phase = (m.phase || 0) + 1;
       if (p.summon) summon(ctx, m, p.summon, a);
-      ctx.emit('mob.phase', { mob: m.id, species: m.type, phase: m.phase, say: p.say || null });
+      ctx.emit('mob.phase', { mob: m.id, species: m.type, phase: m.phase, say: p.say || null, note: p.note || null });
     }
   }
   if (heavy && type.stagger && m.mode === 'windup') {
@@ -523,7 +538,7 @@ export function mobsTick(ctx, dt0) {
           const o = state.mobs[id];
           if (o && o.by === m.id) removeMob(ctx, o);
         }
-        if (type.night && !night) {
+        if (nightOnly(type, g, m) && !night) {
           setMode(ctx, m, 'away');
           continue;
         }
@@ -533,7 +548,7 @@ export function mobsTick(ctx, dt0) {
       continue;
     }
     // 밤 짐승(v0.5): 해가 뜨면 싸우지 않던 놈은 안개 속으로 사라지고, 밤이 되면 다시 나온다
-    if (type.night) {
+    if (nightOnly(type, g, m)) {
       if (m.mode === 'away') {
         if (night) {
           const [x, z] = spotNear(ctx, region, type, g, type.radius);
@@ -564,11 +579,25 @@ export function mobsTick(ctx, dt0) {
       case 'idle':
       case 'wander': {
         if (!(m.calmUntil > t)) {
-          const a = nearestActor(ctx, m, type.aggro || 0);
+          const a = nearestActor(ctx, m, type.aggro || 0, type);
+          // 석상은 바로 덤비지 않고 몸을 일으킨다(그동안 물러설 틈이 있다)
+          if (a && type.statue && type.rise) {
+            m.target = a.id;
+            m.yaw = round3(yawTo(m, a));
+            setMode(ctx, m, 'rise', t + type.rise);
+            ctx.emit('mob.wake', { mob: m.id, species: m.type, actor: a.id, sec: type.rise });
+            break;
+          }
           if (a) {
             packAggro(ctx, m, a);
             break;
           }
+        }
+        // 석상(돌 해태): 깨어나기 전엔 자리에서 꼼짝하지 않는다
+        if (type.statue) {
+          if (m.post) m.yaw = m.post[2];
+          if (m.mode === 'wander') setMode(ctx, m, 'idle', t + 5);
+          break;
         }
         if (m.mode === 'idle') {
           if (t >= m.until) {
@@ -660,6 +689,14 @@ export function mobsTick(ctx, dt0) {
         if (t >= m.until) {
           delete m.atk;
           setMode(ctx, m, tgt ? 'chase' : 'return');
+        }
+        break;
+      }
+      case 'rise': {
+        if (tgt) m.yaw = round3(yawTo(m, tgt));
+        if (t >= m.until) {
+          setMode(ctx, m, 'chase');
+          ctx.emit('mob.aggro', { mob: m.id, species: m.type, actor: m.target });
         }
         break;
       }

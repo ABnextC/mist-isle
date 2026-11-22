@@ -5,7 +5,7 @@
 
 import * as THREE from 'three';
 import { STATIONS, house, lighthouse, board, market, campfire, wreck, pier, lampPost, fence, bake, tent, cabin, site, pennant, torch,
-  banner, palisade, crates, watchtower, shipBlack, chest, supply, papers } from './models/town.js';
+  banner, palisade, crates, watchtower, shipBlack, chest, supply, papers, altar, pillar, arch, mural, rubble, brazier } from './models/town.js';
 
 const BEAM_V = `
 varying float vAlong;
@@ -17,14 +17,15 @@ void main() {
 }`;
 const BEAM_F = `
 uniform float uOpacity;
+uniform vec3 uColor;
 varying float vAlong;
 varying float vEdge;
 void main() {
   float a = pow(1.0 - clamp(vAlong, 0.0, 1.0), 1.6) * (1.0 - smoothstep(0.55, 1.0, vEdge));
-  gl_FragColor = vec4(vec3(1.0, 0.92, 0.7) * a * uOpacity, 1.0);
+  gl_FragColor = vec4(uColor * a * uOpacity, 1.0);
 }`;
 
-export function createTownView(scene, game, hf, { mats, terrain, region }) {
+export function createTownView(scene, game, hf, { mats, terrain, region, me = null }) {
   const fires = [];
   const smokes = [];
   const glows = [];
@@ -55,7 +56,14 @@ export function createTownView(scene, game, hf, { mats, terrain, region }) {
     group.updateMatrixWorld(true);
     const toWorld = (p) => p.clone().applyMatrix4(group.matrixWorld);
     const fx = model.fx;
-    for (const f of fx.fires) fires.push({ p: toWorld(f.p), s: f.s, low: !!f.low });
+    // 켜고 끌 수 있는 불(v0.5.1, 옛 화로): 불·불빛 자리를 무리에 달아 둔다
+    group.userData.fires = [];
+    group.userData.spots = [];
+    for (const f of fx.fires) {
+      const e = { p: toWorld(f.p), s: f.s, low: !!f.low, off: false };
+      fires.push(e);
+      group.userData.fires.push(e);
+    }
     for (const s of fx.smokes) smokes.push(toWorld(s));
     for (const g of fx.glows) glows.push(toWorld(g));
     for (const l of fx.lights) {
@@ -69,13 +77,15 @@ export function createTownView(scene, game, hf, { mats, terrain, region }) {
         cone.translate(0, -35, 0);
         cone.rotateX(-Math.PI / 2);
         beam = new THREE.Mesh(cone, new THREE.ShaderMaterial({
-          vertexShader: BEAM_V, fragmentShader: BEAM_F, uniforms: { uOpacity: { value: 0 } },
+          vertexShader: BEAM_V, fragmentShader: BEAM_F, uniforms: { uOpacity: { value: 0 }, uColor: { value: new THREE.Color(1.0, 0.92, 0.7) } },
           transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false,
         }));
         beam.position.copy(p);
         scene.add(beam);
       } else {
-        spots.push({ p, range: l.kind === 'forge' ? 9 : l.kind === 'torch' ? 8 : 14, max: l.kind === 'forge' ? 6 : l.kind === 'torch' ? 4 : 10, always: l.kind === 'forge' ? 0.35 : 0.15 });
+        const sp = { p, range: l.kind === 'forge' ? 9 : l.kind === 'torch' ? 8 : 14, max: l.kind === 'forge' ? 6 : l.kind === 'torch' ? 4 : 10, always: l.kind === 'forge' ? 0.35 : 0.15, off: false };
+        spots.push(sp);
+        group.userData.spots.push(sp);
       }
     }
     return group;
@@ -149,8 +159,23 @@ export function createTownView(scene, game, hf, { mats, terrain, region }) {
       else if (o.kind === 'chest') place(chest(houseSeed++), o.x, o.z, o.rot);
       else if (o.kind === 'supply') place(supply(), o.x, o.z, o.rot);
       else if (o.kind === 'papers') place(papers(), o.x, o.z, o.rot);
+      // 2장(v0.5.1): 본토 배 난파 자리와 옛 등불터
+      else if (o.kind === 'banner_blue') place(banner(houseSeed++, 'clothBlue', 'cloth'), o.x, o.z, o.rot);
+      else if (o.kind === 'tent_white') place(tent(houseSeed++ * 31, 'cloth'), o.x, o.z, o.rot);
+      else if (o.kind === 'altar') place(altar(), o.x, o.z, o.rot);
+      else if (o.kind === 'pillar' || o.kind === 'pillar_broken' || o.kind === 'pillar_fallen') place(pillar(o.kind, houseSeed++), o.x, o.z, o.rot, { dy: -0.06 });
+      else if (o.kind === 'arch') place(arch(), o.x, o.z, o.rot, { dy: -0.06 });
+      else if (o.kind === 'mural') place(mural(), o.x, o.z, o.rot, { dy: -0.06 });
+      else if (o.kind === 'rubble') place(rubble(houseSeed++), o.x, o.z, o.rot);
+      else if (o.kind === 'brazier') {
+        // 켠 것과 꺼진 것을 둘 다 놓고, 내 퀘스트 진행에 맞춰 하나만 보인다
+        const on = place(brazier(true), o.x, o.z, o.rot);
+        const off = place(brazier(false), o.x, o.z, o.rot);
+        braziers.push({ obj: o.obj, on, off, lit: null });
+      }
     }
   }
+  const braziers = [];
   syncStatics();
   game.on('project.done', () => {
     syncStations();
@@ -190,16 +215,70 @@ export function createTownView(scene, game, hf, { mats, terrain, region }) {
     place(fence(6.4), f.x + 17, f.z + 6, -1.35);
   }
 
+  // 옛 화로: 내가 불을 넣었거나(쓴 물체) 그 퀘스트를 끝냈으면 켠다
+  function litFor(a, obj) {
+    const Q = a?.quests;
+    if (!Q) return false;
+    for (const q of game.data.lists.quests) {
+      const i = q.steps.findIndex((st) => st.type === 'use' && st.objs.includes(obj));
+      if (i < 0) continue;
+      if (Q.done[q.id] != null) return true;
+      const p = Q.active[q.id];
+      if (p && (p.step > i || (p.step === i && p.used.includes(obj)))) return true;
+    }
+    return false;
+  }
+  function syncBraziers() {
+    const a = me?.();
+    for (const b of braziers) {
+      const lit = litFor(a, b.obj);
+      if (lit === b.lit) continue;
+      b.lit = lit;
+      b.on.visible = lit;
+      b.off.visible = !lit;
+      for (const f of b.on.userData.fires) f.off = !lit;
+      for (const sp of b.on.userData.spots) sp.off = !lit;
+    }
+  }
+  // 등대 불(v0.5.1): 1장 끝 ~ 2장 「다시 켜는 등불」 전에는 흐리고 깜빡인다. 새 등심을 끼우면 푸른 기가 도는 흰빛
+  function beaconState(a) {
+    const Q = a?.quests;
+    if (!Q) return 'warm';
+    if (Q.done.c2_rekindle != null) return 'blue';
+    if (Q.done.q8_captain != null) return 'dim';
+    return 'warm';
+  }
+  const BEAM_WARM = new THREE.Color(1.0, 0.92, 0.7);
+  const BEAM_BLUE = new THREE.Color(0.78, 0.93, 1.0);
+  const LENS_WARM = new THREE.Color(0xffc56a);
+  const LENS_BLUE = new THREE.Color(0x8fdcff);
+  let beacon = null;
+  let syncT = 0;
+
   const windowMat = mats.window;
   const near = [];
   let pickT = 0;
   function update(time, night, dt, focus = null) {
+    syncT -= dt;
+    if (syncT <= 0) {
+      syncT = 0.5;
+      syncBraziers();
+      const b = beaconState(me?.());
+      if (b !== beacon) {
+        beacon = b;
+        mats.lens.emissive.copy(b === 'blue' ? LENS_BLUE : LENS_WARM);
+        if (beam) beam.material.uniforms.uColor.value.copy(b === 'blue' ? BEAM_BLUE : BEAM_WARM);
+      }
+    }
+    // 흐린 등불: 불빛이 숨을 죽였다 살아났다 한다
+    const dimK = beacon === 'dim' ? 0.35 + 0.25 * Math.max(0, Math.sin(time * 0.9) * Math.sin(time * 2.3 + 1)) + (Math.sin(time * 17) > 0.93 ? -0.2 : 0) : 1;
     windowMat.emissiveIntensity = 2.2 * night;
     mats.glass.emissiveIntensity = 0.05 + 3.5 * night;
+    mats.lens.emissiveIntensity = (0.05 + 3.5 * night) * dimK;
     mats.coal.emissiveIntensity = 1.4 + 0.6 * Math.sin(time * 3.1) * Math.sin(time * 1.7);
     for (const { l, max, flicker, always = 0 } of lights) {
       const k = Math.max(always, night);
-      l.intensity = max * k * (flicker ? 0.82 + 0.18 * Math.sin(time * 13 + l.position.x) * Math.sin(time * 7.7) : 1);
+      l.intensity = max * k * dimK * (flicker ? 0.82 + 0.18 * Math.sin(time * 13 + l.position.x) * Math.sin(time * 7.7) : 1);
     }
     // 불빛 풀: 0.3초마다 가장 가까운 불 자리를 고른다
     pickT -= dt;
@@ -207,6 +286,7 @@ export function createTownView(scene, game, hf, { mats, terrain, region }) {
       pickT = 0.3;
       near.length = 0;
       for (const sp of spots) {
+        if (sp.off) continue;
         const d = (sp.p.x - focus.x) ** 2 + (sp.p.z - focus.z) ** 2;
         if (d < 60 * 60) near.push({ sp, d });
       }
@@ -222,7 +302,7 @@ export function createTownView(scene, game, hf, { mats, terrain, region }) {
     }
     for (const pl of pool) {
       const sp = pl.userData.sp;
-      if (!sp) {
+      if (!sp || sp.off) {
         pl.intensity = 0;
         continue;
       }
@@ -231,7 +311,7 @@ export function createTownView(scene, game, hf, { mats, terrain, region }) {
     }
     if (beam) {
       beam.rotation.y = time * 0.5;
-      beam.material.uniforms.uOpacity.value = 0.16 * night;
+      beam.material.uniforms.uOpacity.value = 0.16 * night * dimK;
       beam.visible = night > 0.02;
     }
   }

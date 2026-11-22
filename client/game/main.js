@@ -35,6 +35,7 @@ import { currentQuest, questCtx } from './quest.js';
 import { talkDue, useDue, boardOffers } from '../../core/systems/quests.js';
 import { npcPos, objPos } from '../../core/world.js';
 import { createShotsView } from './shots-view.js';
+import { canWake } from '../../core/systems/mobs.js';
 import { createNpcLabels } from './npc-labels.js';
 
 const SAVE_KEY = 'mist-isle:v1';
@@ -98,7 +99,7 @@ async function boot() {
   view.scene.add(lantern);
   await say('🌫️ 마을과 숲을 세우는 중…');
   const nodesView = createNodesView(view.scene, game, ground.hf, { mats, ctex });
-  const townView = createTownView(view.scene, game, ground.hf, { mats, terrain: game.terrain, region });
+  const townView = createTownView(view.scene, game, ground.hf, { mats, terrain: game.terrain, region, me: () => game.state.actors[PID] });
   await say('🌫️ 개척자를 준비하는 중…');
   await actorBase;
   const actorsView = createActorsView(view.scene, game, ground.hf, view.camera);
@@ -107,7 +108,7 @@ async function boot() {
   const floaters = document.createElement('div');
   floaters.id = 'floaters';
   document.body.appendChild(floaters);
-  const mobsView = createMobsView(view.scene, game, ground.hf, floaters, { posOf: actorsView.positionOf });
+  const mobsView = createMobsView(view.scene, game, ground.hf, floaters, { posOf: actorsView.positionOf, wakeHint: (type) => canWake(type, game.state.actors[PID]) });
   window.__mist.mobsView = mobsView;
   const shotsView = createShotsView(view.scene, game, ground.hf);
   const npcLabels = createNpcLabels(floaters, game, actorsView.positionOf);
@@ -170,9 +171,10 @@ async function boot() {
     if (!ev.heavy || ev.actor !== PID) return;
     const m = game.state.mobs[ev.mob];
     const T = m && data.creatures[m.type];
-    if (!T?.body) return;
+    // 사람 모양 적과 두목·정예 짐승(v0.5.1 돌 해태의 땅 울리기)
+    if (!T?.body && !T?.boss && !T?.elite) return;
     const at = T.attacks.find((x) => x.id === ev.atk);
-    floatText(m.x, ground.hf.height(m.x, m.z) + 2.35, m.z, at?.unblockable ? '⛔' : '‼', 'tele');
+    floatText(m.x, ground.hf.height(m.x, m.z) + (T.body ? 2.35 : T.r * 2 + 1.0), m.z, at?.unblockable ? '⛔' : '‼', 'tele');
   });
   game.on('mob.phase', (ev) => {
     const m = game.state.mobs[ev.mob];
@@ -180,7 +182,7 @@ async function boot() {
       barkAt.delete(m.id);
       bark(m, ev.say, 'bark big');
       hud.banner(`☠️ ${data.creatures[m.type].name}: “${ev.say}”`);
-    }
+    } else if (m && ev.note && Math.hypot(m.x - me().x, m.z - me().z) < 40) hud.banner(`☠️ ${ev.note}`);
   });
   game.on('combat.hurt', (ev) => {
     actorsView.onEvent(ev);
@@ -634,7 +636,7 @@ async function boot() {
       best.radius = 0.6;
     } else if (best.kind === 'obj') {
       best.label = data.objects[best.id].name;
-      best.verb = { chest: '열기', supply: '되찾기', papers: '뒤지기' }[best.okind] || '살피기';
+      best.verb = data.objects[best.id].verb || { chest: '열기', supply: '되찾기', papers: '뒤지기', brazier: '불 넣기', door: '오르기' }[best.okind] || '살피기';
       best.radius = 0.8;
     } else if (best.kind === 'market') {
       const town = settlementAt({ state }, a);
@@ -675,7 +677,10 @@ async function boot() {
     if (ev.actor !== PID || game.state.t < 2) return;
     const q = data.quests[ev.quest];
     if (q.kind !== 'main') return;
-    setTimeout(() => hud.toast(`📜 ${q.name} — ${q.steps[0].text}`, 'info'), 2400);
+    // 대화창 뒷장에 안내가 뜨지 않는 시작(물체·쓰러뜨리기로 끝난 퀘스트 다음, 불러온 세이브)은 이야기 첫머리를 길게 보여 준다
+    const talking = hud.panel?.kind === 'talk';
+    const text = !talking && q.intro?.length ? `🌫️ ${q.intro.join(' ')} ▶ ${q.steps[0].text}` : `📜 ${q.name} — ${q.steps[0].text}`;
+    setTimeout(() => hud.toast(text, 'info', Math.min(9000, 2600 + text.length * 45)), 2400);
   });
   game.on('quest.step', (ev) => {
     if (ev.actor !== PID) return;
@@ -694,11 +699,17 @@ async function boot() {
     const st = q.steps[me().quests.active[ev.quest]?.step ?? 0];
     if (st && ev.n < ev.need) hud.feed(`📜 ${st.text} ${ev.n}/${ev.need}`);
   });
+  // 막기 단계의 적: 약탈단이면 습격대, 망령이면 망령(v0.5.1)
+  const defendStep = (qid) => data.quests[qid]?.steps.find((s) => s.type === 'defend');
+  const raidersIn = (st) => st?.waves.some((w) => Object.keys(w).some((k) => data.creatures[k].faction));
   game.on('quest.wave', (ev) => {
-    if (ev.actor === PID) hud.banner(`⚔️ 습격대가 온다! (${ev.wave}/${ev.waves}물결)`);
+    if (ev.actor !== PID) return;
+    hud.banner(`${raidersIn(defendStep(ev.quest)) ? '⚔️ 습격대가 온다!' : '👻 망령이 몰려온다!'} (${ev.wave}/${ev.waves}물결)`);
   });
   game.on('quest.fail', (ev) => {
-    if (ev.actor === PID) hud.toast(`⚠️ 습격을 막지 못했다. 동쪽 언덕길로 다시 가면 처음부터 막는다`, 'warn');
+    if (ev.actor !== PID) return;
+    const st = defendStep(ev.quest);
+    hud.toast(`⚠️ 막지 못했다. ${data.sites[st?.site]?.name ?? '그 자리'}(으)로 다시 가면 처음부터 막는다`, 'warn');
   });
   game.on('chapter.done', (ev) => {
     if (ev.actor !== PID) return;
@@ -824,7 +835,7 @@ async function boot() {
     // 밤이 오면 한 번 알린다(안개 늑대)
     {
       const night = game.clock.isNight(game.state.t);
-      if (night && ui.night === false) hud.toast('🌙 밤이 왔다. 마을 사이 들판에 안개 늑대가 돈다.', 'warn');
+      if (night && ui.night === false) hud.toast('🌙 밤이 왔다. 마을 사이 들판에 안개 늑대와 망령이 돈다.', 'warn');
       ui.night = night;
     }
     {

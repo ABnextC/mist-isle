@@ -88,6 +88,13 @@ export const townName = (state, sid) => state.settlements[sid]?.name ?? sid;
 // 은화 표기: 1,234
 export const silver = (n) => `${Math.floor(n).toLocaleString('ko-KR')}은화`;
 
+// 조사(v0.5.1): 마지막 글자에 받침이 있으면 앞의 것, 없으면 뒤의 것 — josa('돌 해태', '이', '가') → '돌 해태가'
+export function josa(word, withFinal, without) {
+  const c = word.charCodeAt(word.length - 1);
+  const final = c >= 0xac00 && c <= 0xd7a3 ? (c - 0xac00) % 28 !== 0 : false;
+  return word + (final ? withFinal : without);
+}
+
 export const STAT_NAMES = {
   gatherSpeed: '속도', yield: '산출', durability: '내구', comfort: '쾌적', buff: '효과', minutes: '지속',
   attack: '공격력', armor: '방어', heal: '회복',
@@ -157,7 +164,7 @@ export function describeEvent(ev, game) {
     case 'skill.up':
       return `${p}⬆️ ${data.skills[ev.skill].name} ${ev.level}레벨`;
     case 'tool.broken':
-      return `${p}💥 ${itemName(data, ev.item)}가 부서졌다`;
+      return `${p}💥 ${josa(itemName(data, ev.item), '이', '가')} 부서졌다`;
     case 'vein.opened':
       if (ev.common) return null;
       return `🗺️ 새 산지 「${ev.name}」 ${fmtProps(ev.props, data)} · ${ev.closesOnDay + 1}일차 아침에 닫힘`;
@@ -192,8 +199,13 @@ export function describeEvent(ev, game) {
       return `${p}⚠️ 「${data.quests[ev.quest]?.name ?? ''}」 ${ev.reason === 'down' ? '쓰러져서' : '자리를 떠나서'} 습격을 막지 못했다. 다시 가면 처음부터`;
     case 'chapter.done': {
       const ch = data.chapters.find((c) => c.id === ev.chapter);
-      return ch ? `${p}🏁 ${ch.name} 끝. ${ch.after || ''}` : null;
+      const nx = ev.next && data.chapters.find((c) => c.id === ev.next);
+      return ch ? `${p}🏁 ${ch.name} 끝.${nx ? ` ${nx.name} 시작` : ` ${ch.after || ''}`}` : null;
     }
+    case 'mob.wake':
+      return `${p}⚠️ ${josa(data.creatures[ev.species]?.name ?? ev.species, '이', '가')} 몸을 일으켰다`;
+    case 'quest.grant':
+      return ev.mark === 'lantern_mark' ? `${p}🔥 등불의 각인을 얻었다 — 가까운 산지가 미니맵에 보인다` : null;
     case 'skin.done':
       return `${p}🔪 ${data.creatures[ev.species]?.name ?? ev.species} 손질: ${ev.items.map((x) => `${itemName(data, x.item)} ${x.qty}`).join(' · ')}`;
     case 'actor.down':

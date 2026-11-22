@@ -1,7 +1,7 @@
 // 화면 위 정보(HUD)와 패널. 아이콘·색을 먼저 보이고, 수치는 패널에서 연다.
 // 버튼은 data-act로 main.js에 넘긴다. HUD는 상태를 직접 고치지 않는다.
 
-import { ERR, fmtProps, fmtStats, stars, itemName, entryStar, describeEvent, ARMOR_CLASS, loadEffects } from '../../core/text.js';
+import { ERR, fmtProps, fmtStats, stars, itemName, entryStar, describeEvent, ARMOR_CLASS, loadEffects, josa } from '../../core/text.js';
 import { equipLoad } from '../../core/systems/combat.js';
 import { tradable, refPrice, npcPrice, bestBid, repairCost, entryStar as marketStar, bookOf, ordersOf, baseValue } from '../../core/market.js';
 import { countDeliverable } from '../../core/orders.js';
@@ -151,10 +151,10 @@ export function createHud(root, game, { touch, onAct }) {
   });
 
   // ── 알림 ───────────────────────────────────────────
-  function toast(msg, kind = 'warn') {
+  function toast(msg, kind = 'warn', ms = 2600) {
     set(el.toast, msg);
     el.toast.className = `toast on ${kind}`;
-    toastUntil = performance.now() + 2600;
+    toastUntil = performance.now() + ms;
   }
   function banner(msg) {
     set(el.banner, msg);
@@ -184,7 +184,7 @@ export function createHud(root, game, { touch, onAct }) {
     } else if (ev.type === 'vein.opened' && !ev.common && game.state.t > 1) {
       toast(`🗺️ 새 산지 소문: 「${ev.name}」 — 마을 게시판에서 볼 수 있다`, 'info');
     } else if (ev.type === 'tool.broken') {
-      toast(`💥 ${itemName(data, ev.item)}가 부서졌다`);
+      toast(`💥 ${josa(itemName(data, ev.item), '이', '가')} 부서졌다`);
     } else if (ev.type === 'cmd.rejected') {
       if (ev.cmd !== 'MOVE_INPUT') toast(ERR[ev.reason] || ev.reason);
     } else if (ev.type === 'eat') {
@@ -213,6 +213,12 @@ export function createHud(root, game, { touch, onAct }) {
       pushFeed(`${ev.pop > ev.from ? '🏘️' : '🏚️'} ${townName(ev.at)} 인구 ${ev.from} → ${ev.pop}`);
     } else if (ev.type === 'station.down') {
       toast(`⚠️ ${townName(ev.at)} ${data.stations[ev.station].name}: 유지비가 밀려 1단계로 일한다`, 'warn');
+    } else if (ev.type === 'mob.immune') {
+      toast(`🗿 ${josa(data.creatures[ev.species].name, '은', '는')} 아직 그냥 돌덩이다. 칼날이 튕겨 나온다`, 'info');
+    } else if (ev.type === 'mob.wake') {
+      banner(`⚠️ ${josa(data.creatures[ev.species].name, '이', '가')} 몸을 일으킨다!`);
+    } else if (ev.type === 'quest.grant' && ev.mark === 'lantern_mark') {
+      setTimeout(() => banner('🔥 등불의 각인 — 가까운 산지가 미니맵에 보인다'), 2600);
     }
   });
 
@@ -256,7 +262,7 @@ export function createHud(root, game, { touch, onAct }) {
     }
     // 대화창은 NPC에게서 멀어지면 닫는다
     if (panel?.kind === 'talk') {
-      const np = npcPos(data, panel.npc);
+      const np = npcPos(game, panel.npc);
       if (!np || Math.hypot(np.x - a.x, np.z - a.z) > TALK_RANGE + 2.5) close();
     }
     const town = settlementAt({ state: game.state }, a);

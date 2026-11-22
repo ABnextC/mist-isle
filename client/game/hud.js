@@ -14,6 +14,7 @@ import { ENGINE_VERSION } from '../../core/state.js';
 import { stepText, talkDue, boardOffers, available, TALK_RANGE } from '../../core/systems/quests.js';
 import { npcPos } from '../../core/world.js';
 import { questCtx, lifeSteps } from './quest.js';
+import { isUnlocked, allowedProject, chapterReached } from '../../core/systems/unlocks.js';
 
 const PID = 'p1';
 const FAMILY = { wood: '나무', metal: '금속', stone: '돌', fiber: '섬유', food: '식재료', herb: '약초' };
@@ -101,6 +102,7 @@ export function createHud(root, game, { touch, onAct }) {
   const feed = [];
   let toastUntil = 0;
   let bannerUntil = 0;
+  let chapterEndAt = -1;
   const settings = { focus: false, speed: 1, resetArmed: 0, gfx: 'auto', gfxNow: '' };
   let fps = 0;
 
@@ -156,10 +158,10 @@ export function createHud(root, game, { touch, onAct }) {
     el.toast.className = `toast on ${kind}`;
     toastUntil = performance.now() + ms;
   }
-  function banner(msg) {
+  function banner(msg, ms = 2200) {
     set(el.banner, msg);
     el.banner.classList.add('on');
-    bannerUntil = performance.now() + 2200;
+    bannerUntil = performance.now() + ms;
   }
   function pushFeed(text) {
     feed.unshift({ text, at: performance.now() });
@@ -181,8 +183,19 @@ export function createHud(root, game, { touch, onAct }) {
         : `${itemName(data, ev.item)} ×${ev.qty}${ev.to === 'storage' ? ' → 창고' : ''}`);
     } else if (ev.type === 'skill.up') {
       banner(`${data.skills[ev.skill].icon} ${data.skills[ev.skill].name} ${ev.level}레벨`);
-    } else if (ev.type === 'vein.opened' && !ev.common && game.state.t > 1) {
+    } else if (ev.type === 'vein.opened' && !ev.common && game.state.t > 1 && unl(game.state.actors[PID], 'rumors')) {
       toast(`🗺️ 새 산지 소문: 「${ev.name}」 — 마을 게시판에서 볼 수 있다`, 'info');
+    } else if (ev.type === 'chapter.done') {
+      chapterEndAt = game.state.t;
+    } else if (ev.type === 'unlock' && ev.actor === PID) {
+      // 퀘스트 완료(0초) → 장 끝(2.6초부터 4.6초) 다음에 띄운다
+      const names = ev.ids.map((id) => `${data.unlocks[id].icon} ${data.unlocks[id].name}`).join(' · ');
+      setTimeout(() => {
+        banner(`🔓 새로 열림 — ${names}`, 5200);
+        pushFeed('🔓 열린 기능은 일지(J) → 생활 안내에 정리돼 있다');
+      }, chapterEndAt === game.state.t ? 7400 : 2600);
+    } else if (ev.type === 'quest.stepReward' && ev.actor === PID) {
+      for (const x of ev.reward.items) pushFeed(`🎁 ${itemName(data, x.item)}${x.qty > 1 ? ` ×${x.qty}` : ''}`);
     } else if (ev.type === 'tool.broken') {
       toast(`💥 ${josa(itemName(data, ev.item), '이', '가')} 부서졌다`);
     } else if (ev.type === 'cmd.rejected') {
@@ -390,7 +403,8 @@ export function createHud(root, game, { touch, onAct }) {
     const others = Object.values(game.state.settlements).filter((s) => !town || s.id !== town.id);
     if (town) {
       const store = storeOf(a, town.id);
-      const to = others[0];
+      const shipOpen = unl(a, 'transport');
+      const to = shipOpen ? others[0] : null;
       const srows = sortEntries(store).map((e) => {
         const fee = to ? shipFee(ctx, a, town.id, [{ item: e.item, star: marketStar(ctx, e), uid: e.uid, qty: qtyOf(e) }]) : 0;
         const ship = to ? `<button class="mini" data-act="ship" data-v="${to.id}>${esc(keyOf(e))}" ${a.silver >= fee ? '' : 'disabled'} title="${esc(to.name)} 창고로 보낸다">🚚 ${fee}</button>` : '';
@@ -399,7 +413,7 @@ export function createHud(root, game, { touch, onAct }) {
       const mats = store.filter((e) => !e.uid && data.items[e.item].kind === 'material');
       const allFee = to && mats.length ? shipFee(ctx, a, town.id, mats.map((e) => ({ item: e.item, star: marketStar(ctx, e), qty: e.qty }))) : 0;
       html += `<h3>${town.name} 창고 <button class="mini" data-act="store-all">재료 전부 넣기</button>${to && mats.length ? ` <button class="mini" data-act="ship-all" data-v="${to.id}" ${a.silver >= allFee ? '' : 'disabled'}>재료 모두 ${esc(to.name)}로 🚚 ${allFee}</button>` : ''}</h3><ul class="list">${srows}</ul>
-        <p class="muted">창고는 마을마다 따로다. 작업대에서 만들 때는 그 마을 창고 재료를 함께 쓴다. 🚚는 다른 마을 창고로 바로 보내기(운송비 ${Math.round(standingTier(ctx, a, town.id).ship * 100 * 10) / 10}%, 은화는 사라진다).</p>
+        <p class="muted">창고는 마을마다 따로다. 작업대에서 만들 때는 그 마을 창고 재료를 함께 쓴다. ${shipOpen ? `🚚는 다른 마을 창고로 바로 보내기(운송비 ${Math.round(standingTier(ctx, a, town.id).ship * 100 * 10) / 10}%, 은화는 사라진다).` : `다른 마을로는 직접 짊어지고 간다. 🔒 ${esc(data.unlocks.transport.name)} — ${esc(data.unlocks.transport.hint)}.`}</p>
         ${a.home === town.id ? `<p class="muted">🏠 여기가 귀환 지점이다.</p>` : `<div class="row"><button data-act="set-home">🏠 ${town.name}을(를) 귀환 지점으로</button></div>`}`;
     } else {
       html += '<p class="muted">창고는 마을 안에서 열린다.</p>';
@@ -489,12 +503,19 @@ export function createHud(root, game, { touch, onAct }) {
   }
 
   const mctx = () => ({ state: game.state, data, cfg: data.config, clock: game.clock });
+  // 해금(v0.5.2): 잠긴 기능 자리에 띄우는 안내
+  const unl = (a, id) => isUnlocked(questCtx(game), a, id);
+  const lockCard = (id) => {
+    const u = data.unlocks[id];
+    return `<div class="lockcard"><b>🔒 ${esc(u.name)}</b><small>${esc(u.desc)}</small><small class="muted">${esc(u.hint)}. 등대섬에서는 기본 생활과 전투부터 익힌다.</small></div>`;
+  };
 
   function tabsHtml(list, cur) {
     return `<div class="row tabs">${list.map(([k, l]) => `<button data-act="ui-tab" data-v="${k}" class="${cur === k ? 'on' : ''}">${l}</button>`).join('')}</div>`;
   }
 
   function ordersHtml(a) {
+    if (!unl(a, 'orders')) return lockCard('orders');
     const ctx = mctx();
     const town = settlementAt({ state: game.state }, a);
     const day = game.clock.day(game.state.t);
@@ -516,6 +537,7 @@ export function createHud(root, game, { touch, onAct }) {
   }
 
   function veinsHtml(a) {
+    if (!unl(a, 'rumors')) return lockCard('rumors');
     const list = Object.values(game.state.veins).filter((v) => !v.common && v.center)
       .sort((x, y) => avgProps(game.state.lots[y.lot].props) - avgProps(game.state.lots[x.lot].props));
     const rows = list.map((v) => {
@@ -552,7 +574,9 @@ export function createHud(root, game, { touch, onAct }) {
       return `<span class="chip ${st.tier >= 2 ? 'ok' : ''}${late ? ' no' : ''}">${data.stations[st.type].icon} ${data.stations[st.type].name} ${st.tier}단계${late ? '(정비 불량)' : ''}${upk}</span>`;
     }).join(' ');
     const lists = inTown ? [a.bag, storeOf(a, town.id)] : [a.bag];
-    const projects = data.lists.projects.filter((p) => p.at === town.id);
+    const pjOpen = unl(a, 'projects');
+    const projects = data.lists.projects.filter((p) => p.at === town.id && (pjOpen || allowedProject(questCtx(game), a, p.id)));
+    const pjLock = pjOpen ? '' : `<p class="muted">🔒 ${esc(data.unlocks.projects.name)} — ${esc(data.unlocks.projects.hint)}. 지금은 이야기에서 맡은 사업만 거들 수 있다.</p>`;
     const rows = projects.map((def) => {
       const p = game.state.projects[def.id];
       if (!p) return '';
@@ -582,16 +606,17 @@ export function createHud(root, game, { touch, onAct }) {
     }).join('');
     const away = inTown ? '' : `<p class="muted">마을 밖이다. 사업에 내려면 ${esc(town.name)}에 가야 한다.</p>`;
     const home = inTown && a.home !== town.id ? '<div class="row"><button data-act="set-home">🏠 여기를 귀환 지점으로</button></div>' : '';
-    return `${head}<div class="chips">${stations}</div>${away}<h3>마을 사업</h3><ul class="list">${rows}</ul>
+    return `${head}<div class="chips">${stations}</div>${away}<h3>마을 사업</h3>${pjLock}<ul class="list">${rows}</ul>
       <p class="muted">물자와 은화가 다 모이면 바로 효과가 난다. 낸 것은 돌아오지 않는다. 낸 값(물자는 ★2 기본값)만큼 이 마을 명성이 쌓여 판매세·수수료·운송비가 준다. AI 개척민도 날마다 조금씩 낸다.</p>${home}
       <p class="muted">${esc(sdef?.name || '')}</p>`;
   }
 
   function boardHtml(a) {
-    const tab = panel.tab || 'orders';
+    const tab = panel.tab || (unl(a, 'orders') ? 'orders' : 'bounty');
     const body = tab === 'orders' ? ordersHtml(a) : tab === 'bounty' ? bountyHtml(a) : tab === 'town' ? townHtml(a) : veinsHtml(a);
     const n = boardOffers(questCtx(game), a).length;
-    return tabsHtml([['orders', '주문'], ['bounty', `현상금${n ? ` ${n}` : ''}`], ['town', '마을'], ['veins', '산지 소문']], tab) + body;
+    const lk = (id, label) => (unl(a, id) ? label : `🔒${label}`);
+    return tabsHtml([['orders', lk('orders', '주문')], ['bounty', `현상금${n ? ` ${n}` : ''}`], ['town', '마을'], ['veins', lk('rumors', '산지 소문')]], tab) + body;
   }
 
   // ── 퀘스트(v0.5): 대화·일지·현상금 ─────────────────
@@ -680,10 +705,15 @@ export function createHud(root, game, { touch, onAct }) {
     const Q = a.quests || { active: {}, done: {}, items: {} };
     let body = '';
     if (tab === 'main') {
+      const qctx = questCtx(game);
       for (const ch of data.chapters) {
         const list = ch.quests.filter((id) => Q.done[id] != null || Q.active[id]);
-        if (!list.length) continue;
-        body += `<h3>${esc(ch.name)}</h3><ul class="qlist">`;
+        // 아직 퀘스트가 없는 장(준비 중)은 들어섰을 때만 이름과 예고를 보인다
+        if (!list.length) {
+          if (ch.soon && chapterReached(qctx, a, ch.id)) body += `<h3>${esc(ch.name)} <small class="muted">${esc(ch.island || '')}</small></h3><p class="muted">${esc(ch.after || '준비 중이다.')}</p>`;
+          continue;
+        }
+        body += `<h3>${esc(ch.name)} <small class="muted">${esc(ch.island || '')}</small></h3><ul class="qlist">`;
         for (const id of list) body += Q.active[id] ? activeQuestHtml(a, id) : `<li class="done">✔ ${esc(data.quests[id].name)}</li>`;
         body += '</ul>';
         if (ch.quests.every((id) => Q.done[id] != null)) body += `<p class="muted">🏁 ${esc(ch.name)} 끝. ${esc(ch.after || '')}</p>`;
@@ -694,7 +724,13 @@ export function createHud(root, game, { touch, onAct }) {
       body = bountyHtml(a).replace(/<button data-act="quest-accept"[^>]*>받기<\/button>/g, '<small class="muted">게시판에서</small>');
     } else {
       const steps = lifeSteps(game, a);
-      body = `<p class="muted">채집·정제·제작을 익히는 길잡이다. 순서는 자유롭다.</p><ul class="life">${steps.map((st) => `<li class="${st.done ? 'done' : ''}">${st.done ? '✔' : '○'} ${esc(st.text)}</li>`).join('')}</ul>`;
+      const qctx = questCtx(game);
+      const unl = data.lists.unlocks.map((u) => {
+        const on = !u.soon && isUnlocked(qctx, a, u.id);
+        return `<li class="${on ? 'done' : ''}">${on ? '✔' : '🔒'} ${u.icon} <b>${esc(u.name)}</b> <small>${esc(u.desc)}${on ? '' : ` · ${esc(u.hint)}${u.soon ? '(준비 중)' : ''}`}</small></li>`;
+      }).join('');
+      body = `<p class="muted">채집·정제·제작을 익히는 길잡이다. 순서는 자유롭다.</p><ul class="life">${steps.map((st) => `<li class="${st.done ? 'done' : ''}">${st.done ? '✔' : st.lock ? '🔒' : '○'} ${esc(st.text)}${st.lock ? ` <small class="muted">${esc(st.lock)}</small>` : ''}</li>`).join('')}</ul>
+        <h3>열리는 것</h3><p class="muted">등대섬(1~2장)에서는 기본 생활과 전투를 익힌다. 3장에서 본섬으로 건너가면 경제가, 4장에서 세력과 큰 콘텐츠가 열린다.</p><ul class="life">${unl}</ul>`;
     }
     return tabsHtml([['main', '메인'], ['bounty', '현상금'], ['life', '생활 안내']], tab) + body;
   }

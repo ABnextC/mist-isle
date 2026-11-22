@@ -1,7 +1,9 @@
 // 데이터 정의(JSON)를 색인하고 서로 맞물리는지 검사한다.
 // 브라우저는 fetch로, Node는 fs로 읽은 원본을 넘긴다.
 
-export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects', 'npcs', 'quests'];
+// 퀘스트 단계 종류(v0.5.2에 생활 단계를 더했다)
+export const STEP_TYPES = ['talk', 'go', 'kill', 'use', 'defend', 'have', 'eat', 'store', 'repair', 'sell', 'project'];
+export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects', 'npcs', 'quests', 'unlocks'];
 
 export function buildData(raw) {
   const problems = [];
@@ -177,12 +179,31 @@ export function buildData(raw) {
       if (st.type === 'use') for (const o of st.objs || []) if (!objects[o]) problems.push(`퀘스트 ${q.id}: 물체 ${o} 없음`);
       if (st.type === 'defend') for (const w of st.waves || []) for (const t of Object.keys(w)) if (!creatures[t]) problems.push(`퀘스트 ${q.id}: 습격 ${t} 없음`);
       if (st.gives && !Q.items[st.gives]) problems.push(`퀘스트 ${q.id}: 퀘스트 물건 ${st.gives} 없음`);
-      if (!['talk', 'go', 'kill', 'use', 'defend'].includes(st.type)) problems.push(`퀘스트 ${q.id}: 모르는 단계 ${st.type}`);
+      if (!STEP_TYPES.includes(st.type)) problems.push(`퀘스트 ${q.id}: 모르는 단계 ${st.type}`);
+      // 생활 단계(v0.5.2): 가지기·먹기·맡기기·고치기·팔기·마을 사업
+      for (const it of [...Object.keys(st.need || {}), ...(st.any || []), ...(st.orAny || [])]) if (!items[it]) problems.push(`퀘스트 ${q.id}: 단계 물건 ${it} 없음`);
+      if (st.type === 'have' && !st.need && !st.any?.length) problems.push(`퀘스트 ${q.id}: 가질 물건 없음`);
+      if (st.type === 'project' && !projects[st.project]) problems.push(`퀘스트 ${q.id}: 사업 ${st.project} 없음`);
+      if (st.at && !settlements[st.at]) problems.push(`퀘스트 ${q.id}: 마을 ${st.at} 없음`);
+      for (const n of st.goal?.node || []) if (!raw.nodes.some((x) => x.id === n)) problems.push(`퀘스트 ${q.id}: 길잡이 노드 ${n} 없음`);
+      if (st.goal?.station && !stations[st.goal.station]) problems.push(`퀘스트 ${q.id}: 길잡이 작업대 ${st.goal.station} 없음`);
+      for (const it of st.reward?.items || []) if (!items[it.item]) problems.push(`퀘스트 ${q.id}: 단계 보상 ${it.item} 없음`);
     }
     for (const it of q.reward?.items || []) if (!items[it.item]) problems.push(`퀘스트 ${q.id}: 보상 ${it.item} 없음`);
     for (const g of q.grants || []) if (!['lantern_mark'].includes(g)) problems.push(`퀘스트 ${q.id}: 모르는 표식 ${g}`);
   }
   for (const ch of Q.chapters) for (const id of ch.quests) if (!quests[id]) problems.push(`장 ${ch.id}: 퀘스트 ${id} 없음`);
+  // 해금(v0.5.2)
+  const unlockList = raw.unlocks || [];
+  const unlocks = index(unlockList, '해금');
+  for (const u of unlockList) {
+    if (u.when?.chapter && !Q.chapters.some((c) => c.id === u.when.chapter)) problems.push(`해금 ${u.id}: 장 ${u.when.chapter} 없음`);
+    if (u.when?.quest && !quests[u.when.quest]) problems.push(`해금 ${u.id}: 퀘스트 ${u.when.quest} 없음`);
+    for (const x of u.allow || []) {
+      if (x.project && !projects[x.project]) problems.push(`해금 ${u.id}: 사업 ${x.project} 없음`);
+      if (x.quest && !quests[x.quest]) problems.push(`해금 ${u.id}: 퀘스트 ${x.quest} 없음`);
+    }
+  }
 
   if (problems.length) throw new Error('데이터 오류\n- ' + problems.join('\n- '));
 
@@ -205,8 +226,10 @@ export function buildData(raw) {
     quests,
     questItems: Q.items,
     chapters: Q.chapters,
+    unlocks,
     lists: {
       projects: projectList,
+      unlocks: unlockList,
       creatures: raw.creatures || [],
       items: raw.items,
       skills: raw.skills.list,

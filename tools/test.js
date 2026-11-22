@@ -14,6 +14,8 @@ import { allOrders, bookOf } from '../core/market.js';
 import { storeOf, nearestSettlement, npcPos, sitePos, objPos } from '../core/world.js';
 import { yawTo } from '../core/systems/combat.js';
 import { settlementDaily } from '../core/settlements.js';
+import { isUnlocked, allowedProject, chapterReached } from '../core/systems/unlocks.js';
+import { stepText } from '../core/systems/quests.js';
 import { readFileSync } from 'node:fs';
 
 const LH = 's_lighthouse';
@@ -361,6 +363,7 @@ function marketGame(seed = 5) {
   const g = createGame({ data, seed, actors: [{ id: 'p1', kind: 'player' }, { id: 'p2', kind: 'player' }] });
   g.state.econ = null;
   g.state.market.books = {};
+  for (const id of ['p1', 'p2']) g.state.actors[id].unlockAll = true; // 해금(v0.5.2)과 상관없이 기능을 본다
   const town = Object.values(g.state.settlements)[0];
   for (const id of ['p1', 'p2']) {
     g.state.actors[id].x = town.x + 3;
@@ -688,6 +691,7 @@ function townsGame(seed = 41) {
   const g = createGame({ data, seed, actors: [{ id: 'p1', kind: 'player' }, { id: 'p2', kind: 'player' }] });
   g.state.econ = null;
   g.state.market.books = {};
+  for (const id of ['p1', 'p2']) g.state.actors[id].unlockAll = true;
   return g;
 }
 const at = (a, sid, g, dx = 3, dz = 3) => {
@@ -1008,7 +1012,7 @@ test('안개 늑대는 밤에만 나온다: 낮엔 숨고, 밤에 마을 사이 
   ok(wolves().every((x) => x.mode === 'away'), '해가 뜨면 사라진다');
 });
 
-test('1·2장을 처음부터 끝까지: 막히는 단계 없이 메인 퀘스트 15개, 등불의 각인·보상·현상금까지', () => {
+test('1·2장(등대섬)을 처음부터 끝까지: 생활 단계·대장간 사업까지 막히는 데 없이 16개, 3장 해금·보상·현상금', () => {
   const g = createGame({ data, seed: 7, actors: [{ id: 'p1', kind: 'player' }] });
   g.state.econ = null;
   const st = g.state;
@@ -1028,7 +1032,28 @@ test('1·2장을 처음부터 끝까지: 막히는 단계 없이 메인 퀘스�
     g.advance(0.6);
   };
   const events = [];
-  for (const k of ['quest.done', 'chapter.done', 'quest.wave', 'quest.fail', 'loot', 'quest.grant']) g.on(k, (ev) => events.push(ev));
+  for (const k of ['quest.done', 'chapter.done', 'quest.wave', 'quest.fail', 'loot', 'quest.grant', 'quest.stepReward', 'unlock']) g.on(k, (ev) => events.push(ev));
+  const town = (sid) => g.state.settlements[sid];
+  const toStation = (sid, type) => {
+    const t = town(sid).stations.find((x) => x.type === type);
+    warp(t.x + 1.6, t.z + 1.6);
+  };
+  const toMarket = (sid) => {
+    const m = g.statics.find((o) => o.kind === 'market' && o.at === sid);
+    warp(m.x + 2.5, m.z + 2.5);
+  };
+  const food = () => {
+    let e = a.bag.find((x) => data.items[x.item].kind === 'consumable' && data.items[x.item].buff);
+    if (!e) {
+      const def = data.items.food_meat;
+      e = { item: 'food_meat', lot: null, bonus: null, stats: convertStats(def.statConvert, Object.fromEntries(Object.keys(def.statConvert).map((k) => [k, 45]))), star: 2, qty: 1 };
+      a.bag.push(e);
+    }
+    return e;
+  };
+  // 잠긴 기능: 1~2장 동안 주문·운송·사업(대장간 퀘스트 밖)은 거절한다
+  eq(g.dispatch({ type: 'ORDER_DELIVER', actor: 'p1', order: 'x' }).error, 'locked', '주문 잠김');
+  eq(g.dispatch({ type: 'SHIP', actor: 'p1', to: 's_forest', key: 'x' }).error, 'locked', '운송 잠김');
   const main = data.chapters.flatMap((c) => c.quests);
   let guard = 0;
   let midSave = null;
@@ -1063,6 +1088,48 @@ test('1·2장을 처음부터 끝까지: 막히는 단계 없이 메인 퀘스�
       }
       ok(m, `${id}: 쓰러뜨릴 ${step.mobs.join('/')}가 없다`);
       slay(m);
+    } else if (step.type === 'have') {
+      // 모았거나 만든 셈 치고 넣어 준다(채집·제작이 되는지는 다른 시험이 본다)
+      if (step.need) for (const [item, n] of Object.entries(step.need)) a.bag.push({ item, lot: null, bonus: null, qty: n });
+      else {
+        const item = step.any[0];
+        if (data.items[item].kind === 'equipment') {
+          const e = kit(item, 40, `u_${item}`);
+          a.bag.push(e);
+          if (step.equip) ok(g.dispatch({ type: 'EQUIP', actor: 'p1', uid: e.uid }).ok, `${id} 입기`);
+        } else a.bag.push({ item, lot: null, bonus: null, qty: step.count || 1 });
+      }
+      g.advance(1.1);
+    } else if (step.type === 'eat') {
+      ok(g.dispatch({ type: 'EAT', actor: 'p1', key: keyOf(food()) }).ok, `${id} 먹기`);
+    } else if (step.type === 'store') {
+      toStation(step.at, 'storage');
+      a.bag.push({ item: 'stone', lot: null, bonus: null, qty: 2 });
+      ok(g.dispatch({ type: 'STORE', actor: 'p1', key: keyOf(a.bag.find((e) => e.item === 'stone')) }).ok, `${id} 맡기기`);
+    } else if (step.type === 'sell') {
+      toMarket(step.at);
+      a.bag.push({ item: 'stone', lot: null, bonus: null, qty: 3 });
+      ok(g.dispatch({ type: 'MARKET_DUMP', actor: 'p1', key: keyOf(a.bag.find((e) => e.item === 'stone')) }).ok, `${id} 팔기`);
+    } else if (step.type === 'repair') {
+      // 고칠 게 없으면 저절로 넘어간다. 여기선 무기를 닳게 해서 실제로 고친다
+      w.dur = Math.max(1, w.maxDur - 30);
+      toStation('s_lighthouse', 'forge');
+      a.silver += 200;
+      ok(g.dispatch({ type: 'REPAIR', actor: 'p1', uid: w.uid }).ok, `${id} 고치기`);
+    } else if (step.type === 'project') {
+      const def = data.projects[step.project];
+      toStation(def.at, 'storage');
+      eq(g.dispatch({ type: 'CONTRIBUTE', actor: 'p1', project: 'pj_f_tannery', silver: 1 }).error, 'locked', '다른 사업은 잠김');
+      for (const [item, n] of Object.entries(def.needs)) {
+        a.bag.push({ item, lot: null, bonus: null, qty: n });
+        for (let k = 0; k < 6 && n - (g.state.projects[step.project].got[item] || 0) > 0; k++) {
+          ok(g.dispatch({ type: 'CONTRIBUTE', actor: 'p1', project: step.project, key: keyOf(a.bag.find((e) => e.item === item)) }).ok, `${item} 내기`);
+        }
+      }
+      a.silver += def.silver;
+      ok(g.dispatch({ type: 'CONTRIBUTE', actor: 'p1', project: step.project, silver: def.silver - g.state.projects[step.project].silver }).ok, '은화 내기');
+      ok(g.state.projects[step.project].done, '대장간이 선다');
+      g.advance(1.1);
     } else if (step.type === 'defend') {
       const s = sitePos(W, step.site);
       if (!p.ev) {
@@ -1088,6 +1155,12 @@ test('1·2장을 처음부터 끝까지: 막히는 단계 없이 메인 퀘스�
   ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch2' && !e.next), '2장 끝');
   eq(events.filter((e) => e.type === 'quest.wave').length, 4, '습격 두 번 × 두 물결');
   ok(a.marks?.lantern_mark != null && events.some((e) => e.type === 'quest.grant'), '등불의 각인');
+  ok(events.some((e) => e.type === 'quest.stepReward' && e.reward.items.some((x) => x.item === 'wpn_sword_copper')), '강두의 구리 검');
+  ok(a.bag.some((e) => e.item === 'wpn_sword_iron' && e.crafter === '숲머리 대장장이'), '숲머리 대장장이의 철 검');
+  const un = events.find((e) => e.type === 'unlock');
+  eq(un?.quest, 'c2_anchor', '2장 끝에 열린다');
+  eq([...un.ids].sort().join(), 'orders,projects,rumors,transport', '경제 넷이 열린다');
+  ok(g.dispatch({ type: 'ORDER_DELIVER', actor: 'p1', order: 'x' }).error !== 'locked', '주문 열림');
   ok(a.bag.some((e) => e.item === 'wpn_club' && e.crafter === '해림'), '해림의 몽둥이');
   ok(a.bag.some((e) => e.item === 'ingot_iron') && a.bag.some((e) => e.item === 'leather'), '재료 보상');
   const silver = data.lists.quests.filter((q) => q.kind === 'main').reduce((s, q) => s + (q.reward?.silver || 0), 0);
@@ -1188,7 +1261,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '0.5.1');
+  eq(st.meta.engine, '0.5.2');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site).length;
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1220,6 +1293,84 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const again = loadGame({ data, save: old });
   again.advance(901.1);
   eq(again.hash(), g.hash(), '이관 뒤에도 재현된다');
+});
+
+test('등대섬 해금(v0.5.2): 사람은 3장 전까지 주문·운송·사업이 잠기고(대장간 퀘스트만 예외), 봇은 잠기지 않는다', () => {
+  const g = createGame({ data, seed: 3, actors: [{ id: 'p1', kind: 'player' }, { id: 'b1', kind: 'bot', ai: 'settler' }] });
+  g.state.econ = null;
+  const a = g.state.actors.p1;
+  const b = g.state.actors.b1;
+  const qctx = { state: g.state, data };
+  for (const id of ['orders', 'projects', 'transport', 'rumors']) {
+    ok(!isUnlocked(qctx, a, id), `${id} 잠김`);
+    ok(isUnlocked(qctx, b, id), `봇 ${id} 열림`);
+  }
+  ok(!allowedProject(qctx, a, 'pj_f_forge'), '대장간 사업도 퀘스트 전엔 잠김');
+  a.quests.active = { c2_forge: { step: 1, n: 0, used: [], t: 0 } };
+  ok(allowedProject(qctx, a, 'pj_f_forge') && !allowedProject(qctx, a, 'pj_f_tannery'), '대장간 퀘스트 동안 그 사업만');
+  // 2장까지 끝내면 3장에 들어선 셈: 경제 넷이 열리고, 4장 것은 그대로 잠겨 있다
+  a.quests.active = {};
+  for (const ch of data.chapters) for (const id of ch.quests) a.quests.done[id] = 1;
+  ok(chapterReached(qctx, a, 'ch3') && !chapterReached(qctx, a, 'ch4'), '3장에 들어섰다');
+  for (const id of ['orders', 'projects', 'transport', 'rumors']) ok(isUnlocked(qctx, a, id), `${id} 열림`);
+  ok(!isUnlocked(qctx, a, 'faction'), '세력은 4장');
+});
+
+test('생활 단계(v0.5.2): 가진 것은 1초마다 세고, 이미 다음 것(돌 도구)을 가졌으면 줍기 단계는 지난다', () => {
+  const g = createGame({ data, seed: 4, actors: [{ id: 'p1', kind: 'player' }] });
+  g.state.econ = null;
+  const a = g.state.actors.p1;
+  const qctx = { state: g.state, data, statics: g.statics };
+  eq(a.quests.active.q1_ashore.step, 0);
+  a.bag.push({ item: 'log_drift', lot: null, bonus: null, qty: 2 });
+  g.advance(1.1);
+  eq(a.quests.active.q1_ashore.step, 0, '돌이 모자라다');
+  ok(stepText(qctx, a, 'q1_ashore').includes('표류목 2/2 · 돌 0/3'), stepText(qctx, a, 'q1_ashore'));
+  a.bag.push(kit('tool_pick_stone', 30, 'u_pick'));
+  g.advance(1.1);
+  eq(a.quests.active.q1_ashore.step, 2, '돌 도구가 있으면 두 단계를 넘는다');
+  // 고치기: 고칠 것이 없으면 그냥 넘어간다
+  a.quests.active = { q7_raid: { step: 1, n: 0, used: [], t: 0 } };
+  for (const e of a.bag) if (e.maxDur != null) e.dur = e.maxDur;
+  g.advance(1.1);
+  eq(a.quests.active.q7_raid?.step, 2, '고칠 게 없으면 넘어간다');
+});
+
+test('v0.5.1 세이브(데이터 8)를 불러오면 하던 단계가 새 번호로 옮겨지고, 옛터로 넘어간 개척자는 대장간 퀘스트를 지난다', () => {
+  const g0 = createGame({ data, seed: 6, actors: [{ id: 'p1', kind: 'player' }, { id: 'p2', kind: 'player' }] });
+  g0.advance(5);
+  const obj = JSON.parse(g0.save());
+  obj.dataVersion = 8;
+  obj.state.meta.dataVersion = 8;
+  obj.state.meta.engine = '0.5.1';
+  const Q1 = obj.state.actors.p1.quests;
+  Q1.active = {
+    q1_ashore: { step: 0, n: 0, used: [], t: 1 },
+    q3_lookout: { step: 2, n: 3, used: [], t: 1 },
+    q4_forest: { step: 0, n: 0, used: [], t: 1 },
+    q5_supplies: { step: 1, n: 4, used: [], t: 1 },
+    q7_raid: { step: 2, n: 0, used: [], t: 1 },
+  };
+  const Q2 = obj.state.actors.p2.quests;
+  Q2.active = { c2_haetae: { step: 0, n: 0, used: [], t: 1 } };
+  Q2.done = Object.fromEntries(['q1_ashore', 'q2_chest', 'q3_lookout', 'q4_forest', 'q5_supplies', 'q6_lt', 'q7_raid', 'q8_captain', 'c2_dim', 'c2_wreck', 'c2_core', 'c2_ruins'].map((id) => [id, 1]));
+  // 예전 대장간 사업에 이미 모인 것: 새(줄어든) 요구로는 다 찼다
+  Object.assign(obj.state.projects.pj_f_forge, { got: { stone: 30, lumber_drift: 8, nails_copper: 30, ingot_iron: 8 }, silver: 400 });
+  const g = loadGame({ data, save: JSON.stringify(obj) });
+  const A = g.state.actors.p1.quests.active;
+  eq(A.q1_ashore.step, 2, 'q1: 해림 찾기');
+  eq(A.q3_lookout.step, 4, 'q3: 망루 약탈자');
+  eq(A.q3_lookout.n, 3, '쓰러뜨린 수 유지');
+  eq(A.q4_forest.step, 3, 'q4: 여울 만나기');
+  eq(A.q5_supplies.step, 2, 'q5: 야영지 약탈자');
+  eq(A.q7_raid.step, 3, 'q7: 강두에게 돌아가기');
+  const P2 = g.state.actors.p2.quests;
+  ok(P2.done.c2_forge != null && !P2.active.c2_forge, '대장간 퀘스트는 지난 것으로');
+  ok(P2.active.c2_haetae, '해태는 그대로');
+  ok(g.state.projects.pj_f_forge.done, '다 찬 대장간 사업은 바로 선다');
+  ok(g.state.settlements.s_forest.stations.some((x) => x.type === 'forge' && x.tier === 2), '숲머리 2단계 대장간');
+  g.advance(1.1);
+  ok(!P2.active.c2_forge, '메인 잇기가 대장간을 다시 주지 않는다');
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

@@ -4,6 +4,7 @@
 
 import { countItem } from '../../core/inventory.js';
 import { stepGoal, stepText } from '../../core/systems/quests.js';
+import { isUnlocked } from '../../core/systems/unlocks.js';
 
 // 코어 도우미에 넘기는 읽기 전용 문맥
 export const questCtx = (game) => ({ state: game.state, data: game.data, terrain: game.terrain, statics: game.statics, clock: game.clock, cfg: game.data.config });
@@ -76,10 +77,11 @@ export function lifeSteps(game, a) {
     },
     { done: m.tool_t1 != null, text: '대장간에서 구리 도구 만들기 (대장 4)', goal: () => stationGoal(game, a, 'forge', '대장간') },
     { done: a.stats.eat > 0, text: '조리대에서 음식을 만들어 먹기 — 먹으면 한동안 채집량이 는다', goal: () => stationGoal(game, a, 'kitchen', '조리대') },
-    { done: (a.stats.orders || 0) > 0, text: '마을 게시판의 주문을 하나 채워 은화 받기', goal: () => boardGoal(game, a, '게시판') },
+    { done: (a.stats.orders || 0) > 0, text: '마을 게시판의 주문을 하나 채워 은화 받기', goal: () => boardGoal(game, a, '게시판'), needs: 'orders' },
     {
       done: Object.values(game.state.veins).some((v) => !v.common && lists.flat().some((e) => e.lot === v.lot)),
       text: '게시판의 산지 소문을 따라가 좋은 재료 캐기',
+      needs: 'rumors',
       goal: () => {
         const rare = new Set(Object.entries(game.state.veins).filter(([, v]) => !v.common).map(([id]) => id));
         const list = Object.values(game.state.nodes).filter((n) => rare.has(n.vein) && n.charges > 0);
@@ -87,12 +89,14 @@ export function lifeSteps(game, a) {
         return n ? { x: n.x, z: n.z, label: '소문난 산지', kind: 'node' } : null;
       },
     },
-    { done: Object.keys(a.standing || {}).length > 0, text: '마을 게시판 ‘마을’ 탭에서 마을 사업에 물자나 은화를 내 보기', goal: () => boardGoal(game, a, '게시판') },
+    { done: Object.keys(a.standing || {}).length > 0, text: '마을 게시판 ‘마을’ 탭에서 마을 사업에 물자나 은화를 내 보기', goal: () => boardGoal(game, a, '게시판'), needs: 'projects' },
     {
       done: Object.keys(a.storages || {}).some((sid) => sid !== firstTown && a.storages[sid].length),
       text: '숲 가장자리의 숲머리에 가서 창고를 써 보기(북쪽 길 끝)',
       goal: () => stationGoal(game, a, 'storage', '창고', Object.keys(game.state.settlements).find((sid) => sid !== firstTown)),
     },
   ];
-  return steps.map((s) => ({ text: s.text, done: !!s.done }));
+  // 아직 잠긴 기능(v0.5.2 해금)을 쓰는 단계는 자물쇠와 언제 열리는지를 붙인다
+  const ctx = questCtx(game);
+  return steps.map((s) => ({ text: s.text, done: !!s.done, lock: !s.done && s.needs && !isUnlocked(ctx, a, s.needs) ? game.data.unlocks[s.needs].hint : null }));
 }

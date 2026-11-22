@@ -95,6 +95,16 @@ export function contribute(ctx, pid, who, { item = null, qty = 0, silver = 0 }) 
   return points;
 }
 
+// 사업 요구가 줄어(v0.5.2 숲머리 대장간) 이미 모인 것으로 다 찼으면 바로 끝낸다
+export function finishIfFull(ctx, pid) {
+  const def = ctx.data.projects[pid];
+  const p = ctx.state.projects[pid];
+  if (!def || !p || p.done) return false;
+  const full = silverLeft(ctx, pid) <= 0 && Object.keys(def.needs).every((it) => needLeft(ctx, pid, it) <= 0);
+  if (full) finishProject(ctx, pid);
+  return full;
+}
+
 function finishProject(ctx, pid) {
   const { state, data } = ctx;
   const def = data.projects[pid];

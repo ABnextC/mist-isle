@@ -14,7 +14,8 @@ import { deliver, countDeliverable } from './orders.js';
 import { addXp } from './systems/progress.js';
 import { startAttack, startDodge, interrupt, equipped, equipLoad } from './systems/combat.js';
 import { corpseOpen, skinLoot, skinSeconds } from './systems/mobs.js';
-import { talkDue, talk, useDue, useObj, available, startQuest, nearNpc, TALK_RANGE, USE_RANGE, BOARD_RANGE } from './systems/quests.js';
+import { talkDue, talk, useDue, useObj, available, startQuest, nearNpc, questNote, TALK_RANGE, USE_RANGE, BOARD_RANGE } from './systems/quests.js';
+import { isUnlocked, allowedProject } from './systems/unlocks.js';
 import { objPos } from './world.js';
 
 // ── 도우미 ─────────────────────────────────────────────
@@ -313,6 +314,7 @@ const EAT = {
       a.cb.hp = Math.min(a.cb.maxHp, Math.round((a.cb.hp + (stats.heal ?? 20)) * 100) / 100);
       a.stats.eat++;
       ctx.emit('eat', { actor: a.id, item: p.e.item, heal: Math.round(a.cb.hp - before) });
+      questNote(ctx, a, 'eat');
       return;
     }
     a.buffs = a.buffs.filter((b) => b.type !== p.def.buff);
@@ -320,6 +322,7 @@ const EAT = {
     a.buffs.push(buff);
     a.stats.eat++;
     ctx.emit('eat', { actor: a.id, item: p.e.item, value: buff.value, minutes: stats.minutes });
+    questNote(ctx, a, 'eat');
   },
 };
 
@@ -348,6 +351,7 @@ const STORE = {
       moved += q;
     }
     ctx.emit('store', { actor: a.id, moved, at: p.at });
+    if (moved > 0) questNote(ctx, a, 'store', { at: p.at });
   },
 };
 
@@ -435,6 +439,7 @@ const MARKET_SELL = {
   execute(ctx, a, c, p) {
     const res = placeAsk(ctx, p.at, 'actor', a.id, takeQty(p.f.list, keyOf(p.f.e), p.q), c.price, { ioc: !!c.ioc });
     ctx.emit('market.sell', { actor: a.id, at: p.at, sold: res.sold, rest: res.rest });
+    questNote(ctx, a, 'sell', { at: p.at });
   },
 };
 
@@ -473,21 +478,25 @@ const MARKET_CANCEL = {
 // 상인에게 하한가로 넘기기
 const MARKET_DUMP = {
   validate(ctx, a, c) {
-    if (!settlementAt(ctx, a)) return 'not_in_town';
+    const s = settlementAt(ctx, a);
+    if (!s) return 'not_in_town';
     const f = findOwned(ctx, a, c.key);
     if (!f) return 'no_item';
     if (!tradable(ctx, f.e)) return 'not_tradable';
     const q = c.qty == null ? qtyOf(f.e) : c.qty;
     if (!okQty(q) || q > qtyOf(f.e)) return 'bad_qty';
-    return { f, q };
+    return { f, q, at: s.id };
   },
   execute(ctx, a, c, p) {
     npcSell(ctx, 'actor', a.id, takeQty(p.f.list, keyOf(p.f.e), p.q));
+    questNote(ctx, a, 'sell', { at: p.at });
   },
 };
 
 const ORDER_DELIVER = {
   validate(ctx, a, c) {
+    // 주문 게시판은 3장부터(v0.5.2 해금)
+    if (!isUnlocked(ctx, a, 'orders')) return 'locked';
     const s = settlementAt(ctx, a);
     if (!s) return 'not_in_town';
     const o = ctx.state.orders.find((x) => x.id === c.order);
@@ -529,6 +538,7 @@ const REPAIR = {
     const r = Object.values(ctx.data.recipes).find((x) => x.output.item === e.item);
     if (r) addXp(ctx, a, r.skill, Math.max(1, Math.round(r.xp * ctx.cfg.repair.xp * worn)));
     ctx.emit('repair', { actor: a.id, uid: e.uid, item: e.item, cost, maxDur: e.maxDur, repairs: e.repairs });
+    questNote(ctx, a, 'repair');
   },
 };
 
@@ -670,6 +680,7 @@ const SET_HOME = {
 //   { key, qty?, to } · { keys: [key, ...], to } · { items: [{ key, qty }], to } (한 번에 묶어 보내면 최소 운송비를 한 번만 낸다)
 const SHIP = {
   validate(ctx, a, c) {
+    if (!isUnlocked(ctx, a, 'transport')) return 'locked';
     const s = settlementAt(ctx, a);
     if (!s) return 'not_in_town';
     if (!c.to || !ctx.state.settlements[c.to]) return 'bad_args';
@@ -709,6 +720,8 @@ const CONTRIBUTE = {
     if (!s) return 'not_in_town';
     const def = ctx.data.projects[c.project];
     if (!def || def.at !== s.id) return 'no_project';
+    // 마을 사업은 3장부터. 2장 「숲머리 대장간」 동안엔 그 사업만 거들 수 있다
+    if (!allowedProject(ctx, a, c.project)) return 'locked';
     if (!projectOpen(ctx, c.project)) return 'project_closed';
     if (c.silver != null) {
       if (!Number.isInteger(c.silver) || c.silver < 1) return 'bad_args';

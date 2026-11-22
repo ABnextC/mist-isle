@@ -9,7 +9,7 @@ import { initCombat, emptyEquip } from './systems/combat.js';
 import { initMobs, groupSpot } from './systems/mobs.js';
 import { emptyQuests, startQuest, firstQuest } from './systems/quests.js';
 import { makeClock } from './clock.js';
-import { newSettlement, initProjects, settlementDaily } from './settlements.js';
+import { newSettlement, initProjects, settlementDaily, finishIfFull } from './settlements.js';
 
 // 마이그레이션에서 산지·짐승을 새로 놓을 때 쓰는 작은 실행 문맥
 function migrationCtx(st, data, salt) {
@@ -289,7 +289,35 @@ const MIGRATIONS = [
       initMobs(ctx);
     },
   },
+  {
+    // v0.5.1 → v0.5.2: 등대섬(튜토리얼 섬). 1~2장에 생활 단계를 끼우고 2장에 「숲머리 대장간」을 넣었다.
+    // 주문·마을 사업·운송·산지 소문은 3장에서 연다(해금은 상태 없이 퀘스트로 정한다)
+    from: 8,
+    to: 9,
+    run(st, data) {
+      st.meta.engine = '0.5.2';
+      for (const a of Object.values(st.actors)) {
+        const Q = a.quests;
+        if (!Q) continue;
+        for (const [id, map] of Object.entries(STEP_MAP_9)) {
+          const p = Q.active[id];
+          if (p && map[p.step] != null) p.step = map[p.step];
+        }
+        // 이미 옛터 쪽으로 넘어간 개척자는 대장간 퀘스트를 지난 것으로 친다
+        if (Q.done.c2_forge == null && AFTER_FORGE.some((id) => Q.active[id] || Q.done[id] != null)) {
+          delete Q.active.c2_forge;
+          Q.done.c2_forge = st.t;
+        }
+      }
+      // 숲머리 대장간 사업은 앞 사업 없이 등대섬 규모로 줄었다. 이미 모인 것으로 다 찼으면 바로 선다
+      if (st.projects?.pj_f_forge) finishIfFull(migrationCtx(st, data, 0x51f0a2d3), 'pj_f_forge');
+    },
+  },
 ];
+
+// v0.5.2: 1~2장 퀘스트에 생활 단계가 끼었다. 하던 단계 번호를 새 번호로(앞에 낀 단계는 건너뛴다)
+const STEP_MAP_9 = { q1_ashore: [2], q3_lookout: [0, 3, 4, 5, 6], q4_forest: [3], q5_supplies: [0, 2, 3, 4], q7_raid: [0, 2, 3] };
+const AFTER_FORGE = ['c2_ruins', 'c2_haetae', 'c2_rekindle', 'c2_anchor'];
 
 // 자리(야영지·옛터·난파 자리)에 걸린 짐승 무리를 옆으로 옮긴다
 function relocateGroups(st, data, ctx, region) {

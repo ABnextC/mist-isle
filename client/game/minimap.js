@@ -3,6 +3,7 @@
 import { valueNoise } from '../../core/terrain.js';
 import { npcPos } from '../../core/world.js';
 import { hasMark } from '../../core/systems/quests.js';
+import { isUnlocked } from '../../core/systems/unlocks.js';
 
 const DOT = { logging: '#f2ead2', mining: '#ff9a4a', harvesting: '#a6ec74', hunting: '#e0a070' };
 
@@ -29,7 +30,9 @@ export function createMinimap(canvas, game, terrain) {
     // 등불의 각인(v0.5.1): 영맥이 느껴진다 — 산지 고리가 푸르고, 더 먼 노드까지 보인다
     const mark = hasMark(a, 'lantern_mark');
     g.strokeStyle = mark ? 'rgba(140, 225, 255, 0.85)' : 'rgba(255, 238, 170, 0.7)';
-    for (const v of Object.values(state.veins)) {
+    // 산지 소문 고리는 3장부터(v0.5.2 해금)
+    const rumors = isUnlocked({ state, data }, a, 'rumors');
+    for (const v of rumors ? Object.values(state.veins) : []) {
       if (v.common || !v.center) continue;
       const [px, py] = toPx(v.center[0], v.center[1]);
       g.beginPath();

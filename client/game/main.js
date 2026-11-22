@@ -36,6 +36,7 @@ import { talkDue, useDue, boardOffers } from '../../core/systems/quests.js';
 import { npcPos, objPos } from '../../core/world.js';
 import { createShotsView } from './shots-view.js';
 import { canWake } from '../../core/systems/mobs.js';
+import { isUnlocked } from '../../core/systems/unlocks.js';
 import { createNpcLabels } from './npc-labels.js';
 
 const SAVE_KEY = 'mist-isle:v1';
@@ -499,6 +500,7 @@ async function boot() {
   }
 
   const hud = createHud(document.getElementById('hud'), game, { touch, onAct });
+  window.__mist.hud = hud; // 확인 도구용
   let liveTier = tier;
   function applyTier(t) {
     liveTier = t;
@@ -645,7 +647,10 @@ async function boot() {
       best.radius = 2.0;
     } else {
       const town = settlementAt({ state }, a);
-      best.label = `${town ? town.name + ' ' : '마을 '}게시판 — 주문·현상금·마을 사업·산지 소문`;
+      // 잠긴 기능(v0.5.2)은 빼고 보인다
+      const qc = questCtx(game);
+      const feats = [isUnlocked(qc, a, 'orders') && '주문', '현상금', isUnlocked(qc, a, 'projects') ? '마을 사업' : '마을', isUnlocked(qc, a, 'rumors') && '산지 소문'].filter(Boolean);
+      best.label = `${town ? town.name + ' ' : '마을 '}게시판 — ${feats.join('·')}`;
       best.verb = '보기';
       best.radius = 1.2;
     }
@@ -714,7 +719,7 @@ async function boot() {
   game.on('chapter.done', (ev) => {
     if (ev.actor !== PID) return;
     const ch = data.chapters.find((c) => c.id === ev.chapter);
-    setTimeout(() => hud.banner(`🏁 ${ch.name} 끝 — ${ch.after}`), 2600);
+    setTimeout(() => hud.banner(`🏁 ${ch.name} 끝 — ${ch.after}`, 4600), 2600);
   });
   game.on('loot', (ev) => {
     if (ev.actor !== PID) return;

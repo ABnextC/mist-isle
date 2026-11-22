@@ -56,6 +56,7 @@ export const ERR = {
   no_project: '이 마을 사업이 아님',
   project_closed: '아직 열리지 않았거나 끝난 사업',
   not_needed: '그 사업에 더 필요 없음',
+  locked: '아직 열리지 않은 기능(이야기를 더 진행하면 열린다)',
   // 퀘스트(v0.5)
   no_npc: '그런 사람은 없음',
   no_quest: '없는 퀘스트',
@@ -194,6 +195,16 @@ export function describeEvent(ev, game) {
       const r = ev.reward || {};
       const got = [...(r.silver ? [`은화 ${r.silver}`] : []), ...(r.items || []).map((x) => `${itemName(data, x.item)} ${x.qty}`), ...(r.stored || []).map((x) => `${itemName(data, x.item)} ${x.qty}(창고로)`)];
       return q ? `${p}✅ 「${q.name}」 완료${got.length ? ` — ${got.join(' · ')}` : ''}` : null;
+    }
+    case 'quest.stepReward': {
+      const q = data.quests[ev.quest];
+      const r = ev.reward || {};
+      const got = [...(r.silver ? [`은화 ${r.silver}`] : []), ...(r.items || []).map((x) => `${itemName(data, x.item)} ${x.qty}`), ...(r.stored || []).map((x) => `${itemName(data, x.item)} ${x.qty}(창고로)`)];
+      return q && got.length ? `${p}🎁 「${q.name}」 도중에 받음 — ${got.join(' · ')}` : null;
+    }
+    case 'unlock': {
+      const names = (ev.ids || []).map((id) => data.unlocks[id]?.name).filter(Boolean);
+      return names.length ? `${p}🔓 새로 열림: ${names.join(' · ')}` : null;
     }
     case 'quest.fail':
       return `${p}⚠️ 「${data.quests[ev.quest]?.name ?? ''}」 ${ev.reason === 'down' ? '쓰러져서' : '자리를 떠나서'} 습격을 막지 못했다. 다시 가면 처음부터`;

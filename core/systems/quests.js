@@ -2,12 +2,16 @@
 // 행위자마다 a.quests = { active: { id: { step, n, used, ev? } }, done: { id: 끝낸 시각 }, items: { 물건: 수 }, track, daily: { id: 날 } }
 // 진행은 모두 코어가 한다: 대화(TALK)·물체(QUEST_USE)는 명령으로, 쓰러뜨리기는 짐승이 쓰러질 때, 가기·막기는 1초마다 본다.
 // 메인 퀘스트는 끝나면 다음 퀘스트가 바로 이어진다(수락 없음). 현상금은 게시판에서 받고, 다 채우면 바로 끝난다.
+// 생활 단계(v0.5.2, 튜토리얼 섬): 가지기(have)·마을 사업(project)은 1초마다 보고, 먹기·맡기기·고치기·팔기는 그 명령이 알린다(questNote).
+// 고치기는 고칠 것이 하나도 없으면 그냥 넘어간다. 단계 보상(step.reward)은 그 단계를 넘길 때 준다.
 
-import { addEntry, slotsNeeded } from '../inventory.js';
+import { addEntry, slotsNeeded, countItem } from '../inventory.js';
 import { convertStats, starOf } from '../formulas.js';
 import { sitePos, npcPos, objPos, storeOf } from '../world.js';
 import { tempGroup, spawnTemp, freeSpot, removeMob, isAlive } from './mobs.js';
 import { isDown } from './combat.js';
+import { unlockedSet } from './unlocks.js';
+import { projectProgress } from '../settlements.js';
 
 export const TALK_RANGE = 3.6;
 export const USE_RANGE = 2.6;
@@ -50,6 +54,11 @@ function advance(ctx, a, id) {
   const p = a.quests.active[id];
   const st = q.steps[p.step];
   if (st.gives && st.type !== 'use') a.quests.items[st.gives] = (a.quests.items[st.gives] || 0) + 1;
+  // 단계 보상(v0.5.2): 강두가 벼려 준 구리 검처럼 퀘스트 중간에 받는 것
+  if (st.reward) {
+    const reward = giveReward(ctx, a, { ...q, reward: st.reward });
+    ctx.emit('quest.stepReward', { actor: a.id, quest: id, step: p.step, reward });
+  }
   p.step += 1;
   p.n = 0;
   p.used = [];
@@ -64,6 +73,7 @@ function advance(ctx, a, id) {
 function complete(ctx, a, id) {
   const q = ctx.data.quests[id];
   const Q = a.quests;
+  const before = unlockedSet(ctx, a);
   delete Q.active[id];
   Q.done[id] = ctx.state.t;
   if (q.repeat === 'daily') Q.daily[id] = ctx.clock.day(ctx.state.t);
@@ -84,6 +94,9 @@ function complete(ctx, a, id) {
   if (q.kind === 'main' && (!nq || nq.chapter !== q.chapter)) ctx.emit('chapter.done', { actor: a.id, chapter: q.chapter, next: nq?.chapter || null });
   if (q.next) startQuest(ctx, a, q.next);
   if (Q.track === id || !Q.active[Q.track]) Q.track = Object.keys(Q.active).sort((x, y) => mainFirst(ctx, x, y))[0] || null;
+  // 해금(v0.5.2): 이 퀘스트로 새로 열린 기능
+  const gained = [...unlockedSet(ctx, a)].filter((u) => !before.has(u));
+  if (gained.length) ctx.emit('unlock', { actor: a.id, ids: gained, quest: id });
 }
 
 // 메인 줄기 잇기(v0.5.1): 패치로 다음 퀘스트가 붙으면(1장 끝 → 2장) 이미 끝낸 사람도 이어서 받는다
@@ -128,7 +141,7 @@ function rewardEntry(ctx, q, it) {
     const stats = convertStats(def.statConvert, scores);
     return {
       uid: ctx.newId('it'), item: def.id, stats, scores, star: starOf(score, cfg.stars), masterwork: false,
-      crafter: rewardGiver(ctx, q), dur: stats.durability ?? null, maxDur: stats.durability ?? null, broken: false,
+      crafter: it.crafter || rewardGiver(ctx, q), dur: stats.durability ?? null, maxDur: stats.durability ?? null, broken: false,
     };
   }
   if (def.kind === 'consumable') {
@@ -220,6 +233,48 @@ export function questKill(ctx, a, m) {
 
 export const defendTotal = (st) => st.waves.reduce((s, w) => s + Object.values(w).reduce((x, y) => x + y, 0), 0);
 
+// ── 생활 단계(v0.5.2) ───────────────────────────────
+// 가방에서 센다(낀 장비도 가방에 있다). equip이면 낀 것만
+function haveCount(a, item, equipOnly = false) {
+  if (!equipOnly) return countItem([a.bag], item);
+  const uids = new Set(Object.values(a.equip || {}).filter(Boolean));
+  return a.bag.filter((e) => e.uid && uids.has(e.uid) && e.item === item).length;
+}
+
+export function haveProgress(a, st) {
+  if (st.need) return Object.entries(st.need).map(([item, need]) => ({ item, need, got: Math.min(need, haveCount(a, item, st.equip)) }));
+  const need = st.count || 1;
+  const got = st.any.reduce((n, it) => n + haveCount(a, it, st.equip), 0);
+  return [{ item: null, need, got: Math.min(need, got) }];
+}
+
+// orAny: 이미 다음 것을 가졌으면 이 단계는 지난 셈이다(돌 도구를 벌써 만들었다면 표류목·돌 줍기는 끝)
+const haveMet = (a, st) => (st.orAny || []).some((it) => haveCount(a, it) > 0) || haveProgress(a, st).every((x) => x.got >= x.need);
+
+// 고칠 수 있는 것(내구가 준 장비·도구)이 하나라도 있나
+function anyDamaged(ctx, a) {
+  return a.bag.some((e) => {
+    const def = ctx.data.items[e.item];
+    return (def?.armor || def?.weapon || def?.tool) && e.maxDur != null && (e.broken || e.dur < e.maxDur);
+  });
+}
+
+// 명령이 알리는 생활 단계: 먹기(eat)·맡기기(store)·고치기(repair)·팔기(sell). info.at: 그 일을 한 마을
+export function questNote(ctx, a, kind, info = {}) {
+  const Q = a.quests;
+  if (!Q) return;
+  for (const id of Object.keys(Q.active)) {
+    const p = Q.active[id];
+    const st = stepOf(ctx, a, id);
+    if (!st || st.type !== kind) continue;
+    if (st.at && info.at !== st.at) continue;
+    p.n += 1;
+    const need = st.count || 1;
+    ctx.emit('quest.progress', { actor: a.id, quest: id, n: p.n, need });
+    if (p.n >= need) advance(ctx, a, id);
+  }
+}
+
 // ── 막기(습격) ─────────────────────────────────────
 function spawnWave(ctx, a, st, s, p) {
   const site = ctx.data.sites[st.site];
@@ -278,14 +333,22 @@ export function questsTick(ctx) {
     if (!Q) continue;
     if (a.kind === 'player') catchUp(ctx, a);
     for (const id of Object.keys(Q.active)) {
-      const p = Q.active[id];
-      if (!p) continue;
-      const st = ctx.data.quests[id].steps[p.step];
-      if (!st) continue;
-      if (st.type === 'go') {
-        const s = sitePos(ctx, st.site);
-        if (Math.hypot(a.x - s.x, a.z - s.z) <= s.r) advance(ctx, a, id);
-      } else if (st.type === 'defend') defendTick(ctx, a, id, st, p);
+      // 이미 이룬 단계가 잇달아 있으면(돌 도구를 벌써 가졌다) 한 번에 넘긴다
+      for (let k = 0; k < 4; k++) {
+        const p = Q.active[id];
+        if (!p) break;
+        const st = ctx.data.quests[id].steps[p.step];
+        if (!st) break;
+        const step0 = p.step;
+        if (st.type === 'go') {
+          const s = sitePos(ctx, st.site);
+          if (Math.hypot(a.x - s.x, a.z - s.z) <= s.r) advance(ctx, a, id);
+        } else if (st.type === 'defend') defendTick(ctx, a, id, st, p);
+        else if (st.type === 'have' && haveMet(a, st)) advance(ctx, a, id);
+        else if (st.type === 'project' && ctx.state.projects[st.project]?.done) advance(ctx, a, id);
+        else if (st.type === 'repair' && !anyDamaged(ctx, a)) advance(ctx, a, id);
+        if (!Q.active[id] || Q.active[id].step === step0 || st.type === 'defend') break;
+      }
     }
   }
 }
@@ -324,7 +387,51 @@ export function stepGoal(ctx, a, id) {
     }
     return best;
   }
+  // 생활 단계: 길잡이 힌트(goal)를 따른다. 사업은 그 마을 게시판
+  const gl = st.goal || {};
+  if (st.type === 'project') return boardGoalOf(ctx, a, ctx.data.projects[st.project].at);
+  if (gl.node) {
+    // 가지기 단계는 아직 모자란 물건의 노드부터
+    let types = gl.node;
+    if (st.type === 'have' && st.need && gl.nodeFor) {
+      const short = haveProgress(a, st).filter((x) => x.got < x.need).map((x) => x.item);
+      const pick = gl.node.filter((n, i) => short.includes(gl.nodeFor[i]));
+      if (pick.length) types = pick;
+    }
+    let best = null;
+    for (const n of Object.values(ctx.state.nodes)) {
+      if (!types.includes(n.type) || n.charges <= 0) continue;
+      const d = Math.hypot(n.x - a.x, n.z - a.z);
+      if (!best || d < best.d) best = { x: n.x, z: n.z, d, label: ctx.data.nodes[n.type].name, kind: 'node' };
+    }
+    return best;
+  }
+  if (gl.station) return stationGoalOf(ctx, a, gl.station, gl.at || st.at || null);
+  if (gl.board || gl.market) return boardGoalOf(ctx, a, gl.at || st.at || null, gl.market ? 'market' : 'board');
   return null;
+}
+
+function stationGoalOf(ctx, a, type, at) {
+  let best = null;
+  for (const s of Object.values(ctx.state.settlements)) {
+    if (at && s.id !== at) continue;
+    const t = s.stations.find((x) => x.type === type);
+    if (!t) continue;
+    const d = Math.hypot(t.x - a.x, t.z - a.z);
+    if (!best || d < best.d) best = { x: t.x, z: t.z, d, label: `${s.name} ${ctx.data.stations[type].name}`, kind: 'station' };
+  }
+  return best;
+}
+
+function boardGoalOf(ctx, a, at, kind = 'board') {
+  let best = null;
+  for (const o of ctx.statics || []) {
+    if (o.kind !== kind || (at && o.at !== at)) continue;
+    const d = Math.hypot(o.x - a.x, o.z - a.z);
+    const town = ctx.state.settlements[o.at]?.name || '';
+    if (!best || d < best.d) best = { x: o.x, z: o.z, d, label: `${town} ${kind === 'market' ? '장터' : '게시판'}`.trim(), kind: 'board' };
+  }
+  return best;
 }
 
 // 단계 글: "해안 게 쓰러뜨리기 (2/3)"
@@ -337,6 +444,13 @@ export function stepText(ctx, a, id) {
     const total = defendTotal(st);
     return p.ev ? `${st.text} (${Math.min(p.n, total)}/${total} · ${p.ev.wave + 1}/${st.waves.length}물결)` : st.text;
   }
+  if (st.type === 'have') {
+    const prog = haveProgress(a, st);
+    if (st.need) return `${st.text} (${prog.map((x) => `${ctx.data.items[x.item].name} ${x.got}/${x.need}`).join(' · ')})`;
+    return `${st.text} (${prog[0].got}/${prog[0].need})`;
+  }
+  if (st.type === 'project') return `${st.text} (${Math.round(projectProgress(ctx, st.project) * 100)}%)`;
+  if ((st.count || 1) > 1) return `${st.text} (${Math.min(p.n, st.count)}/${st.count})`;
   return st.text;
 }
 

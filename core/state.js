@@ -10,7 +10,7 @@ import { initMobs } from './systems/mobs.js';
 import { newSettlement, initProjects, settlementsDaily } from './settlements.js';
 import { emptyQuests, startQuest, firstQuest } from './systems/quests.js';
 
-export const ENGINE_VERSION = '0.7.0';
+export const ENGINE_VERSION = '0.7.1';
 
 export function spawnPoint(region, terrain) {
   const [x, inland] = region.spawn;

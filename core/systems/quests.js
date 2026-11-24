@@ -11,6 +11,7 @@ import { sitePos, npcPos, objPos, storeOf, reachable } from '../world.js';
 import { tempGroup, spawnTemp, freeSpot, removeMob, isAlive } from './mobs.js';
 import { isDown } from './combat.js';
 import { unlockedSet } from './unlocks.js';
+import { factionDef, factionOf, gainInfluence } from './factions.js';
 import { projectProgress } from '../settlements.js';
 
 export const TALK_RANGE = 3.6;
@@ -118,9 +119,17 @@ const mainFirst = (ctx, x, y) => (ctx.data.quests[x].kind === 'main' ? 0 : 1) - 
 // ── 보상 ───────────────────────────────────────────
 // 보상을 준 사람(끝내는 대화 상대). 현상금은 마을 경비대
 export function rewardGiver(ctx, q) {
-  const last = [...q.steps].reverse().find((s) => s.type === 'talk');
+  const last = [...q.steps].reverse().find((s) => s.type === 'talk' && s.npc !== '@leader');
   return last ? ctx.data.npcs[last.npc].name : '마을 경비대';
 }
+
+// 세력 지도자 대화(v0.7.1): npc '@leader'는 내가 든 세력의 지도자다(없으면 강두)
+export function stepNpc(ctx, a, st) {
+  if (st?.npc !== '@leader') return st?.npc;
+  return factionDef(ctx, factionOf(a))?.leader || 'gangdu_port';
+}
+// 세력마다 다른 대사(sayBy)
+export const stepSay = (ctx, a, st) => st.sayBy?.[factionOf(a)] || st.say;
 
 // 재료 보상은 퀘스트·품목마다 묶음 하나(속성은 모두 55로 고르게)
 function rewardLot(ctx, q, def) {
@@ -156,7 +165,10 @@ function rewardEntry(ctx, q, it) {
 
 // 가방에 넣고, 자리가 없으면 귀환 지점 마을 창고로 보낸다
 function giveReward(ctx, a, q) {
-  const r = q.reward || {};
+  // 세력마다 다른 보상(v0.7.1): rewardBy[세력]을 덧붙이고, inf는 그 세력 영향력
+  const by = q.rewardBy?.[factionOf(a)];
+  const r = by ? { silver: (q.reward?.silver || 0) + (by.silver || 0), items: [...(q.reward?.items || []), ...(by.items || [])] } : q.reward || {};
+  if (by?.inf) gainInfluence(ctx, a, by.inf, 'story');
   const out = { silver: r.silver || 0, items: [], stored: [] };
   if (r.silver) a.silver += r.silver;
   for (const it of r.items || []) {
@@ -185,7 +197,7 @@ export function talkDue(ctx, a, npc) {
   const out = [];
   for (const id of Object.keys(a.quests?.active || {})) {
     const st = stepOf(ctx, a, id);
-    if (st?.type === 'talk' && st.npc === npc) out.push(id);
+    if (st?.type === 'talk' && stepNpc(ctx, a, st) === npc) out.push(id);
   }
   return out.sort((x, y) => mainFirst(ctx, x, y));
 }
@@ -404,9 +416,10 @@ export function stepGoal(ctx, a, id) {
     if (best) return { x: best.p.x, z: best.p.z, label: `${best.f.icon} ${best.f.name}`, kind: 'npc', npc: best.f.leader };
   }
   if (st.type === 'talk') {
-    const p = npcPos(ctx, st.npc);
-    const n = ctx.data.npcs[st.npc];
-    return { x: p.x, z: p.z, label: `${n.title} ${n.name}`, kind: 'npc', npc: st.npc };
+    const id = stepNpc(ctx, a, st);
+    const p = npcPos(ctx, id);
+    const n = ctx.data.npcs[id];
+    return { x: p.x, z: p.z, label: `${n.title} ${n.name}`, kind: 'npc', npc: id };
   }
   if (st.type === 'go' || st.type === 'defend' || (st.type === 'kill' && st.site)) {
     const s = sitePos(ctx, st.site);

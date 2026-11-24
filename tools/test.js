@@ -15,6 +15,7 @@ import { storeOf, nearestSettlement, npcPos, sitePos, objPos } from '../core/wor
 import { yawTo } from '../core/systems/combat.js';
 import { settlementDaily } from '../core/settlements.js';
 import { isUnlocked, allowedProject, chapterReached } from '../core/systems/unlocks.js';
+import { stepNpc } from '../core/systems/quests.js';
 import { rankOf, xpMult, extraChance, feeMult, recipeAllowed, tasksOf, factionOnEvent } from '../core/systems/factions.js';
 import { addXp } from '../core/systems/progress.js';
 import { stepText } from '../core/systems/quests.js';
@@ -1016,7 +1017,7 @@ test('안개 늑대는 밤에만 나온다: 낮엔 숨고, 밤에 마을 사이 
   ok(wolves().every((x) => x.mode === 'away'), '해가 뜨면 사라진다');
 });
 
-test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사업·배 고치기·안개 벽 건너기·늪의 불씨·세 갈래 길까지 막히는 데 없이 29개, 건너면 해금·보상·현상금', () => {
+test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사업·배 고치기·안개 벽 건너기·늪의 불씨·세 갈래 길·물러가는 함대까지 막히는 데 없이 33개, 건너면 해금·보상·현상금', () => {
   const g = createGame({ data, seed: 7, actors: [{ id: 'p1', kind: 'player' }] });
   g.state.econ = null;
   const st = g.state;
@@ -1067,15 +1068,16 @@ test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사
     const p = a.quests.active[id];
     const step = data.quests[id].steps[p.step];
     if (step.type === 'talk') {
-      const n = npcPos(W, step.npc);
+      const who = stepNpc(W, a, step);
+      const n = npcPos(W, who);
       warp(n.x + 1.2, n.z);
       if (step.take) {
         // 건네기(v0.6): 모자라면 거절, 채우면 넘어가며 가져간다
-        eq(g.dispatch({ type: 'TALK', actor: 'p1', npc: step.npc }).error, 'need_items', `${id} 재료 모자람`);
+        eq(g.dispatch({ type: 'TALK', actor: 'p1', npc: who }).error, 'need_items', `${id} 재료 모자람`);
         for (const [item, q] of Object.entries(step.take)) a.bag.push({ item, lot: null, bonus: null, qty: q + 1 });
       }
       const had = Object.fromEntries(Object.keys(step.take || {}).map((it) => [it, countItem([a.bag], it)]));
-      ok(g.dispatch({ type: 'TALK', actor: 'p1', npc: step.npc }).ok, `${id} 대화`);
+      ok(g.dispatch({ type: 'TALK', actor: 'p1', npc: who }).ok, `${id} 대화`);
       for (const [item, q] of Object.entries(step.take || {})) eq(countItem([a.bag], item), had[item] - q, `${item} 건넴`);
     } else if (step.type === 'go') {
       const s = sitePos(W, step.site);
@@ -1186,9 +1188,11 @@ test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사
   ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch1' && e.next === 'ch2'), '1장 끝 → 2장');
   ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch2' && e.next === 'ch3'), '2장 끝 → 3장');
   ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch3' && e.next === 'ch4'), '3장 끝 → 4장');
-  ok(events.some((e) => e.type === 'story.pause' && e.chapter === 'ch4'), '4장은 이어질 이야기가 남았다');
+  ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch4'), '4장 끝');
+  ok(a.faction.inf >= 450, '4장 세력 보상 영향력');
+  ok(countItem([a.bag, storeOf(a, a.home)], 'food_jerky') >= 4, '선단 몫 육포');
   eq(a.faction?.id, 'fleet', '세력');
-  eq(events.filter((e) => e.type === 'quest.wave').length, 4, '습격 두 번 × 두 물결');
+  eq(events.filter((e) => e.type === 'quest.wave').length, 7, '습격 두 번 × 두 물결 + 항구 포위 세 물결');
   ok(a.marks?.lantern_mark != null && events.some((e) => e.type === 'quest.grant'), '등불의 각인');
   ok(events.some((e) => e.type === 'quest.stepReward' && e.reward.items.some((x) => x.item === 'wpn_sword_copper')), '강두의 구리 검');
   ok(a.bag.some((e) => e.item === 'wpn_sword_iron' && e.crafter === '숲머리 대장장이'), '숲머리 대장장이의 철 검');
@@ -1296,7 +1300,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '0.7.0');
+  eq(st.meta.engine, '0.7.1');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1488,7 +1492,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '0.7.0');
+  eq(st.meta.engine, '0.7.1');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');

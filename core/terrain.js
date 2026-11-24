@@ -85,7 +85,7 @@ export function makeTerrain(region, worldSeed) {
     x: t.x, z: t.z, radius: t.radius, h: t.flat === 'local' ? baseHeight(t.x, t.z) : T.townHeight,
   }));
   // 늪 마을 같은 자리(v0.6)도 flat 높이로 다진다(물 위 마른 땅)
-  for (const st of region.sites || []) if (st.flat != null && st.x != null) towns.push({ x: st.x, z: st.z, radius: st.r, h: st.flat });
+  for (const st of region.sites || []) if (st.flat != null && st.x != null) towns.push({ x: st.x, z: st.z, radius: st.r, h: st.flat === 'local' ? baseHeight(st.x, st.z) : st.flat });
 
   function height(x, z) {
     let h = baseHeight(x, z);

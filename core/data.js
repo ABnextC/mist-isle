@@ -173,7 +173,7 @@ export function buildData(raw) {
     if (q.giver && q.giver !== 'board' && !npcs[q.giver]) problems.push(`퀘스트 ${q.id}: 주는 이 ${q.giver} 없음`);
     if (!q.steps?.length) problems.push(`퀘스트 ${q.id}: 단계 없음`);
     for (const st of q.steps || []) {
-      if (st.type === 'talk' && !npcs[st.npc]) problems.push(`퀘스트 ${q.id}: NPC ${st.npc} 없음`);
+      if (st.type === 'talk' && st.npc !== '@leader' && !npcs[st.npc]) problems.push(`퀘스트 ${q.id}: NPC ${st.npc} 없음`);
       if ((st.type === 'go' || st.type === 'defend' || st.site) && !sites[st.site]) problems.push(`퀘스트 ${q.id}: 자리 ${st.site} 없음`);
       if (st.type === 'kill') for (const m of st.mobs || []) if (!creatures[m]) problems.push(`퀘스트 ${q.id}: 짐승 ${m} 없음`);
       if (st.type === 'use') for (const o of st.objs || []) if (!objects[o]) problems.push(`퀘스트 ${q.id}: 물체 ${o} 없음`);

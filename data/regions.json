@@ -2088,6 +2088,227 @@
             "r": 0.7
           }
         ]
+      },
+      {
+        "id": "pump_house",
+        "name": "펌프실",
+        "x": 1372,
+        "z": 150,
+        "r": 12,
+        "flat": "local",
+        "structures": [
+          {
+            "kind": "pump",
+            "dx": -3,
+            "dz": -2,
+            "r": 1.2,
+            "rot": 0.3
+          },
+          {
+            "kind": "pump",
+            "dx": 3.5,
+            "dz": -3,
+            "r": 1.2,
+            "rot": -0.4
+          },
+          {
+            "kind": "tent_white",
+            "dx": -7,
+            "dz": 6,
+            "r": 1.9,
+            "rot": 2.4
+          },
+          {
+            "kind": "crates",
+            "dx": 6,
+            "dz": 5,
+            "r": 0.8,
+            "rot": 0.2
+          },
+          {
+            "kind": "banner_blue",
+            "dx": 0,
+            "dz": -8,
+            "r": 0.25,
+            "rot": 0
+          }
+        ],
+        "objects": [
+          {
+            "id": "o_valve",
+            "kind": "door",
+            "dx": 0.5,
+            "dz": -1,
+            "rot": 0,
+            "name": "영맥 펌프 밸브",
+            "verb": "잠그기"
+          }
+        ],
+        "members": [
+          {
+            "type": "marine",
+            "dx": -5,
+            "dz": 2,
+            "yaw": 3
+          },
+          {
+            "type": "marine",
+            "dx": 5,
+            "dz": 1,
+            "yaw": 2.6
+          },
+          {
+            "type": "marine",
+            "dx": 0,
+            "dz": 6,
+            "yaw": 3.1
+          },
+          {
+            "type": "marine_spear",
+            "dx": -6,
+            "dz": -6,
+            "yaw": 3.3
+          },
+          {
+            "type": "marine_spear",
+            "dx": 7,
+            "dz": -5,
+            "yaw": 2.9
+          }
+        ]
+      },
+      {
+        "id": "gray_fort",
+        "name": "잿빛 요새",
+        "x": 1396,
+        "z": 214,
+        "r": 18,
+        "flat": "local",
+        "structures": [
+          {
+            "kind": "watchtower",
+            "dx": 10,
+            "dz": 10,
+            "r": 1.8,
+            "rot": 0.4
+          },
+          {
+            "kind": "tent_white",
+            "dx": -8,
+            "dz": 7,
+            "r": 1.9,
+            "rot": 2.6
+          },
+          {
+            "kind": "tent_white",
+            "dx": -10,
+            "dz": -6,
+            "r": 1.9,
+            "rot": 1.2
+          },
+          {
+            "kind": "banner_blue",
+            "dx": -3,
+            "dz": -12,
+            "r": 0.25,
+            "rot": 0
+          },
+          {
+            "kind": "banner_blue",
+            "dx": 4,
+            "dz": -12,
+            "r": 0.25,
+            "rot": 0
+          },
+          {
+            "kind": "crates",
+            "dx": 7,
+            "dz": -6,
+            "r": 0.8,
+            "rot": 0.5
+          },
+          {
+            "kind": "campfire",
+            "dx": 0,
+            "dz": 2,
+            "r": 0.7
+          },
+          {
+            "kind": "palisade",
+            "dx": -15,
+            "dz": -11,
+            "r": 0,
+            "rot": 0.9,
+            "len": 9.6
+          },
+          {
+            "kind": "palisade",
+            "dx": 9,
+            "dz": -15,
+            "r": 0,
+            "rot": -0.3,
+            "len": 8
+          },
+          {
+            "kind": "palisade",
+            "dx": 15,
+            "dz": 0,
+            "r": 0,
+            "rot": -1.6,
+            "len": 8
+          }
+        ],
+        "members": [
+          {
+            "type": "marine_captain",
+            "dx": 0,
+            "dz": 5,
+            "yaw": 3.1
+          },
+          {
+            "type": "marine",
+            "dx": -6,
+            "dz": -3,
+            "yaw": 3
+          },
+          {
+            "type": "marine",
+            "dx": 6,
+            "dz": -2,
+            "yaw": 2.8
+          },
+          {
+            "type": "marine",
+            "dx": -2,
+            "dz": 11,
+            "yaw": 3.2
+          },
+          {
+            "type": "marine_spear",
+            "dx": -10,
+            "dz": 1,
+            "yaw": 2.5
+          },
+          {
+            "type": "marine_spear",
+            "dx": 9,
+            "dz": 4,
+            "yaw": 3.6
+          },
+          {
+            "type": "marine_spear",
+            "dx": 3,
+            "dz": -9,
+            "yaw": 3
+          }
+        ]
+      },
+      {
+        "id": "port_east",
+        "name": "갈대 나루 동문",
+        "x": 1226,
+        "z": 66,
+        "r": 8
       }
     ]
   }

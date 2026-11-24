@@ -3,7 +3,7 @@
 import { regionAt } from '../../core/terrain.js';
 import { valueNoise } from '../../core/terrain.js';
 import { npcPos } from '../../core/world.js';
-import { hasMark } from '../../core/systems/quests.js';
+import { hasMark, stepNpc } from '../../core/systems/quests.js';
 import { isUnlocked } from '../../core/systems/unlocks.js';
 
 const DOT = { logging: '#f2ead2', mining: '#ff9a4a', harvesting: '#a6ec74', hunting: '#e0a070' };
@@ -106,7 +106,7 @@ export function createMinimap(canvas, game, terrain) {
       const np = npcPos(game, n.id);
       if (!np) continue;
       const [px, py] = toPx(np.x, np.z);
-      const due = Object.keys(a.quests?.active || {}).some((id) => { const q = data.quests[id]; const st = q.steps[a.quests.active[id].step]; return st?.type === 'talk' && st.npc === n.id; });
+      const due = Object.keys(a.quests?.active || {}).some((id) => { const q = data.quests[id]; const st = q.steps[a.quests.active[id].step]; return st?.type === 'talk' && stepNpc({ state, data }, a, st) === n.id; });
       if (!due) continue;
       g.fillStyle = '#ffd24a';
       g.beginPath();

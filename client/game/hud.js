@@ -11,7 +11,7 @@ import { settlementAt, storeOf, standingTier, reachable } from '../../core/world
 import { openProjects, projectOpen, needLeft, silverLeft, projectProgress, shipFee, upkeepOf } from '../../core/settlements.js';
 import { zoneAt, regionAt } from '../../core/terrain.js';
 import { ENGINE_VERSION } from '../../core/state.js';
-import { stepText, talkDue, boardOffers, available, TALK_RANGE, takeMet, takeProgress } from '../../core/systems/quests.js';
+import { stepText, talkDue, boardOffers, available, TALK_RANGE, takeMet, takeProgress, stepSay } from '../../core/systems/quests.js';
 import { factionOf, rankOf, tasksOf, taskDone } from '../../core/systems/factions.js';
 import { npcPos } from '../../core/world.js';
 import { questCtx, lifeSteps } from './quest.js';
@@ -719,9 +719,9 @@ export function createHud(root, game, { touch, onAct }) {
       // 건네기(v0.6): 모자라면 첫마디와 필요한 것만 보인다
       if (st.take && !takeMet(ctx, a, st)) {
         const need = takeProgress(ctx, a, st).map((x) => `<li>${esc(data.items[x.item].name)} <b>${x.got}/${x.need}</b></li>`).join('');
-        return `${tag}<p class="say">${esc(st.say[0])}</p><p class="muted">건넬 것(가방·이 마을 창고):</p><ul class="list">${need}</ul><div class="btns"><button data-act="close">모아 오겠습니다</button></div>`;
+        return `${tag}<p class="say">${esc(stepSay(ctx, a, st)[0])}</p><p class="muted">건넬 것(가방·이 마을 창고):</p><ul class="list">${need}</ul><div class="btns"><button data-act="close">모아 오겠습니다</button></div>`;
       }
-      return `${tag}${st.say.map((l) => `<p class="say">${esc(l)}</p>`).join('')}<div class="btns"><button data-act="talk-do" data-v="${panel.npc}">${esc(st.reply || '알겠다')}</button></div>`;
+      return `${tag}${stepSay(ctx, a, st).map((l) => `<p class="say">${esc(l)}</p>`).join('')}<div class="btns"><button data-act="talk-do" data-v="${panel.npc}">${esc(st.reply || '알겠다')}</button></div>`;
     }
     // 세력 지도자(v0.7): 세력이 열렸으면 세력 창을 보인다
     const fdef = data.factions.list.find((f) => f.leader === panel.npc);

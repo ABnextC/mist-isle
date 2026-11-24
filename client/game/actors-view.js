@@ -707,7 +707,9 @@ export function createActorsView(scene, game, hf, camera = null) {
     for (const n of data.lists.npcs || []) {
       const p = npcActor(n, me);
       const v = views.get(p.id);
-      const far = Math.abs(p.x - cx) > FAR_M || Math.abs(p.z - cz) > FAR_M;
+      // 이야기 뒤에 나타나는 NPC(v0.7)
+      const hidden = n.appear && !(me?.quests?.active?.[n.appear] || me?.quests?.done?.[n.appear] != null);
+      const far = hidden || Math.abs(p.x - cx) > FAR_M || Math.abs(p.z - cz) > FAR_M;
       if (v) v.m.root.visible = !far;
       if (!far) listBuf.push(p);
     }

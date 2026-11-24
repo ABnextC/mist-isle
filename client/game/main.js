@@ -32,7 +32,7 @@ import { createMinimap } from './minimap.js';
 import { createGuide } from './guide.js';
 import { createPerf } from './perf.js';
 import { currentQuest, questCtx } from './quest.js';
-import { talkDue, useDue, boardOffers } from '../../core/systems/quests.js';
+import { talkDue, useDue, boardOffers, npcShown } from '../../core/systems/quests.js';
 import { npcPos, objPos } from '../../core/world.js';
 import { createShotsView } from './shots-view.js';
 import { canWake } from '../../core/systems/mobs.js';
@@ -376,6 +376,14 @@ async function boot() {
     const a = me();
     switch (act) {
       case 'interact': interact(); break;
+      case 'faction-join': {
+        game.dispatch({ type: 'FACTION_JOIN', actor: PID, faction: v });
+        break;
+      }
+      case 'faction-task': {
+        game.dispatch({ type: 'FACTION_TASK', actor: PID, task: v });
+        break;
+      }
       case 'cross-go': {
         game.dispatch({ type: 'QUEST_USE', actor: PID, obj: v });
         hud.close();
@@ -595,7 +603,7 @@ async function boot() {
         const dx = o.x - a.x;
         const dz = o.z - a.z;
         const d = Math.hypot(dx, dz);
-        if (d <= 3.3) consider(d - 0.6, dx, dz, { kind: 'npc', id: o.npc, x: o.x, z: o.z });
+        if (d <= 3.3 && npcShown(questCtx(game), me(), o.npc)) consider(d - 0.6, dx, dz, { kind: 'npc', id: o.npc, x: o.x, z: o.z });
       } else if (o.obj) {
         const dx = o.x - a.x;
         const dz = o.z - a.z;

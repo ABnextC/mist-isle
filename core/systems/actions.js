@@ -1,6 +1,7 @@
 // 이동(30Hz)과 채집 행동 진행.
 // 이동은 두 가지다: 입력 방향(actor.move, 플레이어 조작)과 목적지(actor.dest, 봇·클릭 이동).
 
+import { extraChance } from './factions.js';
 import { addEntry, slotsNeeded } from '../inventory.js';
 import { rollQty, skillYieldBonus, round3 } from '../formulas.js';
 import { addXp } from './progress.js';
@@ -174,7 +175,9 @@ function resolveGather(ctx, actor) {
   const buff = actor.buffs.find((b) => b.type === 'gatherYield');
   const mult = 1 + skillYieldBonus(skill.level, type.level, cfg) + (tool?.stats.yield ?? 0) + (buff ? buff.value : 0);
   const base = rng.int(type.yield[0], type.yield[1]);
-  const qty = Math.max(1, rollQty(base * mult, rng));
+  // 세력 혜택(v0.7): 확률로 하나 더
+  const fx = extraChance(ctx, actor, 'gather', type.skill);
+  const qty = Math.max(1, rollQty(base * mult, rng)) + (fx > 0 && rng.next() < fx ? 1 : 0);
   const main = { item: item.id, lot: vein.lot, bonus: null, qty };
 
   const extras = [];

@@ -4,6 +4,7 @@
 //   game.advance(초)  — 30Hz 빠른 틱(이동·행동)과 1초 월드 틱을 돌린다
 //   game.save() / loadGame({ data, save })
 
+import { factionOnEvent } from './systems/factions.js';
 import { makeRng } from './rng.js';
 import { makeClock } from './clock.js';
 import { makeBus } from './events.js';
@@ -45,7 +46,11 @@ function makeCtx(state, data, bus) {
     obstacles: null,
     obstaclesDirty: true,
     newId: (p) => `${p}_${state.nextId++}`,
-    emit: (type, payload) => bus.emit({ type, t: state.t, ...payload }),
+    emit: (type, payload) => {
+      const ev = { type, t: state.t, ...payload };
+      bus.emit(ev);
+      factionOnEvent(ctx, ev); // 세력 활동 영향력(v0.7)
+    },
   };
   // 마을 사업으로 건물이 서면 정적 배치를 다시 잰다(충돌·화면이 같이 쓴다)
   ctx.refreshStatics = () => {

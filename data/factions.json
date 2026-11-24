@@ -1,0 +1,77 @@
+{
+  "ranks": [
+    {"at": 0, "name": "견습"},
+    {"at": 150, "name": "일원"},
+    {"at": 500, "name": "신임"},
+    {"at": 1200, "name": "중진"},
+    {"at": 2500, "name": "원로"}
+  ],
+  "switchDays": 2,
+  "dailyCap": 60,
+  "tasksPerDay": 3,
+  "list": [
+    {
+      "id": "lantern", "name": "등불단", "icon": "🏮", "leader": "haerim_port", "color": "#d9a83a",
+      "motto": "섬과의 맹약을 지킨다. 먹이고, 짓고, 지킨다.",
+      "focus": "요리·마을 사업·석재와 목재",
+      "earn": {"craft": {"cooking": 3, "masonry": 2, "carpentry": 2, "sawing": 1}, "contrib": 1, "gather": {}, "skin": 0, "ship": 0, "sell": 0},
+      "perks": [
+        {"rank": 1, "kind": "xp", "skills": ["cooking", "masonry", "carpentry"], "mult": 1.2, "text": "요리·석공·목수 숙련 경험 +20%"},
+        {"rank": 2, "kind": "food", "mult": 1.3, "text": "음식 효과 시간 +30%"},
+        {"rank": 3, "kind": "recipe", "recipe": "rc_lantern_ration", "text": "전용 요리 「등불 보존식」(생활 숙련 경험이 오른다)"},
+        {"rank": 4, "kind": "refine", "skills": ["masonry", "sawing"], "chance": 0.12, "text": "석재·목재를 다듬을 때 12% 확률로 하나 더"},
+        {"rank": 5, "kind": "xp", "skills": "*", "mult": 1.1, "text": "모든 생활 숙련 경험 +10%"}
+      ],
+      "tasks": [
+        {"item": "food_soup", "qty": [3, 5], "inf": 30, "silver": 40},
+        {"item": "food_meat", "qty": [4, 6], "inf": 25, "silver": 35},
+        {"item": "food_berry", "qty": [4, 8], "inf": 18, "silver": 20},
+        {"item": "stone", "qty": [20, 30], "inf": 20, "silver": 25},
+        {"item": "lumber_birch", "qty": [6, 10], "inf": 25, "silver": 40},
+        {"item": "nails_copper", "qty": [20, 30], "inf": 22, "silver": 30}
+      ]
+    },
+    {
+      "id": "fleet", "name": "자유 선단", "icon": "⛵", "leader": "gangdu_port", "color": "#b8433a",
+      "motto": "누구든 섬을 넘보면 싸운다. 바다와 사냥터는 자유롭다.",
+      "focus": "사냥·가죽·뱃길과 장사",
+      "earn": {"craft": {"tanning": 2, "cooking": 1}, "contrib": 0, "gather": {"hunting": 1}, "skin": 3, "ship": 4, "sell": 2},
+      "perks": [
+        {"rank": 1, "kind": "xp", "skills": ["hunting", "tanning"], "mult": 1.2, "text": "수렵·무두질 숙련 경험 +20%"},
+        {"rank": 2, "kind": "ship", "mult": 0.7, "text": "마을 간 운송비 -30%"},
+        {"rank": 3, "kind": "recipe", "recipe": "rc_jerky", "text": "전용 요리 「뱃사람 육포」(오래가는 채집량 버프)"},
+        {"rank": 4, "kind": "market", "mult": 0.6, "text": "거래소 수수료·판매세 -40%"},
+        {"rank": 5, "kind": "gather", "skills": ["logging", "harvesting"], "chance": 0.12, "text": "벌목·채취할 때 12% 확률로 하나 더"}
+      ],
+      "tasks": [
+        {"item": "hide_raw", "qty": [3, 5], "inf": 25, "silver": 35},
+        {"item": "leather", "qty": [2, 4], "inf": 30, "silver": 50},
+        {"item": "meat_raw", "qty": [4, 8], "inf": 20, "silver": 25},
+        {"item": "food_meat", "qty": [4, 6], "inf": 22, "silver": 30},
+        {"item": "cloth_reed", "qty": [3, 5], "inf": 22, "silver": 35},
+        {"item": "lumber_drift", "qty": [8, 12], "inf": 18, "silver": 25}
+      ]
+    },
+    {
+      "id": "scholars", "name": "안개 학회", "icon": "🌀", "leader": "yunseo_port", "color": "#3f7ab8",
+      "motto": "영맥을 알아야 섬도 본토도 산다. 캐고, 재고, 다듬는다.",
+      "focus": "채광·벌목·제련과 가공",
+      "earn": {"craft": {"smelting": 2, "smithing": 2, "armoring": 2, "weaving": 1}, "contrib": 0, "gather": {"mining": 1, "logging": 1, "harvesting": 1}, "skin": 0, "ship": 0, "sell": 0},
+      "perks": [
+        {"rank": 1, "kind": "xp", "skills": ["logging", "mining", "harvesting"], "mult": 1.15, "text": "벌목·채광·채취 숙련 경험 +15%"},
+        {"rank": 2, "kind": "refine", "skills": ["smelting", "sawing", "weaving", "tanning"], "chance": 0.1, "text": "제련·제재·방직·무두질 10% 확률로 하나 더"},
+        {"rank": 3, "kind": "recipe", "recipe": "rc_mist_tea", "text": "전용 요리 「영맥 차」(가공할 때 하나 더 나올 확률)"},
+        {"rank": 4, "kind": "gather", "skills": ["mining", "logging"], "chance": 0.15, "text": "채광·벌목할 때 15% 확률로 하나 더"},
+        {"rank": 5, "kind": "xp", "skills": ["smelting", "smithing", "armoring"], "mult": 1.25, "text": "제련·대장·갑주 숙련 경험 +25%"}
+      ],
+      "tasks": [
+        {"item": "ingot_copper", "qty": [4, 6], "inf": 25, "silver": 40},
+        {"item": "ingot_iron", "qty": [2, 4], "inf": 35, "silver": 60},
+        {"item": "ore_iron", "qty": [6, 10], "inf": 22, "silver": 35},
+        {"item": "lumber_oak", "qty": [4, 6], "inf": 28, "silver": 45},
+        {"item": "gem_rough", "qty": [1, 2], "inf": 30, "silver": 40},
+        {"item": "sap_birch", "qty": [3, 5], "inf": 18, "silver": 25}
+      ]
+    }
+  ]
+}

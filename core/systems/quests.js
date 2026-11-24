@@ -175,6 +175,12 @@ function giveReward(ctx, a, q) {
 
 // ── 대화·물체 ─────────────────────────────────────
 // 이 NPC와 이야기해야 넘어가는 퀘스트들(메인 먼저)
+// 이야기 뒤에 나타나는 NPC(v0.7): appear 퀘스트를 받았거나 끝냈을 때만 보이고 말을 건다
+export function npcShown(ctx, a, npc) {
+  const ap = ctx.data.npcs[npc]?.appear;
+  return !ap || !!a?.quests?.active?.[ap] || a?.quests?.done?.[ap] != null;
+}
+
 export function talkDue(ctx, a, npc) {
   const out = [];
   for (const id of Object.keys(a.quests?.active || {})) {
@@ -378,6 +384,7 @@ export function questsTick(ctx) {
         } else if (st.type === 'defend') defendTick(ctx, a, id, st, p);
         else if (st.type === 'have' && haveMet(a, st)) advance(ctx, a, id);
         else if (st.type === 'project' && ctx.state.projects[st.project]?.done) advance(ctx, a, id);
+        else if (st.type === 'faction' && a.faction?.id) advance(ctx, a, id); // 세력을 골랐다(v0.7)
         else if (st.type === 'repair' && !anyDamaged(ctx, a)) advance(ctx, a, id);
         if (!Q.active[id] || Q.active[id].step === step0 || st.type === 'defend') break;
       }
@@ -390,6 +397,12 @@ export function questsTick(ctx) {
 export function stepGoal(ctx, a, id) {
   const st = stepOf(ctx, a, id);
   if (!st) return null;
+  if (st.type === 'faction') {
+    // 세 갈래 길(v0.7): 가장 가까운 세력 지도자
+    const best = ctx.data.factions.list.map((f) => ({ f, p: npcPos(ctx, f.leader) })).filter((x) => x.p)
+      .sort((x, y) => Math.hypot(x.p.x - a.x, x.p.z - a.z) - Math.hypot(y.p.x - a.x, y.p.z - a.z))[0];
+    if (best) return { x: best.p.x, z: best.p.z, label: `${best.f.icon} ${best.f.name}`, kind: 'npc', npc: best.f.leader };
+  }
   if (st.type === 'talk') {
     const p = npcPos(ctx, st.npc);
     const n = ctx.data.npcs[st.npc];

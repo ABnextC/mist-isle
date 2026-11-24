@@ -350,6 +350,15 @@ const MIGRATIONS = [
       initMobs(migrationCtx(st, data, 0x61e7b3c9));
     },
   },
+  {
+    // v0.6.1 → v0.7: 세력(4장). 모든 행위자는 아직 세력이 없다
+    from: 11,
+    to: 12,
+    run(st) {
+      st.meta.engine = '0.7.0';
+      for (const a of Object.values(st.actors)) a.faction ??= null;
+    },
+  },
 ];
 
 // v0.5.2: 1~2장 퀘스트에 생활 단계가 끼었다. 하던 단계 번호를 새 번호로(앞에 낀 단계는 건너뛴다)

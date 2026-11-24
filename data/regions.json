@@ -2022,6 +2022,72 @@
             "yaw": 3.4
           }
         ]
+      },
+      {
+        "id": "gray_camp",
+        "name": "잿빛 진지",
+        "beach": [
+          1392,
+          3
+        ],
+        "r": 14,
+        "structures": [
+          {
+            "kind": "ship_black",
+            "dx": -6,
+            "dz": -12,
+            "r": 3.6,
+            "rot": 1.3
+          },
+          {
+            "kind": "ship_black",
+            "dx": 10,
+            "dz": -14,
+            "r": 3.6,
+            "rot": 1.8
+          },
+          {
+            "kind": "tent_white",
+            "dx": -6,
+            "dz": 6,
+            "r": 1.9,
+            "rot": 2.6
+          },
+          {
+            "kind": "tent_white",
+            "dx": 7,
+            "dz": 7,
+            "r": 1.9,
+            "rot": -2.5
+          },
+          {
+            "kind": "banner_blue",
+            "dx": -2,
+            "dz": -2,
+            "r": 0.25,
+            "rot": 0.2
+          },
+          {
+            "kind": "banner_blue",
+            "dx": 3,
+            "dz": -2,
+            "r": 0.25,
+            "rot": -0.2
+          },
+          {
+            "kind": "crates",
+            "dx": 11,
+            "dz": 0,
+            "r": 0.8,
+            "rot": 0.5
+          },
+          {
+            "kind": "campfire",
+            "dx": 0,
+            "dz": 6,
+            "r": 0.7
+          }
+        ]
       }
     ]
   }

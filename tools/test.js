@@ -15,6 +15,8 @@ import { storeOf, nearestSettlement, npcPos, sitePos, objPos } from '../core/wor
 import { yawTo } from '../core/systems/combat.js';
 import { settlementDaily } from '../core/settlements.js';
 import { isUnlocked, allowedProject, chapterReached } from '../core/systems/unlocks.js';
+import { rankOf, xpMult, extraChance, feeMult, recipeAllowed, tasksOf, factionOnEvent } from '../core/systems/factions.js';
+import { addXp } from '../core/systems/progress.js';
 import { stepText } from '../core/systems/quests.js';
 import { readFileSync } from 'node:fs';
 
@@ -1014,7 +1016,7 @@ test('안개 늑대는 밤에만 나온다: 낮엔 숨고, 밤에 마을 사이 
   ok(wolves().every((x) => x.mode === 'away'), '해가 뜨면 사라진다');
 });
 
-test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사업·배 고치기·안개 벽 건너기·늪의 불씨까지 막히는 데 없이 24개, 건너면 해금·보상·현상금', () => {
+test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사업·배 고치기·안개 벽 건너기·늪의 불씨·세 갈래 길까지 막히는 데 없이 29개, 건너면 해금·보상·현상금', () => {
   const g = createGame({ data, seed: 7, actors: [{ id: 'p1', kind: 'player' }] });
   g.state.econ = null;
   const st = g.state;
@@ -1034,7 +1036,7 @@ test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사
     g.advance(0.6);
   };
   const events = [];
-  for (const k of ['quest.done', 'chapter.done', 'quest.wave', 'quest.fail', 'loot', 'quest.grant', 'quest.stepReward', 'unlock', 'story.pause', 'cross']) g.on(k, (ev) => events.push(ev));
+  for (const k of ['quest.done', 'chapter.done', 'quest.wave', 'quest.fail', 'loot', 'quest.grant', 'quest.stepReward', 'unlock', 'story.pause', 'cross', 'faction.join']) g.on(k, (ev) => events.push(ev));
   const town = (sid) => g.state.settlements[sid];
   const toStation = (sid, type) => {
     const t = town(sid).stations.find((x) => x.type === type);
@@ -1140,6 +1142,12 @@ test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사
       toStation('s_lighthouse', 'forge');
       a.silver += 200;
       ok(g.dispatch({ type: 'REPAIR', actor: 'p1', uid: w.uid }).ok, `${id} 고치기`);
+    } else if (step.type === 'faction') {
+      // 세 갈래 길(v0.7): 강두 곁에서 자유 선단에 든다
+      const n = npcPos(W, 'gangdu_port');
+      warp(n.x + 1.2, n.z);
+      ok(g.dispatch({ type: 'FACTION_JOIN', actor: 'p1', faction: 'fleet' }).ok, '자유 선단에 든다');
+      g.advance(1.1);
     } else if (step.type === 'project') {
       const def = data.projects[step.project];
       toStation(def.at, 'storage');
@@ -1177,8 +1185,9 @@ test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사
   eq(Object.keys(a.quests.items).length, 0, '퀘스트 물건은 돌려줬다');
   ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch1' && e.next === 'ch2'), '1장 끝 → 2장');
   ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch2' && e.next === 'ch3'), '2장 끝 → 3장');
-  ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch3' && !e.next), '3장 끝(4장은 준비 중)');
-  ok(!events.some((e) => e.type === 'story.pause'), '이어질 이야기 쉼 없음');
+  ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch3' && e.next === 'ch4'), '3장 끝 → 4장');
+  ok(events.some((e) => e.type === 'story.pause' && e.chapter === 'ch4'), '4장은 이어질 이야기가 남았다');
+  eq(a.faction?.id, 'fleet', '세력');
   eq(events.filter((e) => e.type === 'quest.wave').length, 4, '습격 두 번 × 두 물결');
   ok(a.marks?.lantern_mark != null && events.some((e) => e.type === 'quest.grant'), '등불의 각인');
   ok(events.some((e) => e.type === 'quest.stepReward' && e.reward.items.some((x) => x.item === 'wpn_sword_copper')), '강두의 구리 검');
@@ -1287,7 +1296,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '0.6.1');
+  eq(st.meta.engine, '0.7.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1479,7 +1488,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '0.6.1');
+  eq(st.meta.engine, '0.7.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -1491,6 +1500,86 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   g.advance(600);
   const again = loadGame({ data, save: g.save() });
   eq(again.hash(), g.hash(), '저장 왕복');
+});
+
+console.log('세력 (v0.7)');
+
+test('세력: 「윤서의 고백」 뒤에 지도자 곁에서 든다. 바꾸면 영향력을 잃고 이틀은 못 바꾼다. 봇은 언제든', () => {
+  const g = createGame({ data, seed: 12, actors: [{ id: 'p1', kind: 'player' }, { id: 'b1', kind: 'bot' }] });
+  const a = g.state.actors.p1;
+  const W = { state: g.state, data, statics: g.statics };
+  const near = (id) => { const n = npcPos(W, id); Object.assign(a, { x: n.x + 1.2, z: n.z }); };
+  near('gangdu_port');
+  eq(g.dispatch({ type: 'FACTION_JOIN', actor: 'p1', faction: 'fleet' }).error, 'locked', '아직 잠김');
+  for (const ch of data.chapters.slice(0, 3)) for (const id of ch.quests) a.quests.done[id] = 1;
+  for (const id of ['c4_sails', 'c4_offer', 'c4_mother', 'c4_confess']) a.quests.done[id] = 1;
+  ok(g.dispatch({ type: 'FACTION_JOIN', actor: 'p1', faction: 'fleet' }).ok, '자유 선단');
+  eq(rankOf(W, a), 1, '견습');
+  a.faction.inf = 520;
+  eq(rankOf(W, a), 3, '신임');
+  near('haerim_port');
+  eq(g.dispatch({ type: 'FACTION_JOIN', actor: 'p1', faction: 'lantern' }).error, 'faction_cooldown', '바로는 못 바꾼다');
+  g.state.t += data.factions.switchDays * g.clock.dayLen;
+  const r = g.dispatch({ type: 'FACTION_JOIN', actor: 'p1', faction: 'lantern' });
+  ok(r.ok, '등불단으로');
+  eq(a.faction.inf, 0, '영향력을 잃었다');
+  // 다른 섬에 있으면 지도자와 멀다
+  Object.assign(a, { x: 200, z: 60 });
+  g.state.t += data.factions.switchDays * g.clock.dayLen;
+  eq(g.dispatch({ type: 'FACTION_JOIN', actor: 'p1', faction: 'scholars' }).error, 'too_far', '지도자 곁에서만');
+});
+
+test('세력 혜택: 등급마다 생활 혜택이 붙는다(숙련 경험·하나 더·수수료·음식 시간·전용 요리)', () => {
+  const g = createGame({ data, seed: 13, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  const W = { state: g.state, data, statics: g.statics, cfg: data.config, clock: g.clock, emit: () => {} };
+  a.faction = { id: 'scholars', inf: 0, since: 0, done: {}, today: null };
+  eq(xpMult(W, a, 'mining'), 1.15, '학회 견습: 채광 +15%');
+  eq(xpMult(W, a, 'cooking'), 1, '요리는 그대로');
+  eq(extraChance(W, a, 'refine', 'smelting'), 0, '견습엔 가공 덤 없음');
+  a.faction.inf = 200;
+  eq(extraChance(W, a, 'refine', 'smelting'), 0.1, '일원: 제련 10% 하나 더');
+  ok(!recipeAllowed(W, a, data.recipes.rc_mist_tea), '영맥 차는 신임부터');
+  a.faction.inf = 600;
+  ok(recipeAllowed(W, a, data.recipes.rc_mist_tea) && !recipeAllowed(W, a, data.recipes.rc_jerky), '내 세력 요리만');
+  a.buffs.push({ type: 'refineYield', value: 0.1, endsAt: 1e9 });
+  eq(Math.round(extraChance(W, a, 'refine', 'smelting') * 100), 20, '영맥 차가 더한다');
+  a.faction = { id: 'fleet', inf: 1300, since: 0, done: {}, today: null };
+  eq(feeMult(W, a, 'ship'), 0.7, '선단 운송비');
+  eq(feeMult(W, a, 'market'), 0.6, '선단 수수료');
+  a.faction = { id: 'lantern', inf: 2600, since: 0, done: {}, today: null };
+  eq(Math.round(xpMult(W, a, 'cooking') * 1000) / 1000, 1.32, '등불단 원로: 요리 1.2×1.1');
+  eq(feeMult(W, a, 'food'), 1.3, '음식 시간');
+  // 실제 경험치에 붙는다
+  const before = a.skills.cooking.xp;
+  addXp(W, a, 'cooking', 100);
+  eq(Math.round(a.skills.cooking.xp - before), 132, '경험치 1.32배');
+});
+
+test('세력 영향력: 지도자 의뢰는 하루 한 번씩, 활동 영향력은 하루 상한까지. 날마다 의뢰가 바뀐다', () => {
+  const g = createGame({ data, seed: 14, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  const W = { state: g.state, data, statics: g.statics, cfg: data.config, clock: g.clock };
+  a.faction = { id: 'fleet', inf: 0, since: 0, done: {}, today: null };
+  const n = npcPos(W, 'gangdu_port');
+  Object.assign(a, { x: n.x + 1.2, z: n.z });
+  const tasks = tasksOf(W, 'fleet');
+  eq(tasks.length, data.factions.tasksPerDay, '오늘 의뢰 셋');
+  const t = tasks[0];
+  eq(g.dispatch({ type: 'FACTION_TASK', actor: 'p1', task: t.id }).error, 'need_items', '물건이 없다');
+  a.bag.push({ item: t.item, lot: null, bonus: null, qty: t.qty });
+  const silver = a.silver;
+  ok(g.dispatch({ type: 'FACTION_TASK', actor: 'p1', task: t.id }).ok, '의뢰 건네기');
+  eq(a.faction.inf, t.inf, '영향력');
+  eq(a.silver, silver + t.silver, '은화');
+  eq(g.dispatch({ type: 'FACTION_TASK', actor: 'p1', task: t.id }).error, 'task_done', '하루 한 번');
+  const tomorrow = tasksOf(W, 'fleet', g.clock.day(g.state.t) + 1);
+  ok(tomorrow.map((x) => x.id).join() !== tasks.map((x) => x.id).join(), '내일은 다른 의뢰');
+  // 활동: 선단은 운송·가죽 벗기기를 쳐 준다. 하루 상한
+  const inf0 = a.faction.inf;
+  const ctx = { ...W, emit: () => {} };
+  for (let i = 0; i < 40; i++) factionOnEvent(ctx, { type: 'ship', actor: 'p1' });
+  eq(a.faction.inf - inf0, data.factions.dailyCap, '하루 상한');
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

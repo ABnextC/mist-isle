@@ -2,8 +2,8 @@
 // 브라우저는 fetch로, Node는 fs로 읽은 원본을 넘긴다.
 
 // 퀘스트 단계 종류(v0.5.2에 생활 단계를 더했다)
-export const STEP_TYPES = ['talk', 'go', 'kill', 'use', 'defend', 'have', 'eat', 'store', 'repair', 'sell', 'project'];
-export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects', 'npcs', 'quests', 'unlocks'];
+export const STEP_TYPES = ['talk', 'go', 'kill', 'use', 'defend', 'have', 'eat', 'store', 'repair', 'sell', 'project', 'faction'];
+export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects', 'npcs', 'quests', 'unlocks', 'factions'];
 
 export function buildData(raw) {
   const problems = [];
@@ -196,6 +196,7 @@ export function buildData(raw) {
     for (const g of q.grants || []) if (!['lantern_mark'].includes(g)) problems.push(`퀘스트 ${q.id}: 모르는 표식 ${g}`);
   }
   for (const ch of Q.chapters) for (const id of ch.quests) if (!quests[id]) problems.push(`장 ${ch.id}: 퀘스트 ${id} 없음`);
+  for (const n of raw.npcs) if (n.appear && !quests[n.appear]) problems.push(`NPC ${n.id}: 나타날 퀘스트 ${n.appear} 없음`);
   // 섬 건너기(v0.6): 배가 가는 지역
   for (const o of Object.values(objects)) if (o.cross && !raw.regions.some((r) => r.id === o.cross)) problems.push(`물체 ${o.id}: 건널 지역 ${o.cross} 없음`);
   // 해금(v0.5.2)
@@ -210,9 +211,22 @@ export function buildData(raw) {
     }
   }
 
+  // 세력(v0.7)
+  const factions = raw.factions || { ranks: [{ at: 0, name: '견습' }], list: [], switchDays: 2, dailyCap: 60, tasksPerDay: 3 };
+  for (const f of factions.list) {
+    if (!npcs[f.leader]) problems.push(`세력 ${f.id}: 지도자 ${f.leader} 없음`);
+    for (const p of f.perks) {
+      if (p.kind === 'recipe' && recipes[p.recipe]?.faction !== f.id) problems.push(`세력 ${f.id}: 전용 레시피 ${p.recipe}`);
+      for (const sk of Array.isArray(p.skills) ? p.skills : []) if (!skills[sk]) problems.push(`세력 ${f.id}: 기술 ${sk} 없음`);
+    }
+    for (const t of f.tasks) if (!items[t.item]) problems.push(`세력 ${f.id}: 의뢰 물건 ${t.item} 없음`);
+  }
+  for (const r of Object.values(recipes)) if (r.faction && !factions.list.some((f) => f.id === r.faction)) problems.push(`레시피 ${r.id}: 세력 ${r.faction} 없음`);
+
   if (problems.length) throw new Error('데이터 오류\n- ' + problems.join('\n- '));
 
   return {
+    factions,
     config,
     curve: raw.skills.xpCurve,
     items,

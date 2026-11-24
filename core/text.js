@@ -58,6 +58,11 @@ export const ERR = {
   not_needed: '그 사업에 더 필요 없음',
   locked: '아직 열리지 않은 기능(이야기를 더 진행하면 열린다)',
   other_island: '다른 섬으로는 보낼 수 없다',
+  faction_recipe: '세력 전용 레시피(그 세력에서 등급을 올려야 한다)',
+  same_faction: '이미 이 세력이다',
+  faction_cooldown: '세력을 옮긴 지 얼마 안 됐다(며칠 뒤에 다시)',
+  no_faction: '아직 든 세력이 없다',
+  task_done: '오늘은 이미 건넨 의뢰다',
   need_items: '건넬 물건이 모자라다(추적 줄에 센 것을 보자)',
   // 퀘스트(v0.5)
   no_npc: '그런 사람은 없음',

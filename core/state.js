@@ -10,7 +10,7 @@ import { initMobs } from './systems/mobs.js';
 import { newSettlement, initProjects, settlementsDaily } from './settlements.js';
 import { emptyQuests, startQuest, firstQuest } from './systems/quests.js';
 
-export const ENGINE_VERSION = '0.6.1';
+export const ENGINE_VERSION = '0.7.0';
 
 export function spawnPoint(region, terrain) {
   const [x, inland] = region.spawn;
@@ -36,6 +36,7 @@ export function newActor(data, spec, at) {
     ai: spec.ai ? { on: true, profile: spec.ai, mem: {} } : null,
     stats: { gather: {}, craft: {}, eat: 0, focusUsed: 0, masterwork: 0, kills: {}, skin: {}, downs: 0, dmgDealt: 0, dmgTaken: 0 },
     milestones: {},
+    faction: null,
     quests: emptyQuests(),
   };
 }

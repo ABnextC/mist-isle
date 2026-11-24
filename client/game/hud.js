@@ -7,11 +7,12 @@ import { tradable, refPrice, npcPrice, bestBid, repairCost, entryStar as marketS
 import { countDeliverable } from '../../core/orders.js';
 import { xpProgress, starOf } from '../../core/formulas.js';
 import { keyOf, effectiveProps, avgProps, countItem, qtyOf } from '../../core/inventory.js';
-import { settlementAt, storeOf, standingTier } from '../../core/world.js';
+import { settlementAt, storeOf, standingTier, reachable } from '../../core/world.js';
 import { openProjects, projectOpen, needLeft, silverLeft, projectProgress, shipFee, upkeepOf } from '../../core/settlements.js';
 import { zoneAt, regionAt } from '../../core/terrain.js';
 import { ENGINE_VERSION } from '../../core/state.js';
 import { stepText, talkDue, boardOffers, available, TALK_RANGE, takeMet, takeProgress } from '../../core/systems/quests.js';
+import { factionOf, rankOf, tasksOf, taskDone } from '../../core/systems/factions.js';
 import { npcPos } from '../../core/world.js';
 import { questCtx, lifeSteps } from './quest.js';
 import { isUnlocked, allowedProject, chapterReached } from '../../core/systems/unlocks.js';
@@ -185,6 +186,20 @@ export function createHud(root, game, { touch, onAct }) {
       banner(`${data.skills[ev.skill].icon} ${data.skills[ev.skill].name} ${ev.level}레벨`);
     } else if (ev.type === 'vein.opened' && !ev.common && game.state.t > 1 && unl(game.state.actors[PID], 'rumors')) {
       toast(`🗺️ 새 산지 소문: 「${ev.name}」 — 마을 게시판에서 볼 수 있다`, 'info');
+    } else if (ev.type === 'faction.join' && ev.actor === PID) {
+      const f = data.factions.list.find((x) => x.id === ev.faction);
+      banner(`${f.icon} ${f.name}에 들었다`, 3600);
+      if (ev.from) pushFeed(`영향력 ${Math.round(ev.lost)}을 두고 떠났다`);
+      if (panel?.kind === 'talk') renderPanel(true);
+    } else if (ev.type === 'faction.rank' && ev.actor === PID) {
+      const f = data.factions.list.find((x) => x.id === ev.faction);
+      const perk = f.perks.find((p) => p.rank === ev.rank);
+      banner(`${f.icon} ${f.name} · ${data.factions.ranks[ev.rank - 1].name}${perk ? ` — ${perk.text}` : ''}`, 5200);
+    } else if (ev.type === 'faction.task' && ev.actor === PID) {
+      pushFeed(`🤝 세력 의뢰: ${data.items[ev.item].name} ${ev.qty} 건넴 · 🪙${ev.silver}`);
+      if (panel?.kind === 'talk') renderPanel(true);
+    } else if (ev.type === 'faction.gain' && ev.actor === PID && ev.why !== 'task') {
+      // 활동 영향력은 조용히 쌓는다(등급이 오를 때만 크게 알린다)
     } else if (ev.type === 'chapter.done') {
       chapterEndAt = game.state.t;
     } else if (ev.type === 'unlock' && ev.actor === PID) {
@@ -436,7 +451,8 @@ export function createHud(root, game, { touch, onAct }) {
   function craftHtml(a, station) {
     const town = settlementAt({ state: game.state }, a);
     const pools = town ? [a.bag, storeOf(a, town.id)] : [a.bag];
-    const recipes = data.lists.recipes.filter((r) => r.station === station);
+    // 세력 전용 레시피(v0.7)는 내 세력 것만 보인다
+    const recipes = data.lists.recipes.filter((r) => r.station === station && (!r.faction || r.faction === factionOf(a)));
     const queue = a.queue.map((j, i) => {
       const r = data.recipes[j.recipe];
       const span = Math.max(0.01, j.endsAt - j.startsAt);
@@ -707,8 +723,41 @@ export function createHud(root, game, { touch, onAct }) {
       }
       return `${tag}${st.say.map((l) => `<p class="say">${esc(l)}</p>`).join('')}<div class="btns"><button data-act="talk-do" data-v="${panel.npc}">${esc(st.reply || '알겠다')}</button></div>`;
     }
+    // 세력 지도자(v0.7): 세력이 열렸으면 세력 창을 보인다
+    const fdef = data.factions.list.find((f) => f.leader === panel.npc);
+    if (fdef && isUnlocked(ctx, a, 'faction')) return `${head}${factionHtml(a, fdef, ctx)}`;
     panel.chat ??= Math.floor(Math.random() * npc.chat.length);
     return `${head}<p class="say">${esc(npc.chat[panel.chat % npc.chat.length])}</p><div class="btns"><button data-act="close">잘 있어요</button></div>`;
+  }
+  function factionHtml(a, f, ctx) {
+    const ranks = data.factions.ranks;
+    const mine = factionOf(a) === f.id;
+    const r = mine ? rankOf(ctx, a) : 0;
+    const perks = f.perks.map((p) => `<li>${mine && p.rank <= r ? '✅' : '▫️'} <b>${esc(ranks[p.rank - 1].name)}</b> ${esc(p.text)}</li>`).join('');
+    let html = `<div class="qtag" style="color:${f.color}">${f.icon} ${esc(f.name)} · ${esc(f.focus)}</div><p class="say">${esc(f.motto)}</p>`;
+    if (!mine) {
+      html += `<p class="muted">영향력을 쌓을수록 등급이 오르고, 아래 생활 혜택이 하나씩 붙는다.</p><ul class="list">${perks}</ul>`;
+      if (factionOf(a)) {
+        const cur = data.factions.list.find((x) => x.id === factionOf(a));
+        html += `<p class="muted">⚠️ 지금 ${cur.icon} ${esc(cur.name)}에서 쌓은 영향력 <b>${Math.round(a.faction.inf)}</b>을 모두 잃는다. 옮긴 뒤 ${data.factions.switchDays}일은 다시 못 옮긴다.</p>`;
+      }
+      return `${html}<div class="btns"><button data-act="faction-join" data-v="${f.id}">${f.icon} ${esc(f.name)}에 든다</button><button data-act="close">나중에</button></div>`;
+    }
+    const next = ranks[r];
+    const inf = Math.round(a.faction.inf);
+    const bar = next ? `<div class="bar"><span style="width:${Math.min(100, ((inf - ranks[r - 1].at) / (next.at - ranks[r - 1].at)) * 100)}%"></span></div>` : '';
+    const today = a.faction.today?.day === game.clock.day(game.state.t) ? a.faction.today.n : 0;
+    html += `<p><b>${esc(ranks[r - 1].name)}</b> · 영향력 ${inf}${next ? ` / ${next.at} (다음: ${esc(next.name)})` : ' (가장 높은 등급)'}</p>${bar}`;
+    html += `<p class="muted">오늘 활동 영향력 ${today}/${data.factions.dailyCap} — ${esc(f.focus)} 일을 하면 쌓인다.</p>`;
+    const lists = reachable(ctx, a);
+    const tasks = tasksOf(ctx, f.id).map((t) => {
+      const got = Math.min(t.qty, countItem(lists, t.item));
+      const done = taskDone(ctx, a, t);
+      const btn = done ? '✅ 건넴' : `<button data-act="faction-task" data-v="${t.id}"${got < t.qty ? ' disabled' : ''}>건네기</button>`;
+      return `<li><span>${esc(data.items[t.item].name)} ${got}/${t.qty} · 영향력 ${t.inf} · 🪙${t.silver}</span>${btn}</li>`;
+    }).join('');
+    html += `<h3>오늘의 세력 의뢰</h3><ul class="list">${tasks}</ul><h3>등급 혜택</h3><ul class="list">${perks}</ul>`;
+    return `${html}<div class="btns"><button data-act="close">잘 있어요</button></div>`;
   }
   function journalHtml(a) {
     const tab = panel.tab || 'main';
@@ -740,6 +789,7 @@ export function createHud(root, game, { touch, onAct }) {
         return `<li class="${on ? 'done' : ''}">${on ? '✔' : '🔒'} ${u.icon} <b>${esc(u.name)}</b> <small>${esc(u.desc)}${on ? '' : ` · ${esc(u.hint)}${u.soon ? '(준비 중)' : ''}`}</small></li>`;
       }).join('');
       body = `<p class="muted">채집·정제·제작을 익히는 길잡이다. 순서는 자유롭다.</p><ul class="life">${steps.map((st) => `<li class="${st.done ? 'done' : ''}">${st.done ? '✔' : st.lock ? '🔒' : '○'} ${esc(st.text)}${st.lock ? ` <small class="muted">${esc(st.lock)}</small>` : ''}</li>`).join('')}</ul>
+        ${factionOf(a) ? (() => { const f = data.factions.list.find((x) => x.id === factionOf(a)); const r = rankOf(questCtx(game), a); return `<h3>${f.icon} ${esc(f.name)}</h3><p>${esc(data.factions.ranks[r - 1].name)} · 영향력 ${Math.round(a.faction.inf)} — 지도자에게 말을 걸면 의뢰와 혜택을 본다</p>`; })() : ''}
         <h3>열리는 것</h3><p class="muted">등대섬(1~2장)에서는 기본 생활과 전투를 익힌다. 3장에서 본섬으로 건너가면 경제가, 4장에서 세력과 큰 콘텐츠가 열린다.</p><ul class="life">${unl}</ul>`;
     }
     return tabsHtml([['main', '메인'], ['bounty', '현상금'], ['life', '생활 안내']], tab) + body;

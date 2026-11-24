@@ -1,6 +1,7 @@
 // 제작 대기열. 재료는 대기열에 넣을 때 이미 빠졌다(원자적 처리).
 // 결과와 걸작 여부는 끝나는 순간에 정한다.
 
+import { extraChance } from './factions.js';
 import { addEntry, slotsNeeded } from '../inventory.js';
 import { craftScores, convertStats, starOf, masterworkChance, rollQty, avg } from '../formulas.js';
 import { settlementAt, storeOf } from '../world.js';
@@ -34,7 +35,10 @@ function completeJob(ctx, actor, job) {
   const ev = { actor: actor.id, recipe: r.id, item: outDef.id, qty: r.output.qty };
 
   if (r.type === 'refine') {
-    const entry = { item: outDef.id, lot: job.out.lot, bonus: job.out.bonus, qty: r.output.qty };
+    // 세력 혜택·영맥 차(v0.7): 확률로 하나 더
+    const fx = extraChance(ctx, actor, 'refine', r.skill);
+    if (fx > 0 && rng.next() < fx) ev.qty += 1;
+    const entry = { item: outDef.id, lot: job.out.lot, bonus: job.out.bonus, qty: ev.qty };
     ev.to = deliver(ctx, actor, entry, true, job);
     ev.lot = job.out.lot;
     ev.bonus = job.out.bonus;

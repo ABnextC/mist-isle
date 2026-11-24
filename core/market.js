@@ -5,6 +5,7 @@
 //  - 상인 매입: 기본값의 15%로 언제든 넘길 수 있다(가격 하한선).
 // 행위자(플레이어·봇)와 AI 개척민(econ 에이전트), 마을(수요)이 같은 함수를 쓴다.
 
+import { feeMult } from './systems/factions.js';
 import { effectiveProps, avgProps, addEntry } from './inventory.js';
 import { starOf } from './formulas.js';
 import { agentMakerSold } from './systems/economy.js';
@@ -84,7 +85,8 @@ function party(ctx, kind, id, at) {
 function rates(ctx, kind, owner, at) {
   if (kind !== 'actor') return { fee: ctx.cfg.market.listingFee, tax: ctx.cfg.market.salesTax };
   const t = standingTier(ctx, ctx.state.actors[owner], at);
-  return { fee: t.fee, tax: t.tax };
+  const m = feeMult(ctx, ctx.state.actors[owner], 'market'); // 자유 선단 혜택(v0.7)
+  return { fee: t.fee * m, tax: t.tax * m };
 }
 
 export function listingFee(ctx, kind, owner, at, qty, price) {

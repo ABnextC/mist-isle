@@ -2,21 +2,22 @@
 // 검증 단계는 상태를 바꾸지 않는다. 실행 단계는 실패하지 않는다.
 // 싱글에서는 로컬 코어가, 멀티에서는 서버가 같은 함수를 돌린다.
 
-import { keyOf, findEntry, takeQty, addEntry, slotsNeeded, effectiveProps, avgProps, bonusKey, qtyOf } from './inventory.js';
+import { feeMult, recipeAllowed, factionDef, factionOf, tasksOf, taskDone, gainInfluence } from './systems/factions.js';
+import { keyOf, findEntry, takeQty, addEntry, slotsNeeded, effectiveProps, avgProps, bonusKey, qtyOf, countItem } from './inventory.js';
 import { regionAt } from './terrain.js';
 import { crossTo } from './systems/travel.js';
 import {
   toolSpeed, gatherSeconds, refineStep, weightedProps, round2, round3,
   craftScores, convertStats, starOf, masterworkChance, avg,
 } from './formulas.js';
-import { dist, settlementAt, stationFor, bestTool, localStore, storeOf } from './world.js';
+import { dist, settlementAt, stationFor, bestTool, localStore, storeOf, reachable } from './world.js';
 import { placeAsk, placeBid, cancelOrder, npcSell, tradable, repairCost, findOrder, ordersOf, listingFee, entryStar } from './market.js';
 import { contribute, projectOpen, needLeft, silverLeft, shipFee } from './settlements.js';
 import { deliver, countDeliverable } from './orders.js';
 import { addXp } from './systems/progress.js';
 import { startAttack, startDodge, interrupt, equipped, equipLoad } from './systems/combat.js';
 import { corpseOpen, skinLoot, skinSeconds } from './systems/mobs.js';
-import { talkDue, talk, useDue, useObj, available, startQuest, nearNpc, questNote, TALK_RANGE, USE_RANGE, BOARD_RANGE, talkReady } from './systems/quests.js';
+import { talkDue, talk, useDue, useObj, available, startQuest, nearNpc, questNote, TALK_RANGE, USE_RANGE, BOARD_RANGE, talkReady, npcShown } from './systems/quests.js';
 import { isUnlocked, allowedProject } from './systems/unlocks.js';
 import { objPos } from './world.js';
 
@@ -165,6 +166,7 @@ const CRAFT = {
     const { state, data, cfg } = ctx;
     const r = data.recipes[c.recipe];
     if (!r) return 'no_recipe';
+    if (!recipeAllowed(ctx, a, r)) return 'faction_recipe';
     if (a.skills[r.skill].level < r.level) return 'level_low';
     const station = stationFor(ctx, a, r.station);
     if (!station) return 'no_station';
@@ -320,7 +322,7 @@ const EAT = {
       return;
     }
     a.buffs = a.buffs.filter((b) => b.type !== p.def.buff);
-    const buff = { type: p.def.buff, value: stats.buff, endsAt: ctx.state.t + stats.minutes * 60 };
+    const buff = { type: p.def.buff, value: stats.buff, endsAt: ctx.state.t + Math.round(stats.minutes * 60 * feeMult(ctx, a, 'food')) };
     a.buffs.push(buff);
     a.stats.eat++;
     ctx.emit('eat', { actor: a.id, item: p.e.item, value: buff.value, minutes: stats.minutes });
@@ -756,12 +758,68 @@ const CONTRIBUTE = {
 
 // ── 퀘스트(v0.5) ────────────────────────────────────
 // NPC와 대화: 이 NPC와 이야기해야 넘어가는 퀘스트 단계를 넘긴다(없으면 그냥 인사)
+// 세력(v0.7): 지도자 곁에서 들거나 옮긴다. 옮기면 쌓은 영향력을 잃고, 며칠은 다시 못 옮긴다
+const FACTION_JOIN = {
+  validate(ctx, a, c) {
+    const f = factionDef(ctx, c.faction);
+    if (!f) return 'bad_args';
+    if (!isUnlocked(ctx, a, 'faction')) return 'locked';
+    if (factionOf(a) === f.id) return 'same_faction';
+    if (!nearNpc(ctx, a, f.leader, TALK_RANGE) || !npcShown(ctx, a, f.leader)) return 'too_far';
+    const wait = (a.faction?.since ?? -1e9) + ctx.data.factions.switchDays * ctx.clock.dayLen - ctx.state.t;
+    if (factionOf(a) && wait > 0) return 'faction_cooldown';
+    return { f };
+  },
+  execute(ctx, a, c, p) {
+    const from = factionOf(a);
+    const lost = a.faction?.inf || 0;
+    a.faction = { id: p.f.id, inf: 0, since: ctx.state.t, done: {}, today: null };
+    ctx.emit('faction.join', { actor: a.id, faction: p.f.id, from, lost });
+  },
+};
+
+// 세력 의뢰: 오늘 지도자가 바라는 물건을 건넨다(가방·그 마을 창고). 하루 한 번씩
+const FACTION_TASK = {
+  validate(ctx, a, c) {
+    const fid = factionOf(a);
+    const f = factionDef(ctx, fid);
+    if (!f) return 'no_faction';
+    const task = tasksOf(ctx, fid).find((t) => t.id === c.task);
+    if (!task) return 'bad_args';
+    if (taskDone(ctx, a, task)) return 'task_done';
+    if (!nearNpc(ctx, a, f.leader, TALK_RANGE)) return 'too_far';
+    const lists = reachable(ctx, a);
+    if (countItem(lists, task.item) < task.qty) return 'need_items';
+    return { task, lists };
+  },
+  execute(ctx, a, c, p) {
+    let left = p.task.qty;
+    for (const list of p.lists) {
+      for (const e of [...list]) {
+        if (left <= 0) break;
+        if (e.item !== p.task.item) continue;
+        if (e.uid) { list.splice(list.indexOf(e), 1); left -= 1; continue; }
+        const q = Math.min(left, e.qty);
+        takeQty(list, keyOf(e), q);
+        left -= q;
+      }
+    }
+    a.faction.done[p.task.id] = ctx.state.t;
+    // 지난날 기록은 버린다
+    const today = `:${ctx.clock.day(ctx.state.t)}:`;
+    for (const k of Object.keys(a.faction.done)) if (!k.includes(today)) delete a.faction.done[k];
+    a.silver += p.task.silver;
+    ctx.emit('faction.task', { actor: a.id, faction: a.faction.id, task: p.task.id, item: p.task.item, qty: p.task.qty, silver: p.task.silver });
+    gainInfluence(ctx, a, p.task.inf, 'task');
+  },
+};
+
 const TALK = {
   validate(ctx, a, c) {
     if (!ctx.data.npcs[c.npc]) return 'no_npc';
     const bad = alive(ctx, a);
     if (bad) return bad;
-    if (!nearNpc(ctx, a, c.npc, TALK_RANGE)) return 'too_far';
+    if (!nearNpc(ctx, a, c.npc, TALK_RANGE) || !npcShown(ctx, a, c.npc)) return 'too_far';
     const due = talkReady(ctx, a, c.npc);
     if (!due.length && talkDue(ctx, a, c.npc).length) return 'need_items';
     return { due };
@@ -823,7 +881,7 @@ const QUEST_TRACK = {
 };
 
 const HANDLERS = {
-  TALK, QUEST_ACCEPT, QUEST_USE, QUEST_TRACK,
+  TALK, QUEST_ACCEPT, QUEST_USE, QUEST_TRACK, FACTION_JOIN, FACTION_TASK,
   MOVE, MOVE_INPUT, GATHER, CRAFT, EAT, STORE, TAKE, SET_AUTOPILOT, RECALL,
   MARKET_SELL, MARKET_BUY, MARKET_CANCEL, MARKET_DUMP, ORDER_DELIVER, REPAIR,
   EQUIP, UNEQUIP, ATTACK, DODGE, BLOCK, SKIN, SET_HOME, SHIP, CONTRIBUTE,

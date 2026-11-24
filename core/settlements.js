@@ -2,6 +2,7 @@
 // 수요는 마을(town)이 그 마을 거래소에 거는 사자 주문이다. 마을 지갑은 마르지 않고, 산 물건은 쓰여 사라진다.
 // 사업에 낸 물자와 은화도 사라진다(은화의 큰 유출, 설계 8.1·9.1).
 
+import { feeMult } from './systems/factions.js';
 import { stationLayout, stationAt, settlementAt, standingTier } from './world.js';
 import { placeBid, cancelOrder, baseValue, bookOf } from './market.js';
 
@@ -139,7 +140,7 @@ export function shipFee(ctx, actor, from, entries) {
   const rate = actor ? standingTier(ctx, actor, from).ship : S.rate;
   let v = 0;
   for (const e of entries) v += baseValue(ctx, e.item, e.star ?? 2) * (e.uid ? 1 : e.qty) * rate;
-  return Math.max(S.min, Math.ceil(v));
+  return Math.max(S.min, Math.ceil(v * feeMult(ctx, actor, 'ship')));
 }
 
 // 2단계 작업대 하루 유지비(마을마다 다르다: 숲머리는 참나무 땔감, 등대 마을은 돌·자작나무)

@@ -33,6 +33,8 @@ export function xpMult(ctx, a, skill) {
   for (const p of perksOf(ctx, a)) if (p.kind === 'xp' && hasSkill(p, skill)) m *= p.mult;
   const boost = a?.buffs?.find((b) => b.type === 'xpBoost');
   if (boost) m *= 1 + boost.value;
+  const rest = a?.buffs?.find((b) => b.type === 'rested'); // 집에서 푹 쉼(v0.8)
+  if (rest) m *= 1 + rest.value;
   return m;
 }
 

@@ -139,6 +139,7 @@ export function createTownView(scene, game, hf, { mats, terrain, region, me = nu
   function syncStatics() {
     for (const o of game.statics) {
       if (o.x < region.bounds[0] - 60 || o.x > region.bounds[2] + 60) continue; // 이 섬 것만
+      if (o.plot) continue; // 집터는 syncHomes가 그린다(v0.8)
       const k = `${o.kind}@${o.x.toFixed(1)},${o.z.toFixed(1)}`;
       if (shown.has(k)) continue;
       shown.add(k);
@@ -182,6 +183,26 @@ export function createTownView(scene, game, hf, { mats, terrain, region, me = nu
   }
   const braziers = [];
   syncStatics();
+  // 내 집(v0.8): 집터마다 팻말 → 오두막 → 집 → 큰 집. 바뀌면 그 자리만 다시 놓는다
+  const homes = {};
+  function syncHomes() {
+    for (const o of game.statics) {
+      if (!o.plot || o.x < region.bounds[0] - 60 || o.x > region.bounds[2] + 60) continue;
+      const want = o.kind;
+      if (homes[o.plot]?.kind === want) continue;
+      drop(homes[o.plot]?.g);
+      let g;
+      if (want === 'plot_sign') g = place(pennant(o.plot.length), o.x, o.z, o.rot);
+      else if (want === 'home_hut') g = place(cabin(houseSeed++ * 17), o.x, o.z, o.rot);
+      else {
+        g = place(house(houseSeed++ * 13), o.x, o.z, o.rot);
+        if (want === 'home_manor') g.scale.setScalar(1.3);
+      }
+      homes[o.plot] = { kind: want, g };
+    }
+  }
+  syncHomes();
+  for (const t of ['house.buy', 'house.upgrade']) game.on(t, syncHomes);
   game.on('project.done', () => {
     syncStations();
     syncStatics();

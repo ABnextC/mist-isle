@@ -4,6 +4,7 @@
 //   game.advance(초)  — 30Hz 빠른 틱(이동·행동)과 1초 월드 틱을 돌린다
 //   game.save() / loadGame({ data, save })
 
+import { homeStatics } from './systems/housing.js';
 import { factionOnEvent } from './systems/factions.js';
 import { makeRng } from './rng.js';
 import { makeClock } from './clock.js';
@@ -42,7 +43,7 @@ function makeCtx(state, data, bus) {
     clock: makeClock(data.config),
     rng: makeRng(state.rng),
     terrain,
-    statics: allStatics(data, terrain, builtSet(state)),
+    statics: allStatics(data, terrain, builtSet(state)).concat(homeStatics({ state, data })),
     obstacles: null,
     obstaclesDirty: true,
     newId: (p) => `${p}_${state.nextId++}`,
@@ -54,7 +55,7 @@ function makeCtx(state, data, bus) {
   };
   // 마을 사업으로 건물이 서면 정적 배치를 다시 잰다(충돌·화면이 같이 쓴다)
   ctx.refreshStatics = () => {
-    ctx.statics = allStatics(data, terrain, builtSet(state));
+    ctx.statics = allStatics(data, terrain, builtSet(state)).concat(homeStatics(ctx));
     ctx.obstaclesDirty = true;
   };
   const cmds = makeCommands(ctx);

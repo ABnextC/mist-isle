@@ -321,6 +321,7 @@ async function boot() {
       else game.dispatch({ type: 'QUEST_USE', actor: PID, obj: t.id });
     } else if (t.kind === 'board') hud.open('board', { tab: boardOffers(questCtx(game), me()).length ? 'bounty' : undefined });
     else if (t.kind === 'market') hud.open('market');
+    else if (t.kind === 'plot') hud.open('house', { plot: t.id });
   }
 
   // 거래소 명령: 가방에 같은 묶음이 있으면 창고로 먼저 옮겨 하나로 판다
@@ -384,6 +385,13 @@ async function boot() {
         game.dispatch({ type: 'FACTION_TASK', actor: PID, task: v });
         break;
       }
+      case 'house-buy': game.dispatch({ type: 'HOUSE_BUY', actor: PID, plot: v }); break;
+      case 'house-up': game.dispatch({ type: 'HOUSE_UPGRADE', actor: PID }); break;
+      case 'house-place': game.dispatch({ type: 'HOUSE_PLACE', actor: PID, uid: v }); break;
+      case 'house-take': game.dispatch({ type: 'HOUSE_TAKE', actor: PID, uid: v }); break;
+      case 'rest': game.dispatch({ type: 'REST', actor: PID }); break;
+      case 'garden-plant': { const [slot, item] = String(v).split(':'); game.dispatch({ type: 'GARDEN_PLANT', actor: PID, slot: +slot, item }); break; }
+      case 'garden-harvest': game.dispatch({ type: 'GARDEN_HARVEST', actor: PID, slot: +v }); break;
       case 'cross-go': {
         game.dispatch({ type: 'QUEST_USE', actor: PID, obj: v });
         hud.close();
@@ -609,6 +617,12 @@ async function boot() {
         const dz = o.z - a.z;
         const d = Math.hypot(dx, dz);
         if (d <= 2.5 && useDue(questCtx(game), a, o.obj)) consider(d - 0.8, dx, dz, { kind: 'obj', id: o.obj, x: o.x, z: o.z, okind: o.kind });
+      } else if (o.plot && isUnlocked(questCtx(game), a, 'housing')) {
+        // 내 집·집터(v0.8)
+        const dx = o.x - a.x;
+        const dz = o.z - a.z;
+        const d = Math.hypot(dx, dz);
+        if (d <= o.r + 3) consider(d - o.r, dx, dz, { kind: 'plot', id: o.plot, x: o.x, z: o.z });
       }
     }
     for (const o of game.statics) {
@@ -657,6 +671,11 @@ async function boot() {
       best.label = data.objects[best.id].name;
       best.verb = data.objects[best.id].verb || { chest: '열기', supply: '되찾기', papers: '뒤지기', brazier: '불 넣기', door: '오르기' }[best.okind] || '살피기';
       best.radius = 0.8;
+    } else if (best.kind === 'plot') {
+      const h = state.houses[best.id];
+      best.label = h ? (h.owner === PID ? '🏠 내 집' : '남의 집') : '🪧 빈 집터';
+      best.verb = h ? '들어가기' : '살펴보기';
+      best.radius = 2.4;
     } else if (best.kind === 'market') {
       const town = settlementAt({ state }, a);
       best.label = `${town ? town.name + ' ' : ''}거래소`;

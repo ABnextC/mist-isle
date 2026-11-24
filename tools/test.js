@@ -11,13 +11,14 @@ import {
 import { keyOf, effectiveProps, countItem } from '../core/inventory.js';
 import { fitsHabitat, regionAt } from '../core/terrain.js';
 import { allOrders, bookOf } from '../core/market.js';
-import { storeOf, nearestSettlement, npcPos, sitePos, objPos } from '../core/world.js';
+import { storeOf, nearestSettlement, npcPos, sitePos, objPos, stationFor } from '../core/world.js';
 import { yawTo } from '../core/systems/combat.js';
 import { settlementDaily } from '../core/settlements.js';
 import { isUnlocked, allowedProject, chapterReached } from '../core/systems/unlocks.js';
 import { stepNpc } from '../core/systems/quests.js';
 import { rankOf, xpMult, extraChance, feeMult, recipeAllowed, tasksOf, factionOnEvent } from '../core/systems/factions.js';
 import { addXp } from '../core/systems/progress.js';
+import { plotPos, homeOf, comfortOf } from '../core/systems/housing.js';
 import { stepText } from '../core/systems/quests.js';
 import { readFileSync } from 'node:fs';
 
@@ -1300,7 +1301,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '0.7.1');
+  eq(st.meta.engine, '0.8.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1492,7 +1493,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '0.7.1');
+  eq(st.meta.engine, '0.8.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -1584,6 +1585,56 @@ test('세력 영향력: 지도자 의뢰는 하루 한 번씩, 활동 영향력�
   const ctx = { ...W, emit: () => {} };
   for (let i = 0; i < 40; i++) factionOnEvent(ctx, { type: 'ship', actor: 'p1' });
   eq(a.faction.inf - inf0, data.factions.dailyCap, '하루 상한');
+});
+
+console.log('내 집 (v0.8)');
+
+test('내 집: 4장에 들면 집터를 산다. 올리고, 가구로 아늑함을 쌓아 쉬면 숙련 경험이 오르고, 텃밭에서 기른다', () => {
+  const g = createGame({ data, seed: 15, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  const W = { state: g.state, data, statics: g.statics, cfg: data.config, clock: g.clock, emit: () => {} };
+  const plot = data.housing.plots[0];
+  const q = plotPos(W, plot);
+  for (const p of data.housing.plots) {
+    const r = plotPos(W, p);
+    ok(g.terrain.walkable(r.x, r.z) && g.terrain.height(r.x, r.z) > 0.5, `${p.id} 마른 땅`);
+  }
+  Object.assign(a, { x: q.x + 2, z: q.z + 2 });
+  eq(g.dispatch({ type: 'HOUSE_BUY', actor: 'p1', plot: plot.id }).error, 'locked', '3장 전엔 잠김');
+  for (const ch of data.chapters.slice(0, 3)) for (const id of ch.quests) a.quests.done[id] = 1;
+  a.silver = 5000;
+  eq(g.dispatch({ type: 'HOUSE_BUY', actor: 'p1', plot: plot.id }).error, 'need_items', '재료');
+  const give = (needs) => { for (const [item, n] of Object.entries(needs)) storeOf(a, plot.at).push({ item, lot: null, bonus: null, qty: n }); };
+  give(data.housing.tiers[0].needs);
+  ok(g.dispatch({ type: 'HOUSE_BUY', actor: 'p1', plot: plot.id }).ok, '오두막');
+  ok(g.statics.some((o) => o.kind === 'home_hut' && o.plot === plot.id), '집이 선다');
+  eq(g.dispatch({ type: 'HOUSE_BUY', actor: 'p1', plot: data.housing.plots[1].id }).error, 'has_house', '집은 하나');
+  // 가구 셋까지
+  const furn = (i) => ({ uid: `f${i}`, item: 'furn_bed', stats: { comfort: 60 }, star: 2, dur: 100, maxDur: 100 });
+  for (let i = 0; i < 4; i++) a.bag.push(furn(i));
+  for (let i = 0; i < 3; i++) ok(g.dispatch({ type: 'HOUSE_PLACE', actor: 'p1', uid: `f${i}` }).ok, `가구 ${i}`);
+  eq(g.dispatch({ type: 'HOUSE_PLACE', actor: 'p1', uid: 'f3' }).error, 'house_full', '오두막은 셋');
+  eq(comfortOf(homeOf(W, a)), 180, '아늑함');
+  ok(g.dispatch({ type: 'REST', actor: 'p1' }).ok, '쉬기');
+  const rest = a.buffs.find((b) => b.type === 'rested');
+  eq(rest.value, Math.round(Math.min(data.housing.rest.cap, data.housing.rest.base + 180 * data.housing.rest.perComfort) * 1000) / 1000, '쉼 버프');
+  eq(g.dispatch({ type: 'REST', actor: 'p1' }).error, 'rest_wait', '바로 다시는 못 쉰다');
+  ok(xpMult(W, a, 'logging') > 1.1, '숙련 경험이 오른다');
+  // 집으로 올리면 부엌이 생긴다
+  give(data.housing.tiers[1].needs);
+  ok(g.dispatch({ type: 'HOUSE_UPGRADE', actor: 'p1' }).ok, '집');
+  ok(stationFor(W, a, 'kitchen')?.home, '집 부엌');
+  // 텃밭
+  a.bag.push({ item: 'seed_berry', lot: null, bonus: null, qty: 2 });
+  ok(g.dispatch({ type: 'GARDEN_PLANT', actor: 'p1', slot: 0, item: 'seed_berry' }).ok, '심기');
+  eq(g.dispatch({ type: 'GARDEN_HARVEST', actor: 'p1', slot: 0 }).error, 'not_ripe', '덜 자람');
+  g.state.t += data.housing.plants[0].grow + 1;
+  const b0 = countItem([a.bag, storeOf(a, plot.at)], 'berry');
+  ok(g.dispatch({ type: 'GARDEN_HARVEST', actor: 'p1', slot: 0 }).ok, '거두기');
+  ok(countItem([a.bag, storeOf(a, plot.at)], 'berry') - b0 >= 6, '산딸기');
+  // 저장·불러오기
+  const again = loadGame({ data, save: g.save() });
+  eq(again.state.houses[plot.id].tier, 'house', '저장된 집');
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

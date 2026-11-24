@@ -13,6 +13,7 @@ import { zoneAt, regionAt } from '../../core/terrain.js';
 import { ENGINE_VERSION } from '../../core/state.js';
 import { stepText, talkDue, boardOffers, available, TALK_RANGE, takeMet, takeProgress, stepSay } from '../../core/systems/quests.js';
 import { factionOf, rankOf, tasksOf, taskDone } from '../../core/systems/factions.js';
+import { comfortOf, restValue } from '../../core/systems/housing.js';
 import { npcPos } from '../../core/world.js';
 import { questCtx, lifeSteps } from './quest.js';
 import { isUnlocked, allowedProject, chapterReached } from '../../core/systems/unlocks.js';
@@ -186,6 +187,18 @@ export function createHud(root, game, { touch, onAct }) {
       banner(`${data.skills[ev.skill].icon} ${data.skills[ev.skill].name} ${ev.level}레벨`);
     } else if (ev.type === 'vein.opened' && !ev.common && game.state.t > 1 && unl(game.state.actors[PID], 'rumors')) {
       toast(`🗺️ 새 산지 소문: 「${ev.name}」 — 마을 게시판에서 볼 수 있다`, 'info');
+    } else if (ev.type === 'house.buy' && ev.actor === PID) {
+      banner('🏠 내 집이 생겼다', 3600);
+      if (panel?.kind === 'house') renderPanel(true);
+    } else if ((ev.type === 'house.upgrade' || ev.type === 'house.place' || ev.type === 'house.take' || ev.type === 'garden.plant') && ev.actor === PID) {
+      if (ev.type === 'house.upgrade') banner(`🏠 ${data.housing.tiers.find((t) => t.id === ev.tier).name}으로 올렸다`, 3600);
+      if (panel?.kind === 'house') renderPanel(true);
+    } else if (ev.type === 'rest' && ev.actor === PID) {
+      pushFeed(`🛏️ 푹 쉬었다 — 숙련 경험 +${Math.round(ev.value * 100)}% (${ev.minutes}분)`);
+      if (panel?.kind === 'house') renderPanel(true);
+    } else if (ev.type === 'garden.harvest' && ev.actor === PID) {
+      pushFeed(`🌱 텃밭: ${data.items[ev.item].name} ${ev.qty}${ev.seed ? ' · 씨앗 하나' : ''}`);
+      if (panel?.kind === 'house') renderPanel(true);
     } else if (ev.type === 'faction.join' && ev.actor === PID) {
       const f = data.factions.list.find((x) => x.id === ev.faction);
       banner(`${f.icon} ${f.name}에 들었다`, 3600);
@@ -729,6 +742,50 @@ export function createHud(root, game, { touch, onAct }) {
     panel.chat ??= Math.floor(Math.random() * npc.chat.length);
     return `${head}<p class="say">${esc(npc.chat[panel.chat % npc.chat.length])}</p><div class="btns"><button data-act="close">잘 있어요</button></div>`;
   }
+  // 내 집(v0.8)
+  function houseHtml(a, plotId) {
+    const ctx = questCtx(game);
+    const H = data.housing;
+    const p = H.plots.find((x) => x.id === plotId);
+    const town = data.settlements[p.at];
+    const h = game.state.houses[plotId];
+    const lists = [a.bag, storeOf(a, p.at)];
+    const needRows = (t) => Object.entries(t.needs).map(([it, n]) => `<li><span>${esc(data.items[it].name)}</span><b>${Math.min(n, countItem(lists, it))}/${n}</b></li>`).join('') + `<li><span>은화</span><b>${a.silver}/${t.silver}</b></li>`;
+    if (!h) {
+      const t = H.tiers[0];
+      if (!isUnlocked(ctx, a, 'housing')) return lockCard('housing');
+      if (a.house) return `<p>${esc(town.name)} 집터다. 집은 하나만 가질 수 있다.</p>`;
+      return `<p>${esc(town.name)} 둘레의 빈 집터. <b>${esc(t.name)}</b>을 지으면 가구 ${t.furniture}칸, 텃밭 ${t.garden}칸이 생긴다.</p>`
+        + `<p class="muted">재료는 가방과 ${esc(town.name)} 창고에서 센다.</p><ul class="list">${needRows(t)}</ul>`
+        + `<div class="btns"><button data-act="house-buy" data-v="${plotId}">🔨 ${esc(t.name)} 짓기</button></div>`;
+    }
+    if (h.owner !== a.id) return '<p>주인이 있는 집이다.</p>';
+    const t = H.tiers.find((x) => x.id === h.tier);
+    const comfort = comfortOf(h);
+    const wait = Math.max(0, h.restAt + H.rest.every - game.state.t);
+    let html = `<div class="qtag">${esc(t.name)} · ${esc(town.name)}</div>`;
+    html += `<p>아늑함 <b>${Math.round(comfort)}</b> — 쉬면 숙련 경험 +${Math.round(restValue(ctx, h) * 100)}% (${H.rest.minutes}분)${t.stations.length ? ` · 집 작업대: ${t.stations.map((x) => esc(data.stations[x]?.name || x)).join('·')}` : ''}</p>`;
+    html += `<div class="btns"><button data-act="rest"${wait ? ' disabled' : ''}>🛏️ 쉬기${wait ? ` (${Math.ceil(wait / 60)}분 뒤)` : ''}</button></div>`;
+    const placed = h.furniture.map((e) => `<li><span>${data.items[e.item].icon} ${esc(data.items[e.item].name)} · 아늑함 ${Math.round(e.stats?.comfort || 0)}</span><button data-act="house-take" data-v="${e.uid}">들이기</button></li>`).join('');
+    const inBag = a.bag.filter((e) => e.uid && data.items[e.item].stage === 'furniture').map((e) => `<li><span>${data.items[e.item].icon} ${esc(data.items[e.item].name)} · 아늑함 ${Math.round(e.stats?.comfort || 0)}</span><button data-act="house-place" data-v="${e.uid}"${h.furniture.length >= t.furniture ? ' disabled' : ''}>놓기</button></li>`).join('');
+    html += `<h3>가구 ${h.furniture.length}/${t.furniture}</h3><ul class="list">${placed || '<li class="muted">목공대에서 가구를 만들어 놓자(의자·탁자·침상·등잔·깔개·선반)</li>'}${inBag}</ul>`;
+    const slots = [];
+    for (let i = 0; i < t.garden; i++) {
+      const g = h.garden[i];
+      if (!g) {
+        const opts = H.plants.filter((pl) => countItem([a.bag], pl.item) > 0).map((pl) => `<button data-act="garden-plant" data-v="${i}:${pl.item}">${esc(pl.name)}</button>`).join('');
+        slots.push(`<li><span>${i + 1}. 빈 자리</span>${opts || '<small class="muted">심을 것(산딸기 씨앗·들버섯·갈대 섬유) 없음</small>'}</li>`);
+      } else {
+        const pl = H.plants.find((x) => x.item === g.item);
+        const left = g.ready - game.state.t;
+        slots.push(`<li><span>${i + 1}. ${esc(pl.name)} ${left > 0 ? `· ${Math.ceil(left / 60)}분 남음` : '· 다 자랐다'}</span>${left > 0 ? '' : `<button data-act="garden-harvest" data-v="${i}">거두기</button>`}</li>`);
+      }
+    }
+    html += `<h3>텃밭</h3><ul class="list">${slots.join('')}</ul>`;
+    const nt = H.tiers[H.tiers.indexOf(t) + 1];
+    if (nt) html += `<h3>${esc(nt.name)}으로 올리기</h3><p class="muted">가구 ${nt.furniture}칸, 텃밭 ${nt.garden}칸${nt.stations.length ? `, 작업대 ${nt.stations.map((x) => esc(data.stations[x]?.name || x)).join('·')}` : ''}</p><ul class="list">${needRows(nt)}</ul><div class="btns"><button data-act="house-up">🔨 올리기</button></div>`;
+    return html;
+  }
   function factionHtml(a, f, ctx) {
     const ranks = data.factions.ranks;
     const mine = factionOf(a) === f.id;
@@ -959,6 +1016,9 @@ export function createHud(root, game, { touch, onAct }) {
     else if (panel.kind === 'talk') {
       title = `💬 ${data.npcs[panel.npc]?.name ?? ''}`;
       html = talkHtml(a);
+    } else if (panel.kind === 'house') {
+      title = '🏠 집';
+      html = houseHtml(a, panel.plot);
     } else if (panel.kind === 'cross') {
       // 안개 벽 건너기(v0.6): 되돌아올 수 없다는 걸 분명히 묻는다
       const to = data.lists.regions.find((r) => r.id === data.objects[panel.obj].cross);

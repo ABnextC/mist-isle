@@ -2,6 +2,7 @@
 // 검증 단계는 상태를 바꾸지 않는다. 실행 단계는 실패하지 않는다.
 // 싱글에서는 로컬 코어가, 멀티에서는 서버가 같은 함수를 돌린다.
 
+import { plotDef, tierDef, nextTier, homeOf, nearPlot, comfortOf, restValue, plantDef } from './systems/housing.js';
 import { feeMult, recipeAllowed, factionDef, factionOf, tasksOf, taskDone, gainInfluence } from './systems/factions.js';
 import { keyOf, findEntry, takeQty, addEntry, slotsNeeded, effectiveProps, avgProps, bonusKey, qtyOf, countItem } from './inventory.js';
 import { regionAt } from './terrain.js';
@@ -758,6 +759,171 @@ const CONTRIBUTE = {
 
 // ── 퀘스트(v0.5) ────────────────────────────────────
 // NPC와 대화: 이 NPC와 이야기해야 넘어가는 퀘스트 단계를 넘긴다(없으면 그냥 인사)
+// ── 내 집(v0.8) ─────────────────────────────────
+// 재료는 가방과 그 집터 마을 창고에서 센다
+const homeLists = (a, at) => [a.bag, storeOf(a, at)];
+function takeNeeds(lists, needs) {
+  for (const [item, need] of Object.entries(needs)) {
+    let left = need;
+    for (const list of lists) {
+      for (const e of [...list]) {
+        if (left <= 0) break;
+        if (e.item !== item || e.uid) continue;
+        const q = Math.min(left, e.qty);
+        takeQty(list, keyOf(e), q);
+        left -= q;
+      }
+    }
+  }
+}
+const needsMet = (lists, needs) => Object.entries(needs).every(([it, n]) => countItem(lists, it) >= n);
+
+const HOUSE_BUY = {
+  validate(ctx, a, c) {
+    const p = plotDef(ctx, c.plot);
+    if (!p) return 'bad_args';
+    if (!isUnlocked(ctx, a, 'housing')) return 'locked';
+    if (ctx.state.houses[p.id]) return 'plot_taken';
+    if (a.house) return 'has_house';
+    if (!nearPlot(ctx, a, p.id)) return 'too_far';
+    const t = ctx.data.housing.tiers[0];
+    if (a.silver < t.silver) return 'no_silver';
+    const lists = homeLists(a, p.at);
+    if (!needsMet(lists, t.needs)) return 'need_items';
+    return { p, t, lists };
+  },
+  execute(ctx, a, c, p) {
+    takeNeeds(p.lists, p.t.needs);
+    a.silver -= p.t.silver;
+    ctx.state.houses[p.p.id] = { owner: a.id, tier: p.t.id, furniture: [], garden: [], restAt: -1e9, since: ctx.state.t };
+    a.house = p.p.id;
+    ctx.refreshStatics();
+    ctx.emit('house.buy', { actor: a.id, plot: p.p.id, at: p.p.at, tier: p.t.id });
+  },
+};
+
+const HOUSE_UPGRADE = {
+  validate(ctx, a) {
+    const h = homeOf(ctx, a);
+    if (!h) return 'no_house';
+    if (!nearPlot(ctx, a, a.house)) return 'too_far';
+    const t = nextTier(ctx, h.tier);
+    if (!t) return 'max_tier';
+    if (a.silver < t.silver) return 'no_silver';
+    const lists = homeLists(a, plotDef(ctx, a.house).at);
+    if (!needsMet(lists, t.needs)) return 'need_items';
+    return { h, t, lists };
+  },
+  execute(ctx, a, c, p) {
+    takeNeeds(p.lists, p.t.needs);
+    a.silver -= p.t.silver;
+    p.h.tier = p.t.id;
+    ctx.refreshStatics();
+    ctx.emit('house.upgrade', { actor: a.id, plot: a.house, tier: p.t.id });
+  },
+};
+
+// 가구 놓기·들이기: 가구는 가방에서 집으로, 집에서 가방으로
+const HOUSE_PLACE = {
+  validate(ctx, a, c) {
+    const h = homeOf(ctx, a);
+    if (!h) return 'no_house';
+    if (!nearPlot(ctx, a, a.house)) return 'too_far';
+    const e = a.bag.find((x) => x.uid && x.uid === c.uid);
+    if (!e || ctx.data.items[e.item].stage !== 'furniture') return 'not_furniture';
+    if (h.furniture.length >= tierDef(ctx, h.tier).furniture) return 'house_full';
+    return { h, e };
+  },
+  execute(ctx, a, c, p) {
+    a.bag.splice(a.bag.indexOf(p.e), 1);
+    p.h.furniture.push(p.e);
+    ctx.emit('house.place', { actor: a.id, item: p.e.item, comfort: comfortOf(p.h) });
+  },
+};
+const HOUSE_TAKE = {
+  validate(ctx, a, c) {
+    const h = homeOf(ctx, a);
+    if (!h) return 'no_house';
+    if (!nearPlot(ctx, a, a.house)) return 'too_far';
+    const e = h.furniture.find((x) => x.uid === c.uid);
+    if (!e) return 'bad_args';
+    if (a.bag.length + slotsNeeded(a.bag, [e]) > ctx.cfg.bag.slots) return 'bag_full';
+    return { h, e };
+  },
+  execute(ctx, a, c, p) {
+    p.h.furniture.splice(p.h.furniture.indexOf(p.e), 1);
+    addEntry(a.bag, p.e);
+    ctx.emit('house.take', { actor: a.id, item: p.e.item, comfort: comfortOf(p.h) });
+  },
+};
+
+// 쉬기: 집에서 푹 쉬면 숙련 경험이 더 붙는다(아늑할수록 크게). 몇 시간마다 한 번
+const REST = {
+  validate(ctx, a) {
+    const h = homeOf(ctx, a);
+    if (!h) return 'no_house';
+    if (!nearPlot(ctx, a, a.house)) return 'too_far';
+    if (ctx.state.t - h.restAt < ctx.data.housing.rest.every) return 'rest_wait';
+    return { h };
+  },
+  execute(ctx, a, c, p) {
+    const R = ctx.data.housing.rest;
+    p.h.restAt = ctx.state.t;
+    const value = restValue(ctx, p.h);
+    a.buffs = a.buffs.filter((b) => b.type !== 'rested');
+    a.buffs.push({ type: 'rested', value, endsAt: ctx.state.t + R.minutes * 60 });
+    if (a.cb) a.cb.hp = a.cb.maxHp;
+    ctx.emit('rest', { actor: a.id, value, minutes: R.minutes, comfort: comfortOf(p.h) });
+  },
+};
+
+// 텃밭: 씨앗(또는 버섯·갈대 섬유)을 심고, 다 자라면 거둔다
+const GARDEN_PLANT = {
+  validate(ctx, a, c) {
+    const h = homeOf(ctx, a);
+    if (!h) return 'no_house';
+    if (!nearPlot(ctx, a, a.house)) return 'too_far';
+    const i = c.slot | 0;
+    if (i < 0 || i >= tierDef(ctx, h.tier).garden) return 'bad_args';
+    if (h.garden[i]) return 'slot_busy';
+    const pl = plantDef(ctx, c.item);
+    if (!pl) return 'bad_args';
+    const e = a.bag.find((x) => x.item === pl.item && !x.uid);
+    if (!e) return 'need_items';
+    return { h, i, pl, e };
+  },
+  execute(ctx, a, c, p) {
+    takeQty(a.bag, keyOf(p.e), 1);
+    p.h.garden[p.i] = { item: p.pl.item, at: ctx.state.t, ready: ctx.state.t + p.pl.grow };
+    ctx.emit('garden.plant', { actor: a.id, item: p.pl.item, ready: p.h.garden[p.i].ready });
+  },
+};
+const GARDEN_HARVEST = {
+  validate(ctx, a, c) {
+    const h = homeOf(ctx, a);
+    if (!h) return 'no_house';
+    if (!nearPlot(ctx, a, a.house)) return 'too_far';
+    const g = h.garden[c.slot | 0];
+    if (!g) return 'bad_args';
+    if (ctx.state.t < g.ready) return 'not_ripe';
+    return { h, i: c.slot | 0, pl: plantDef(ctx, g.item) };
+  },
+  execute(ctx, a, c, p) {
+    const { rng } = ctx;
+    const qty = rng.int(p.pl.qty[0], p.pl.qty[1]);
+    const out = [{ item: p.pl.out, lot: null, bonus: null, qty }];
+    if (p.pl.seed && rng.next() < p.pl.seed) out.push({ item: p.pl.item, lot: null, bonus: null, qty: 1 });
+    const at = plotDef(ctx, a.house).at;
+    for (const e of out) {
+      if (a.bag.length + slotsNeeded(a.bag, [e]) <= ctx.cfg.bag.slots) addEntry(a.bag, e);
+      else addEntry(storeOf(a, at), e);
+    }
+    p.h.garden[p.i] = null;
+    addXp(ctx, a, 'harvesting', 6 + qty);
+    ctx.emit('garden.harvest', { actor: a.id, item: p.pl.out, qty, seed: out.length > 1 });
+  },
+};
+
 // 세력(v0.7): 지도자 곁에서 들거나 옮긴다. 옮기면 쌓은 영향력을 잃고, 며칠은 다시 못 옮긴다
 const FACTION_JOIN = {
   validate(ctx, a, c) {
@@ -882,6 +1048,7 @@ const QUEST_TRACK = {
 
 const HANDLERS = {
   TALK, QUEST_ACCEPT, QUEST_USE, QUEST_TRACK, FACTION_JOIN, FACTION_TASK,
+  HOUSE_BUY, HOUSE_UPGRADE, HOUSE_PLACE, HOUSE_TAKE, REST, GARDEN_PLANT, GARDEN_HARVEST,
   MOVE, MOVE_INPUT, GATHER, CRAFT, EAT, STORE, TAKE, SET_AUTOPILOT, RECALL,
   MARKET_SELL, MARKET_BUY, MARKET_CANCEL, MARKET_DUMP, ORDER_DELIVER, REPAIR,
   EQUIP, UNEQUIP, ATTACK, DODGE, BLOCK, SKIN, SET_HOME, SHIP, CONTRIBUTE,

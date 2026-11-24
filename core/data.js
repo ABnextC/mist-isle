@@ -3,7 +3,7 @@
 
 // 퀘스트 단계 종류(v0.5.2에 생활 단계를 더했다)
 export const STEP_TYPES = ['talk', 'go', 'kill', 'use', 'defend', 'have', 'eat', 'store', 'repair', 'sell', 'project', 'faction'];
-export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects', 'npcs', 'quests', 'unlocks', 'factions'];
+export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects', 'npcs', 'quests', 'unlocks', 'factions', 'housing'];
 
 export function buildData(raw) {
   const problems = [];
@@ -225,7 +225,15 @@ export function buildData(raw) {
 
   if (problems.length) throw new Error('데이터 오류\n- ' + problems.join('\n- '));
 
+  // 내 집(v0.8)
+  const housing = raw.housing || { plots: [], tiers: [], plants: [], rest: { every: 1800, minutes: 45, base: 0.05, perComfort: 0, cap: 0 }, range: 6 };
+  for (const p of housing.plots) if (!settlements[p.at]) problems.push(`집터 ${p.id}: 마을 ${p.at} 없음`);
+  for (const t of housing.tiers) for (const it of Object.keys(t.needs)) if (!items[it]) problems.push(`집 ${t.id}: 재료 ${it} 없음`);
+  for (const p of housing.plants) if (!items[p.item] || !items[p.out]) problems.push(`텃밭 ${p.item}: 물건 없음`);
+  if (problems.length) throw new Error('데이터 오류\n- ' + problems.join('\n- '));
+
   return {
+    housing,
     factions,
     config,
     curve: raw.skills.xpCurve,

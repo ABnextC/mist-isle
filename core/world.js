@@ -1,3 +1,4 @@
+import { homeStation } from './systems/housing.js';
 // 위치·정착지·도구·장애물처럼 여러 곳에서 쓰는 조회 함수.
 // 상태를 읽기만 한다.
 
@@ -28,7 +29,7 @@ export function stationFor(ctx, actor, type) {
   for (const s of Object.values(ctx.state.settlements)) {
     for (const st of s.stations) if (st.type === type && dist(actor, st) <= range) return st;
   }
-  return null;
+  return homeStation(ctx, actor, type); // 내 집 작업대(v0.8)
 }
 
 export function nearestStation(ctx, actor, type) {

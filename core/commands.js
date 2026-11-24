@@ -760,6 +760,22 @@ const CONTRIBUTE = {
 
 // ── 퀘스트(v0.5) ────────────────────────────────────
 // NPC와 대화: 이 NPC와 이야기해야 넘어가는 퀘스트 단계를 넘긴다(없으면 그냥 인사)
+// 오가는 배(v0.9): 길이 열린 뒤(ferry 퀘스트를 받았거나 끝냄)엔 언제든 탄다
+const FERRY = {
+  validate(ctx, a, c) {
+    const o = ctx.data.objects[c.obj];
+    if (!o?.ferry || !o.cross) return 'bad_args';
+    const Q = a.quests;
+    if (!(Q?.active?.[o.ferry] || Q?.done?.[o.ferry] != null)) return 'locked';
+    const p = objPos(ctx, c.obj);
+    if (!p || Math.hypot(p.x - a.x, p.z - a.z) > USE_RANGE) return 'too_far';
+    return { o };
+  },
+  execute(ctx, a, c, p) {
+    crossTo(ctx, a, p.o.cross, { ferry: true });
+  },
+};
+
 // ── 조합(v0.8.1) ────────────────────────────────
 // 조합 일은 게시판 앞에서 한다(창고는 창고 앞에서)
 const boardAt = (ctx, a) => ctx.statics.find((o) => o.kind === 'board' && Math.hypot(o.x - a.x, o.z - a.z) <= BOARD_RANGE) || null;
@@ -1183,7 +1199,7 @@ const QUEST_USE = {
     useObj(ctx, a, p.id, c.obj);
     // 배에 오르기(v0.6): 안개 벽 너머로 건너간다
     const cross = ctx.data.objects[c.obj].cross;
-    if (cross) crossTo(ctx, a, cross);
+    if (cross) crossTo(ctx, a, cross, { ferry: !!ctx.data.objects[c.obj].ferry });
   },
 };
 
@@ -1201,7 +1217,7 @@ const QUEST_TRACK = {
 const HANDLERS = {
   TALK, QUEST_ACCEPT, QUEST_USE, QUEST_TRACK, FACTION_JOIN, FACTION_TASK,
   HOUSE_BUY, HOUSE_UPGRADE, HOUSE_PLACE, HOUSE_TAKE, REST, GARDEN_PLANT, GARDEN_HARVEST,
-  GUILD_CREATE, GUILD_JOIN, GUILD_LEAVE, GUILD_HIRE, GUILD_DISMISS, GUILD_GIVE, GUILD_PUT, GUILD_TAKE,
+  FERRY, GUILD_CREATE, GUILD_JOIN, GUILD_LEAVE, GUILD_HIRE, GUILD_DISMISS, GUILD_GIVE, GUILD_PUT, GUILD_TAKE,
   MOVE, MOVE_INPUT, GATHER, CRAFT, EAT, STORE, TAKE, SET_AUTOPILOT, RECALL,
   MARKET_SELL, MARKET_BUY, MARKET_CANCEL, MARKET_DUMP, ORDER_DELIVER, REPAIR,
   EQUIP, UNEQUIP, ATTACK, DODGE, BLOCK, SKIN, SET_HOME, SHIP, CONTRIBUTE,

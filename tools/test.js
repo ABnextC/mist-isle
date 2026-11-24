@@ -1019,7 +1019,7 @@ test('안개 늑대는 밤에만 나온다: 낮엔 숨고, 밤에 마을 사이 
   ok(wolves().every((x) => x.mode === 'away'), '해가 뜨면 사라진다');
 });
 
-test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사업·배 고치기·안개 벽 건너기·늪의 불씨·세 갈래 길·물러가는 함대까지 막히는 데 없이 33개, 건너면 해금·보상·현상금', () => {
+test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사업·배 고치기·안개 벽 건너기·늪의 불씨·세 갈래 길·물러가는 함대·떨리는 섬까지 막히는 데 없이 41개, 건너면 해금·보상·현상금', () => {
   const g = createGame({ data, seed: 7, actors: [{ id: 'p1', kind: 'player' }] });
   g.state.econ = null;
   const st = g.state;
@@ -1039,7 +1039,7 @@ test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사
     g.advance(0.6);
   };
   const events = [];
-  for (const k of ['quest.done', 'chapter.done', 'quest.wave', 'quest.fail', 'loot', 'quest.grant', 'quest.stepReward', 'unlock', 'story.pause', 'cross', 'faction.join']) g.on(k, (ev) => events.push(ev));
+  for (const k of ['quest.done', 'chapter.done', 'quest.wave', 'quest.fail', 'loot', 'quest.grant', 'quest.stepReward', 'unlock', 'story.pause', 'cross', 'faction.join', 'world.veinShift']) g.on(k, (ev) => events.push(ev));
   const town = (sid) => g.state.settlements[sid];
   const toStation = (sid, type) => {
     const t = town(sid).stations.find((x) => x.type === type);
@@ -1089,14 +1089,15 @@ test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사
       const o = step.objs.find((x) => !p.used.includes(x));
       const pos = objPos(W, o);
       warp(pos.x + 1.0, pos.z);
-      if (data.objects[o].cross) {
+      if (data.objects[o].cross && !data.objects[o].ferry) {
         // 안개 벽(v0.6): 등대섬 창고 짐을 갈대 나루 창고로, 귀환 지점도 나루로
         storeOf(a, 's_forest').push({ item: 'stone', lot: null, bonus: null, qty: 7 });
         storeOf(a, 's_lighthouse').push({ item: 'stone', lot: null, bonus: null, qty: 5 });
         a.stoneBefore = ['s_forest', 's_lighthouse', 's_port'].reduce((n, sid) => n + countItem([storeOf(a, sid)], 'stone'), 0);
       }
       ok(g.dispatch({ type: 'QUEST_USE', actor: 'p1', obj: o }).ok, `${id} ${o}`);
-      if (data.objects[o].cross) {
+      if (data.objects[o].ferry) eq(regionAt(data.lists.regions, a.x).id, data.objects[o].cross, `${o} 배로 건넘`);
+      else if (data.objects[o].cross) {
         eq(regionAt(data.lists.regions, a.x).id, 'swamp_shore', '본섬에 닿았다');
         eq(a.home, 's_port', '귀환 지점은 갈대 나루');
         eq(countItem([storeOf(a, 's_port')], 'stone'), a.stoneBefore, '창고 짐이 나루로');
@@ -1191,10 +1192,12 @@ test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사
   ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch2' && e.next === 'ch3'), '2장 끝 → 3장');
   ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch3' && e.next === 'ch4'), '3장 끝 → 4장');
   ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch4'), '4장 끝');
+  ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch5'), '5장 끝');
+  ok(events.some((e) => e.type === 'world.veinShift' && e.closed > 0), '떨리는 섬: 산지가 다 옮겨 갔다');
   ok(a.faction.inf >= 450, '4장 세력 보상 영향력');
   ok(countItem([a.bag, storeOf(a, a.home)], 'food_jerky') >= 4, '선단 몫 육포');
   eq(a.faction?.id, 'fleet', '세력');
-  eq(events.filter((e) => e.type === 'quest.wave').length, 7, '습격 두 번 × 두 물결 + 항구 포위 세 물결');
+  eq(events.filter((e) => e.type === 'quest.wave').length, 10, '습격 두 물결 둘 + 항구 포위 셋 + 서리 고개 셋');
   ok(a.marks?.lantern_mark != null && events.some((e) => e.type === 'quest.grant'), '등불의 각인');
   ok(events.some((e) => e.type === 'quest.stepReward' && e.reward.items.some((x) => x.item === 'wpn_sword_copper')), '강두의 구리 검');
   ok(a.bag.some((e) => e.item === 'wpn_sword_iron' && e.crafter === '숲머리 대장장이'), '숲머리 대장장이의 철 검');
@@ -1302,7 +1305,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '0.8.1');
+  eq(st.meta.engine, '0.9.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1494,7 +1497,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '0.8.1');
+  eq(st.meta.engine, '0.9.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -1693,6 +1696,26 @@ test('조합: 사람이 세우고 든다. AI 개척민은 사람이 넷보다 �
   ok(!st.guilds[gid], '흩어짐');
   const again = loadGame({ data, save: g.save() });
   eq(again.hash(), g.hash(), '저장 왕복');
+});
+
+console.log('불과 서리 능선 (v0.9)');
+
+test('오가는 배: 「불의 능선」을 받은 뒤엔 갈대 나루 ↔ 잿고개를 오간다. 짐·귀환 지점은 그대로', () => {
+  const g = createGame({ data, seed: 17, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  const W = { state: g.state, data, statics: g.statics, terrain: g.terrain };
+  const go = (obj) => { const p = objPos(W, obj); Object.assign(a, { x: p.x + 0.8, z: p.z }); return g.dispatch({ type: 'FERRY', actor: 'p1', obj }); };
+  eq(go('o_ship_ridge').error, 'locked', '아직 길이 없다');
+  a.quests.done.c5_ridge = 1;
+  a.home = 's_port';
+  storeOf(a, 's_port').push({ item: 'stone', lot: null, bonus: null, qty: 4 });
+  ok(go('o_ship_ridge').ok, '잿고개로');
+  eq(regionAt(data.lists.regions, a.x).id, 'ember_ridge', '능선');
+  eq(a.home, 's_port', '귀환 지점 그대로');
+  eq(countItem([storeOf(a, 's_port')], 'stone'), 4, '나루 창고 그대로');
+  ok(go('o_ship_back').ok, '나루로');
+  eq(regionAt(data.lists.regions, a.x).id, 'swamp_shore', '본섬 남쪽');
+  ok(Object.values(g.state.mobGroups).some((x) => x.type === 'frost_wolf' && x.z >= 300), '설원의 서리 늑대');
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

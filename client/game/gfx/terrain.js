@@ -222,7 +222,9 @@ export function groundAt(hf, paths, x, z, extra = null) {
   let dirt = Math.max(path, sstep(0.68, 0.78, m1) * 0.5) * (1 - sand) * (1 - rock);
   const rag = (m2 - 0.5) * 0.35 + (fbm3(x * 0.9 + 3.1, z * 0.9 + 3.1) - 0.5) * 0.3;
   let litter = Math.min(1, sstep(0.15, 0.55, canopy + rag) + zone * sstep(0.3, 0.55, m2) * 0.9) * (1 - sand) * (1 - rock) * (1 - path);
-  const grass = (1 - sand) * (1 - dirt) * (1 - litter) * (1 - rock) * (1 - gravel);
+  // 맨땅 구역(v0.9 잿빛 능선·설원): 풀이 자라지 않는다
+  const bare = extra?.bare ? extra.bare[0] * zone * (1 - zone2) + extra.bare[1] * zone2 : 0;
+  const grass = (1 - sand) * (1 - dirt) * (1 - litter) * (1 - rock) * (1 - gravel) * (1 - bare);
   sand *= (1 - rock * 0.7) * (1 - gravel * 0.6);
   dirt *= 1 - gravel * 0.5;
   litter *= 1 - gravel;
@@ -234,7 +236,7 @@ export function groundAt(hf, paths, x, z, extra = null) {
 // 여섯 층(풀·낙엽·흙·모래·절벽·자갈)을 텍스처 배열에서 읽고, 높이로 섞는다(돌이 흙 위로 솟고, 풀이 흙 틈을 메운다).
 // 같은 무늬가 되풀이되지 않게 구역마다 텍스처를 엇갈려 읽고(두 번 읽어 섞기), 바위는 세 방향에서 투영한다.
 const TILE = ['4.0', '3.5', '4.0', '5.0', '7.0', '3.0'];
-function terrainMaterial(tex, paths, canopy, tier, zone = [1e9, 10], zone2 = null) {
+function terrainMaterial(tex, paths, canopy, tier, zone = [1e9, 10], zone2 = null, zone1 = null) {
   const mat = new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0 });
   const U = {
     tTerA: { value: tex.terrain.A }, tTerN: { value: tex.terrain.N },
@@ -245,6 +247,9 @@ function terrainMaterial(tex, paths, canopy, tier, zone = [1e9, 10], zone2 = nul
     // 둘째 구역(v0.6 안개 늪): 경계와 땅빛
     uZone2: { value: new THREE.Vector2(zone2?.z0 ?? 1e9, zone2?.fade ?? 10) },
     uTint2: { value: new THREE.Vector3(...(zone2?.tint || [1, 1, 1])) },
+    // 구역 땅빛 덧칠(v0.9): 재·눈. a = 덮는 정도
+    uPaint1: { value: new THREE.Vector4(...(zone1?.paint || [1, 1, 1, 0])) },
+    uPaint2: { value: new THREE.Vector4(...(zone2?.paint || [1, 1, 1, 0])) },
     uShadowFar: { value: tier.shadowRange },
   };
   const anti = tier.id !== 'low';
@@ -266,6 +271,8 @@ function terrainMaterial(tex, paths, canopy, tier, zone = [1e9, 10], zone2 = nul
         uniform vec3 uArea;
         uniform vec2 uZone;
         uniform vec2 uZone2;
+        uniform vec4 uPaint1;
+        uniform vec4 uPaint2;
         uniform vec3 uTint2;
         uniform float uShadowFar;
         ${NOISE}
@@ -374,7 +381,7 @@ function terrainMaterial(tex, paths, canopy, tier, zone = [1e9, 10], zone2 = nul
         float macro = fbm3(xz * 0.012 + 41.0);
         vec3 gcol = A0.rgb * mix(vec3(1.08, 0.98, 0.78), vec3(0.92, 1.04, 0.98), m2);
         gcol *= mix(vec3(1.12, 1.02, 0.72), vec3(0.86, 1.0, 0.94), smoothstep(0.3, 0.7, macro));
-        gcol *= mix(vec3(1.0), vec3(0.72, 0.84, 0.7), zoneF * 0.8);
+        gcol *= mix(vec3(1.0), vec3(0.72, 0.84, 0.7), zoneF * 0.8 * (1.0 - uPaint1.a));
         // 늪: 탁한 풀빛, 물가는 젖어서 더 어둡다
         gcol *= mix(vec3(1.0), uTint2 * mix(0.78, 1.0, smoothstep(0.1, 1.2, hgt)), zoneF2);
         vec3 lcol = A1.rgb * mix(vec3(0.72, 0.74, 0.8), vec3(1.05, 1.0, 0.95), smoothstep(0.25, 0.75, m3));
@@ -384,6 +391,18 @@ function terrainMaterial(tex, paths, canopy, tier, zone = [1e9, 10], zone2 = nul
         alb *= mix(1.0, 0.58, wet);
         alb *= mix(vec3(1.0), vec3(0.55, 0.72, 0.72), smoothstep(0.0, -2.5, hgt));
         alb *= 0.92 + 0.16 * m2;
+        // 재·눈 덧칠: 결(밝기)은 남기고 빛깔만 바꾼다. 가파른 바위엔 덜 쌓인다
+        {
+          float pz1 = uPaint1.a * zoneF * (1.0 - zoneF2);
+          float pz2 = uPaint2.a * zoneF2;
+          float pk = (pz1 + pz2) * (1.0 - b4 * 0.55 * (1.0 - smoothstep(0.35, 0.6, m3))) * smoothstep(0.4, 1.4, hgt);
+          if (pk > 0.002) {
+            vec3 pc = (uPaint1.rgb * pz1 + uPaint2.rgb * pz2) / max(pz1 + pz2, 1e-4);
+            float lum = dot(alb, vec3(0.3, 0.59, 0.11));
+            vec3 painted = pc * clamp(0.62 + lum * 1.3, 0.55, 1.15);
+            alb = mix(alb, painted, clamp(pk, 0.0, 1.0));
+          }
+        }
         diffuseColor.rgb = alb;
         vec2 tTop = tn(N0) * b0 + tn(N1) * b1 + tn(N2) * b2 + tn(N3) * b3 + tn(N5) * b5 + tn(rNy) * b4 * bw.y;
         vec2 tx = tn(rNx) * b4 * bw.x;
@@ -492,7 +511,7 @@ export function createTerrain(scene, { terrain, region, tier, tex }) {
   const paths = makePathMask(region, terrain);
   const canopy = makeCanopyMap();
   const zone = [region.zones?.[0]?.z0 ?? 1e9, region.zones?.[0]?.fade ?? 10];
-  const mat = terrainMaterial(tex, paths, canopy, tier, zone, region.zones?.[1] || null);
+  const mat = terrainMaterial(tex, paths, canopy, tier, zone, region.zones?.[1] || null, region.zones?.[0] || null);
   const mesh = new THREE.Mesh(gridGeometry(hf), mat);
   mesh.receiveShadow = true;
   scene.add(mesh);
@@ -500,7 +519,8 @@ export function createTerrain(scene, { terrain, region, tier, tex }) {
   outer.receiveShadow = false;
   scene.add(outer);
   const z2 = region.zones?.[1];
-  const extra = { canopy, zone, zone2: z2 ? [z2.z0, z2.fade] : null };
+  const z1 = region.zones?.[0];
+  const extra = { canopy, zone, zone2: z2 ? [z2.z0, z2.fade] : null, bare: [z1?.bare || 0, z2?.bare || 0] };
   return {
     hf, paths, canopy, zone, mesh, material: mat,
     groundAt: (x, z) => groundAt(hf, paths, x, z, extra),

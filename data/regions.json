@@ -1677,7 +1677,8 @@
           0.5
         ],
         "fog": 1.8,
-        "enter": "발이 물에 잠긴다. 밤엔 망령이 짙다"
+        "enter": "발이 물에 잠긴다. 밤엔 망령이 짙다",
+        "trees": 0.18
       }
     ],
     "sites": [
@@ -2309,6 +2310,542 @@
         "x": 1226,
         "z": 66,
         "r": 8
+      },
+      {
+        "id": "port_dock",
+        "name": "갈대 나루 뱃머리",
+        "beach": [
+          1236,
+          0.8
+        ],
+        "r": 5,
+        "structures": [
+          {
+            "kind": "ship_white",
+            "dx": 0,
+            "dz": -7.5,
+            "r": 3.4,
+            "rot": 1.4
+          }
+        ],
+        "objects": [
+          {
+            "id": "o_ship_ridge",
+            "kind": "door",
+            "dx": 0,
+            "dz": -2.2,
+            "rot": 0,
+            "name": "잿고개 가는 배",
+            "verb": "배 타기",
+            "cross": "ember_ridge",
+            "ferry": "c5_ridge"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ember_ridge",
+    "name": "불과 서리 능선",
+    "island": "안개섬 본섬",
+    "tier": 4,
+    "bounds": [
+      2000,
+      0,
+      2460,
+      460
+    ],
+    "spawn": [
+      2170,
+      3
+    ],
+    "terrain": {
+      "shore": 24,
+      "shoreWobble": 9,
+      "seaFloor": -9,
+      "beach": 1.2,
+      "inland": 16,
+      "hills": 12,
+      "ridge": 30,
+      "townHeight": 2.0,
+      "wadeDepth": -1.1,
+      "edge": 20
+    },
+    "settlements": [
+      {
+        "id": "s_ash",
+        "name": "잿고개",
+        "x": 2200,
+        "z": 66,
+        "radius": 18,
+        "flat": "local",
+        "pop": 10,
+        "cap": 14,
+        "stations": [
+          {
+            "type": "storage",
+            "dx": -1,
+            "dz": -9,
+            "rot": 0
+          },
+          {
+            "type": "kitchen",
+            "dx": 7,
+            "dz": -6,
+            "rot": -2.4
+          },
+          {
+            "type": "tannery",
+            "dx": -10,
+            "dz": 2,
+            "rot": 1.5
+          },
+          {
+            "type": "sawbench",
+            "dx": 10,
+            "dz": 3,
+            "rot": -1.5
+          },
+          {
+            "type": "smelter",
+            "dx": 11,
+            "dz": -4,
+            "rot": -1.9
+          },
+          {
+            "type": "forge",
+            "dx": 5,
+            "dz": 10,
+            "rot": -2.7
+          },
+          {
+            "type": "armorbench",
+            "dx": -5,
+            "dz": 10,
+            "rot": 2.7
+          }
+        ],
+        "structures": [
+          {
+            "kind": "board",
+            "dx": 3,
+            "dz": -3,
+            "r": 0.5
+          },
+          {
+            "kind": "campfire",
+            "dx": 0,
+            "dz": 2,
+            "r": 0.7
+          },
+          {
+            "kind": "tent",
+            "dx": -14,
+            "dz": -5,
+            "r": 1.9,
+            "rot": 1.1
+          },
+          {
+            "kind": "tent",
+            "dx": 15,
+            "dz": 9,
+            "r": 1.9,
+            "rot": -2.0
+          },
+          {
+            "kind": "tent",
+            "dx": -13,
+            "dz": 9,
+            "r": 1.9,
+            "rot": 2.3
+          },
+          {
+            "kind": "tent",
+            "dx": 14,
+            "dz": -11,
+            "r": 1.9,
+            "rot": -0.8
+          },
+          {
+            "kind": "cabin",
+            "dx": 0,
+            "dz": 14,
+            "r": 2.6,
+            "rot": 3.14
+          },
+          {
+            "kind": "cabin",
+            "dx": -15,
+            "dz": -14,
+            "r": 2.6,
+            "rot": 0.7
+          }
+        ]
+      }
+    ],
+    "decor": [],
+    "places": [
+      "잿빛 비탈",
+      "검은 너덜",
+      "타는 바위",
+      "연기 골",
+      "붉은 틈",
+      "서리 등성이",
+      "얼음 개울",
+      "흰 고개",
+      "바람 바위",
+      "눈 덮인 돌무지",
+      "잿물 웅덩이",
+      "쇠똥 언덕"
+    ],
+    "propDist": {
+      "mean": 50,
+      "sd": 14,
+      "luckyChance": 0.06,
+      "luckyBonus": [
+        20,
+        35
+      ],
+      "common": [
+        30,
+        40
+      ]
+    },
+    "veins": [
+      {
+        "node": "node_driftwood",
+        "common": 20,
+        "cluster": [
+          4,
+          10
+        ],
+        "start": 25,
+        "rotating": 0
+      },
+      {
+        "node": "node_stone",
+        "common": 24,
+        "cluster": [
+          4,
+          10
+        ],
+        "start": 30,
+        "rotating": 0
+      },
+      {
+        "node": "node_copper",
+        "common": 10,
+        "cluster": [
+          4,
+          9
+        ],
+        "rotating": 2,
+        "nodes": [
+          6,
+          10
+        ],
+        "radius": [
+          15,
+          30
+        ],
+        "life": [
+          5,
+          9
+        ]
+      },
+      {
+        "node": "node_reed",
+        "common": 16,
+        "cluster": [
+          5,
+          10
+        ],
+        "start": 35,
+        "rotating": 1,
+        "nodes": [
+          8,
+          12
+        ],
+        "radius": [
+          20,
+          35
+        ],
+        "life": [
+          5,
+          9
+        ]
+      },
+      {
+        "node": "node_berry",
+        "common": 12,
+        "cluster": [
+          4,
+          9
+        ],
+        "start": 40,
+        "rotating": 1,
+        "nodes": [
+          6,
+          10
+        ],
+        "radius": [
+          15,
+          30
+        ],
+        "life": [
+          5,
+          9
+        ]
+      }
+    ],
+    "zones": [
+      {
+        "id": "ash",
+        "name": "잿빛 능선",
+        "tier": 4,
+        "z0": 130,
+        "fade": 18,
+        "icon": "🌋",
+        "paint": [
+          0.26,
+          0.24,
+          0.23,
+          0.85
+        ],
+        "bare": 0.9,
+        "trees": 0.06,
+        "fog": 1.3,
+        "enter": "땅이 뜨겁고 잿가루가 날린다. 불 파수꾼의 땅이다"
+      },
+      {
+        "id": "snow",
+        "name": "서리 설원",
+        "tier": 4,
+        "z0": 300,
+        "fade": 22,
+        "icon": "❄️",
+        "paint": [
+          0.9,
+          0.92,
+          0.96,
+          0.95
+        ],
+        "bare": 1,
+        "trees": 0.12,
+        "fog": 1.5,
+        "enter": "눈보라가 시야를 가린다. 서리 파수꾼이 깨어 있다"
+      }
+    ],
+    "sites": [
+      {
+        "id": "ridge_dock",
+        "name": "잿고개 뱃머리",
+        "beach": [
+          2170,
+          0.8
+        ],
+        "r": 5,
+        "structures": [
+          {
+            "kind": "ship_white",
+            "dx": 0,
+            "dz": -7.5,
+            "r": 3.4,
+            "rot": 1.5
+          }
+        ],
+        "objects": [
+          {
+            "id": "o_ship_back",
+            "kind": "door",
+            "dx": 0,
+            "dz": -2.2,
+            "rot": 0,
+            "name": "갈대 나루 가는 배",
+            "verb": "배 타기",
+            "cross": "swamp_shore",
+            "ferry": "c5_ridge"
+          }
+        ]
+      },
+      {
+        "id": "ember_tower",
+        "name": "넷째 탑(불)",
+        "x": 2300,
+        "z": 190,
+        "r": 14,
+        "flat": "local",
+        "structures": [
+          {
+            "kind": "tower_old",
+            "dx": 0,
+            "dz": 4,
+            "r": 2.9,
+            "rot": 3.1
+          },
+          {
+            "kind": "rubble",
+            "dx": -7,
+            "dz": -5,
+            "r": 0,
+            "rot": 0.4
+          },
+          {
+            "kind": "pillar_broken",
+            "dx": 8,
+            "dz": -4,
+            "r": 0.6,
+            "rot": 1.2
+          }
+        ],
+        "objects": [
+          {
+            "id": "o_ember_core",
+            "kind": "brazier",
+            "dx": 0,
+            "dz": -1.5,
+            "rot": 0,
+            "name": "넷째 탑 등잔",
+            "verb": "등심 지키기"
+          }
+        ],
+        "members": [
+          {
+            "type": "fire_guardian",
+            "dx": 0,
+            "dz": -5,
+            "yaw": 3.1
+          },
+          {
+            "type": "ash_wolf",
+            "dx": -9,
+            "dz": -9,
+            "yaw": 2.6
+          },
+          {
+            "type": "ash_wolf",
+            "dx": 9,
+            "dz": -9,
+            "yaw": 3.4
+          },
+          {
+            "type": "ash_wolf",
+            "dx": -11,
+            "dz": 3,
+            "yaw": 2
+          },
+          {
+            "type": "ash_wolf",
+            "dx": 11,
+            "dz": 4,
+            "yaw": 4
+          }
+        ]
+      },
+      {
+        "id": "frost_pass",
+        "name": "서리 고개",
+        "x": 2200,
+        "z": 300,
+        "r": 10,
+        "flat": "local",
+        "structures": [
+          {
+            "kind": "banner",
+            "dx": -4,
+            "dz": 0,
+            "r": 0.25,
+            "rot": 0
+          },
+          {
+            "kind": "crates",
+            "dx": 4,
+            "dz": 2,
+            "r": 0.8,
+            "rot": 0.4
+          }
+        ]
+      },
+      {
+        "id": "frost_tower",
+        "name": "다섯째 탑(서리)",
+        "x": 2140,
+        "z": 400,
+        "r": 14,
+        "flat": "local",
+        "structures": [
+          {
+            "kind": "tower_old",
+            "dx": 0,
+            "dz": 4,
+            "r": 2.9,
+            "rot": 3.1
+          },
+          {
+            "kind": "tent_white",
+            "dx": -9,
+            "dz": -6,
+            "r": 1.9,
+            "rot": 2.2
+          },
+          {
+            "kind": "banner_blue",
+            "dx": 6,
+            "dz": -8,
+            "r": 0.25,
+            "rot": 0
+          },
+          {
+            "kind": "pump",
+            "dx": 8,
+            "dz": 0,
+            "r": 1.2,
+            "rot": -0.5
+          }
+        ],
+        "objects": [
+          {
+            "id": "o_frost_core",
+            "kind": "brazier",
+            "dx": 0,
+            "dz": -1.5,
+            "rot": 0,
+            "name": "다섯째 탑 등잔",
+            "verb": "살피기"
+          }
+        ],
+        "members": [
+          {
+            "type": "frost_guardian",
+            "dx": 0,
+            "dz": -5,
+            "yaw": 3.1
+          },
+          {
+            "type": "marine",
+            "dx": -6,
+            "dz": -9,
+            "yaw": 3
+          },
+          {
+            "type": "marine",
+            "dx": 6,
+            "dz": -10,
+            "yaw": 3.2
+          },
+          {
+            "type": "marine_spear",
+            "dx": -10,
+            "dz": -1,
+            "yaw": 2.4
+          },
+          {
+            "type": "marine_spear",
+            "dx": 10,
+            "dz": 2,
+            "yaw": 3.8
+          }
+        ]
       }
     ]
   }

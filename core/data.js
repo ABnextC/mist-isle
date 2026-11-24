@@ -199,6 +199,7 @@ export function buildData(raw) {
   for (const n of raw.npcs) if (n.appear && !quests[n.appear]) problems.push(`NPC ${n.id}: 나타날 퀘스트 ${n.appear} 없음`);
   // 섬 건너기(v0.6): 배가 가는 지역
   for (const o of Object.values(objects)) if (o.cross && !raw.regions.some((r) => r.id === o.cross)) problems.push(`물체 ${o.id}: 건널 지역 ${o.cross} 없음`);
+  for (const o of Object.values(objects)) if (o.ferry && !quests[o.ferry]) problems.push(`물체 ${o.id}: 배 길 퀘스트 ${o.ferry} 없음`);
   // 해금(v0.5.2)
   const unlockList = raw.unlocks || [];
   const unlocks = index(unlockList, '해금');

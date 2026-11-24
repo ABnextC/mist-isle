@@ -448,7 +448,20 @@ const MAKERS = { crab, deer, boar, wolf, mist_wolf: mistWolf, mist_wraith: wrait
     q.emis = [0.18, 0.16, 0.1];
     return q;
   },
+  // 불과 서리 능선(v0.9): 기존 몸에 색을 입힌다(재질 색 × 꼭짓점 색)
+  ash_wolf: (seed) => tint(wolf(seed), 0x6a625c, 0x3a1206, 1.08),
+  frost_wolf: (seed) => tint(mistWolf(seed), 0xdfeaf6, 0x0a1622, 1.05),
+  fire_guardian: (seed) => tint(haetae(seed), 0x9a7466, 0x5a1a04, 1.12),
+  frost_guardian: (seed) => tint(haetae(seed), 0xd8e6f2, 0x123048, 1.12),
 };
+
+function tint(q, color, emissive, scale) {
+  q.m.color.setHex(color);
+  const e = new THREE.Color(emissive);
+  q.emis = [e.r, e.g, e.b];
+  q.root.scale.multiplyScalar(scale);
+  return q;
+}
 
 export function makeCreature(type, seed) {
   const q = MAKERS[type](seed);

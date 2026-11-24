@@ -1,5 +1,5 @@
 {
-  "dataVersion": 15,
+  "dataVersion": 16,
   "skillCap": 60,
   "time": {
     "secondsPerGameDay": 3600,
@@ -153,7 +153,8 @@
       "s_lighthouse": 0,
       "s_forest": 0,
       "s_port": 5,
-      "s_valley": 3
+      "s_valley": 3,
+      "s_ash": 0
     },
     "lifeDays": [
       2,
@@ -711,7 +712,8 @@
       "s_lighthouse": 3,
       "s_forest": 2,
       "s_port": 3,
-      "s_valley": 2
+      "s_valley": 2,
+      "s_ash": 2
     }
   },
   "econ": {
@@ -1018,7 +1020,8 @@
       "s_lighthouse": "food_berry",
       "s_forest": "food_meat",
       "s_port": "food_berry",
-      "s_valley": "food_meat"
+      "s_valley": "food_meat",
+      "s_ash": "food_meat"
     }
   },
   "town": {
@@ -1027,7 +1030,8 @@
       "s_lighthouse": 0.9,
       "s_forest": 1.15,
       "s_port": 0.9,
-      "s_valley": 1.15
+      "s_valley": 1.15,
+      "s_ash": 1.15
     },
     "demand": {
       "s_lighthouse": {
@@ -1078,6 +1082,19 @@
         "ingot_iron": 3
       },
       "s_valley": {
+        "food_meat": 4,
+        "food_berry": 4,
+        "food_soup": 2,
+        "stake_wood": 8,
+        "nails_copper": 16,
+        "lumber_birch": 4,
+        "stone": 10,
+        "cloth_reed": 3,
+        "leather": 2,
+        "lumber_oak": 3,
+        "ingot_iron": 2
+      },
+      "s_ash": {
         "food_meat": 4,
         "food_berry": 4,
         "food_soup": 2,
@@ -1273,6 +1290,17 @@
         }
       },
       "s_valley": {
+        "sawbench": {
+          "log_oak": 3
+        },
+        "smelter": {
+          "log_oak": 4
+        },
+        "forge": {
+          "log_oak": 3
+        }
+      },
+      "s_ash": {
         "sawbench": {
           "log_oak": 3
         },

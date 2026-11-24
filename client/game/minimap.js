@@ -44,7 +44,7 @@ export function createMinimap(canvas, game, terrain) {
     // 참나무 숲 경계(v0.3)와 가까이서 덤비는 짐승
     for (const zn of region.zones || []) {
       const [, zy] = toPx(x0, zn.z0);
-      g.fillStyle = 'rgba(20, 50, 18, 0.28)';
+      g.fillStyle = zn.paint ? `rgba(${zn.paint.slice(0, 3).map((c) => Math.round(c * 255)).join(',')}, 0.4)` : 'rgba(20, 50, 18, 0.28)';
       g.fillRect(0, 0, PX, zy);
       g.strokeStyle = 'rgba(190, 230, 160, 0.75)';
       g.beginPath();

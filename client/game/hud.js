@@ -104,6 +104,7 @@ export function createHud(root, game, { touch, onAct }) {
   let lastPanel = 0;
   const feed = [];
   let toastUntil = 0;
+  let quietAt = -1;
   let bannerUntil = 0;
   let chapterEndAt = -1;
   const settings = { focus: false, speed: 1, resetArmed: 0, gfx: 'auto', gfxNow: '' };
@@ -186,7 +187,12 @@ export function createHud(root, game, { touch, onAct }) {
         : `${itemName(data, ev.item)} ×${ev.qty}${ev.to === 'storage' ? ' → 창고' : ''}`);
     } else if (ev.type === 'skill.up') {
       banner(`${data.skills[ev.skill].icon} ${data.skills[ev.skill].name} ${ev.level}레벨`);
-    } else if (ev.type === 'vein.opened' && !ev.common && game.state.t > 1 && unl(game.state.actors[PID], 'rumors')) {
+    } else if (ev.type === 'world.veinShift') {
+      // 떨리는 섬(v0.9): 산지가 한꺼번에 옮겨 간다. 소문 알림은 하나로 묶는다
+      quietAt = game.state.t;
+      banner('🌋 섬이 떨린다 — 모든 산지가 옮겨 갔다', 4200);
+      toast('🗺️ 새 산지 소문이 한꺼번에 돌았다 — 마을 게시판에서 보자', 'info', 5000);
+    } else if (ev.type === 'vein.opened' && !ev.common && game.state.t > 1 && game.state.t !== quietAt && unl(game.state.actors[PID], 'rumors')) {
       toast(`🗺️ 새 산지 소문: 「${ev.name}」 — 마을 게시판에서 볼 수 있다`, 'info');
     } else if (ev.type?.startsWith('guild.')) {
       const g = game.state.guilds?.[ev.guild];
@@ -1069,6 +1075,13 @@ export function createHud(root, game, { touch, onAct }) {
     } else if (panel.kind === 'house') {
       title = '🏠 집';
       html = houseHtml(a, panel.plot);
+    } else if (panel.kind === 'cross' && data.objects[panel.obj].ferry) {
+      // 오가는 배(v0.9): 짐·귀환 지점은 그대로, 언제든 되돌아온다
+      const to = data.lists.regions.find((r) => r.id === data.objects[panel.obj].cross);
+      title = '⛵ ' + esc(data.objects[panel.obj].name);
+      html = `<p>강두의 배로 <b>${esc(to.settlements[0].name)}</b>에 간다. 이 배는 언제든 오간다.</p>`
+        + `<div class="btns"><button data-act="cross-go" data-v="${esc(panel.obj)}">⛵ 배 타기</button><button data-act="close">아직</button></div>`
+        + '<p class="muted">📦 창고 짐과 귀환 지점은 그대로다. 가방과 입은 장비만 같이 간다.</p>';
     } else if (panel.kind === 'cross') {
       // 안개 벽 건너기(v0.6): 되돌아올 수 없다는 걸 분명히 묻는다
       const to = data.lists.regions.find((r) => r.id === data.objects[panel.obj].cross);

@@ -5,6 +5,7 @@
 // 생활 단계(v0.5.2, 튜토리얼 섬): 가지기(have)·마을 사업(project)은 1초마다 보고, 먹기·맡기기·고치기·팔기는 그 명령이 알린다(questNote).
 // 고치기는 고칠 것이 하나도 없으면 그냥 넘어간다. 단계 보상(step.reward)은 그 단계를 넘길 때 준다.
 
+import { closeVein, openVein } from './veins.js';
 import { addEntry, slotsNeeded, countItem, takeQty, keyOf } from '../inventory.js';
 import { convertStats, starOf } from '../formulas.js';
 import { sitePos, npcPos, objPos, storeOf, reachable } from '../world.js';
@@ -92,6 +93,8 @@ function complete(ctx, a, id) {
   ctx.emit('quest.done', { actor: a.id, quest: id, reward, next: q.next || null });
   const nq = q.next ? ctx.data.quests[q.next] : null;
   // 장이 바뀌면 끝·시작을 알린다(다음 장이 아직 없으면 끝만)
+  // 세계 사건(v0.9): 영맥이 한꺼번에 움직인다 — 모든 섬의 순환 산지가 새로 열린다
+  if (q.onDone === 'veinShift') shiftVeins(ctx);
   // 장에 아직 붙지 않은 퀘스트가 남았으면(more) 끝이 아니라 '이야기 쉼'이다(v0.6)
   const chDef = ctx.data.chapters.find((c) => c.id === q.chapter);
   if (q.kind === 'main' && !nq && chDef?.more) ctx.emit('story.pause', { actor: a.id, chapter: q.chapter });
@@ -531,3 +534,13 @@ export const nearNpc = (ctx, a, npc, range = TALK_RANGE) => {
   const p = npcPos(ctx, npc);
   return !!p && Math.hypot(a.x - p.x, a.z - p.z) <= range;
 };
+
+export function shiftVeins(ctx) {
+  const old = Object.values(ctx.state.veins).filter((v) => !v.common);
+  ctx.emit('world.veinShift', { closed: old.length });
+  for (const v of old) closeVein(ctx, v);
+  for (const region of ctx.data.lists.regions) {
+    if (!ctx.state.regions[region.id]) continue;
+    for (const vc of region.veins) for (let i = 0; i < (vc.rotating || 0); i++) openVein(ctx, region, vc, { initial: true });
+  }
+}

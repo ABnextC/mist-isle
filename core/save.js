@@ -388,6 +388,28 @@ const MIGRATIONS = [
       for (const a of Object.values(st.actors)) a.guild ??= null;
     },
   },
+  {
+    // v0.8.1 → v0.9: 불과 서리 능선(5장). 새 지역의 마을·산지·짐승·자리 무리를 만든다
+    from: 15,
+    to: 16,
+    run(st, data) {
+      st.meta.engine = '0.9.0';
+      const ctx = migrationCtx(st, data, 0x90e3b7a1);
+      const cfg = data.config;
+      for (const region of data.lists.regions) {
+        if (st.regions[region.id]) continue;
+        const density = {};
+        for (const fam of Object.keys(cfg.families)) density[fam] = 1;
+        st.regions[region.id] = { id: region.id, density };
+        for (const sdef of region.settlements) if (!st.settlements[sdef.id]) st.settlements[sdef.id] = newSettlement(region, sdef, cfg);
+        for (const vc of region.veins) {
+          if (vc.common) openVein(ctx, region, vc, { common: true });
+          for (let i = 0; i < (vc.rotating || 0); i++) openVein(ctx, region, vc, { initial: true });
+        }
+      }
+      initMobs(ctx);
+    },
+  },
 ];
 
 // v0.5.2: 1~2장 퀘스트에 생활 단계가 끼었다. 하던 단계 번호를 새 번호로(앞에 낀 단계는 건너뛴다)

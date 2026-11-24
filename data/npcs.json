@@ -276,5 +276,32 @@
       "정오까지 기다리겠소.",
       "본토의 아이들은 기다려 주지 않소."
     ]
+  },
+  {
+    "id": "gangdu_ridge",
+    "name": "강두",
+    "title": "경비대장",
+    "at": "s_ash",
+    "dx": -6,
+    "dz": -8,
+    "yaw": 0.4,
+    "look": {
+      "body": "m",
+      "seed": 43,
+      "chest": "light",
+      "legs": "light",
+      "weapon": "wpn_spear_copper",
+      "tint": {
+        "scarf": "#3e6a8a",
+        "lthr": "#5a3a22",
+        "linen": "#6a6a5a",
+        "pad": "#4a4236"
+      }
+    },
+    "chat": [
+      "능선 바람은 뜨겁고, 고개 바람은 차다. 둘 다 사람 잡아.",
+      "해든 녀석, 여기까지 따라왔군."
+    ],
+    "appear": "c5_ridge"
   }
 ]

@@ -254,6 +254,7 @@ export function createFlora(scene, { hf, paths, ground, region, tier, mats, ctex
   // 안개 늪(v0.6): 나무가 드물고, 물가엔 쓰러진 나무와 그루터기가 많다
   const swamp = (region.zones || []).find((zz) => zz.id === 'swamp');
   const inSwamp = (z) => swamp && z > swamp.z0 - 4;
+  const zoneAt = (z) => (region.zones || []).reduce((best, zz) => (z > zz.z0 - 4 ? zz : best), null);
   if (zone) {
     const fstep = 9 / Math.sqrt(k);
     const groups = Object.values(game.state.mobGroups || {});
@@ -262,7 +263,10 @@ export function createFlora(scene, { hf, paths, ground, region, tier, mats, ctex
         const px = x + (R() - 0.5) * fstep * 0.9;
         const pz = z + (R() - 0.5) * fstep * 0.9;
         if (R() > 0.3 + Math.min(0.25, (pz - zone.z0) / 300)) continue;
-        if (inSwamp(pz) && (R() > 0.18 || hf.height(px, pz) < 0.35)) continue;
+        if (inSwamp(pz) && hf.height(px, pz) < 0.35) continue;
+        // 구역마다 나무 밀도(v0.9): 늪은 드물고, 잿빛 능선·설원은 거의 맨땅
+        const zz = zoneAt(pz);
+        if (zz?.trees != null && R() > zz.trees) continue;
         if (nearNode(px, pz, 4.5) || groups.some((g) => Math.hypot(g.x - px, g.z - pz) < g.radius + 3)) continue;
         if (towns.some((town) => Math.hypot(px - town.x, pz - town.z) < town.radius + 6)) continue;
         const g = groundAt(hf, paths, px, pz);
@@ -297,7 +301,7 @@ export function createFlora(scene, { hf, paths, ground, region, tier, mats, ctex
       const g = groundAt(hf, paths, px, pz);
       if (g.path > 0.2) continue;
       const roll = R();
-      if (g.grass > 0.6 && g.h > 1.8) {
+      if (g.grass > 0.6 && g.h > 1.8 && !((zoneAt(pz)?.bare || 0) > 0.5)) {
         if (roll < 0.05 * k * 3 && !nearNode(px, pz, 2.5)) flowers.push({ x: px, y: g.h - 0.02, z: pz, ry: R() * 6.28, s: 0.7 + R() * 0.6 });
         else if (roll > 0.994 && !nearNode(px, pz, 3)) bushLists[Math.floor(R() * 2)].push({ x: px, y: g.h - 0.1, z: pz, ry: R() * 6.28, s: 0.55 + R() * 0.35 });
       }
@@ -362,6 +366,7 @@ export function createFlora(scene, { hf, paths, ground, region, tier, mats, ctex
       if (shade < 0.25) continue;
       const roll = R();
       if (nearNode(px, pz, 2.5)) continue;
+      if ((zoneAt(pz)?.bare || 0) > R()) continue;
       if (roll < 0.3 * shade) {
         fernLists[Math.floor(R() * 3)].push({ x: px, y: g.h - 0.05, z: pz, ry: R() * 6.28, s: 0.7 + R() * 0.6 });
       } else if (roll > 0.988 - 0.008 * shade) {

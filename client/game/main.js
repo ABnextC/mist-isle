@@ -401,7 +401,9 @@ async function boot() {
       case 'garden-plant': { const [slot, item] = String(v).split(':'); game.dispatch({ type: 'GARDEN_PLANT', actor: PID, slot: +slot, item }); break; }
       case 'garden-harvest': game.dispatch({ type: 'GARDEN_HARVEST', actor: PID, slot: +v }); break;
       case 'cross-go': {
-        game.dispatch({ type: 'QUEST_USE', actor: PID, obj: v });
+        // 오가는 배(v0.9): 퀘스트로 타는 게 아니면 그냥 배를 탄다
+        const viaQuest = !data.objects[v]?.ferry || useDue(questCtx(game), me(), v);
+        game.dispatch({ type: viaQuest ? 'QUEST_USE' : 'FERRY', actor: PID, obj: v });
         hud.close();
         break;
       }
@@ -770,7 +772,7 @@ async function boot() {
     if (ev.actor !== PID) return;
     const fade = document.createElement('div');
     fade.className = 'crossfade';
-    fade.textContent = '🌫️ 안개 벽을 건너는 중…';
+    fade.textContent = ev.ferry ? '⛵ 배로 건너는 중…' : '🌫️ 안개 벽을 건너는 중…';
     document.body.appendChild(fade);
     let saved = false;
     try {

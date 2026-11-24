@@ -72,6 +72,13 @@ export const ERR = {
   rest_wait: '방금 쉬었다(조금 뒤에 다시)',
   slot_busy: '이미 심은 자리다',
   not_ripe: '아직 덜 자랐다',
+  has_guild: '이미 조합에 들어 있다',
+  bad_name: '조합 이름은 두 글자 이상',
+  name_taken: '같은 이름의 조합이 있다',
+  guild_full: '조합 자리가 다 찼다',
+  no_guild: '든 조합이 없다',
+  ai_full: 'AI 조합원 자리가 없다(사람이 넷보다 적을 때만 채운다)',
+  guild_store_full: '조합 창고가 꽉 찼다(명성이 오르면 넓어진다)',
   need_items: '건넬 물건이 모자라다(추적 줄에 센 것을 보자)',
   // 퀘스트(v0.5)
   no_npc: '그런 사람은 없음',

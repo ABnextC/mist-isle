@@ -3,7 +3,7 @@
 
 // 퀘스트 단계 종류(v0.5.2에 생활 단계를 더했다)
 export const STEP_TYPES = ['talk', 'go', 'kill', 'use', 'defend', 'have', 'eat', 'store', 'repair', 'sell', 'project', 'faction'];
-export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects', 'npcs', 'quests', 'unlocks', 'factions', 'housing'];
+export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects', 'npcs', 'quests', 'unlocks', 'factions', 'housing', 'guilds'];
 
 export function buildData(raw) {
   const problems = [];
@@ -232,7 +232,13 @@ export function buildData(raw) {
   for (const p of housing.plants) if (!items[p.item] || !items[p.out]) problems.push(`텃밭 ${p.item}: 물건 없음`);
   if (problems.length) throw new Error('데이터 오류\n- ' + problems.join('\n- '));
 
+  // 조합(v0.8.1)
+  const guilds = raw.guilds || { create: { silver: 500 }, minSize: 4, maxSize: 20, aiRate: 0, jobsPerDay: 0, levels: [{ at: 0, name: '조합', store: 30 }], perks: [], jobs: [] };
+  for (const j of guilds.jobs) if (!items[j.item]) problems.push(`조합 일감 ${j.item} 없음`);
+  if (problems.length) throw new Error('데이터 오류\n- ' + problems.join('\n- '));
+
   return {
+    guilds,
     housing,
     factions,
     config,

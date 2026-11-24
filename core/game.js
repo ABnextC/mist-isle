@@ -4,6 +4,7 @@
 //   game.advance(초)  — 30Hz 빠른 틱(이동·행동)과 1초 월드 틱을 돌린다
 //   game.save() / loadGame({ data, save })
 
+import { guildsHourly } from './systems/guilds.js';
 import { homeStatics } from './systems/housing.js';
 import { factionOnEvent } from './systems/factions.js';
 import { makeRng } from './rng.js';
@@ -98,6 +99,7 @@ function wrap(ctx, bus) {
         state.clock.hour = h;
         densityHourly(ctx);
         econHourly(ctx);
+        guildsHourly(ctx); // 조합 일감·AI 조합원(v0.8.1)
       }
       const d = ctx.clock.day(state.t);
       if (d !== state.clock.day) {

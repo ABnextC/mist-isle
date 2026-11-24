@@ -378,6 +378,16 @@ const MIGRATIONS = [
       for (const a of Object.values(st.actors)) a.house ??= null;
     },
   },
+  {
+    // v0.8 → v0.8.1: 조합
+    from: 14,
+    to: 15,
+    run(st) {
+      st.meta.engine = '0.8.1';
+      st.guilds ??= {};
+      for (const a of Object.values(st.actors)) a.guild ??= null;
+    },
+  },
 ];
 
 // v0.5.2: 1~2장 퀘스트에 생활 단계가 끼었다. 하던 단계 번호를 새 번호로(앞에 낀 단계는 건너뛴다)

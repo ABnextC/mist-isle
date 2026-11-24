@@ -2,6 +2,7 @@
 // 검증 단계는 상태를 바꾸지 않는다. 실행 단계는 실패하지 않는다.
 // 싱글에서는 로컬 코어가, 멀티에서는 서버가 같은 함수를 돌린다.
 
+import { guildOf, newGuild, trimAgents, aiRoom, hireable, rollJobs, jobProgress, storeCap } from './systems/guilds.js';
 import { plotDef, tierDef, nextTier, homeOf, nearPlot, comfortOf, restValue, plantDef } from './systems/housing.js';
 import { feeMult, recipeAllowed, factionDef, factionOf, tasksOf, taskDone, gainInfluence } from './systems/factions.js';
 import { keyOf, findEntry, takeQty, addEntry, slotsNeeded, effectiveProps, avgProps, bonusKey, qtyOf, countItem } from './inventory.js';
@@ -759,6 +760,157 @@ const CONTRIBUTE = {
 
 // ── 퀘스트(v0.5) ────────────────────────────────────
 // NPC와 대화: 이 NPC와 이야기해야 넘어가는 퀘스트 단계를 넘긴다(없으면 그냥 인사)
+// ── 조합(v0.8.1) ────────────────────────────────
+// 조합 일은 게시판 앞에서 한다(창고는 창고 앞에서)
+const boardAt = (ctx, a) => ctx.statics.find((o) => o.kind === 'board' && Math.hypot(o.x - a.x, o.z - a.z) <= BOARD_RANGE) || null;
+function guildMember(ctx, a) {
+  const g = guildOf(ctx, a);
+  return g || 'no_guild';
+}
+
+const GUILD_CREATE = {
+  validate(ctx, a, c) {
+    if (!isUnlocked(ctx, a, 'guild')) return 'locked';
+    if (a.guild) return 'has_guild';
+    const b = boardAt(ctx, a);
+    if (!b) return 'too_far';
+    const name = String(c.name || '').trim().slice(0, 14);
+    if (name.length < 2) return 'bad_name';
+    if (Object.values(ctx.state.guilds || {}).some((g) => g.name === name)) return 'name_taken';
+    if (a.silver < ctx.data.guilds.create.silver) return 'no_silver';
+    return { name, at: b.at };
+  },
+  execute(ctx, a, c, p) {
+    a.silver -= ctx.data.guilds.create.silver;
+    const g = newGuild(ctx, a, p.name, p.at);
+    ctx.emit('guild.create', { actor: a.id, guild: g.id, name: g.name });
+  },
+};
+
+const GUILD_JOIN = {
+  validate(ctx, a, c) {
+    if (!isUnlocked(ctx, a, 'guild')) return 'locked';
+    if (a.guild) return 'has_guild';
+    if (!boardAt(ctx, a)) return 'too_far';
+    const g = ctx.state.guilds?.[c.guild];
+    if (!g) return 'bad_args';
+    if (g.members.length >= ctx.data.guilds.maxSize) return 'guild_full';
+    return { g };
+  },
+  execute(ctx, a, c, p) {
+    p.g.members.push(a.id);
+    a.guild = p.g.id;
+    trimAgents(ctx, p.g);
+    ctx.emit('guild.join', { actor: a.id, guild: p.g.id });
+  },
+};
+
+const GUILD_LEAVE = {
+  validate(ctx, a) {
+    const g = guildMember(ctx, a);
+    return typeof g === 'string' ? g : { g };
+  },
+  execute(ctx, a, c, p) {
+    const g = p.g;
+    g.members = g.members.filter((id) => id !== a.id);
+    a.guild = null;
+    if (!g.members.length) {
+      delete ctx.state.guilds[g.id]; // 사람이 없으면 조합은 흩어진다(AI만 남기지 않는다)
+      ctx.emit('guild.disband', { guild: g.id, name: g.name });
+    } else if (g.founder === a.id) g.founder = g.members[0];
+    ctx.emit('guild.leave', { actor: a.id, guild: g.id });
+  },
+};
+
+// AI 개척민 들이기: 사람 빈자리만큼(보충)
+const GUILD_HIRE = {
+  validate(ctx, a, c) {
+    const g = guildMember(ctx, a);
+    if (typeof g === 'string') return g;
+    if (!boardAt(ctx, a)) return 'too_far';
+    if (g.agents.length >= aiRoom(ctx, g)) return 'ai_full';
+    if (!hireable(ctx, g).some((x) => x.id === c.agent)) return 'bad_args';
+    return { g };
+  },
+  execute(ctx, a, c, p) {
+    p.g.agents.push(c.agent);
+    ctx.emit('guild.hire', { actor: a.id, guild: p.g.id, agent: c.agent });
+  },
+};
+const GUILD_DISMISS = {
+  validate(ctx, a, c) {
+    const g = guildMember(ctx, a);
+    if (typeof g === 'string') return g;
+    if (!g.agents.includes(c.agent)) return 'bad_args';
+    return { g };
+  },
+  execute(ctx, a, c, p) {
+    p.g.agents = p.g.agents.filter((x) => x !== c.agent);
+    ctx.emit('guild.agentLeft', { guild: p.g.id, agent: c.agent });
+  },
+};
+
+// 일감 채우기: 가방·그 마을 창고에서 넣고, 넣은 만큼 은화를 받는다
+const GUILD_GIVE = {
+  validate(ctx, a, c) {
+    const g = guildMember(ctx, a);
+    if (typeof g === 'string') return g;
+    if (!boardAt(ctx, a)) return 'too_far';
+    rollJobs(ctx, g);
+    const job = g.jobs.find((j) => j.id === c.job);
+    if (!job || job.done) return 'bad_args';
+    const lists = reachable(ctx, a);
+    const have = countItem(lists, job.item);
+    const n = Math.min(have, job.qty - job.got, Math.max(1, c.qty | 0 || have));
+    if (n <= 0) return 'need_items';
+    return { g, job, lists, n };
+  },
+  execute(ctx, a, c, p) {
+    takeNeeds(p.lists, { [p.job.item]: p.n });
+    const put = jobProgress(ctx, p.g, p.job, p.n, a.id);
+    a.silver += put * p.job.pay;
+    ctx.emit('guild.give', { actor: a.id, guild: p.g.id, item: p.job.item, qty: put, silver: put * p.job.pay });
+  },
+};
+
+// 조합 창고: 어느 마을 창고 앞에서든 같이 쓴다
+const GUILD_PUT = {
+  validate(ctx, a, c) {
+    const g = guildMember(ctx, a);
+    if (typeof g === 'string') return g;
+    if (!stationFor(ctx, a, 'storage')) return 'not_at_storage';
+    const e = a.bag.find((x) => keyOf(x) === c.key);
+    if (!e) return 'no_item';
+    const qty = e.uid ? 1 : Math.min(e.qty, Math.max(1, c.qty | 0 || e.qty));
+    const probe = e.uid ? e : { ...e, qty };
+    if (g.store.length + slotsNeeded(g.store, [probe]) > storeCap(ctx, g)) return 'guild_store_full';
+    return { g, e, qty };
+  },
+  execute(ctx, a, c, p) {
+    if (p.e.uid) { a.bag.splice(a.bag.indexOf(p.e), 1); addEntry(p.g.store, p.e); }
+    else { takeQty(a.bag, keyOf(p.e), p.qty); addEntry(p.g.store, { ...p.e, qty: p.qty }); }
+    ctx.emit('guild.put', { actor: a.id, guild: p.g.id, item: p.e.item, qty: p.qty });
+  },
+};
+const GUILD_TAKE = {
+  validate(ctx, a, c) {
+    const g = guildMember(ctx, a);
+    if (typeof g === 'string') return g;
+    if (!stationFor(ctx, a, 'storage')) return 'not_at_storage';
+    const e = g.store.find((x) => keyOf(x) === c.key);
+    if (!e) return 'no_item';
+    const qty = e.uid ? 1 : Math.min(e.qty, Math.max(1, c.qty | 0 || e.qty));
+    const probe = e.uid ? e : { ...e, qty };
+    if (a.bag.length + slotsNeeded(a.bag, [probe]) > ctx.cfg.bag.slots) return 'bag_full';
+    return { g, e, qty };
+  },
+  execute(ctx, a, c, p) {
+    if (p.e.uid) { p.g.store.splice(p.g.store.indexOf(p.e), 1); addEntry(a.bag, p.e); }
+    else { takeQty(p.g.store, keyOf(p.e), p.qty); addEntry(a.bag, { ...p.e, qty: p.qty }); }
+    ctx.emit('guild.take', { actor: a.id, guild: p.g.id, item: p.e.item, qty: p.qty });
+  },
+};
+
 // ── 내 집(v0.8) ─────────────────────────────────
 // 재료는 가방과 그 집터 마을 창고에서 센다
 const homeLists = (a, at) => [a.bag, storeOf(a, at)];
@@ -1049,6 +1201,7 @@ const QUEST_TRACK = {
 const HANDLERS = {
   TALK, QUEST_ACCEPT, QUEST_USE, QUEST_TRACK, FACTION_JOIN, FACTION_TASK,
   HOUSE_BUY, HOUSE_UPGRADE, HOUSE_PLACE, HOUSE_TAKE, REST, GARDEN_PLANT, GARDEN_HARVEST,
+  GUILD_CREATE, GUILD_JOIN, GUILD_LEAVE, GUILD_HIRE, GUILD_DISMISS, GUILD_GIVE, GUILD_PUT, GUILD_TAKE,
   MOVE, MOVE_INPUT, GATHER, CRAFT, EAT, STORE, TAKE, SET_AUTOPILOT, RECALL,
   MARKET_SELL, MARKET_BUY, MARKET_CANCEL, MARKET_DUMP, ORDER_DELIVER, REPAIR,
   EQUIP, UNEQUIP, ATTACK, DODGE, BLOCK, SKIN, SET_HOME, SHIP, CONTRIBUTE,

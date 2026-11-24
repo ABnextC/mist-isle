@@ -385,6 +385,14 @@ async function boot() {
         game.dispatch({ type: 'FACTION_TASK', actor: PID, task: v });
         break;
       }
+      case 'guild-create': game.dispatch({ type: 'GUILD_CREATE', actor: PID, name: document.getElementById('guild-name')?.value || '' }); break;
+      case 'guild-join': game.dispatch({ type: 'GUILD_JOIN', actor: PID, guild: v }); break;
+      case 'guild-leave': game.dispatch({ type: 'GUILD_LEAVE', actor: PID }); break;
+      case 'guild-hire': game.dispatch({ type: 'GUILD_HIRE', actor: PID, agent: v }); break;
+      case 'guild-dismiss': game.dispatch({ type: 'GUILD_DISMISS', actor: PID, agent: v }); break;
+      case 'guild-give': game.dispatch({ type: 'GUILD_GIVE', actor: PID, job: v }); break;
+      case 'guild-put': game.dispatch({ type: 'GUILD_PUT', actor: PID, key: v }); break;
+      case 'guild-take': game.dispatch({ type: 'GUILD_TAKE', actor: PID, key: v }); break;
       case 'house-buy': game.dispatch({ type: 'HOUSE_BUY', actor: PID, plot: v }); break;
       case 'house-up': game.dispatch({ type: 'HOUSE_UPGRADE', actor: PID }); break;
       case 'house-place': game.dispatch({ type: 'HOUSE_PLACE', actor: PID, uid: v }); break;
@@ -685,7 +693,7 @@ async function boot() {
       const town = settlementAt({ state }, a);
       // 잠긴 기능(v0.5.2)은 빼고 보인다
       const qc = questCtx(game);
-      const feats = [isUnlocked(qc, a, 'orders') && '주문', '현상금', isUnlocked(qc, a, 'projects') ? '마을 사업' : '마을', isUnlocked(qc, a, 'rumors') && '산지 소문'].filter(Boolean);
+      const feats = [isUnlocked(qc, a, 'orders') && '주문', '현상금', isUnlocked(qc, a, 'projects') ? '마을 사업' : '마을', isUnlocked(qc, a, 'rumors') && '산지 소문', isUnlocked(qc, a, 'guild') && '조합'].filter(Boolean);
       best.label = `${town ? town.name + ' ' : '마을 '}게시판 — ${feats.join('·')}`;
       best.verb = '보기';
       best.radius = 1.2;

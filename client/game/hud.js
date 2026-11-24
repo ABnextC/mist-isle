@@ -14,6 +14,7 @@ import { ENGINE_VERSION } from '../../core/state.js';
 import { stepText, talkDue, boardOffers, available, TALK_RANGE, takeMet, takeProgress, stepSay } from '../../core/systems/quests.js';
 import { factionOf, rankOf, tasksOf, taskDone } from '../../core/systems/factions.js';
 import { comfortOf, restValue } from '../../core/systems/housing.js';
+import { guildLevel, aiRoom, hireable } from '../../core/systems/guilds.js';
 import { npcPos } from '../../core/world.js';
 import { questCtx, lifeSteps } from './quest.js';
 import { isUnlocked, allowedProject, chapterReached } from '../../core/systems/unlocks.js';
@@ -187,6 +188,13 @@ export function createHud(root, game, { touch, onAct }) {
       banner(`${data.skills[ev.skill].icon} ${data.skills[ev.skill].name} ${ev.level}레벨`);
     } else if (ev.type === 'vein.opened' && !ev.common && game.state.t > 1 && unl(game.state.actors[PID], 'rumors')) {
       toast(`🗺️ 새 산지 소문: 「${ev.name}」 — 마을 게시판에서 볼 수 있다`, 'info');
+    } else if (ev.type?.startsWith('guild.')) {
+      const g = game.state.guilds?.[ev.guild];
+      if (ev.type === 'guild.create' && ev.actor === PID) banner(`🤝 조합 「${ev.name}」을 세웠다`, 3600);
+      else if (ev.type === 'guild.jobDone' && game.state.actors[PID]?.guild === ev.guild) pushFeed(`🤝 조합 일감 완료: ${data.items[ev.item].name} · 명성 +${ev.fame}`);
+      else if (ev.type === 'guild.give' && ev.actor === PID) pushFeed(`🤝 ${data.items[ev.item].name} ${ev.qty} 넣음 · 🪙${ev.silver}`);
+      if (g && panel && (panel.kind === 'board' || panel.kind === 'bag')) renderPanel(true);
+      else if (ev.type === 'guild.leave' && panel?.kind === 'board') renderPanel(true);
     } else if (ev.type === 'house.buy' && ev.actor === PID) {
       banner('🏠 내 집이 생겼다', 3600);
       if (panel?.kind === 'house') renderPanel(true);
@@ -445,6 +453,14 @@ export function createHud(root, game, { touch, onAct }) {
       html += `<h3>${town.name} 창고 <button class="mini" data-act="store-all">재료 전부 넣기</button>${to && mats.length ? ` <button class="mini" data-act="ship-all" data-v="${to.id}" ${a.silver >= allFee ? '' : 'disabled'}>재료 모두 ${esc(to.name)}로 🚚 ${allFee}</button>` : ''}</h3><ul class="list">${srows}</ul>
         <p class="muted">창고는 마을마다 따로다. 작업대에서 만들 때는 그 마을 창고 재료를 함께 쓴다. ${shipOpen ? `🚚는 다른 마을 창고로 바로 보내기(운송비 ${Math.round(standingTier(ctx, a, town.id).ship * 100 * 10) / 10}%, 은화는 사라진다).` : `다른 마을로는 직접 짊어지고 간다. 🔒 ${esc(data.unlocks.transport.name)} — ${esc(data.unlocks.transport.hint)}.`}</p>
         ${a.home === town.id ? `<p class="muted">🏠 여기가 귀환 지점이다.</p>` : `<div class="row"><button data-act="set-home">🏠 ${town.name}을(를) 귀환 지점으로</button></div>`}`;
+      // 조합 창고(v0.8.1): 어느 마을 창고 앞에서든 같이 쓴다
+      const gd = game.state.guilds?.[a.guild];
+      if (gd) {
+        const cap = data.guilds.levels[Math.max(0, guildLevel(ctx, gd) - 1)].store;
+        const grows = sortEntries(gd.store).map((e) => entryRow(e, `<button data-act="guild-take" data-v="${esc(keyOf(e))}">꺼내기</button>`)).join('') || '<li><small>비어 있다</small></li>';
+        const puts = sortEntries(a.bag).filter((e) => !Object.values(a.equip || {}).includes(e.uid)).map((e) => `<button class="mini" data-act="guild-put" data-v="${esc(keyOf(e))}">${data.items[e.item].icon} ${esc(data.items[e.item].name)}</button>`).join(' ');
+        html += `<h3>🤝 ${esc(gd.name)} 조합 창고 ${gd.store.length}/${cap}칸</h3><ul class="list">${grows}</ul><p class="muted">가방에서 넣기: ${puts || '없음'}</p>`;
+      }
     } else {
       html += '<p class="muted">창고는 마을 안에서 열린다.</p>';
     }
@@ -645,10 +661,44 @@ export function createHud(root, game, { touch, onAct }) {
 
   function boardHtml(a) {
     const tab = panel.tab || (unl(a, 'orders') ? 'orders' : 'bounty');
-    const body = tab === 'orders' ? ordersHtml(a) : tab === 'bounty' ? bountyHtml(a) : tab === 'town' ? townHtml(a) : veinsHtml(a);
+    const body = tab === 'orders' ? ordersHtml(a) : tab === 'bounty' ? bountyHtml(a) : tab === 'town' ? townHtml(a) : tab === 'guild' ? guildHtml(a) : veinsHtml(a);
     const n = boardOffers(questCtx(game), a).length;
     const lk = (id, label) => (unl(a, id) ? label : `🔒${label}`);
-    return tabsHtml([['orders', lk('orders', '주문')], ['bounty', `현상금${n ? ` ${n}` : ''}`], ['town', '마을'], ['veins', lk('rumors', '산지 소문')]], tab) + body;
+    return tabsHtml([['orders', lk('orders', '주문')], ['bounty', `현상금${n ? ` ${n}` : ''}`], ['town', '마을'], ['veins', lk('rumors', '산지 소문')], ['guild', lk('guild', '조합')]], tab) + body;
+  }
+
+  // 조합(v0.8.1)
+  function guildHtml(a) {
+    if (!unl(a, 'guild')) return lockCard('guild');
+    const ctx = questCtx(game);
+    const GD = data.guilds;
+    const all = Object.values(game.state.guilds || {});
+    const g = game.state.guilds?.[a.guild];
+    if (!g) {
+      const rows = all.map((x) => `<li><span>🤝 ${esc(x.name)} · ${esc(GD.levels[guildLevel(ctx, x) - 1].name)} · 사람 ${x.members.length}${x.agents.length ? ` + AI ${x.agents.length}` : ''}</span><button data-act="guild-join" data-v="${x.id}">들기</button></li>`).join('');
+      return `<p>조합은 함께 큰 일감을 채우고 창고를 같이 쓰는 모임이다. 사람이 넷보다 적으면 빈자리를 AI 개척민으로 채울 수 있다.</p>`
+        + `<h3>조합 세우기 (🪙${GD.create.silver})</h3><div class="row"><input id="guild-name" maxlength="14" placeholder="조합 이름"> <button data-act="guild-create">세우기</button></div>`
+        + `<h3>들 수 있는 조합</h3><ul class="list">${rows || '<li class="muted">아직 조합이 없다</li>'}</ul>`;
+    }
+    const lv = guildLevel(ctx, g);
+    const next = GD.levels[lv];
+    const people = g.members.map((id) => esc(game.state.actors[id]?.name || id)).join(', ');
+    const agents = g.agents.map((id) => {
+      const ag = game.state.econ.agents.find((x) => x.id === id);
+      return `<li><span>🤖 ${esc(ag?.name || id)} · ${esc(data.items[ag?.item]?.name || data.recipes[ag?.recipe]?.name || ag?.role || '')}</span><button data-act="guild-dismiss" data-v="${id}">내보내기</button></li>`;
+    }).join('');
+    const room = aiRoom(ctx, g) - g.agents.length;
+    const hire = room > 0 ? hireable(ctx, g).slice(0, 8).map((x) => `<li><span>${esc(x.name)} · ${esc(data.items[x.item]?.name || data.recipes[x.recipe]?.name || x.role)}</span><button data-act="guild-hire" data-v="${x.id}">들이기</button></li>`).join('') : '';
+    const lists = [a.bag, ...(settlementAt({ state: game.state }, a) ? [storeOf(a, settlementAt({ state: game.state }, a).id)] : [])];
+    const jobs = g.jobs.map((j) => {
+      const mine = countItem(lists, j.item);
+      return `<li><span>${esc(data.items[j.item].name)} ${j.got}/${j.qty}${j.ai ? ` (AI ${j.ai})` : ''} · 개당 🪙${j.pay} · 명성 ${j.fame}</span>${j.done ? '✅' : `<button data-act="guild-give" data-v="${j.id}"${mine ? '' : ' disabled'}>넣기 ${Math.min(mine, j.qty - j.got)}</button>`}</li>`;
+    }).join('');
+    const perks = GD.perks.map((p) => `<li>${p.level <= lv ? '✅' : '▫️'} <b>${esc(GD.levels[p.level - 1].name)}</b> ${esc(p.text)}</li>`).join('');
+    return `<div class="qtag">🤝 ${esc(g.name)} · ${esc(GD.levels[lv - 1].name)}</div><p>명성 ${g.fame}${next ? ` / ${next.at} (다음: ${esc(next.name)})` : ''} · 창고 ${g.store.length}/${GD.levels[lv - 1].store}칸(마을 창고 앞에서)</p>`
+      + `<h3>오늘의 조합 일감</h3><ul class="list">${jobs}</ul><p class="muted">넣은 만큼 은화를 받고, 다 채우면 조합 명성이 오른다. AI 조합원은 매시간 조금씩 보탠다.</p>`
+      + `<h3>조합원</h3><p>${people}</p><ul class="list">${agents}</ul>${room > 0 ? `<p class="muted">AI 빈자리 ${room} — 사람이 넷보다 적을 때만 채운다.</p><ul class="list">${hire}</ul>` : ''}`
+      + `<h3>명성 혜택(조합원 모두)</h3><ul class="list">${perks}</ul><div class="btns"><button data-act="guild-leave">조합에서 나가기</button></div>`;
   }
 
   // ── 퀘스트(v0.5): 대화·일지·현상금 ─────────────────

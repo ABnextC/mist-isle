@@ -6,6 +6,7 @@
 import { hashStr } from '../terrain.js';
 import { seedState, makeRng } from '../rng.js';
 import { gated } from './unlocks.js';
+import { guildPerks } from './guilds.js';
 
 export const factionDef = (ctx, id) => ctx.data.factions.list.find((f) => f.id === id) || null;
 export const factionOf = (a) => a?.faction?.id || null;
@@ -21,9 +22,9 @@ export function rankOf(ctx, a) {
 
 export function perksOf(ctx, a) {
   const f = factionDef(ctx, factionOf(a));
-  if (!f) return [];
   const r = rankOf(ctx, a);
-  return f.perks.filter((p) => p.rank <= r);
+  // 조합 혜택(v0.8.1)도 같은 꼴이라 함께 센다
+  return [...(f ? f.perks.filter((p) => p.rank <= r) : []), ...guildPerks(ctx, a)];
 }
 
 const hasSkill = (p, skill) => p.skills === '*' || p.skills?.includes(skill);

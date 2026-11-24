@@ -19,6 +19,7 @@ import { stepNpc } from '../core/systems/quests.js';
 import { rankOf, xpMult, extraChance, feeMult, recipeAllowed, tasksOf, factionOnEvent } from '../core/systems/factions.js';
 import { addXp } from '../core/systems/progress.js';
 import { plotPos, homeOf, comfortOf } from '../core/systems/housing.js';
+import { hireable, guildLevel } from '../core/systems/guilds.js';
 import { stepText } from '../core/systems/quests.js';
 import { readFileSync } from 'node:fs';
 
@@ -1301,7 +1302,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '0.8.0');
+  eq(st.meta.engine, '0.8.1');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1493,7 +1494,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '0.8.0');
+  eq(st.meta.engine, '0.8.1');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -1635,6 +1636,63 @@ test('내 집: 4장에 들면 집터를 산다. 올리고, 가구로 아늑함�
   // 저장·불러오기
   const again = loadGame({ data, save: g.save() });
   eq(again.state.houses[plot.id].tier, 'house', '저장된 집');
+});
+
+console.log('조합 (v0.8.1)');
+
+test('조합: 사람이 세우고 든다. AI 개척민은 사람이 넷보다 적을 때 빈자리만 채우고, 사람이 늘면 나간다', () => {
+  const g = createGame({ data, seed: 16, actors: [{ id: 'p1', kind: 'player' }, { id: 'p2', kind: 'player' }, { id: 'p3', kind: 'player' }, { id: 'p4', kind: 'player' }] });
+  const st = g.state;
+  const board = g.statics.find((o) => o.kind === 'board' && o.at === 's_port');
+  const P = ['p1', 'p2', 'p3', 'p4'].map((id) => st.actors[id]);
+  for (const a of P) {
+    Object.assign(a, { x: board.x + 1.5, z: board.z + 1.5, silver: 2000 });
+    for (const ch of data.chapters.slice(0, 3)) for (const id of ch.quests) a.quests.done[id] = 1;
+  }
+  ok(g.dispatch({ type: 'GUILD_CREATE', actor: 'p1', name: '갈대 장인회' }).ok, '세우기');
+  const gid = P[0].guild;
+  const G1 = st.guilds[gid];
+  eq(G1.jobs.length, data.guilds.jobsPerDay, '오늘 일감');
+  eq(g.dispatch({ type: 'GUILD_CREATE', actor: 'p2', name: '갈대 장인회' }).error, 'name_taken', '같은 이름');
+  // 혼자면 AI 셋까지
+  const W = { state: st, data, statics: g.statics, cfg: data.config, clock: g.clock, emit: () => {} };
+  const free = hireable(W, G1);
+  ok(free.length >= 3 && free.every((x) => st.settlements[x.home].region === 'swamp_shore'), '본섬 개척민');
+  for (let i = 0; i < 3; i++) ok(g.dispatch({ type: 'GUILD_HIRE', actor: 'p1', agent: free[i].id }).ok, `AI ${i}`);
+  eq(g.dispatch({ type: 'GUILD_HIRE', actor: 'p1', agent: free[3].id }).error, 'ai_full', 'AI는 셋까지');
+  // AI는 매시간 조금씩 넣지만 혼자 하루에 다 채우진 못한다
+  g.advance(3600);
+  ok(G1.jobs.every((j) => j.ai > 0 && j.ai < j.qty), 'AI 보조');
+  // 사람이 들면 AI가 나간다
+  ok(g.dispatch({ type: 'GUILD_JOIN', actor: 'p2', guild: gid }).ok, 'p2 들기');
+  eq(G1.agents.length, 2, 'AI 하나 나감');
+  for (const id of ['p3', 'p4']) ok(g.dispatch({ type: 'GUILD_JOIN', actor: id, guild: gid }).ok, `${id} 들기`);
+  eq(G1.agents.length, 0, '사람 넷이면 AI 없음');
+  // 일감 채우기: 넣은 만큼 은화, 다 채우면 명성
+  const job = G1.jobs.find((j) => !j.done);
+  const need = job.qty - job.got;
+  P[1].bag.push({ item: job.item, lot: null, bonus: null, qty: need });
+  const s0 = P[1].silver;
+  ok(g.dispatch({ type: 'GUILD_GIVE', actor: 'p2', job: job.id }).ok, '일감 넣기');
+  eq(P[1].silver - s0, need * job.pay, '넣은 만큼 은화');
+  ok(job.done && G1.fame >= job.fame, '명성');
+  // 명성 단계 혜택은 조합원 모두
+  G1.fame = 700;
+  eq(guildLevel(W, G1), 3, '이름난 조합');
+  ok(xpMult(W, P[3], 'mining') >= 1.05 && feeMult(W, P[3], 'ship') === 0.85, '조합원 혜택');
+  // 창고
+  const sto = st.settlements.s_port.stations.find((x) => x.type === 'storage');
+  Object.assign(P[2], { x: sto.x + 1.2, z: sto.z + 1.2 });
+  P[2].bag.push({ item: 'stone', lot: null, bonus: null, qty: 12 });
+  ok(g.dispatch({ type: 'GUILD_PUT', actor: 'p3', key: keyOf(P[2].bag.find((e) => e.item === 'stone')), qty: 12 }).ok, '조합 창고에 넣기');
+  Object.assign(P[3], { x: sto.x + 1.2, z: sto.z + 1.2 });
+  ok(g.dispatch({ type: 'GUILD_TAKE', actor: 'p4', key: keyOf(G1.store[0]), qty: 5 }).ok, '다른 조합원이 꺼내기');
+  eq(countItem([G1.store], 'stone'), 7, '남은 돌');
+  // 모두 나가면 흩어진다
+  for (const id of ['p1', 'p2', 'p3', 'p4']) ok(g.dispatch({ type: 'GUILD_LEAVE', actor: id }).ok, `${id} 나감`);
+  ok(!st.guilds[gid], '흩어짐');
+  const again = loadGame({ data, save: g.save() });
+  eq(again.hash(), g.hash(), '저장 왕복');
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

@@ -9,9 +9,9 @@ import { xpProgress, starOf } from '../../core/formulas.js';
 import { keyOf, effectiveProps, avgProps, countItem, qtyOf } from '../../core/inventory.js';
 import { settlementAt, storeOf, standingTier } from '../../core/world.js';
 import { openProjects, projectOpen, needLeft, silverLeft, projectProgress, shipFee, upkeepOf } from '../../core/settlements.js';
-import { zoneAt } from '../../core/terrain.js';
+import { zoneAt, regionAt } from '../../core/terrain.js';
 import { ENGINE_VERSION } from '../../core/state.js';
-import { stepText, talkDue, boardOffers, available, TALK_RANGE } from '../../core/systems/quests.js';
+import { stepText, talkDue, boardOffers, available, TALK_RANGE, takeMet, takeProgress } from '../../core/systems/quests.js';
 import { npcPos } from '../../core/world.js';
 import { questCtx, lifeSteps } from './quest.js';
 import { isUnlocked, allowedProject, chapterReached } from '../../core/systems/unlocks.js';
@@ -279,8 +279,9 @@ export function createHud(root, game, { touch, onAct }) {
       if (!np || Math.hypot(np.x - a.x, np.z - a.z) > TALK_RANGE + 2.5) close();
     }
     const town = settlementAt({ state: game.state }, a);
-    const zone = zoneAt(data.lists.regions[0], a.x, a.z);
-    set(el.where, town ? `🏘️ ${town.name}${a.home === town.id ? ' 🏠' : ''}` : zone ? `🌲 ${zone.name}` : '🌫️ 난파 해안');
+    const reg = regionAt(data.lists.regions, a.x);
+    const zone = zoneAt(reg, a.x, a.z);
+    set(el.where, town ? `🏘️ ${town.name}${a.home === town.id ? ' 🏠' : ''}` : zone ? `${zone.icon || '🌲'} ${zone.name}` : `🌫️ ${reg.name}`);
 
     // 채집 진행 막대
     if (a.action) {
@@ -400,7 +401,8 @@ export function createHud(root, game, { touch, onAct }) {
     }).join('') || '<li><small>비어 있다</small></li>';
     let html = `${equipHtml(a)}<h3>가방 ${a.bag.length}/${data.config.bag.slots}칸</h3><ul class="list">${rows}</ul>`;
     const ctx = mctx();
-    const others = Object.values(game.state.settlements).filter((s) => !town || s.id !== town.id);
+    const isle = regionAt(data.lists.regions, a.x).id;
+    const others = Object.values(game.state.settlements).filter((s) => s.region === isle && (!town || s.id !== town.id));
     if (town) {
       const store = storeOf(a, town.id);
       const shipOpen = unl(a, 'transport');
@@ -538,7 +540,8 @@ export function createHud(root, game, { touch, onAct }) {
 
   function veinsHtml(a) {
     if (!unl(a, 'rumors')) return lockCard('rumors');
-    const list = Object.values(game.state.veins).filter((v) => !v.common && v.center)
+    const isle = regionAt(data.lists.regions, a.x).id;
+    const list = Object.values(game.state.veins).filter((v) => !v.common && v.center && v.region === isle)
       .sort((x, y) => avgProps(game.state.lots[y.lot].props) - avgProps(game.state.lots[x.lot].props));
     const rows = list.map((v) => {
       const lot = game.state.lots[v.lot];
@@ -679,7 +682,8 @@ export function createHud(root, game, { touch, onAct }) {
           html += `<div class="qnext">📜 다음 이야기 · <b>${esc(nq.name)}</b></div>${(nq.intro || []).map((l) => `<p class="say">${esc(l)}</p>`).join('')}<p class="muted">▶ ${esc(nq.steps[0].text)}</p>`;
         } else if (q.kind === 'main') {
           const ch = data.chapters.find((c) => c.id === q.chapter);
-          html += `<div class="qnext">🏁 ${esc(ch?.name || '')} 끝</div><p class="muted">${esc(ch?.after || '')}</p>`;
+          if (ch?.more) html += `<div class="qnext">📜 이야기는 여기까지</div><p class="muted">${esc(ch.after || '')}</p>`;
+          else html += `<div class="qnext">🏁 ${esc(ch?.name || '')} 끝</div><p class="muted">${esc(ch?.after || '')}</p>`;
         }
       }
       for (const s0 of after.steps) {
@@ -695,7 +699,13 @@ export function createHud(root, game, { touch, onAct }) {
       const q = data.quests[id];
       const st = q.steps[a.quests.active[id].step];
       const ch = data.chapters.find((c) => c.id === q.chapter);
-      return `${head}<div class="qtag">${esc(ch ? ch.name : '의뢰')} · ${esc(q.name)}</div>${st.say.map((l) => `<p class="say">${esc(l)}</p>`).join('')}<div class="btns"><button data-act="talk-do" data-v="${panel.npc}">${esc(st.reply || '알겠다')}</button></div>`;
+      const tag = `${head}<div class="qtag">${esc(ch ? ch.name : '의뢰')} · ${esc(q.name)}</div>`;
+      // 건네기(v0.6): 모자라면 첫마디와 필요한 것만 보인다
+      if (st.take && !takeMet(ctx, a, st)) {
+        const need = takeProgress(ctx, a, st).map((x) => `<li>${esc(data.items[x.item].name)} <b>${x.got}/${x.need}</b></li>`).join('');
+        return `${tag}<p class="say">${esc(st.say[0])}</p><p class="muted">건넬 것(가방·이 마을 창고):</p><ul class="list">${need}</ul><div class="btns"><button data-act="close">모아 오겠습니다</button></div>`;
+      }
+      return `${tag}${st.say.map((l) => `<p class="say">${esc(l)}</p>`).join('')}<div class="btns"><button data-act="talk-do" data-v="${panel.npc}">${esc(st.reply || '알겠다')}</button></div>`;
     }
     panel.chat ??= Math.floor(Math.random() * npc.chat.length);
     return `${head}<p class="say">${esc(npc.chat[panel.chat % npc.chat.length])}</p><div class="btns"><button data-act="close">잘 있어요</button></div>`;
@@ -716,7 +726,7 @@ export function createHud(root, game, { touch, onAct }) {
         body += `<h3>${esc(ch.name)} <small class="muted">${esc(ch.island || '')}</small></h3><ul class="qlist">`;
         for (const id of list) body += Q.active[id] ? activeQuestHtml(a, id) : `<li class="done">✔ ${esc(data.quests[id].name)}</li>`;
         body += '</ul>';
-        if (ch.quests.every((id) => Q.done[id] != null)) body += `<p class="muted">🏁 ${esc(ch.name)} 끝. ${esc(ch.after || '')}</p>`;
+        if (ch.quests.every((id) => Q.done[id] != null)) body += ch.more ? `<p class="muted">📜 ${esc(ch.after || '')}</p>` : `<p class="muted">🏁 ${esc(ch.name)} 끝. ${esc(ch.after || '')}</p>`;
       }
       if (!body) body = '<p class="muted">아직 기록이 없다.</p>';
       body += questItemsHtml(a);
@@ -899,6 +909,15 @@ export function createHud(root, game, { touch, onAct }) {
     else if (panel.kind === 'talk') {
       title = `💬 ${data.npcs[panel.npc]?.name ?? ''}`;
       html = talkHtml(a);
+    } else if (panel.kind === 'cross') {
+      // 안개 벽 건너기(v0.6): 되돌아올 수 없다는 걸 분명히 묻는다
+      const to = data.lists.regions.find((r) => r.id === data.objects[panel.obj].cross);
+      const port = to.settlements[0].name;
+      title = '⛵ 안개 벽 건너기';
+      html = `<p>강두의 배로 안개 벽 너머 <b>${esc(to.island)}</b> ${esc(port)}에 간다. <b>등대섬으로는 돌아올 수 없다.</b></p>`
+        + `<div class="btns"><button data-act="cross-go" data-v="${esc(panel.obj)}">⛵ 건너간다</button><button data-act="close">아직</button></div>`
+        + `<p class="muted">📦 등대섬 두 마을 창고 짐은 ${esc(port)} 창고로 옮겨 준다. 가방과 입은 장비는 그대로 간다.</p>`
+        + '<p class="muted">⚖️ 등대섬 장터에 걸어 둔 내 주문은 거둬서 돌려준다.</p>';
     }
     set(el.ptitle, title);
     setHtml(el.pbody, html);

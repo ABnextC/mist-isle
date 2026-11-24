@@ -9,6 +9,7 @@
 // v0.4: 개척민마다 사는 마을(home)이 있다. 장인은 그 마을에 맞는 작업대가 있어야 일한다.
 // 상인은 다른 마을에서 싸게 사서 운송비를 내고 자기 마을로 가져온다(두 마을 값이 운송비 근처로 묶인다).
 
+import { regionAt } from '../terrain.js';
 import { placeAsk, placeBid, npcSell, baseValue, entryStar, bestBid, tradable, bookOf, ordersOf, cancelOrder, mkey } from '../market.js';
 import { deliver, countDeliverable, deliverable } from '../orders.js';
 import { addEntry, keyOf, takeQty, qtyOf, effectiveProps, avgProps } from '../inventory.js';
@@ -83,7 +84,8 @@ function sourceLot(ctx, agent) {
   const { state, data, cfg, rng } = ctx;
   const type = Object.values(data.nodes).find((n) => n.item === agent.item);
   if (type) {
-    const veins = Object.values(state.veins).filter((v) => v.node === type.id);
+    const rid = state.settlements[agent.home]?.region;
+    const veins = Object.values(state.veins).filter((v) => v.node === type.id && (!rid || v.region === rid));
     if (!veins.length) return null;
     let vein = veins.find((v) => v.common) || veins[0];
     const rot = veins.filter((v) => !v.common);
@@ -92,7 +94,10 @@ function sourceLot(ctx, agent) {
     }
     return vein.lot;
   }
-  const groups = Object.values(state.mobGroups).filter((g) => g.lots?.[agent.item]).sort((x, y) => (x.id < y.id ? -1 : 1));
+  const hr = state.settlements[agent.home]?.region;
+  const groups = Object.values(state.mobGroups)
+    .filter((g) => g.lots?.[agent.item] && (!hr || regionAt(data.lists.regions, g.x).id === hr))
+    .sort((x, y) => (x.id < y.id ? -1 : 1));
   if (!groups.length) return null;
   return groups[rng.int(0, groups.length - 1)].lots[agent.item];
 }
@@ -306,6 +311,8 @@ function carry(ctx, agent, budget) {
   };
   for (const [sid, book] of Object.entries(state.market.books)) {
     if (sid === agent.home) continue;
+    // 다른 섬 장터로는 나르지 않는다(v0.6)
+    if (state.settlements[sid]?.region !== state.settlements[agent.home]?.region) continue;
     const deals = book.asks
       .filter((a) => !(a.kind === 'agent' && a.owner === agent.id) && baseValue(ctx, a.item, a.star) >= T.minValue)
       .map((a) => ({ a, landed: a.price + baseValue(ctx, a.item, a.star) * rate, sell: sellAt(a.item, a.star) }))

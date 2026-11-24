@@ -505,7 +505,8 @@
         "name": "참나무 숲",
         "tier": 2,
         "z0": 250,
-        "fade": 14
+        "fade": 14,
+        "enter": "늑대·멧돼지가 산다. 장비를 갖추자"
       }
     ],
     "sites": [
@@ -1104,6 +1105,641 @@
             "dx": -10.0,
             "dz": 6.0,
             "yaw": -0.9
+          }
+        ]
+      },
+      {
+        "id": "dock",
+        "name": "등대 나루",
+        "beach": [
+          238,
+          0.8
+        ],
+        "r": 6,
+        "structures": [
+          {
+            "kind": "ship_white",
+            "dx": 0.5,
+            "dz": -7.5,
+            "r": 3.4,
+            "rot": 1.5
+          }
+        ],
+        "objects": [
+          {
+            "id": "o_boat",
+            "kind": "door",
+            "dx": 0,
+            "dz": -2.2,
+            "rot": 0,
+            "name": "강두의 배",
+            "verb": "배에 오르기",
+            "cross": "swamp_shore"
+          }
+        ]
+      }
+    ],
+    "island": "등대섬"
+  },
+  {
+    "id": "swamp_shore",
+    "name": "늪 기슭",
+    "island": "안개섬 본섬",
+    "tier": 3,
+    "bounds": [
+      1000,
+      0,
+      1460,
+      460
+    ],
+    "spawn": [
+      1150,
+      3
+    ],
+    "terrain": {
+      "shore": 24,
+      "shoreWobble": 10,
+      "seaFloor": -9,
+      "beach": 1.3,
+      "inland": 8,
+      "hills": 7,
+      "ridge": 22,
+      "townHeight": 1.8,
+      "wadeDepth": -1.1,
+      "edge": 20,
+      "swamp": {
+        "z0": 330,
+        "fade": 36,
+        "level": -0.12,
+        "amp": 1.6
+      }
+    },
+    "settlements": [
+      {
+        "id": "s_port",
+        "name": "갈대 나루",
+        "x": 1190,
+        "z": 62,
+        "radius": 30,
+        "stations": [
+          {
+            "type": "forge",
+            "dx": 10,
+            "dz": 3,
+            "rot": -1.2
+          },
+          {
+            "type": "smelter",
+            "dx": 12,
+            "dz": -7,
+            "rot": -1.6
+          },
+          {
+            "type": "sawbench",
+            "dx": -10,
+            "dz": 3,
+            "rot": 1.2
+          },
+          {
+            "type": "workbench",
+            "dx": -12,
+            "dz": -7,
+            "rot": 1.6
+          },
+          {
+            "type": "loom",
+            "dx": -5,
+            "dz": 12,
+            "rot": 2.8
+          },
+          {
+            "type": "kitchen",
+            "dx": 5,
+            "dz": 12,
+            "rot": -2.8
+          },
+          {
+            "type": "storage",
+            "dx": 0,
+            "dz": -10,
+            "rot": 0
+          },
+          {
+            "type": "tannery",
+            "dx": 15,
+            "dz": 8,
+            "rot": -2.2
+          },
+          {
+            "type": "armorbench",
+            "dx": 7,
+            "dz": -13,
+            "rot": 0.3
+          }
+        ],
+        "structures": [
+          {
+            "kind": "house",
+            "dx": -19,
+            "dz": 15,
+            "r": 2.8,
+            "rot": 0.5
+          },
+          {
+            "kind": "house",
+            "dx": 19,
+            "dz": 15,
+            "r": 2.8,
+            "rot": -0.5
+          },
+          {
+            "kind": "house",
+            "dx": 22,
+            "dz": -2,
+            "r": 2.8,
+            "rot": -1.4
+          },
+          {
+            "kind": "board",
+            "dx": 3,
+            "dz": -2,
+            "r": 0.5
+          },
+          {
+            "kind": "campfire",
+            "dx": 0,
+            "dz": 3,
+            "r": 0.7
+          },
+          {
+            "kind": "market",
+            "dx": -6,
+            "dz": -3,
+            "r": 1.5,
+            "rot": 0.6
+          },
+          {
+            "kind": "house",
+            "dx": -22,
+            "dz": -4,
+            "r": 2.8,
+            "rot": 1.4
+          },
+          {
+            "kind": "crates",
+            "dx": -17,
+            "dz": -19,
+            "r": 1.2,
+            "rot": 0.4
+          },
+          {
+            "kind": "crates",
+            "dx": 13,
+            "dz": -21,
+            "r": 1.2,
+            "rot": -0.3
+          }
+        ],
+        "pop": 70,
+        "cap": 90
+      },
+      {
+        "id": "s_valley",
+        "name": "느티골",
+        "x": 1320,
+        "z": 160,
+        "radius": 18,
+        "flat": "local",
+        "pop": 12,
+        "cap": 16,
+        "stations": [
+          {
+            "type": "storage",
+            "dx": -1,
+            "dz": -9,
+            "rot": 0
+          },
+          {
+            "type": "kitchen",
+            "dx": 7,
+            "dz": -6,
+            "rot": -2.4
+          },
+          {
+            "type": "tannery",
+            "dx": -10,
+            "dz": 2,
+            "rot": 1.5,
+            "build": "pj_v_tannery"
+          },
+          {
+            "type": "sawbench",
+            "dx": 10,
+            "dz": 3,
+            "rot": -1.5,
+            "build": "pj_v_sawbench"
+          },
+          {
+            "type": "smelter",
+            "dx": 11,
+            "dz": -4,
+            "rot": -1.9,
+            "build": "pj_v_smelter"
+          },
+          {
+            "type": "forge",
+            "dx": 5,
+            "dz": 10,
+            "rot": -2.7,
+            "build": "pj_v_forge"
+          },
+          {
+            "type": "armorbench",
+            "dx": -5,
+            "dz": 10,
+            "rot": 2.7,
+            "build": "pj_v_armorbench"
+          }
+        ],
+        "structures": [
+          {
+            "kind": "market",
+            "dx": -8,
+            "dz": -6,
+            "r": 1.5,
+            "rot": 0.5
+          },
+          {
+            "kind": "board",
+            "dx": 3,
+            "dz": -3,
+            "r": 0.5
+          },
+          {
+            "kind": "campfire",
+            "dx": 0,
+            "dz": 2,
+            "r": 0.7
+          },
+          {
+            "kind": "tent",
+            "dx": -14,
+            "dz": -5,
+            "r": 1.9,
+            "rot": 1.1
+          },
+          {
+            "kind": "tent",
+            "dx": 15,
+            "dz": 9,
+            "r": 1.9,
+            "rot": -2.0
+          },
+          {
+            "kind": "tent",
+            "dx": -13,
+            "dz": 9,
+            "r": 1.9,
+            "rot": 2.3,
+            "build": "pj_v_house1"
+          },
+          {
+            "kind": "tent",
+            "dx": 14,
+            "dz": -11,
+            "r": 1.9,
+            "rot": -0.8,
+            "build": "pj_v_house1"
+          },
+          {
+            "kind": "cabin",
+            "dx": 0,
+            "dz": 14,
+            "r": 2.6,
+            "rot": 3.14,
+            "build": "pj_v_house2"
+          },
+          {
+            "kind": "cabin",
+            "dx": -15,
+            "dz": -14,
+            "r": 2.6,
+            "rot": 0.7,
+            "build": "pj_v_house2"
+          }
+        ]
+      }
+    ],
+    "decor": [],
+    "places": [
+      "갈대 둔치",
+      "버들 개울",
+      "물안개 언덕",
+      "검은 진흙밭",
+      "느티 고개",
+      "까마귀 바위",
+      "썩은 나루터",
+      "잠긴 돌길",
+      "이끼 늪둑",
+      "두꺼비 웅덩이",
+      "연잎 못",
+      "안개 둑",
+      "늙은 버드나무",
+      "붉은 갈대밭",
+      "잿빛 모래톱",
+      "부엉이 숲",
+      "외나무다리"
+    ],
+    "propDist": {
+      "mean": 50,
+      "sd": 14,
+      "luckyChance": 0.06,
+      "luckyBonus": [
+        20,
+        35
+      ],
+      "common": [
+        30,
+        40
+      ]
+    },
+    "veins": [
+      {
+        "node": "node_driftwood",
+        "common": 20,
+        "cluster": [
+          4,
+          10
+        ],
+        "start": 25,
+        "rotating": 0
+      },
+      {
+        "node": "node_stone",
+        "common": 24,
+        "cluster": [
+          4,
+          10
+        ],
+        "start": 30,
+        "rotating": 0
+      },
+      {
+        "node": "node_birch",
+        "common": 14,
+        "cluster": [
+          5,
+          14
+        ],
+        "rotating": 2,
+        "nodes": [
+          8,
+          14
+        ],
+        "radius": [
+          20,
+          40
+        ],
+        "life": [
+          5,
+          9
+        ]
+      },
+      {
+        "node": "node_copper",
+        "common": 10,
+        "cluster": [
+          4,
+          9
+        ],
+        "rotating": 2,
+        "nodes": [
+          6,
+          10
+        ],
+        "radius": [
+          15,
+          30
+        ],
+        "life": [
+          5,
+          9
+        ]
+      },
+      {
+        "node": "node_reed",
+        "common": 16,
+        "cluster": [
+          5,
+          10
+        ],
+        "start": 35,
+        "rotating": 1,
+        "nodes": [
+          8,
+          12
+        ],
+        "radius": [
+          20,
+          35
+        ],
+        "life": [
+          5,
+          9
+        ]
+      },
+      {
+        "node": "node_berry",
+        "common": 12,
+        "cluster": [
+          4,
+          9
+        ],
+        "start": 40,
+        "rotating": 1,
+        "nodes": [
+          6,
+          10
+        ],
+        "radius": [
+          15,
+          30
+        ],
+        "life": [
+          5,
+          9
+        ]
+      },
+      {
+        "node": "node_seaweed",
+        "common": 10,
+        "cluster": [
+          4,
+          10
+        ],
+        "rotating": 1,
+        "nodes": [
+          6,
+          10
+        ],
+        "radius": [
+          20,
+          40
+        ],
+        "life": [
+          5,
+          9
+        ]
+      },
+      {
+        "node": "node_mushroom",
+        "common": 8,
+        "cluster": [
+          4,
+          8
+        ],
+        "rotating": 1,
+        "nodes": [
+          5,
+          9
+        ],
+        "radius": [
+          15,
+          25
+        ],
+        "life": [
+          5,
+          9
+        ]
+      },
+      {
+        "node": "node_oak",
+        "common": 22,
+        "cluster": [
+          6,
+          16
+        ],
+        "rotating": 2,
+        "nodes": [
+          8,
+          14
+        ],
+        "radius": [
+          18,
+          32
+        ],
+        "life": [
+          5,
+          9
+        ]
+      },
+      {
+        "node": "node_iron",
+        "common": 12,
+        "cluster": [
+          4,
+          10
+        ],
+        "rotating": 2,
+        "nodes": [
+          6,
+          10
+        ],
+        "radius": [
+          14,
+          26
+        ],
+        "life": [
+          5,
+          9
+        ]
+      }
+    ],
+    "zones": [
+      {
+        "id": "oakwood",
+        "name": "참나무 숲",
+        "tier": 2,
+        "z0": 180,
+        "fade": 14,
+        "enter": "늑대·멧돼지가 산다. 장비를 갖추자"
+      },
+      {
+        "id": "swamp",
+        "name": "안개 늪",
+        "tier": 3,
+        "z0": 330,
+        "fade": 20,
+        "icon": "🌫️",
+        "tint": [
+          0.6,
+          0.66,
+          0.5
+        ],
+        "fog": 1.8,
+        "enter": "발이 물에 잠긴다. 밤엔 망령이 짙다"
+      }
+    ],
+    "sites": [
+      {
+        "id": "landing",
+        "name": "갈대 나루 선착장",
+        "beach": [
+          1150,
+          0.8
+        ],
+        "r": 6,
+        "structures": [
+          {
+            "kind": "ship_white",
+            "dx": -0.5,
+            "dz": -7.5,
+            "r": 3.4,
+            "rot": 1.62
+          }
+        ]
+      },
+      {
+        "id": "mist_village",
+        "name": "물안개 마을",
+        "x": 1110,
+        "z": 366,
+        "r": 14,
+        "flat": 0.75,
+        "structures": [
+          {
+            "kind": "cabin",
+            "dx": -8,
+            "dz": 6,
+            "r": 2.6,
+            "rot": 2.4
+          },
+          {
+            "kind": "cabin",
+            "dx": 8.5,
+            "dz": 5,
+            "r": 2.6,
+            "rot": -2.3
+          },
+          {
+            "kind": "cabin",
+            "dx": 0,
+            "dz": 10.5,
+            "r": 2.6,
+            "rot": 3.1
+          },
+          {
+            "kind": "campfire",
+            "dx": 0,
+            "dz": 1,
+            "r": 0.7
+          },
+          {
+            "kind": "banner_blue",
+            "dx": 5,
+            "dz": -5,
+            "r": 0.25,
+            "rot": 0.4
           }
         ]
       }

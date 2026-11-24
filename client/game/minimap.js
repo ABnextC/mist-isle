@@ -1,5 +1,6 @@
 // 미니맵: 위가 북쪽(z가 큰 쪽). 산지 소문은 점선 고리, 가까운 노드는 점으로.
 
+import { regionAt } from '../../core/terrain.js';
 import { valueNoise } from '../../core/terrain.js';
 import { npcPos } from '../../core/world.js';
 import { hasMark } from '../../core/systems/quests.js';
@@ -8,7 +9,8 @@ import { isUnlocked } from '../../core/systems/unlocks.js';
 const DOT = { logging: '#f2ead2', mining: '#ff9a4a', harvesting: '#a6ec74', hunting: '#e0a070' };
 
 export function createMinimap(canvas, game, terrain) {
-  const region = game.data.lists.regions[0];
+  // 내가 있는 섬(v0.6)
+  const region = regionAt(game.data.lists.regions, game.state.actors.p1?.x ?? 0);
   const [x0, z0, x1, z1] = region.bounds;
   const PX = 200;
   canvas.width = PX;
@@ -33,7 +35,7 @@ export function createMinimap(canvas, game, terrain) {
     // 산지 소문 고리는 3장부터(v0.5.2 해금)
     const rumors = isUnlocked({ state, data }, a, 'rumors');
     for (const v of rumors ? Object.values(state.veins) : []) {
-      if (v.common || !v.center) continue;
+      if (v.common || !v.center || v.region !== region.id) continue;
       const [px, py] = toPx(v.center[0], v.center[1]);
       g.beginPath();
       g.arc(px, py, v.radius * scale + 3, 0, Math.PI * 2);
@@ -65,7 +67,7 @@ export function createMinimap(canvas, game, terrain) {
       g.fill();
     }
     // 약탈단 자리(v0.5): 검은 깃발 표시와 이름. 옛터(v0.5.1)는 푸른 불꽃
-    for (const s of data.lists.regions[0].sites || []) {
+    for (const s of region.sites || []) {
       if (!s.members) continue;
       const [sx0, sz0] = s.beach ? terrain.beachPoint(s.beach[0], s.beach[1]) : [s.x, s.z];
       const [px, py] = toPx(sx0, sz0);
@@ -125,6 +127,7 @@ export function createMinimap(canvas, game, terrain) {
       g.fillRect(px - 1, py - 1, 2.2, 2.2);
     }
     for (const s of Object.values(state.settlements)) {
+      if (s.region !== region.id) continue;
       const [px, py] = toPx(s.x, s.z);
       const home = a.home === s.id;
       g.fillStyle = '#ffffff';

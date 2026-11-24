@@ -188,11 +188,16 @@ export function buildData(raw) {
       for (const n of st.goal?.node || []) if (!raw.nodes.some((x) => x.id === n)) problems.push(`퀘스트 ${q.id}: 길잡이 노드 ${n} 없음`);
       if (st.goal?.station && !stations[st.goal.station]) problems.push(`퀘스트 ${q.id}: 길잡이 작업대 ${st.goal.station} 없음`);
       for (const it of st.reward?.items || []) if (!items[it.item]) problems.push(`퀘스트 ${q.id}: 단계 보상 ${it.item} 없음`);
+      // 건네기(v0.6)
+      for (const it of Object.keys(st.take || {})) if (!items[it]) problems.push(`퀘스트 ${q.id}: 건넬 물건 ${it} 없음`);
+      if (st.take && st.type !== 'talk') problems.push(`퀘스트 ${q.id}: take는 talk 단계에만`);
     }
     for (const it of q.reward?.items || []) if (!items[it.item]) problems.push(`퀘스트 ${q.id}: 보상 ${it.item} 없음`);
     for (const g of q.grants || []) if (!['lantern_mark'].includes(g)) problems.push(`퀘스트 ${q.id}: 모르는 표식 ${g}`);
   }
   for (const ch of Q.chapters) for (const id of ch.quests) if (!quests[id]) problems.push(`장 ${ch.id}: 퀘스트 ${id} 없음`);
+  // 섬 건너기(v0.6): 배가 가는 지역
+  for (const o of Object.values(objects)) if (o.cross && !raw.regions.some((r) => r.id === o.cross)) problems.push(`물체 ${o.id}: 건널 지역 ${o.cross} 없음`);
   // 해금(v0.5.2)
   const unlockList = raw.unlocks || [];
   const unlocks = index(unlockList, '해금');

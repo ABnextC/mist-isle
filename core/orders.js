@@ -22,15 +22,16 @@ export function dailyOrders(ctx) {
 }
 
 // 2단계 작업대가 있어야 만드는 물건은 그런 작업대가 섬 어딘가에 생긴 뒤에만 의뢰한다
-function templateReady(ctx, t) {
+function templateReady(ctx, t, sid) {
   if (!t.needs) return true;
-  return Object.values(ctx.state.settlements).some((s) => hasStation(s, t.needs[0], t.needs[1]));
+  const rid = ctx.state.settlements[sid]?.region;
+  return Object.values(ctx.state.settlements).some((s) => s.region === rid && hasStation(s, t.needs[0], t.needs[1]));
 }
 
 function postOrders(ctx, sid, day) {
   const { state, cfg, rng } = ctx;
   const first = Object.keys(state.settlements)[0];
-  const T = cfg.orders.templates.filter((t) => (t.at || first) === sid && templateReady(ctx, t));
+  const T = cfg.orders.templates.filter((t) => (t.at || first) === sid && templateReady(ctx, t, sid));
   if (!T.length) return;
   const open = perSettlement(cfg.orders.open, sid);
   const perDay = perSettlement(cfg.orders.perDay, sid);

@@ -1,6 +1,7 @@
 // 노드 그리기: 종류·변형·조각마다 InstancedMesh 하나. 산지가 바뀌면 배치를 다시 짠다.
 // 다 캔 노드는 잎·열매가 사라지거나(나무는 그루터기) 작아지고 어두워진다.
 
+import { regionAt } from '../../core/terrain.js';
 import * as THREE from 'three';
 import { buildNodeModels } from './models/nodes.js';
 import { rand01 } from './geo.js';
@@ -40,7 +41,10 @@ export function createNodesView(scene, game, hf, { mats, ctex }) {
   function rebuild() {
     index.clear();
     const counts = {};
+    const me = game.state.actors[game.pid || 'p1'];
+    const [bx0, , bx1] = (me ? regionAt(game.data.lists.regions, me.x) : game.data.lists.regions[0]).bounds;
     for (const n of Object.values(game.state.nodes)) {
+      if (n.x < bx0 - 60 || n.x > bx1 + 60) continue; // 이 섬 노드만(v0.6)
       const variants = groups[n.type];
       if (!variants) continue;
       const v = Math.floor(rand01(n.id, 3) * variants.length);

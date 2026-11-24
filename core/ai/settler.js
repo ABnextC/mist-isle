@@ -9,6 +9,7 @@
 //   detour      가장 좋은 노드 대신 엉뚱한 노드를 고를 확률(실수)
 //   tune        도구를 만들 때 집중력으로 조율하는가
 
+import { regionAt } from '../terrain.js';
 import { keyOf, avgProps, countItem, qtyOf } from '../inventory.js';
 import { dist, settlementAt, nearestSettlement, nearestStation, bestTool, toolTier, storeOf, hasStation, stationIn, workSpots } from '../world.js';
 import { entryStar, tradable, baseValue, bestBid, bestAsk, npcPrice, repairCost, refPrice, bookOf, ordersOf } from '../market.js';
@@ -267,7 +268,7 @@ function moveNear(ctx, actor, target, standoff) {
   const d = Math.hypot(dx, dz);
   const ux = d < 0.01 ? 1 : dx / d;
   const uz = d < 0.01 ? 0 : dz / d;
-  const [x0, z0, x1, z1] = ctx.data.lists.regions[0].bounds;
+  const [x0, z0, x1, z1] = regionAt(ctx.data.lists.regions, actor.x).bounds;
   const at = (vx, vz) => [
     Math.min(x1 - 2, Math.max(x0 + 2, target.x + vx * standoff)),
     Math.min(z1 - 2, Math.max(z0 + 2, target.z + vz * standoff)),

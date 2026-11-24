@@ -5,9 +5,9 @@
 // 생활 단계(v0.5.2, 튜토리얼 섬): 가지기(have)·마을 사업(project)은 1초마다 보고, 먹기·맡기기·고치기·팔기는 그 명령이 알린다(questNote).
 // 고치기는 고칠 것이 하나도 없으면 그냥 넘어간다. 단계 보상(step.reward)은 그 단계를 넘길 때 준다.
 
-import { addEntry, slotsNeeded, countItem } from '../inventory.js';
+import { addEntry, slotsNeeded, countItem, takeQty, keyOf } from '../inventory.js';
 import { convertStats, starOf } from '../formulas.js';
-import { sitePos, npcPos, objPos, storeOf } from '../world.js';
+import { sitePos, npcPos, objPos, storeOf, reachable } from '../world.js';
 import { tempGroup, spawnTemp, freeSpot, removeMob, isAlive } from './mobs.js';
 import { isDown } from './combat.js';
 import { unlockedSet } from './unlocks.js';
@@ -91,7 +91,10 @@ function complete(ctx, a, id) {
   ctx.emit('quest.done', { actor: a.id, quest: id, reward, next: q.next || null });
   const nq = q.next ? ctx.data.quests[q.next] : null;
   // 장이 바뀌면 끝·시작을 알린다(다음 장이 아직 없으면 끝만)
-  if (q.kind === 'main' && (!nq || nq.chapter !== q.chapter)) ctx.emit('chapter.done', { actor: a.id, chapter: q.chapter, next: nq?.chapter || null });
+  // 장에 아직 붙지 않은 퀘스트가 남았으면(more) 끝이 아니라 '이야기 쉼'이다(v0.6)
+  const chDef = ctx.data.chapters.find((c) => c.id === q.chapter);
+  if (q.kind === 'main' && !nq && chDef?.more) ctx.emit('story.pause', { actor: a.id, chapter: q.chapter });
+  else if (q.kind === 'main' && (!nq || nq.chapter !== q.chapter)) ctx.emit('chapter.done', { actor: a.id, chapter: q.chapter, next: nq?.chapter || null });
   if (q.next) startQuest(ctx, a, q.next);
   if (Q.track === id || !Q.active[Q.track]) Q.track = Object.keys(Q.active).sort((x, y) => mainFirst(ctx, x, y))[0] || null;
   // 해금(v0.5.2): 이 퀘스트로 새로 열린 기능
@@ -184,8 +187,37 @@ export function talkDue(ctx, a, npc) {
 export function talk(ctx, a, ids) {
   for (const id of ids) {
     const st = stepOf(ctx, a, id);
-    if (st?.type === 'talk') advance(ctx, a, id);
+    if (st?.type !== 'talk') continue;
+    if (st.take) takeItems(ctx, a, st);
+    advance(ctx, a, id);
   }
+}
+
+// 건네기(v0.6): talk 단계의 take. 가방과 (마을 안이면) 그 마을 창고에서 센다
+export function takeProgress(ctx, a, st) {
+  const lists = reachable(ctx, a);
+  return Object.entries(st.take).map(([item, need]) => ({ item, need, got: Math.min(need, countItem(lists, item)) }));
+}
+export const takeMet = (ctx, a, st) => !st?.take || takeProgress(ctx, a, st).every((x) => x.got >= x.need);
+function takeItems(ctx, a, st) {
+  const lists = reachable(ctx, a);
+  for (const [item, need] of Object.entries(st.take)) {
+    let left = need;
+    for (const list of lists) {
+      for (const e of [...list]) {
+        if (left <= 0) break;
+        if (e.item !== item || e.uid) continue;
+        const q = Math.min(left, e.qty);
+        takeQty(list, keyOf(e), q);
+        left -= q;
+      }
+    }
+  }
+}
+
+// 지금 말을 걸면 넘어갈 퀘스트(건넬 물건이 모자란 것은 빠진다)
+export function talkReady(ctx, a, npc) {
+  return talkDue(ctx, a, npc).filter((id) => takeMet(ctx, a, stepOf(ctx, a, id)));
 }
 
 // 이 물체를 지금 써야 하는 퀘스트(아직 안 쓴 것)
@@ -450,6 +482,7 @@ export function stepText(ctx, a, id) {
     return `${st.text} (${prog[0].got}/${prog[0].need})`;
   }
   if (st.type === 'project') return `${st.text} (${Math.round(projectProgress(ctx, st.project) * 100)}%)`;
+  if (st.type === 'talk' && st.take) return `${st.text} (${takeProgress(ctx, a, st).map((x) => `${ctx.data.items[x.item].name} ${x.got}/${x.need}`).join(' · ')})`;
   if ((st.count || 1) > 1) return `${st.text} (${Math.min(p.n, st.count)}/${st.count})`;
   return st.text;
 }

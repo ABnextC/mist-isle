@@ -706,7 +706,7 @@ export function watchtower() {
 }
 
 // 정박한 검은 돛 배: 모래톱에 얹힌 선체에 높은 돛대와 검은 돛
-export function shipBlack() {
+export function shipBlack(sailMat = 'sailBlack') {
   const base = wreck();
   const { parts, fx } = base;
   const add = (mat, g) => (parts[mat] ||= []).push(g);
@@ -722,7 +722,7 @@ export function shipBlack() {
     pos.setZ(i, (1 - u * u) * (1 - v * v * 0.6) * 0.45);
   }
   sail.computeVertexNormals();
-  add('sailBlack', xf(sail, { x: 0.75, y: 5.3, ry: Math.PI / 2 }));
+  add(sailMat, xf(sail, { x: 0.75, y: 5.3, ry: Math.PI / 2 }));
   for (const z of [-2.3, 2.3]) add('rope', taperTube([V(0.55, 8.0, 0), V(4.6, 0.5, z)], [0.015, 0.015], { radial: 4, vScale: 1 }));
   add('rope', taperTube([V(0.55, 8.0, 0), V(-4.8, 0.6, 0)], [0.015, 0.015], { radial: 4, vScale: 1 }));
   return { parts, fx };

@@ -104,6 +104,7 @@ export function createTownView(scene, game, hf, { mats, terrain, region, me = nu
   const key = (sid, type) => sid + ':' + type;
   function syncStations() {
     for (const s of Object.values(game.state.settlements)) {
+      if (s.region !== region.id) continue; // 다른 섬 마을은 그리지 않는다(v0.6)
       const sdef = region.settlements.find((x) => x.id === s.id);
       for (const st of s.stations) {
         const k = key(s.id, st.type);
@@ -137,6 +138,7 @@ export function createTownView(scene, game, hf, { mats, terrain, region, me = nu
   let houseSeed = 1;
   function syncStatics() {
     for (const o of game.statics) {
+      if (o.x < region.bounds[0] - 60 || o.x > region.bounds[2] + 60) continue; // 이 섬 것만
       const k = `${o.kind}@${o.x.toFixed(1)},${o.z.toFixed(1)}`;
       if (shown.has(k)) continue;
       shown.add(k);
@@ -156,6 +158,7 @@ export function createTownView(scene, game, hf, { mats, terrain, region, me = nu
       else if (o.kind === 'palisade') place(palisade(o.len || 8), o.x, o.z, o.rot);
       else if (o.kind === 'crates') place(crates(houseSeed++), o.x, o.z, o.rot);
       else if (o.kind === 'ship_black') place(shipBlack(), o.x, o.z, o.rot, { dy: -0.75, tilt: [0.03, 0.12] });
+      else if (o.kind === 'ship_white') place(shipBlack('cloth'), o.x, o.z, o.rot, { dy: -0.75, tilt: [0.02, 0.06] });
       else if (o.kind === 'chest') place(chest(houseSeed++), o.x, o.z, o.rot);
       else if (o.kind === 'supply') place(supply(), o.x, o.z, o.rot);
       else if (o.kind === 'papers') place(papers(), o.x, o.z, o.rot);

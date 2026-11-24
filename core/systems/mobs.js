@@ -5,7 +5,7 @@
 //       밤에만 나오는 안개 늑대(away 상태), 임시 짐승(습격 물결·부하, 죽으면 사라진다), 쓰러뜨리면 바로 들어오는 전리품.
 
 import { rollProps, rollQty, round3 } from '../formulas.js';
-import { fitsHabitat } from '../terrain.js';
+import { fitsHabitat, regionAt } from '../terrain.js';
 import { addEntry, slotsNeeded } from '../inventory.js';
 import { addXp } from './progress.js';
 import { hurtActor, yawTo, isDown, angDiff } from './combat.js';
@@ -28,14 +28,24 @@ function siteNear(ctx, region, x, z, pad) {
   return false;
 }
 
+// 지역별 무리(v0.6): type.regions[지역] = { groups, zband }. 없으면 첫 지역에만 type.groups
+const regionSpec = (ctx, type, region) => type.regions?.[region.id] || null;
+// 지역 무리 설정이 zone·habitat을 바꿀 수 있다(본섬 늪의 망령)
+const typeIn = (ctx, type, region) => {
+  const sp = regionSpec(ctx, type, region);
+  return sp && (sp.zone !== undefined || sp.habitat) ? { ...type, zone: sp.zone ?? type.zone, habitat: sp.habitat || type.habitat } : type;
+};
+const groupCount = (ctx, type, region) => regionSpec(ctx, type, region)?.groups ?? (region === ctx.data.lists.regions[0] ? type.groups || 0 : 0);
+
 export function groupSpot(ctx, region, type, taken) {
   const { rng, terrain } = ctx;
   const [x0, z0, x1, z1] = region.bounds;
   for (let i = 0; i < 160; i++) {
     const x = rng.range(x0 + 24, x1 - 24);
     const z = rng.range(z0 + 2, z1 - 24);
-    if (type.zband && (z < type.zband[0] || z > type.zband[1])) continue;
-    if (!fitsHabitat(terrain, region, type, x, z)) continue;
+    const zb = regionSpec(ctx, type, region)?.zband ?? (region === ctx.data.lists.regions[0] ? type.zband : null);
+    if (zb && (z < zb[0] || z > zb[1])) continue;
+    if (!fitsHabitat(terrain, region, typeIn(ctx, type, region), x, z)) continue;
     // 무리가 마을까지 어슬렁거리지 않게 정착지에서 넉넉히 띄운다(v0.4)
     if (region.settlements.some((t) => Math.hypot(x - t.x, z - t.z) < t.radius + 18 + type.radius)) continue;
     // 야영지·정박지와도 떨어뜨린다(v0.5)
@@ -53,7 +63,7 @@ function spotNear(ctx, region, type, g, r, home = g) {
     const d = ctx.rng.range(0, r);
     const x = home.x + Math.sin(a) * d;
     const z = home.z + Math.cos(a) * d;
-    if (ctx.terrain.walkable(x, z) && (g.site || g.temp || fitsHabitat(ctx.terrain, region, type, x, z))) return [round3(x), round3(z)];
+    if (ctx.terrain.walkable(x, z) && (g.site || g.temp || fitsHabitat(ctx.terrain, region, typeIn(ctx, type, region), x, z))) return [round3(x), round3(z)];
   }
   return [home.x, home.z];
 }
@@ -92,12 +102,14 @@ export function initMobs(ctx) {
   state.mobs = state.mobs || {};
   state.mobGroups = state.mobGroups || {};
   state.shots = state.shots || [];
-  const region = data.lists.regions[0];
+  const regions = data.lists.regions;
   const taken = Object.values(state.mobGroups).map((g) => ({ x: g.x, z: g.z, type: g.type }));
-  const have = new Set(Object.values(state.mobGroups).map((g) => g.type));
+  const have = new Set(Object.values(state.mobGroups).map((g) => `${g.type}@${regionAt(regions, g.x).id}`));
+  for (const region of regions) {
   for (const type of data.lists.creatures) {
-    if (!type.groups || have.has(type.id)) continue;
-    for (let k = 0; k < type.groups; k++) {
+    const count = groupCount(ctx, type, region);
+    if (!count || have.has(`${type.id}@${region.id}`)) continue;
+    for (let k = 0; k < count; k++) {
       const spot = groupSpot(ctx, region, type, taken);
       if (!spot) continue;
       taken.push({ x: spot[0], z: spot[1], type: type.id });
@@ -119,6 +131,7 @@ export function initMobs(ctx) {
   }
   const siteDone = new Set(Object.values(state.mobGroups).map((g) => g.site).filter(Boolean));
   for (const s of region.sites || []) if (s.members?.length && !siteDone.has(s.id)) addSiteGroup(ctx, region, s);
+  }
 }
 
 // 임시 무리·짐승(v0.5): 습격 물결과 두목이 부른 부하. 쓰러지면 다시 나지 않고 사라진다
@@ -505,7 +518,7 @@ const LOD = 6;
 export function mobsTick(ctx, dt0) {
   const { state, data } = ctx;
   const t = state.t;
-  const region = data.lists.regions[0];
+  const regionOf = (g) => regionAt(data.lists.regions, g.x);
   const actors = Object.values(state.actors);
   const night = ctx.clock.isNight(t);
   let slot = 0;
@@ -529,7 +542,7 @@ export function mobsTick(ctx, dt0) {
         continue;
       }
       if (t >= m.respawnAt) {
-        const [x, z] = m.post ? [m.post[0], m.post[1]] : spotNear(ctx, region, type, g, type.radius);
+        const [x, z] = m.post ? [m.post[0], m.post[1]] : spotNear(ctx, regionOf(g), type, g, type.radius);
         Object.assign(m, { x, z, hp: type.hp, deadAt: null, respawnAt: null, skinned: false, skinning: null, killer: null, target: null, cd: 0 });
         if (m.post) m.yaw = m.post[2];
         if (m.phase) m.phase = 0;
@@ -551,7 +564,7 @@ export function mobsTick(ctx, dt0) {
     if (nightOnly(type, g, m)) {
       if (m.mode === 'away') {
         if (night) {
-          const [x, z] = spotNear(ctx, region, type, g, type.radius);
+          const [x, z] = spotNear(ctx, regionOf(g), type, g, type.radius);
           Object.assign(m, { x, z, hp: type.hp, target: null, cd: 0, dest: null });
           setMode(ctx, m, 'idle', t + ctx.rng.range(1, 4));
           ctx.emit('mob.spawn', { mob: m.id, species: m.type });
@@ -601,7 +614,7 @@ export function mobsTick(ctx, dt0) {
         }
         if (m.mode === 'idle') {
           if (t >= m.until) {
-            m.dest = spotNear(ctx, region, type, g, m.post ? 2.5 : type.radius + (type.roam || 3), home0);
+            m.dest = spotNear(ctx, regionOf(g), type, g, m.post ? 2.5 : type.radius + (type.roam || 3), home0);
             setMode(ctx, m, 'wander', t + 7);
           }
         } else if (moveToward(ctx, m, m.dest[0], m.dest[1], type.walk, dt) < 0.3 || t >= m.until) {

@@ -8,8 +8,8 @@ import { createGame, loadGame } from '../core/game.js';
 import {
   craftScores, convertStats, starOf, masterworkChance, avg, refineStep, xpToNext, levelFromXp,
 } from '../core/formulas.js';
-import { keyOf, effectiveProps } from '../core/inventory.js';
-import { fitsHabitat } from '../core/terrain.js';
+import { keyOf, effectiveProps, countItem } from '../core/inventory.js';
+import { fitsHabitat, regionAt } from '../core/terrain.js';
 import { allOrders, bookOf } from '../core/market.js';
 import { storeOf, nearestSettlement, npcPos, sitePos, objPos } from '../core/world.js';
 import { yawTo } from '../core/systems/combat.js';
@@ -315,8 +315,8 @@ test('산지가 돌아간다: 게임 10일 동안 닫히고 열린다', () => {
   for (const region of data.lists.regions) {
     for (const vc of region.veins) {
       if (!vc.rotating) continue;
-      const n = Object.values(g.state.veins).filter((v) => v.node === vc.node && !v.common).length;
-      eq(n, vc.rotating, `${vc.node} 순환 산지 수`);
+      const n = Object.values(g.state.veins).filter((v) => v.region === region.id && v.node === vc.node && !v.common).length;
+      eq(n, vc.rotating, `${region.id} ${vc.node} 순환 산지 수`);
     }
   }
 });
@@ -333,8 +333,9 @@ test('v0.0 세이브를 불러오면 지형에 맞게 옮겨지고 이어서 돈
   ok(Object.keys(g.state.mobs).length > 10, 'v0.3 짐승');
   ok(g.state.actors.p1.cb && g.state.actors.p1.cb.hp === data.config.combat.hp, 'v0.3 체력');
   let bad = 0;
-  for (const n of Object.values(g.state.nodes)) if (!fitsHabitat(g.terrain, region, data.nodes[n.type], n.x, n.z)) bad++;
+  for (const n of Object.values(g.state.nodes)) if (!fitsHabitat(g.terrain, regionAt(data.lists.regions, n.x), data.nodes[n.type], n.x, n.z)) bad++;
   ok(bad <= 2, `서식지 밖 노드 ${bad}개`);
+  ok(region.id === 'wreck_coast', '첫 지역');
   eq(JSON.stringify(g.state.actors.p1.skills), JSON.stringify(before.actors.p1.skills), '스킬이 보존되지 않음');
   eq(home(g.state.actors.p1).length, before.actors.p1.storage.length, '창고가 보존되지 않음');
   eq(g.state.actors.p1.silver, data.config.market.startSilver, '은화(v0.2)');
@@ -470,7 +471,7 @@ test('AI 개척민 경제: 게임 30일을 돌려도 은화가 폭주하지 않�
   ok(end / g.state.econ.agents.length < 3000, `개척민 한 명 평균 은화 ${Math.round(end / g.state.econ.agents.length)}`);
   const ctx = { state: g.state, data, cfg };
   const basket = ['log_birch', 'ore_copper', 'lumber_birch', 'ingot_copper', 'cloth_reed', 'food_berry'];
-  const ref = bookOf({ state: g.state }, LH).ref;
+  const ref = bookOf({ state: g.state }, 's_port').ref; // v0.6: 큰 장터는 본섬 갈대 나루
   const idx = basket.reduce((x, it) => x + (ref[it + '|2'] ?? 1) / Math.round(data.items[it].value * cfg.market.starMult[2]), 0) / basket.length;
   ok(idx > 0.6 && idx < 1.3, `물가 지수 ${idx.toFixed(2)}`);
   ok(g.state.orders.length > 0, '주문 게시판이 비었다');
@@ -504,15 +505,16 @@ function place(g, a, m, d, yawOff = 0) {
 test('참나무 숲: 참나무·철광맥·늑대는 북쪽 숲(z ≥ 250)에만, T1 노드는 숲 밖에만 난다', () => {
   const g = createGame({ data, seed: 31 });
   const z0 = data.lists.regions[0].zones[0].z0;
-  const nodes = Object.values(g.state.nodes);
+  const isle = (o) => regionAt(data.lists.regions, o.x).id === 'wreck_coast';
+  const nodes = Object.values(g.state.nodes).filter(isle);
   ok(nodes.some((n) => n.type === 'node_oak') && nodes.some((n) => n.type === 'node_iron'), 'T2 노드가 없다');
   for (const n of nodes) {
     const zone = data.nodes[n.type].zone;
     ok(zone ? n.z >= z0 : n.z < z0, `${n.type} ${n.z.toFixed(0)}`);
   }
-  const wolves = Object.values(g.state.mobGroups).filter((x) => x.type === 'wolf');
+  const wolves = Object.values(g.state.mobGroups).filter((x) => x.type === 'wolf' && isle(x));
   ok(wolves.length > 0 && wolves.every((x) => x.z >= z0 + data.creatures.wolf.deep), '늑대는 숲 깊은 곳');
-  ok(Object.values(g.state.mobGroups).filter((x) => x.type === 'crab').every((x) => x.z < z0), '게는 해안');
+  ok(Object.values(g.state.mobGroups).filter((x) => x.type === 'crab' && isle(x)).every((x) => x.z < z0), '게는 해안');
 });
 
 test('공격: 사거리·각도 안의 짐승을 무기 공격력만큼 때리고 무기 내구가 준다', () => {
@@ -1005,14 +1007,14 @@ test('안개 늑대는 밤에만 나온다: 낮엔 숨고, 밤에 마을 사이 
   g.advance((T.dayFraction - T.startPhase) * T.secondsPerGameDay + 5);
   ok(g.clock.isNight(g.state.t), '밤');
   ok(wolves().every((x) => x.mode !== 'away'), '밤에는 나온다');
-  const [lo, hi] = data.creatures.mist_wolf.zband;
-  ok(Object.values(g.state.mobGroups).filter((x) => x.type === 'mist_wolf').every((x) => x.z >= lo && x.z <= hi), '들판 띠');
+  const band = (x) => (regionAt(data.lists.regions, x.x).id === 'wreck_coast' ? data.creatures.mist_wolf.zband : data.creatures.mist_wolf.regions.swamp_shore.zband);
+  ok(Object.values(g.state.mobGroups).filter((x) => x.type === 'mist_wolf').every((x) => x.z >= band(x)[0] && x.z <= band(x)[1]), '들판 띠');
   g.advance((1 - T.dayFraction) * T.secondsPerGameDay + 5);
   ok(!g.clock.isNight(g.state.t), '아침');
   ok(wolves().every((x) => x.mode === 'away'), '해가 뜨면 사라진다');
 });
 
-test('1·2장(등대섬)을 처음부터 끝까지: 생활 단계·대장간 사업까지 막히는 데 없이 16개, 3장 해금·보상·현상금', () => {
+test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사업·배 고치기·안개 벽 건너기까지 막히는 데 없이 19개, 건너면 해금·보상·현상금', () => {
   const g = createGame({ data, seed: 7, actors: [{ id: 'p1', kind: 'player' }] });
   g.state.econ = null;
   const st = g.state;
@@ -1032,7 +1034,7 @@ test('1·2장(등대섬)을 처음부터 끝까지: 생활 단계·대장간 사
     g.advance(0.6);
   };
   const events = [];
-  for (const k of ['quest.done', 'chapter.done', 'quest.wave', 'quest.fail', 'loot', 'quest.grant', 'quest.stepReward', 'unlock']) g.on(k, (ev) => events.push(ev));
+  for (const k of ['quest.done', 'chapter.done', 'quest.wave', 'quest.fail', 'loot', 'quest.grant', 'quest.stepReward', 'unlock', 'story.pause', 'cross']) g.on(k, (ev) => events.push(ev));
   const town = (sid) => g.state.settlements[sid];
   const toStation = (sid, type) => {
     const t = town(sid).stations.find((x) => x.type === type);
@@ -1065,7 +1067,14 @@ test('1·2장(등대섬)을 처음부터 끝까지: 생활 단계·대장간 사
     if (step.type === 'talk') {
       const n = npcPos(W, step.npc);
       warp(n.x + 1.2, n.z);
+      if (step.take) {
+        // 건네기(v0.6): 모자라면 거절, 채우면 넘어가며 가져간다
+        eq(g.dispatch({ type: 'TALK', actor: 'p1', npc: step.npc }).error, 'need_items', `${id} 재료 모자람`);
+        for (const [item, q] of Object.entries(step.take)) a.bag.push({ item, lot: null, bonus: null, qty: q + 1 });
+      }
+      const had = Object.fromEntries(Object.keys(step.take || {}).map((it) => [it, countItem([a.bag], it)]));
       ok(g.dispatch({ type: 'TALK', actor: 'p1', npc: step.npc }).ok, `${id} 대화`);
+      for (const [item, q] of Object.entries(step.take || {})) eq(countItem([a.bag], item), had[item] - q, `${item} 건넴`);
     } else if (step.type === 'go') {
       const s = sitePos(W, step.site);
       warp(s.x, s.z);
@@ -1074,7 +1083,22 @@ test('1·2장(등대섬)을 처음부터 끝까지: 생활 단계·대장간 사
       const o = step.objs.find((x) => !p.used.includes(x));
       const pos = objPos(W, o);
       warp(pos.x + 1.0, pos.z);
+      if (data.objects[o].cross) {
+        // 안개 벽(v0.6): 등대섬 창고 짐을 갈대 나루 창고로, 귀환 지점도 나루로
+        storeOf(a, 's_forest').push({ item: 'stone', lot: null, bonus: null, qty: 7 });
+        storeOf(a, 's_lighthouse').push({ item: 'stone', lot: null, bonus: null, qty: 5 });
+        a.stoneBefore = ['s_forest', 's_lighthouse', 's_port'].reduce((n, sid) => n + countItem([storeOf(a, sid)], 'stone'), 0);
+      }
       ok(g.dispatch({ type: 'QUEST_USE', actor: 'p1', obj: o }).ok, `${id} ${o}`);
+      if (data.objects[o].cross) {
+        eq(regionAt(data.lists.regions, a.x).id, 'swamp_shore', '본섬에 닿았다');
+        eq(a.home, 's_port', '귀환 지점은 갈대 나루');
+        eq(countItem([storeOf(a, 's_port')], 'stone'), a.stoneBefore, '창고 짐이 나루로');
+        delete a.stoneBefore;
+        eq(storeOf(a, 's_forest').length + storeOf(a, 's_lighthouse').length, 0, '등대섬 창고는 비었다');
+        eq(g.dispatch({ type: 'RECALL', actor: 'p1' }).ok, true, '나루로 귀환');
+        g.advance(12);
+      }
     } else if (step.type === 'kill') {
       const s = step.site ? sitePos(W, step.site) : null;
       const pick = () => Object.values(st.mobs).filter((x) => x.mode !== 'dead' && x.mode !== 'away' && step.mobs.includes(x.type) && (!s || Math.hypot(x.x - s.x, x.z - s.z) < s.r + 20))
@@ -1152,13 +1176,15 @@ test('1·2장(등대섬)을 처음부터 끝까지: 생활 단계·대장간 사
   for (const q of main) ok(a.quests.done[q] != null, `${q} 못 끝냄`);
   eq(Object.keys(a.quests.items).length, 0, '퀘스트 물건은 돌려줬다');
   ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch1' && e.next === 'ch2'), '1장 끝 → 2장');
-  ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch2' && !e.next), '2장 끝');
+  ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch2' && e.next === 'ch3'), '2장 끝 → 3장');
+  ok(events.some((e) => e.type === 'story.pause' && e.chapter === 'ch3'), '3장은 이어질 이야기가 남았다');
+  ok(!events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch3'), '3장은 아직 끝이 아니다');
   eq(events.filter((e) => e.type === 'quest.wave').length, 4, '습격 두 번 × 두 물결');
   ok(a.marks?.lantern_mark != null && events.some((e) => e.type === 'quest.grant'), '등불의 각인');
   ok(events.some((e) => e.type === 'quest.stepReward' && e.reward.items.some((x) => x.item === 'wpn_sword_copper')), '강두의 구리 검');
   ok(a.bag.some((e) => e.item === 'wpn_sword_iron' && e.crafter === '숲머리 대장장이'), '숲머리 대장장이의 철 검');
   const un = events.find((e) => e.type === 'unlock');
-  eq(un?.quest, 'c2_anchor', '2장 끝에 열린다');
+  eq(un?.quest, 'c3_wall', '본섬에 건너가면 열린다');
   eq([...un.ids].sort().join(), 'orders,projects,rumors,transport', '경제 넷이 열린다');
   ok(g.dispatch({ type: 'ORDER_DELIVER', actor: 'p1', order: 'x' }).error !== 'locked', '주문 열림');
   ok(a.bag.some((e) => e.item === 'wpn_club' && e.crafter === '해림'), '해림의 몽둥이');
@@ -1238,7 +1264,7 @@ test('v0.4 세이브를 불러오면 1장 첫 퀘스트가 생기고, 약탈단 
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
   ok(st.actors.p1.quests.active.q1_ashore, '첫 퀘스트');
-  const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site).length;
+  const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wolf'), data.creatures.mist_wolf.groups, '안개 늑대 무리');
   for (const s of ['lookout', 'camp', 'cove']) ok(Object.values(st.mobGroups).some((x) => x.site === s), `${s} 무리`);
@@ -1261,8 +1287,8 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '0.5.2');
-  const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site).length;
+  eq(st.meta.engine, '0.6.0');
+  const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
   const ruins = Object.values(st.mobGroups).find((x) => x.site === 'old_lantern');
@@ -1371,6 +1397,95 @@ test('v0.5.1 세이브(데이터 8)를 불러오면 하던 단계가 새 번호�
   ok(g.state.settlements.s_forest.stations.some((x) => x.type === 'forge' && x.tier === 2), '숲머리 2단계 대장간');
   g.advance(1.1);
   ok(!P2.active.c2_forge, '메인 잇기가 대장간을 다시 주지 않는다');
+});
+
+
+console.log('안개 벽 너머 (v0.6)');
+
+test('두 섬: 지역은 좌표로 나뉘고, 본섬에 마을 둘·산지·짐승 무리가 따로 있으며, 늪은 물 높이로 내려앉는다', () => {
+  const g = createGame({ data, seed: 8 });
+  const st = g.state;
+  const R = (o) => regionAt(data.lists.regions, o.x).id;
+  eq(st.settlements.s_port.region, 'swamp_shore', '갈대 나루');
+  eq(st.settlements.s_valley.region, 'swamp_shore', '느티골');
+  const nodes = Object.values(st.nodes);
+  ok(nodes.filter((n) => R(n) === 'swamp_shore').length > 150, '본섬 노드');
+  ok(Object.values(st.veins).filter((v) => v.region === 'swamp_shore' && !v.common).length >= 10, '본섬 산지');
+  ok(Object.values(st.mobGroups).some((x) => x.type === 'mist_wraith' && R(x) === 'swamp_shore' && x.z >= 330), '늪 망령');
+  // 지역의 노드는 그 지역 서식지에 맞게 난다
+  for (const n of nodes) ok(fitsHabitat(g.terrain, regionAt(data.lists.regions, n.x), data.nodes[n.type], n.x, n.z), `${n.type} 서식지`);
+  const sw = data.lists.regions[1];
+  const wet = [];
+  for (let x = 1040; x <= 1420; x += 20) for (let z = 360; z <= 430; z += 10) wet.push(g.terrain.height(x, z));
+  ok(wet.filter((h) => h < 0).length > wet.length * 0.3 && wet.every((h) => h > sw.terrain.wadeDepth), '늪: 얕은 물웅덩이(걸을 수 있음)');
+  ok(g.terrain.walkable(1110, 366) && g.terrain.height(1110, 366) > 0.5, '물안개 마을은 마른 땅');
+  ok(!g.terrain.walkable(700, 30), '섬 사이 바다는 못 걷는다');
+  eq(g.statics.filter((o) => o.npc === 'ara').length, 1, '아라는 물안개 마을에');
+  eq(g.dispatch({ type: 'MOVE', actor: 'p1', x: 1200, z: 60 }).error, 'out_of_bounds', '다른 섬으로 걸어갈 수 없다');
+});
+
+test('두 섬 경제는 따로 돈다: 큰 장터는 본섬, 등대섬엔 작은 장터. 나르기·운송·귀환은 섬을 넘지 못한다', () => {
+  const g = createGame({ data, seed: 9, actors: [{ id: 'p1', kind: 'player', }] });
+  const st = g.state;
+  const homes = (sid) => st.econ.agents.filter((x) => x.home === sid).length;
+  ok(homes('s_port') >= 15 && homes('s_valley') >= 8, '본섬 개척민');
+  ok(homes('s_lighthouse') > 0 && homes('s_lighthouse') <= 5, '등대섬 작은 장터');
+  g.advance(3600 * 4);
+  const book = (sid) => bookOf({ state: st }, sid);
+  ok(book('s_port').asks.length + book('s_port').bids.length > book('s_lighthouse').asks.length, '본섬 장터가 크다');
+  // 상인은 같은 섬 장부에서만 사서 나른다: 등대섬 장부에 본섬 상인 주문이 없다
+  const port = new Set(st.econ.agents.filter((x) => regionAt(data.lists.regions, st.settlements[x.home].x).id === 'swamp_shore').map((x) => x.id));
+  for (const sid of ['s_lighthouse', 's_forest']) {
+    const b = book(sid);
+    ok(![...b.asks, ...b.bids].some((o) => o.kind === 'agent' && port.has(o.owner) && o.qty > 0 && o.placedDay >= 1), `${sid}에 본섬 상인 주문`);
+  }
+  ok(st.orders.length > 0 && st.orders.every((o) => o.at === 's_port' || o.at === 's_valley'), '주문 의뢰는 본섬에서');
+  const a = st.actors.p1;
+  a.unlockAll = true;
+  const lh = st.settlements.s_lighthouse;
+  Object.assign(a, { x: lh.x, z: lh.z });
+  storeOf(a, 's_lighthouse').push({ item: 'stone', lot: null, bonus: null, qty: 3 });
+  eq(g.dispatch({ type: 'SHIP', actor: 'p1', to: 's_port', key: keyOf(storeOf(a, 's_lighthouse')[0]) }).error, 'other_island', '섬 너머 운송');
+  a.home = 's_port';
+  eq(g.dispatch({ type: 'RECALL', actor: 'p1' }).error, 'other_island', '섬 너머 귀환');
+});
+
+test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개척민은 본섬으로 옮겨 가며, 등대섬엔 작은 장터 개척민이 새로 선다', () => {
+  const g0 = createGame({ data, seed: 6 });
+  g0.advance(5);
+  const obj = JSON.parse(g0.save());
+  const s = obj.state;
+  obj.dataVersion = 9;
+  s.meta.dataVersion = 9;
+  s.meta.engine = '0.5.2';
+  // v0.5.2엔 본섬이 없었다
+  const onMain = (x) => x >= 600;
+  delete s.regions.swamp_shore;
+  delete s.settlements.s_port;
+  delete s.settlements.s_valley;
+  for (const [id, v] of Object.entries(s.veins)) if (v.region === 'swamp_shore') delete s.veins[id];
+  for (const [id, n] of Object.entries(s.nodes)) if (onMain(n.x)) delete s.nodes[id];
+  for (const [id, gr] of Object.entries(s.mobGroups)) if (onMain(gr.x)) { for (const m of gr.mobs) delete s.mobs[m]; delete s.mobGroups[id]; }
+  for (const id of Object.keys(s.projects)) if (id.startsWith('pj_p_') || id.startsWith('pj_v_')) delete s.projects[id];
+  delete s.market.books.s_port;
+  delete s.market.books.s_valley;
+  s.orders = s.orders.filter((o) => o.at !== 's_port' && o.at !== 's_valley');
+  s.econ.agents = s.econ.agents.filter((x) => !x.id.startsWith('t'));
+  for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
+  const g = loadGame({ data, save: JSON.stringify(obj) });
+  const st = g.state;
+  eq(st.meta.engine, '0.6.0');
+  eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
+  ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
+  ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
+  ok(Object.values(st.mobGroups).some((x) => onMain(x.x) && x.type === 'wolf'), '본섬 늑대');
+  ok(st.projects.pj_v_forge && st.projects.pj_p_house1, '본섬 사업');
+  eq(st.econ.agents.filter((x) => x.home === 's_port').length, data.config.econ.agents.filter((x) => x.home === 's_port').length, '나루 개척민');
+  ok(st.econ.agents.some((x) => x.id === 't1' && x.home === 's_lighthouse'), '등대섬 작은 장터');
+  // 이어서 돌아도 막히지 않고, 다시 저장·불러와도 같다
+  g.advance(600);
+  const again = loadGame({ data, save: g.save() });
+  eq(again.hash(), g.hash(), '저장 왕복');
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

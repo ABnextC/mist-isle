@@ -76,8 +76,8 @@ export function makeSpacing(ctx) {
     }
   }
   for (const o of ctx.statics || []) if (o.r > 0) list.push({ x: o.x, z: o.z, r: o.r });
-  const region = ctx.data.lists.regions[0];
-  if (region.spawn && ctx.terrain) {
+  for (const region of ctx.data.lists.regions) {
+    if (!region.spawn || !ctx.terrain) continue;
     const [sx, sz] = ctx.terrain.beachPoint(region.spawn[0], region.spawn[1]);
     list.push({ x: sx, z: sz, r: 1 }); // 상륙 지점 바로 위에는 놓지 않는다
   }

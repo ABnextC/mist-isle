@@ -251,6 +251,9 @@ export function createFlora(scene, { hf, paths, ground, region, tier, mats, ctex
 
   // 참나무 숲(v0.3): 구역 안쪽에 배경 나무와 덤불을 촘촘히 세운다(캘 수 있는 참나무는 노드로 따로 있다)
   const zone = (region.zones || [])[0];
+  // 안개 늪(v0.6): 나무가 드물고, 물가엔 쓰러진 나무와 그루터기가 많다
+  const swamp = (region.zones || []).find((zz) => zz.id === 'swamp');
+  const inSwamp = (z) => swamp && z > swamp.z0 - 4;
   if (zone) {
     const fstep = 9 / Math.sqrt(k);
     const groups = Object.values(game.state.mobGroups || {});
@@ -259,6 +262,7 @@ export function createFlora(scene, { hf, paths, ground, region, tier, mats, ctex
         const px = x + (R() - 0.5) * fstep * 0.9;
         const pz = z + (R() - 0.5) * fstep * 0.9;
         if (R() > 0.3 + Math.min(0.25, (pz - zone.z0) / 300)) continue;
+        if (inSwamp(pz) && (R() > 0.18 || hf.height(px, pz) < 0.35)) continue;
         if (nearNode(px, pz, 4.5) || groups.some((g) => Math.hypot(g.x - px, g.z - pz) < g.radius + 3)) continue;
         if (towns.some((town) => Math.hypot(px - town.x, pz - town.z) < town.radius + 6)) continue;
         const g = groundAt(hf, paths, px, pz);
@@ -353,7 +357,7 @@ export function createFlora(scene, { hf, paths, ground, region, tier, mats, ctex
       const wood = inZone(pz) || band;
       if (!wood) continue;
       const g = groundAt(hf, paths, px, pz);
-      if (g.path > 0.1 || g.h < 1.6 || g.rock > 0.4) continue;
+      if (g.path > 0.1 || g.h < (inSwamp(pz) ? 0.25 : 1.6) || g.rock > 0.4) continue;
       const shade = Math.max(g.canopy, inZone(pz) ? 0.5 : 0);
       if (shade < 0.25) continue;
       const roll = R();

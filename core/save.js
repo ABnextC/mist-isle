@@ -2,7 +2,7 @@
 // 자동 패치가 잦으니 데이터 구조가 바뀌면 여기에 옮기는 함수를 하나씩 더한다.
 
 import { makeRng, seedState } from './rng.js';
-import { makeTerrain, fitsHabitat, hashStr } from './terrain.js';
+import { makeTerrain, makeWorld, fitsHabitat, hashStr } from './terrain.js';
 import { stationLayout } from './world.js';
 import { pickCenter, pickNodeSpot, openVein } from './systems/veins.js';
 import { initCombat, emptyEquip } from './systems/combat.js';
@@ -13,11 +13,10 @@ import { newSettlement, initProjects, settlementDaily, finishIfFull } from './se
 
 // 마이그레이션에서 산지·짐승을 새로 놓을 때 쓰는 작은 실행 문맥
 function migrationCtx(st, data, salt) {
-  const region = data.lists.regions[0];
   return {
     state: st, data, cfg: data.config, clock: makeClock(data.config),
     rng: makeRng(seedState((st.meta.worldSeed ^ salt) >>> 0)),
-    terrain: makeTerrain(region, st.meta.worldSeed),
+    terrain: makeWorld(data.lists.regions, st.meta.worldSeed),
     newId: (p) => `${p}_${st.nextId++}`,
     emit: () => {}, obstaclesDirty: true,
   };
@@ -311,6 +310,35 @@ const MIGRATIONS = [
       }
       // 숲머리 대장간 사업은 앞 사업 없이 등대섬 규모로 줄었다. 이미 모인 것으로 다 찼으면 바로 선다
       if (st.projects?.pj_f_forge) finishIfFull(migrationCtx(st, data, 0x51f0a2d3), 'pj_f_forge');
+    },
+  },
+  {
+    // v0.5.2 → v0.6: 안개 벽 너머 본섬(늪 기슭)이 생겼다. 새 마을 둘·산지·짐승 무리·사업을 만든다.
+    // AI 개척민(경제)은 본섬 두 마을로 옮기고, 등대섬엔 작은 장터 몫의 개척민 몇만 새로 둔다.
+    from: 9,
+    to: 10,
+    run(st, data) {
+      st.meta.engine = '0.6.0';
+      const ctx = migrationCtx(st, data, 0x60a11e55);
+      const cfg = data.config;
+      for (const region of data.lists.regions) {
+        if (st.regions[region.id]) continue;
+        const density = {};
+        for (const fam of Object.keys(cfg.families)) density[fam] = 1;
+        st.regions[region.id] = { id: region.id, density };
+        for (const sdef of region.settlements) if (!st.settlements[sdef.id]) st.settlements[sdef.id] = newSettlement(region, sdef, cfg);
+        for (const vc of region.veins) {
+          if (vc.common) openVein(ctx, region, vc, { common: true });
+          for (let i = 0; i < (vc.rotating || 0); i++) openVein(ctx, region, vc, { initial: true });
+        }
+      }
+      for (const p of data.lists.projects) {
+        if (!st.projects[p.id]) st.projects[p.id] = { id: p.id, at: p.at, got: {}, silver: 0, done: false, doneDay: null, by: {} };
+      }
+      initMobs(ctx);
+      const homes = Object.fromEntries(cfg.econ.agents.map((x) => [x.id, x.home]));
+      for (const ag of st.econ?.agents || []) if (homes[ag.id]) ag.home = homes[ag.id];
+      if (st.econ) addMissingAgents(ctx);
     },
   },
 ];

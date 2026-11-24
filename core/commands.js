@@ -3,6 +3,8 @@
 // 싱글에서는 로컬 코어가, 멀티에서는 서버가 같은 함수를 돌린다.
 
 import { keyOf, findEntry, takeQty, addEntry, slotsNeeded, effectiveProps, avgProps, bonusKey, qtyOf } from './inventory.js';
+import { regionAt } from './terrain.js';
+import { crossTo } from './systems/travel.js';
 import {
   toolSpeed, gatherSeconds, refineStep, weightedProps, round2, round3,
   craftScores, convertStats, starOf, masterworkChance, avg,
@@ -14,7 +16,7 @@ import { deliver, countDeliverable } from './orders.js';
 import { addXp } from './systems/progress.js';
 import { startAttack, startDodge, interrupt, equipped, equipLoad } from './systems/combat.js';
 import { corpseOpen, skinLoot, skinSeconds } from './systems/mobs.js';
-import { talkDue, talk, useDue, useObj, available, startQuest, nearNpc, questNote, TALK_RANGE, USE_RANGE, BOARD_RANGE } from './systems/quests.js';
+import { talkDue, talk, useDue, useObj, available, startQuest, nearNpc, questNote, TALK_RANGE, USE_RANGE, BOARD_RANGE, talkReady } from './systems/quests.js';
 import { isUnlocked, allowedProject } from './systems/unlocks.js';
 import { objPos } from './world.js';
 
@@ -83,7 +85,7 @@ function cancelGather(ctx, a, reason) {
 const MOVE = {
   validate(ctx, a, c) {
     if (!Number.isFinite(c.x) || !Number.isFinite(c.z)) return 'bad_args';
-    const [x0, z0, x1, z1] = ctx.data.lists.regions[0].bounds;
+    const [x0, z0, x1, z1] = regionAt(ctx.data.lists.regions, a.x).bounds;
     if (c.x < x0 || c.x > x1 || c.z < z0 || c.z > z1) return 'out_of_bounds';
     return {};
   },
@@ -395,6 +397,7 @@ const RECALL = {
     if ((a.recallReadyAt || 0) > ctx.state.t) return 'recall_cooldown';
     const s = ctx.state.settlements[a.home] || Object.values(ctx.state.settlements)[0];
     if (!s) return 'bad_args';
+    if (s.region !== regionAt(ctx.data.lists.regions, a.x).id) return 'other_island';
     return { s };
   },
   execute(ctx, a, c, p) {
@@ -685,6 +688,7 @@ const SHIP = {
     if (!s) return 'not_in_town';
     if (!c.to || !ctx.state.settlements[c.to]) return 'bad_args';
     if (c.to === s.id) return 'same_town';
+    if (ctx.state.settlements[c.to].region !== s.region) return 'other_island';
     const from = storeOf(a, s.id);
     const want = c.items || (c.keys ? c.keys.map((key) => ({ key })) : [{ key: c.key, qty: c.qty }]);
     const picks = [];
@@ -758,7 +762,9 @@ const TALK = {
     const bad = alive(ctx, a);
     if (bad) return bad;
     if (!nearNpc(ctx, a, c.npc, TALK_RANGE)) return 'too_far';
-    return { due: talkDue(ctx, a, c.npc) };
+    const due = talkReady(ctx, a, c.npc);
+    if (!due.length && talkDue(ctx, a, c.npc).length) return 'need_items';
+    return { due };
   },
   execute(ctx, a, c, p) {
     talk(ctx, a, p.due);
@@ -799,6 +805,9 @@ const QUEST_USE = {
     a.dest = null;
     a.nav = null;
     useObj(ctx, a, p.id, c.obj);
+    // 배에 오르기(v0.6): 안개 벽 너머로 건너간다
+    const cross = ctx.data.objects[c.obj].cross;
+    if (cross) crossTo(ctx, a, cross);
   },
 };
 

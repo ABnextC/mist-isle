@@ -18,6 +18,8 @@ export function createScene(canvas, { tier, textures }) {
 
   const scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x9fb0c0, 0.003);
+  let fogMul = 1;
+  let fogNow = 1;
   const camera = new THREE.PerspectiveCamera(52, 1, 0.12, 6000);
 
   // 해(낮)와 달(밤)을 번갈아 맡는 주광 하나. 그림자는 이 빛만 드리운다.
@@ -99,7 +101,9 @@ export function createScene(canvas, { tier, textures }) {
     key.shadow.normalBias = 0.035 + 0.12 * lowSun;
     key.shadow.bias = -0.0004 - 0.0012 * lowSun;
     scene.fog.color.copy(sky.fogColor);
-    scene.fog.density = lerp(lerp(0.0026, 0.0042, st.gold), 0.0085, night);
+    // 늪(v0.6)에선 안개가 짙다: fogMul을 천천히 따라간다
+    fogNow += (fogMul - fogNow) * 0.02;
+    scene.fog.density = lerp(lerp(0.0026, 0.0042, st.gold), 0.0085, night) * fogNow;
     scene.environmentIntensity = lerp(lerp(0.7, 1.0, st.gold), 1.2, night);
     renderer.toneMappingExposure = lerp(lerp(0.72, 1.15, st.gold), 1.3, night);
     return st;
@@ -152,6 +156,7 @@ export function createScene(canvas, { tier, textures }) {
   }
   return {
     renderer, scene, camera, key, setTime, applyTier, resize, warm,
+    setFog(m) { fogMul = m; },
     render: () => post.render(),
     get tier() { return current; },
   };

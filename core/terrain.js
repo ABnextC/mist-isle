@@ -56,6 +56,7 @@ export function makeTerrain(region, worldSeed) {
   const T = region.terrain;
   const s = (worldSeed ^ hashStr(region.id)) | 0;
   const [x0, z0, x1, z1] = region.bounds;
+  const SW = T.swamp || null;
   function shoreZ(x) {
     return T.shore
       + T.shoreWobble * (valueNoise(x / 70, 0.5, s + 7) * 2 - 1)
@@ -69,6 +70,11 @@ export function makeTerrain(region, worldSeed) {
       : T.beach * smoothstep(0, 18, d) + T.inland * smoothstep(12, 320, d);
     h += (fbm(x / 85, z / 85, s + 31, 4) - 0.45) * T.hills * smoothstep(8, 120, d);
     h += (fbm(x / 9, z / 9, s + 57, 2) - 0.5) * 0.5 * smoothstep(-3, 8, d);
+    // 늪(v0.6): swamp.z0 북쪽은 물 높이 가까이 내려앉는다. 웅덩이(물)와 진흙 둔덕이 섞인다
+    if (SW) {
+      const k = smoothstep(SW.z0 - SW.fade, SW.z0 + SW.fade, z + (valueNoise(x / 40, 9.5, s + 13) - 0.5) * 24);
+      if (k > 0) h = h * (1 - k) + (SW.level + (fbm(x / 26, z / 26, s + 91, 3) - 0.5) * SW.amp) * k;
+    }
     const edge = Math.max(smoothstep(x0 + 32, x0, x), smoothstep(x1 - 32, x1, x), smoothstep(z1 - 32, z1, z));
     if (edge > 0) h += edge * T.ridge * (0.75 + 0.5 * fbm(x / 18, z / 18, s + 77, 2));
     return h;
@@ -78,6 +84,8 @@ export function makeTerrain(region, worldSeed) {
   const towns = (region.settlements || []).map((t) => ({
     x: t.x, z: t.z, radius: t.radius, h: t.flat === 'local' ? baseHeight(t.x, t.z) : T.townHeight,
   }));
+  // 늪 마을 같은 자리(v0.6)도 flat 높이로 다진다(물 위 마른 땅)
+  for (const st of region.sites || []) if (st.flat != null && st.x != null) towns.push({ x: st.x, z: st.z, radius: st.r, h: st.flat });
 
   function height(x, z) {
     let h = baseHeight(x, z);
@@ -102,6 +110,32 @@ export function makeTerrain(region, worldSeed) {
     seed: s,
     // 해안선에서 뭍 쪽으로 inland m 들어간 점
     beachPoint: (x, inland) => [x, shoreZ(x) + inland],
+  };
+}
+
+// 여러 지역(v0.6): 한 좌표계에 지역을 x로 겹치지 않게 늘어놓는다(등대섬 0~400, 본섬 1000~).
+// 어느 지역인지는 좌표로 안다. 지역 사이는 걸어서 건널 수 없다(가장자리 숲·바다).
+export function regionAt(regions, x) {
+  let best = regions[0];
+  let bd = Infinity;
+  for (const r of regions) {
+    const d = x < r.bounds[0] ? r.bounds[0] - x : x > r.bounds[2] ? x - r.bounds[2] : 0;
+    if (d < bd) { bd = d; best = r; }
+  }
+  return best;
+}
+
+export function makeWorld(regions, worldSeed) {
+  const by = new Map(regions.map((r) => [r.id, makeTerrain(r, worldSeed)]));
+  const at = (x) => by.get(regionAt(regions, x).id);
+  return {
+    height: (x, z) => at(x).height(x, z),
+    shoreZ: (x) => at(x).shoreZ(x),
+    walkable: (x, z) => at(x).walkable(x, z),
+    beachPoint: (x, inland) => at(x).beachPoint(x, inland),
+    regionAt: (x) => regionAt(regions, x),
+    of: (id) => by.get(id),
+    seed: by.get(regions[0].id).seed,
   };
 }
 

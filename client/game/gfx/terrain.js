@@ -5,6 +5,11 @@ import * as THREE from 'three';
 import { NOISE } from './glsl.js';
 
 export const AREA = { x0: -80, z0: -100, size: 560 };
+// 지역마다 그리는 땅(v0.6): 지역 경계 둘레로 바깥 80m(남쪽 바다 100m)까지
+export function setArea(bounds) {
+  const [x0, z0, x1, z1] = bounds;
+  Object.assign(AREA, { x0: x0 - 80, z0: z0 - 100, size: Math.max(x1 - x0, z1 - z0) + 160 });
+}
 
 // ── CPU 잡음(셰이더 vnoise·fbm3와 같은 식) ───────────────────
 const fract = (x) => x - Math.floor(x);
@@ -207,7 +212,9 @@ export function groundAt(hf, paths, x, z, extra = null) {
   const path = paths.sample(x, z);
   const canopy = extra?.canopy ? extra.canopy.sample(x, z) : 0;
   const zone = extra?.zone ? sstep(extra.zone[0] - extra.zone[1], extra.zone[0] + extra.zone[1], z + (m1 - 0.5) * 10) : 0;
-  let sand = 1 - sstep(1.15, 1.85, h + (m2 - 0.5) * 0.7);
+  // 늪(v0.6)엔 모래가 없다: 낮은 땅도 진흙·풀이다
+  const zone2 = extra?.zone2 ? sstep(extra.zone2[0] - extra.zone2[1], extra.zone2[0] + extra.zone2[1], z + (m1 - 0.5) * 10) : 0;
+  let sand = (1 - sstep(1.15, 1.85, h + (m2 - 0.5) * 0.7)) * (1 - zone2);
   const rock = Math.min(1, sstep(0.42, 0.62, slope + (m1 - 0.5) * 0.15) + sstep(24, 30, h + m1 * 4));
   const shore = paths.coast(x, z) * sstep(1.0, 1.4, h);
   const scree = sstep(0.3, 0.42, slope) * (1 - sstep(0.52, 0.62, slope));
@@ -220,14 +227,14 @@ export function groundAt(hf, paths, x, z, extra = null) {
   dirt *= 1 - gravel * 0.5;
   litter *= 1 - gravel;
   const macro = fbm3(x * 0.012 + 41, z * 0.012 + 41);
-  return { h, grass, dirt, sand, rock, gravel, litter, path, canopy, zone, m2, macro };
+  return { h, grass, dirt, sand, rock, gravel, litter, path, canopy, zone, zone2, m2, macro };
 }
 
 // ── 땅 재질 ─────────────────────────────────────────
 // 여섯 층(풀·낙엽·흙·모래·절벽·자갈)을 텍스처 배열에서 읽고, 높이로 섞는다(돌이 흙 위로 솟고, 풀이 흙 틈을 메운다).
 // 같은 무늬가 되풀이되지 않게 구역마다 텍스처를 엇갈려 읽고(두 번 읽어 섞기), 바위는 세 방향에서 투영한다.
 const TILE = ['4.0', '3.5', '4.0', '5.0', '7.0', '3.0'];
-function terrainMaterial(tex, paths, canopy, tier, zone = [1e9, 10]) {
+function terrainMaterial(tex, paths, canopy, tier, zone = [1e9, 10], zone2 = null) {
   const mat = new THREE.MeshStandardMaterial({ roughness: 1, metalness: 0 });
   const U = {
     tTerA: { value: tex.terrain.A }, tTerN: { value: tex.terrain.N },
@@ -235,6 +242,9 @@ function terrainMaterial(tex, paths, canopy, tier, zone = [1e9, 10]) {
     tPath: { value: paths.tex }, tCanopy: { value: canopy.tex },
     uArea: { value: new THREE.Vector3(AREA.x0, AREA.z0, AREA.size) },
     uZone: { value: new THREE.Vector2(zone[0], zone[1]) },
+    // 둘째 구역(v0.6 안개 늪): 경계와 땅빛
+    uZone2: { value: new THREE.Vector2(zone2?.z0 ?? 1e9, zone2?.fade ?? 10) },
+    uTint2: { value: new THREE.Vector3(...(zone2?.tint || [1, 1, 1])) },
     uShadowFar: { value: tier.shadowRange },
   };
   const anti = tier.id !== 'low';
@@ -255,6 +265,8 @@ function terrainMaterial(tex, paths, canopy, tier, zone = [1e9, 10]) {
         uniform sampler2D tTopA, tTopN, tPath, tCanopy;
         uniform vec3 uArea;
         uniform vec2 uZone;
+        uniform vec2 uZone2;
+        uniform vec3 uTint2;
         uniform float uShadowFar;
         ${NOISE}
         vec2 gDX;
@@ -301,8 +313,9 @@ function terrainMaterial(tex, paths, canopy, tier, zone = [1e9, 10]) {
         float path = pathT.r;
         float canopy = texture2D(tCanopy, auv).r;
         float zoneF = smoothstep(uZone.x - uZone.y, uZone.x + uZone.y, vWPos.z + (m1 - 0.5) * 10.0);
+        float zoneF2 = smoothstep(uZone2.x - uZone2.y, uZone2.x + uZone2.y, vWPos.z + (m1 - 0.5) * 10.0);
         // 층 비율(groundAt과 같은 규칙)
-        float wSand = 1.0 - smoothstep(1.15, 1.85, hgt + (m2 - 0.5) * 0.7);
+        float wSand = (1.0 - smoothstep(1.15, 1.85, hgt + (m2 - 0.5) * 0.7)) * (1.0 - zoneF2);
         float wRock = clamp(smoothstep(0.42, 0.62, slope + (m1 - 0.5) * 0.15) + smoothstep(24.0, 30.0, hgt + m1 * 4.0), 0.0, 1.0);
         float shore = pathT.g * smoothstep(1.0, 1.4, hgt);
         float scree = smoothstep(0.3, 0.42, slope) * (1.0 - smoothstep(0.52, 0.62, slope));
@@ -362,6 +375,8 @@ function terrainMaterial(tex, paths, canopy, tier, zone = [1e9, 10]) {
         vec3 gcol = A0.rgb * mix(vec3(1.08, 0.98, 0.78), vec3(0.92, 1.04, 0.98), m2);
         gcol *= mix(vec3(1.12, 1.02, 0.72), vec3(0.86, 1.0, 0.94), smoothstep(0.3, 0.7, macro));
         gcol *= mix(vec3(1.0), vec3(0.72, 0.84, 0.7), zoneF * 0.8);
+        // 늪: 탁한 풀빛, 물가는 젖어서 더 어둡다
+        gcol *= mix(vec3(1.0), uTint2 * mix(0.78, 1.0, smoothstep(0.1, 1.2, hgt)), zoneF2);
         vec3 lcol = A1.rgb * mix(vec3(0.72, 0.74, 0.8), vec3(1.05, 1.0, 0.95), smoothstep(0.25, 0.75, m3));
         vec3 alb = gcol * b0 + lcol * b1 + A2.rgb * b2 + A3.rgb * b3 + rA.rgb * b4 + A5.rgb * b5;
         // 물가는 젖어서 어둡고 매끈하다. 물속은 푸르게 가라앉는다.
@@ -477,14 +492,15 @@ export function createTerrain(scene, { terrain, region, tier, tex }) {
   const paths = makePathMask(region, terrain);
   const canopy = makeCanopyMap();
   const zone = [region.zones?.[0]?.z0 ?? 1e9, region.zones?.[0]?.fade ?? 10];
-  const mat = terrainMaterial(tex, paths, canopy, tier, zone);
+  const mat = terrainMaterial(tex, paths, canopy, tier, zone, region.zones?.[1] || null);
   const mesh = new THREE.Mesh(gridGeometry(hf), mat);
   mesh.receiveShadow = true;
   scene.add(mesh);
   const outer = new THREE.Mesh(outerGeometry(terrain), mat);
   outer.receiveShadow = false;
   scene.add(outer);
-  const extra = { canopy, zone };
+  const z2 = region.zones?.[1];
+  const extra = { canopy, zone, zone2: z2 ? [z2.z0, z2.fade] : null };
   return {
     hf, paths, canopy, zone, mesh, material: mat,
     groundAt: (x, z) => groundAt(hf, paths, x, z, extra),

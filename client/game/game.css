@@ -270,3 +270,11 @@ ul.life li.done { color: var(--muted); }
   .bossbar b, .bossbar.boss b { font-size: 12px; }
 }
 .float.tele { font-size: 26px; color: #ff4a36; text-shadow: 0 0 6px rgba(255, 60, 40, .8), 0 1px 2px #000; }
+
+/* 안개 벽 건너기(v0.6) */
+.crossfade {
+  position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center;
+  background: rgba(214, 222, 228, .94); color: #2a3440; font-size: 20px; font-weight: 700;
+  animation: crossIn 1.2s ease both;
+}
+@keyframes crossIn { from { opacity: 0; } to { opacity: 1; } }

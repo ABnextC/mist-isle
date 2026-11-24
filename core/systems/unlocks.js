@@ -7,7 +7,8 @@
 export function chapterDone(ctx, a, chId) {
   const ch = ctx.data.chapters.find((c) => c.id === chId);
   const done = a?.quests?.done;
-  return !!ch && !!done && ch.quests.length > 0 && ch.quests.every((q) => done[q] != null);
+  // 퀘스트가 더 붙을 장(more)은 아직 끝난 게 아니다(v0.6)
+  return !!ch && !ch.more && !!done && ch.quests.length > 0 && ch.quests.every((q) => done[q] != null);
 }
 
 // 그 장에 들어섰다: 첫 장이거나 앞 장을 다 끝냈다

@@ -1,8 +1,8 @@
 [
-  {"id": "orders", "name": "주문 게시판", "icon": "📋", "when": {"chapter": "ch3"}, "hint": "3장에서 열린다", "desc": "마을이 붙인 주문을 채우고 은화를 받는다"},
-  {"id": "projects", "name": "마을 사업", "icon": "🏗️", "when": {"chapter": "ch3"}, "hint": "3장에서 열린다", "desc": "물자와 은화를 모아 작업대·집·도로를 올린다", "allow": [{"project": "pj_f_forge", "quest": "c2_forge"}]},
-  {"id": "transport", "name": "마을 간 운송", "icon": "🚚", "when": {"chapter": "ch3"}, "hint": "3장에서 열린다", "desc": "창고 물건을 다른 마을 창고로 바로 보낸다"},
-  {"id": "rumors", "name": "산지 소문", "icon": "🗺️", "when": {"chapter": "ch3"}, "hint": "3장에서 열린다", "desc": "좋은 재료가 나는 산지 소문을 게시판과 미니맵에서 본다"},
+  {"id": "orders", "name": "주문 게시판", "icon": "📋", "when": {"quest": "c3_wall"}, "hint": "3장, 본섬에 건너가면 열린다", "desc": "마을이 붙인 주문을 채우고 은화를 받는다"},
+  {"id": "projects", "name": "마을 사업", "icon": "🏗️", "when": {"quest": "c3_wall"}, "hint": "3장, 본섬에 건너가면 열린다", "desc": "물자와 은화를 모아 작업대·집·도로를 올린다", "allow": [{"project": "pj_f_forge", "quest": "c2_forge"}]},
+  {"id": "transport", "name": "마을 간 운송", "icon": "🚚", "when": {"quest": "c3_wall"}, "hint": "3장, 본섬에 건너가면 열린다", "desc": "창고 물건을 다른 마을 창고로 바로 보낸다"},
+  {"id": "rumors", "name": "산지 소문", "icon": "🗺️", "when": {"quest": "c3_wall"}, "hint": "3장, 본섬에 건너가면 열린다", "desc": "좋은 재료가 나는 산지 소문을 게시판과 미니맵에서 본다"},
   {"id": "faction", "name": "세력", "icon": "🚩", "when": {"chapter": "ch4"}, "hint": "4장에서 세력을 고르면 열린다", "desc": "등불단·자유 선단·안개 학회 가운데 하나에 든다", "soon": true},
   {"id": "pvp", "name": "필드 PvP·분쟁 구역", "icon": "⚔️", "when": {"chapter": "ch4"}, "hint": "4장에서 열린다", "desc": "다른 세력과 들판에서 겨룬다", "soon": true},
   {"id": "expedition", "name": "원정", "icon": "🏛️", "when": {"chapter": "ch4"}, "hint": "4장에서 열린다", "desc": "동료와 함께 옛 탑과 요새를 친다. 두목은 설계도를 떨군다. 3장 가라앉은 탑에서 한 번 맛본다", "soon": true},

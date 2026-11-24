@@ -57,6 +57,8 @@ export const ERR = {
   project_closed: '아직 열리지 않았거나 끝난 사업',
   not_needed: '그 사업에 더 필요 없음',
   locked: '아직 열리지 않은 기능(이야기를 더 진행하면 열린다)',
+  other_island: '다른 섬으로는 보낼 수 없다',
+  need_items: '건넬 물건이 모자라다(추적 줄에 센 것을 보자)',
   // 퀘스트(v0.5)
   no_npc: '그런 사람은 없음',
   no_quest: '없는 퀘스트',

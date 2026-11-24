@@ -2,6 +2,7 @@
 // 메인 퀘스트(장)가 먼저, 없으면 현상금. 예전 생산 단계(개척 일지, v0.4.3)는 일지의 '생활 안내'로 옮겼다(lifeSteps).
 // 목표 자리는 그때그때 가장 가까운 것을 고른다(노드는 남은 것만, 작업대는 그 작업대가 있는 가까운 마을).
 
+import { regionAt } from '../../core/terrain.js';
 import { countItem } from '../../core/inventory.js';
 import { stepGoal, stepText } from '../../core/systems/quests.js';
 import { isUnlocked } from '../../core/systems/unlocks.js';
@@ -42,8 +43,10 @@ function nodeGoal(game, a, types, label) {
 
 function stationGoal(game, a, type, label, only = null) {
   const list = [];
+  const isle = regionAt(game.data.lists.regions, a.x).id;
   for (const s of Object.values(game.state.settlements)) {
     if (only && s.id !== only) continue;
+    if (s.region !== isle) continue; // 같은 섬 작업대만(v0.6)
     const st = s.stations.find((x) => x.type === type);
     if (st) list.push({ x: st.x, z: st.z, label: `${s.name} ${label}`, kind: 'station' });
   }

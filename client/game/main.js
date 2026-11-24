@@ -11,7 +11,7 @@ import { stars } from '../../core/text.js';
 import { createScene } from './scene.js';
 import { startTier, createAutoTuner, chosenTier, setChosenTier, TIERS } from './gfx/quality.js';
 import { bakeMaterials, makeCanvasTextures } from './gfx/texgen.js';
-import { createTerrain } from './gfx/terrain.js';
+import { createTerrain, setArea } from './gfx/terrain.js';
 import { createWater } from './gfx/water.js';
 import { createGrass } from './gfx/grass.js';
 import { createFlora } from './gfx/flora.js';
@@ -21,7 +21,7 @@ import { createTownView } from './town-view.js';
 import { createActorsView, playerBody, BODY_KEY } from './actors-view.js';
 import { prepareActorBase, loadClassPack, ARMOR_CLASSES } from './models/actor.js';
 import { createMobsView } from './mobs-view.js';
-import { zoneAt } from '../../core/terrain.js';
+import { zoneAt, regionAt } from '../../core/terrain.js';
 import { createFx } from './fx.js';
 import { NODE_CHIP } from './models/nodes.js';
 import { createCamera } from './camera.js';
@@ -86,13 +86,15 @@ async function boot() {
   };
   const ctex = makeCanvasTextures();
   const view = createScene(canvas, { tier, textures: ctex });
-  const region = data.lists.regions[0];
+  // 섬이 여럿(v0.6): 내가 있는 섬만 그린다. 다른 섬으로 건너가면 저장하고 다시 불러온다
+  const region = regionAt(data.lists.regions, game.state.actors[PID].x);
+  setArea(region.bounds);
   await say('🌫️ 땅과 돌의 결을 굽는 중…');
   const tex = await bakeMaterials(view.renderer, { terrainSize: tier.texTerrain, objectSize: tier.texObject });
   const mats = makeMaterials(tex, ctex);
   await say('🌫️ 섬의 지형을 그리는 중…');
   const ground = createTerrain(view.scene, { terrain: game.terrain, region, tier, tex });
-  const water = createWater(view.scene, { hf: ground.hf, tex, tier });
+  const water = createWater(view.scene, { hf: ground.hf, tex, tier, still: region.zones?.find((z) => z.id === 'swamp')?.z0 ?? 1e9 });
   const flora = createFlora(view.scene, { hf: ground.hf, paths: ground.paths, ground, region, tier, mats, ctex, game });
   const grass = createGrass(view.scene, { hf: ground.hf, ground, tier });
   window.__mist.gfx = { view, tier, tex, mats, ground, flora, grass };
@@ -314,7 +316,9 @@ async function boot() {
       game.dispatch({ type: 'MOVE_INPUT', actor: PID, dx: 0, dz: 0 });
       hud.open('talk', { npc: t.id });
     } else if (t.kind === 'obj') {
-      game.dispatch({ type: 'QUEST_USE', actor: PID, obj: t.id });
+      // 배에 오르기(v0.6): 돌아올 수 없으니 먼저 묻는다
+      if (data.objects[t.id]?.cross) hud.open('cross', { obj: t.id });
+      else game.dispatch({ type: 'QUEST_USE', actor: PID, obj: t.id });
     } else if (t.kind === 'board') hud.open('board', { tab: boardOffers(questCtx(game), me()).length ? 'bounty' : undefined });
     else if (t.kind === 'market') hud.open('market');
   }
@@ -372,6 +376,11 @@ async function boot() {
     const a = me();
     switch (act) {
       case 'interact': interact(); break;
+      case 'cross-go': {
+        game.dispatch({ type: 'QUEST_USE', actor: PID, obj: v });
+        hud.close();
+        break;
+      }
       case 'attack':
       case 'heavy':
         stopBot();
@@ -716,6 +725,33 @@ async function boot() {
     const st = defendStep(ev.quest);
     hud.toast(`⚠️ 막지 못했다. ${data.sites[st?.site]?.name ?? '그 자리'}(으)로 다시 가면 처음부터 막는다`, 'warn');
   });
+  // 이어질 이야기(v0.6): 장이 끝나지 않았는데 다음 퀘스트가 아직 없다
+  game.on('story.pause', (ev) => {
+    if (ev.actor !== PID) return;
+    setTimeout(() => hud.banner('📜 이야기는 여기까지 — 다음 패치에 이어진다', 4200), 2600);
+  });
+  // 안개 벽 건너기(v0.6): 새 섬을 그리려면 저장하고 다시 불러온다
+  game.on('cross', (ev) => {
+    if (ev.actor !== PID) return;
+    const fade = document.createElement('div');
+    fade.className = 'crossfade';
+    fade.textContent = '🌫️ 안개 벽을 건너는 중…';
+    document.body.appendChild(fade);
+    let saved = false;
+    try {
+      localStorage.setItem(SAVE_KEY, game.save());
+      saved = true;
+    } catch (e) { /* 저장이 안 되는 브라우저 */ }
+    if (!saved) {
+      fade.textContent = '저장할 수 없는 브라우저라 새 섬을 그리지 못한다. 저장이 되는 브라우저에서 이어 가자.';
+      return;
+    }
+    setTimeout(() => {
+      const u = new URL(location.href);
+      u.searchParams.delete('fresh');
+      location.replace(u.toString());
+    }, 1800);
+  });
   game.on('chapter.done', (ev) => {
     if (ev.actor !== PID) return;
     const ch = data.chapters.find((c) => c.id === ev.chapter);
@@ -846,8 +882,9 @@ async function boot() {
     {
       const z = zoneAt(region, a.x, a.z);
       if ((z?.id || null) !== ui.zone) {
-        if (z && ui.zone !== undefined) hud.toast(`🌲 ${z.name} (T${z.tier}) — 늑대·멧돼지가 산다. 장비를 갖추자`, 'warn');
+        if (z && ui.zone !== undefined) hud.toast(`${z.icon || '🌲'} ${z.name} (T${z.tier}) — ${z.enter || ''}`, 'warn');
         ui.zone = z?.id || null;
+        view.setFog(z?.fog || 1);
       }
     }
     const p = actorsView.positionOf(PID);

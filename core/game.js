@@ -7,7 +7,7 @@
 import { makeRng } from './rng.js';
 import { makeClock } from './clock.js';
 import { makeBus } from './events.js';
-import { makeTerrain } from './terrain.js';
+import { makeWorld } from './terrain.js';
 import { createState, populate } from './state.js';
 import { makeCommands } from './commands.js';
 import { serialize, deserialize, hashState } from './save.js';
@@ -29,9 +29,11 @@ import { questsTick } from './systems/quests.js';
 
 const DEFAULT_ACTORS = [{ id: 'p1', name: '개척자', kind: 'player' }];
 
+// 지역마다 놓은 것을 이어 붙인다(v0.6). NPC는 그 지역 마을·자리에 있는 것만 놓인다
+const allStatics = (data, world, built) => data.lists.regions.flatMap((r) => layoutStatics(r, world.of(r.id), built, data.lists.npcs));
+
 function makeCtx(state, data, bus) {
-  const region = data.lists.regions[0];
-  const terrain = makeTerrain(region, state.meta.worldSeed);
+  const terrain = makeWorld(data.lists.regions, state.meta.worldSeed);
   const ctx = {
     state,
     data,
@@ -39,7 +41,7 @@ function makeCtx(state, data, bus) {
     clock: makeClock(data.config),
     rng: makeRng(state.rng),
     terrain,
-    statics: layoutStatics(region, terrain, builtSet(state), data.lists.npcs),
+    statics: allStatics(data, terrain, builtSet(state)),
     obstacles: null,
     obstaclesDirty: true,
     newId: (p) => `${p}_${state.nextId++}`,
@@ -47,7 +49,7 @@ function makeCtx(state, data, bus) {
   };
   // 마을 사업으로 건물이 서면 정적 배치를 다시 잰다(충돌·화면이 같이 쓴다)
   ctx.refreshStatics = () => {
-    ctx.statics = layoutStatics(region, terrain, builtSet(state), data.lists.npcs);
+    ctx.statics = allStatics(data, terrain, builtSet(state));
     ctx.obstaclesDirty = true;
   };
   const cmds = makeCommands(ctx);

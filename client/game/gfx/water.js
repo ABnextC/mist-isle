@@ -66,7 +66,7 @@ const WAVES = [
   [-0.1, 1.0, 4.2, 0.035, 0.5],
 ];
 
-export function createWater(scene, { hf, tex, tier }) {
+export function createWater(scene, { hf, tex, tier, still = 1e9 }) {
   const hTex = heightTexture(hf);
   const rings = Math.round(tier.water * 0.62);
   const segs = Math.round(tier.water * 0.75);
@@ -78,6 +78,8 @@ export function createWater(scene, { hf, tex, tier }) {
   const U = {
     uTime: { value: 0 }, tHeight: { value: hTex }, tRipple: { value: tex.water.N },
     uArea: { value: new THREE.Vector3(AREA.x0, AREA.z0, AREA.size) },
+    // 늪 물(v0.6): 이 z보다 북쪽은 파도·거품 없이 고인 물
+    uStill: { value: still },
   };
   const waveGLSL = WAVES.map(([dx, dz, L, A, Q], i) => {
     const len = Math.hypot(dx, dz);
@@ -88,6 +90,7 @@ export function createWater(scene, { hf, tex, tier }) {
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>
         uniform float uTime;
+        uniform float uStill;
         uniform sampler2D tHeight;
         uniform vec3 uArea;
         varying vec3 vWPos;
@@ -110,7 +113,7 @@ export function createWater(scene, { hf, tex, tier }) {
         float ground = texture2D(tHeight, (p - uArea.xy) / uArea.z).r;
         float depth = max(0.0, -ground);
         // 얕은 곳에서는 파도가 낮아진다
-        float amp = smoothstep(0.15, 5.0, depth) * 0.85 + 0.15 * smoothstep(0.0, 0.6, depth);
+        float amp = (smoothstep(0.15, 5.0, depth) * 0.85 + 0.15 * smoothstep(0.0, 0.6, depth)) * (1.0 - 0.9 * smoothstep(uStill - 20.0, uStill, p.y));
         vec3 disp = vec3(0.0);
         vec3 tang = vec3(1.0, 0.0, 0.0);
         vec3 bin = vec3(0.0, 0.0, 1.0);
@@ -125,6 +128,7 @@ export function createWater(scene, { hf, tex, tier }) {
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
         uniform float uTime;
+        uniform float uStill;
         uniform sampler2D tRipple;
         varying vec3 vWPos;
         varying float vDepth;
@@ -141,7 +145,10 @@ export function createWater(scene, { hf, tex, tier }) {
         float band = sin(d * 14.0 - uTime * 1.6 + fn * 4.0) * 0.5 + 0.5;
         float foamShore = shore * smoothstep(0.35, 0.8, fn * 0.6 + band * 0.55);
         float foamCrest = smoothstep(0.16, 0.3, vCrest) * smoothstep(0.45, 0.7, fbm3(vWPos.xz * 0.35 - uTime * 0.2));
-        gFoam = clamp(foamShore + foamCrest * 0.7, 0.0, 1.0);
+        float still = smoothstep(uStill - 20.0, uStill, vWPos.z);
+        gFoam = clamp(foamShore + foamCrest * 0.7, 0.0, 1.0) * (1.0 - still);
+        // 늪 물: 이탄에 물든 갈색 녹빛
+        diffuseColor.rgb = mix(diffuseColor.rgb, mix(vec3(0.05, 0.07, 0.04), vec3(0.16, 0.19, 0.11), exp(-d * 1.4)), still);
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.92, 0.95, 0.95), gFoam);
         diffuseColor.a = clamp(1.0 - exp(-d * 1.1) + 0.18 + gFoam, 0.0, 1.0) * smoothstep(0.0, 0.08, d + gFoam * 0.1);`)
       .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = mix(roughness, 0.7, gFoam);')

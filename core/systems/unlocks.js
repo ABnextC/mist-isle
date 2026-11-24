@@ -30,6 +30,7 @@ export const gated = (a) => !!a && a.kind === 'player' && !a.unlockAll;
 export function isUnlocked(ctx, a, id) {
   const u = ctx.data.unlocks[id];
   if (!u || !gated(a)) return true;
+  if (u.soon) return false; // 아직 만들지 않은 기능은 때가 와도 닫혀 있다
   return met(ctx, a, u.when);
 }
 

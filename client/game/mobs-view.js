@@ -143,6 +143,7 @@ export function createMobsView(scene, game, hf, overlay, { posOf = null, wakeHin
       v.breathe += dt * (m.mode === 'chase' || m.mode === 'flee' ? 5 : 1.6);
       const walk = Math.min(1, v.speed / 0.6);
       if (q.float) floatPose(v, q, m, dt, t, { dead, winding, charging, left, atk, walk, lungeK, hurtK });
+      else if (q.serpent) serpentPose(v, q, dt, { dead, winding, charging, left, atk, walk, lungeK, hurtK });
       else if (q.legs[0]?.kn && (!dead || q.statue)) {
         // 네발짐승: 걸음새를 골라 발이 땅을 디디게(딛는 동안 발이 뒤로 곧게, 드는 동안 앞으로 호를 그리며)
         const want = gaitOf(type, v.speed);
@@ -311,6 +312,33 @@ export function createMobsView(scene, game, hf, overlay, { posOf = null, wakeHin
 
   // 떠다니는 망령(v0.5.1): 땅 위에 떠서 출렁이고, 쫓을 땐 몸을 앞으로 숙여 두 팔을 뻗는다.
   // 할퀴기는 두 팔을 머리 위로 들었다 내리긋고, 덮치기는 팔을 앞으로 뻗은 채 날아든다. 쓰러지면 위로 흩어진다
+  // 뱀(v0.6.1 이무기): 물결치듯 마디가 좌우로 굽이친다. 준비 동작엔 앞몸을 들고, 감기(사방)는 몸을 둥글게 만다
+  function serpentPose(v, q, dt, { dead, winding, charging, left, atk, walk, lungeK, hurtK }) {
+    v.phase += dt * (dead ? 0 : 1.4 + v.speed * 1.2);
+    const n = q.segs.length;
+    const coil = winding && atk?.arc === 360 ? 1 - left : 0;
+    const rear = winding && atk?.arc !== 360 ? 1 - left : 0;
+    for (let i = 0; i < n; i++) {
+      const k = i / (n - 1);
+      const amp = (0.18 + 0.5 * walk + (charging ? -0.1 : 0)) * Math.pow(k, 0.7) + 0.05;
+      const g = q.segs[i];
+      const wave = Math.sin(v.phase - i * 0.65) * amp * (dead ? 0.4 : 1);
+      // 감기: 꼬리를 앞으로 휘감아 고리를 만든다
+      const ang = coil * k * Math.PI * 1.6;
+      const r0 = -q.segZ[i];
+      const cx = Math.sin(ang) * r0 * 0.55;
+      const cz = -Math.cos(ang) * r0 * (1 - coil * 0.45);
+      g.position.x = wave * (1 - coil) + cx * coil;
+      g.position.z = q.segZ[i] * (1 - coil) + cz * coil;
+      g.position.y = q.segY[i] + (i < 5 ? rear * (1.5 - i * 0.3) : 0) + (dead ? -0.2 * v.fall : 0);
+      g.rotation.y = Math.cos(v.phase - i * 0.65) * amp * 0.6 * (1 - coil);
+    }
+    const s0 = q.segs[0];
+    q.head.position.set(s0.position.x, s0.position.y + 0.12, 0.55 + 0.6 * lungeK + (charging ? 0.3 : 0));
+    q.head.rotation.x = rear ? -0.35 : 0.25 * lungeK - 0.15 * hurtK;
+    q.head.rotation.y = Math.cos(v.phase) * 0.15 * walk;
+  }
+
   function floatPose(v, q, m, dt, t, { dead, winding, charging, left, atk, walk, lungeK, hurtK }) {
     const k = 1 - Math.exp(-dt * 10);
     const hover = 0.32 + Math.sin(v.breathe * 1.3) * 0.07;

@@ -39,10 +39,14 @@
       "quests": [
         "c3_steps",
         "c3_wall",
-        "c3_mistfolk"
+        "c3_mistfolk",
+        "c3_beast",
+        "c3_survey",
+        "c3_sunken",
+        "c3_record",
+        "c3_ember"
       ],
-      "after": "이어지는 이야기(늪의 괴수·측량 천막·가라앉은 탑·늪의 불씨)는 다음 패치에 붙는다.",
-      "more": true
+      "after": "4장 「잿빛 함대」로 이어진다. 다시 켠 늪 탑 위에서, 잿빛 돛 수십 척이 안개를 뚫고 오는 것이 보인다."
     },
     {
       "id": "ch4",
@@ -1254,6 +1258,252 @@
       ],
       "reward": {
         "silver": 150
+      },
+      "next": "c3_beast"
+    },
+    {
+      "id": "c3_beast",
+      "chapter": "ch3",
+      "kind": "main",
+      "name": "늪의 괴수",
+      "summary": "탑이 꺼진 뒤로 동쪽 늪 소의 이무기가 사나워져 탑으로 가는 물길을 막았다.",
+      "intro": [
+        "동쪽 늪 소에 이무기가 똬리를 틀었느니라. 탑이 꺼진 뒤로 사나워졌지.",
+        "(이무기는 용이 되다 만 큰 뱀이다. 음식과 갑옷부터 챙기자.)"
+      ],
+      "steps": [
+        {
+          "type": "go",
+          "site": "beast_den",
+          "text": "동쪽 늪 소(이무기 소) 찾기"
+        },
+        {
+          "type": "kill",
+          "mobs": [
+            "imugi"
+          ],
+          "count": 1,
+          "site": "beast_den",
+          "text": "늪 이무기 쓰러뜨리기"
+        },
+        {
+          "type": "talk",
+          "npc": "ara",
+          "text": "아라에게 알리기",
+          "say": [
+            "이무기를 물리쳤느냐. 늪의 숨이 한결 가벼워졌구나.",
+            "이제 탑으로 가는 물길이 열렸느니라. 헌데 탑 아래에 바깥 사람들이 천막을 쳤다더구나.",
+            "쇠 냄새가 나는 자들이다. 조심하거라."
+          ],
+          "reply": "천막을 살펴보겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 220,
+        "items": [
+          {
+            "item": "gem_rough",
+            "qty": 1
+          }
+        ]
+      },
+      "next": "c3_survey"
+    },
+    {
+      "id": "c3_survey",
+      "chapter": "ch3",
+      "kind": "main",
+      "name": "측량 천막",
+      "summary": "꺼진 늪 탑 아래에 본토 측량대가 천막을 쳤다. 무엇을 재고 있는지 알아내자.",
+      "intro": [
+        "(늪 탑은 북쪽이다. 탑 아래 파란 깃발이 보인다. 본토 해군의 빛깔이다.)"
+      ],
+      "steps": [
+        {
+          "type": "go",
+          "site": "survey_tent",
+          "text": "늪 탑 아래 본토 측량 천막으로 가기"
+        },
+        {
+          "type": "kill",
+          "mobs": [
+            "surveyor",
+            "surveyor_spear"
+          ],
+          "count": 4,
+          "site": "survey_tent",
+          "text": "측량대 경비병 물리치기"
+        },
+        {
+          "type": "use",
+          "objs": [
+            "o_pump"
+          ],
+          "count": 1,
+          "text": "쇠통처럼 생긴 기계 살피기"
+        },
+        {
+          "type": "use",
+          "objs": [
+            "o_survey_notes"
+          ],
+          "count": 1,
+          "text": "천막 안 측량 일지 읽기"
+        },
+        {
+          "type": "talk",
+          "npc": "yeoul_mist",
+          "text": "물안개 마을의 여울에게 알리기",
+          "say": [
+            "‘영맥 펌프’요? 땅 밑 영기를 빨아올리는 기계라니….",
+            "일지엔 ‘불씨는 이미 없었다. 서쪽 가라앉은 탑으로 사람 발자국’이라고 적혀 있다고요?",
+            "일곱 해 전이면… 아버지예요. 아버지가 불씨를 먼저 숨기신 거예요!"
+          ],
+          "reply": "가라앉은 탑으로 가자"
+        }
+      ],
+      "reward": {
+        "silver": 260,
+        "items": [
+          {
+            "item": "ingot_iron",
+            "qty": 3
+          }
+        ]
+      },
+      "next": "c3_sunken"
+    },
+    {
+      "id": "c3_sunken",
+      "chapter": "ch3",
+      "kind": "main",
+      "name": "가라앉은 탑",
+      "summary": "서쪽 늪에 반쯤 잠긴 옛 탑. 망령이 들끓고, 그 한가운데 등불을 든 망령이 있다.",
+      "intro": [
+        "(첫 원정이다. 혼자 들어가기엔 버겁다. 음식·물약을 넉넉히 챙기자.)",
+        "가라앉은 탑은 늪 서쪽 끝이에요. 저도 뒤따라갈게요."
+      ],
+      "steps": [
+        {
+          "type": "go",
+          "site": "sunken_tower",
+          "text": "늪 서쪽 끝 가라앉은 탑으로 가기"
+        },
+        {
+          "type": "kill",
+          "mobs": [
+            "mist_wraith"
+          ],
+          "count": 4,
+          "site": "sunken_tower",
+          "text": "탑을 떠도는 망령 물리치기"
+        },
+        {
+          "type": "kill",
+          "mobs": [
+            "yeogang_wraith"
+          ],
+          "count": 1,
+          "site": "sunken_tower",
+          "text": "등불을 든 망령 쓰러뜨리기"
+        }
+      ],
+      "reward": {
+        "silver": 300,
+        "items": [
+          {
+            "item": "gem_rough",
+            "qty": 2
+          }
+        ]
+      },
+      "next": "c3_record"
+    },
+    {
+      "id": "c3_record",
+      "chapter": "ch3",
+      "kind": "main",
+      "name": "여강의 기록",
+      "summary": "등불을 든 망령이 흩어진 자리에 낡은 기록과 쇠띠 두른 함이 남았다.",
+      "intro": [
+        "(망령이 흩어지며 등불이 바닥에 떨어진다. 그 곁에 젖지 않게 싼 기록이 있다.)"
+      ],
+      "steps": [
+        {
+          "type": "use",
+          "objs": [
+            "o_yeogang_log"
+          ],
+          "count": 1,
+          "text": "여강의 기록 읽기"
+        },
+        {
+          "type": "use",
+          "objs": [
+            "o_ember"
+          ],
+          "count": 1,
+          "text": "불씨 함 열기"
+        },
+        {
+          "type": "talk",
+          "npc": "yeoul_mist",
+          "text": "여울에게 기록 건네기",
+          "say": [
+            "…‘바깥 배가 불씨를 노린다. 내가 숨긴다. 여울아, 등대 불이 다시 켜지거든 와서 가져가라.’",
+            "아버지는 마지막까지 불씨를 지키셨어요. 그래서 거기 남으셨던 거예요.",
+            "이제 쉬셔도 돼요, 아버지. …불씨를 탑에 올려 주세요. 아버지가 바라던 거예요."
+          ],
+          "reply": "탑에 올리겠다"
+        }
+      ],
+      "reward": {
+        "silver": 200
+      },
+      "next": "c3_ember"
+    },
+    {
+      "id": "c3_ember",
+      "chapter": "ch3",
+      "kind": "main",
+      "name": "늪의 불씨",
+      "summary": "여강이 지킨 불씨를 늪 탑 등잔에 올리자.",
+      "intro": [
+        "(불씨 함이 손안에서 따뜻하다. 늪 탑은 측량 천막 바로 북쪽이다.)"
+      ],
+      "steps": [
+        {
+          "type": "use",
+          "objs": [
+            "o_swamp_lamp"
+          ],
+          "count": 1,
+          "text": "늪 탑 등잔에 불씨 올리기"
+        },
+        {
+          "type": "talk",
+          "npc": "ara",
+          "text": "아라에게 돌아가기",
+          "say": [
+            "늪 탑에 불이 들었구나. 늪이 삼백 년 만에 맑게 숨을 쉬느니라.",
+            "허나 불빛이 닿는 저 수평선을 보거라. 잿빛 돛이다. 수십 척이로구나.",
+            "바깥 사람아, 너의 섬 사람들에게 알리거라. 폭풍이 오고 있느니라."
+          ],
+          "reply": "나루로 알리러 가겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 400,
+        "items": [
+          {
+            "item": "ingot_iron",
+            "qty": 4
+          },
+          {
+            "item": "gem_rough",
+            "qty": 2
+          }
+        ]
       },
       "next": null
     }

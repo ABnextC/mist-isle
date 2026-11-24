@@ -387,7 +387,68 @@ function haetae(seed) {
   return { m, root, torso, legs, neck, head, tail, glow, R: R0, L, H, rad: R, statue: true };
 }
 
-const MAKERS = { crab, deer, boar, wolf, mist_wolf: mistWolf, mist_wraith: wraith, stone_haetae: haetae };
+// 늪 이무기(v0.6.1): 용이 되지 못한 큰 뱀. 마디마다 따로 움직여 몸을 굽이친다(mobs-view의 serpentPose)
+function imugi(seed) {
+  const R0 = rng(seed);
+  const back = C(0x26301f);
+  const scale = C(0x3d4a2f);
+  const belly = C(0x9a9460);
+  const ridge = C(0x151a12);
+  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, metalness: 0.05, emissive: 0x000000 });
+  const root = new THREE.Group();
+  const torso = new THREE.Group();
+  root.add(torso);
+  const N = 16;
+  const segs = [];
+  const segZ = [];
+  const segY = [];
+  for (let i = 0; i < N; i++) {
+    const k = i / (N - 1);
+    const r = 0.5 * (1 - k * 0.82) + 0.06;
+    const parts = [
+      ell(r, r * 0.86, r * 1.25, scale),
+      ell(r * 0.78, r * 0.4, r * 1.15, belly, { y: -r * 0.5 }),
+      cone(r * 0.32, r * 0.9, ridge, { y: r * 0.95, rx: -0.5 }),
+    ];
+    if (i % 2 === 0) parts.push(ell(r * 0.5, r * 0.25, r * 0.7, back, { y: r * 0.7, z: -r * 0.2 }));
+    const g = new THREE.Group();
+    g.add(mesh(merge(parts), m));
+    segZ.push(-i * 0.5);
+    segY.push(r * 0.75);
+    g.position.set(0, segY[i], segZ[i]);
+    torso.add(g);
+    segs.push(g);
+  }
+  // 머리: 길쭉한 주둥이, 눈두덩, 작은 뿔 둘(용이 되다 만 흔적), 수염
+  const head = new THREE.Group();
+  head.position.set(0, 0.62, 0.55);
+  torso.add(head);
+  const hd = [
+    ell(0.42, 0.3, 0.55, scale, { z: 0.15 }),
+    ell(0.3, 0.2, 0.42, back, { z: 0.55, y: -0.04 }),
+    ell(0.34, 0.12, 0.5, belly, { y: -0.2, z: 0.3 }),
+  ];
+  for (const sx of [-1, 1]) {
+    hd.push(ell(0.12, 0.08, 0.14, ridge, { x: sx * 0.24, y: 0.2, z: 0.28 }));
+    hd.push(cone(0.06, 0.38, C(0x8a8470), { x: sx * 0.18, y: 0.3, z: -0.08, rx: -1.1, rz: -sx * 0.3 }));
+    hd.push(cone(0.015, 0.7, C(0x6a6a50), { x: sx * 0.22, y: -0.08, z: 0.78, rx: 1.9, rz: sx * 0.5 }));
+  }
+  head.add(mesh(merge(hd), m));
+  const eye = new THREE.MeshBasicMaterial({ color: 0xffc84a });
+  head.add(new THREE.Mesh(merge([ell(0.06, 0.05, 0.04, C(0xffffff), { x: -0.27, y: 0.18, z: 0.38 }), ell(0.06, 0.05, 0.04, C(0xffffff), { x: 0.27, y: 0.18, z: 0.38 })]), eye));
+  root.scale.setScalar(1.3 + R0() * 0.05);
+  return { m, root, torso, legs: [], neck: null, head, tail: null, segs, segZ, segY, R: R0, L: 3.2, serpent: true };
+}
+
+const MAKERS = { crab, deer, boar, wolf, mist_wolf: mistWolf, mist_wraith: wraith, stone_haetae: haetae, imugi,
+  // 여강의 망령(v0.6.1): 큰 망령
+  yeogang_wraith: (seed) => {
+    const q = wraith(seed);
+    q.root.scale.setScalar(1.3);
+    q.emis = [0.18, 0.16, 0.1];
+    return q;
+  },
+};
 
 export function makeCreature(type, seed) {
   const q = MAKERS[type](seed);

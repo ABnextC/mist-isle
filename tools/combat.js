@@ -168,7 +168,7 @@ function main() {
   const rows = [];
   const all = [['crab', null], ['deer', null], ['boar', null], ['wolf', 2], ['wolf', 3],
     ['raider_scout', null], ['raider', null], ['raider_spear', null], ['raider_axe', null], ['raider_thrower', null], ['raider_lt', null], ['raider_captain', null],
-    ['mist_wraith', null], ['stone_haetae', null]];
+    ['mist_wraith', null], ['stone_haetae', null], ['imugi', null], ['surveyor', null], ['surveyor_spear', null], ['yeogang_wraith', null]];
   const want = args.foes ? new Set(String(args.foes).split(',')) : null;
   const cases = want ? all.filter(([t]) => want.has(t)) : all;
   const kits = args.kits ? String(args.kits).split(',') : Object.keys(KITS);

@@ -1014,7 +1014,7 @@ test('안개 늑대는 밤에만 나온다: 낮엔 숨고, 밤에 마을 사이 
   ok(wolves().every((x) => x.mode === 'away'), '해가 뜨면 사라진다');
 });
 
-test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사업·배 고치기·안개 벽 건너기까지 막히는 데 없이 19개, 건너면 해금·보상·현상금', () => {
+test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사업·배 고치기·안개 벽 건너기·늪의 불씨까지 막히는 데 없이 24개, 건너면 해금·보상·현상금', () => {
   const g = createGame({ data, seed: 7, actors: [{ id: 'p1', kind: 'player' }] });
   g.state.econ = null;
   const st = g.state;
@@ -1177,8 +1177,8 @@ test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사
   eq(Object.keys(a.quests.items).length, 0, '퀘스트 물건은 돌려줬다');
   ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch1' && e.next === 'ch2'), '1장 끝 → 2장');
   ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch2' && e.next === 'ch3'), '2장 끝 → 3장');
-  ok(events.some((e) => e.type === 'story.pause' && e.chapter === 'ch3'), '3장은 이어질 이야기가 남았다');
-  ok(!events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch3'), '3장은 아직 끝이 아니다');
+  ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch3' && !e.next), '3장 끝(4장은 준비 중)');
+  ok(!events.some((e) => e.type === 'story.pause'), '이어질 이야기 쉼 없음');
   eq(events.filter((e) => e.type === 'quest.wave').length, 4, '습격 두 번 × 두 물결');
   ok(a.marks?.lantern_mark != null && events.some((e) => e.type === 'quest.grant'), '등불의 각인');
   ok(events.some((e) => e.type === 'quest.stepReward' && e.reward.items.some((x) => x.item === 'wpn_sword_copper')), '강두의 구리 검');
@@ -1287,7 +1287,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '0.6.0');
+  eq(st.meta.engine, '0.6.1');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1334,12 +1334,17 @@ test('등대섬 해금(v0.5.2): 사람은 3장 전까지 주문·운송·사업�
   ok(!allowedProject(qctx, a, 'pj_f_forge'), '대장간 사업도 퀘스트 전엔 잠김');
   a.quests.active = { c2_forge: { step: 1, n: 0, used: [], t: 0 } };
   ok(allowedProject(qctx, a, 'pj_f_forge') && !allowedProject(qctx, a, 'pj_f_tannery'), '대장간 퀘스트 동안 그 사업만');
-  // 2장까지 끝내면 3장에 들어선 셈: 경제 넷이 열리고, 4장 것은 그대로 잠겨 있다
+  // 2장까지 끝내면 3장에 들어선다. 경제 넷은 본섬에 건너가야(안개 벽) 열린다(v0.6)
   a.quests.active = {};
-  for (const ch of data.chapters) for (const id of ch.quests) a.quests.done[id] = 1;
+  for (const ch of data.chapters.slice(0, 2)) for (const id of ch.quests) a.quests.done[id] = 1;
   ok(chapterReached(qctx, a, 'ch3') && !chapterReached(qctx, a, 'ch4'), '3장에 들어섰다');
+  for (const id of ['orders', 'projects', 'transport', 'rumors']) ok(!isUnlocked(qctx, a, id), `${id} 아직`);
+  a.quests.done.c3_wall = 1;
   for (const id of ['orders', 'projects', 'transport', 'rumors']) ok(isUnlocked(qctx, a, id), `${id} 열림`);
-  ok(!isUnlocked(qctx, a, 'faction'), '세력은 4장');
+  // 3장을 다 끝내 4장에 닿아도, 아직 만들지 않은 4장 기능은 닫혀 있다
+  for (const id of data.chapters[2].quests) a.quests.done[id] = 1;
+  ok(chapterReached(qctx, a, 'ch4'), '4장에 닿았다');
+  ok(!isUnlocked(qctx, a, 'faction'), '세력은 준비 중');
 });
 
 test('생활 단계(v0.5.2): 가진 것은 1초마다 세고, 이미 다음 것(돌 도구)을 가졌으면 줍기 단계는 지난다', () => {
@@ -1474,7 +1479,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '0.6.0');
+  eq(st.meta.engine, '0.6.1');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');

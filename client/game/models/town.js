@@ -728,6 +728,36 @@ export function shipBlack(sailMat = 'sailBlack') {
   return { parts, fx };
 }
 
+// 늪 탑(v0.6.1): 등대와 같은 옛 등불탑이지만 불빛 자리가 없고 유리는 흐린 돌빛이다
+export function towerOld() {
+  const t = lighthouse();
+  t.fx.lights = [];
+  t.fx.glows = [];
+  if (t.parts.lens) {
+    (t.parts.rockBare ||= []).push(...t.parts.lens);
+    delete t.parts.lens;
+  }
+  if (t.parts.window) {
+    (t.parts.barkDark ||= []).push(...t.parts.window);
+    delete t.parts.window;
+  }
+  return t;
+}
+
+// 영맥 펌프 시제품(v0.6.1): 쇠통, 땅에 박힌 관, 돌리는 바퀴
+export function pump() {
+  const { parts, fx, add } = kit();
+  add('planksDark', box(2.2, 0.25, 1.6, { y: 0.12 }));
+  add('iron', P(new THREE.CylinderGeometry(0.55, 0.6, 1.5, 14), 0xffffff, { y: 1.0 }));
+  add('copperMetal', P(new THREE.CylinderGeometry(0.62, 0.62, 0.1, 14), 0xffffff, { y: 0.45 }));
+  add('copperMetal', P(new THREE.CylinderGeometry(0.62, 0.62, 0.1, 14), 0xffffff, { y: 1.55 }));
+  add('iron', taperTube([V(0.5, 1.2, 0), V(1.0, 1.0, 0), V(1.1, 0.2, 0), V(1.1, -0.6, 0)], [0.09, 0.09, 0.09, 0.09], { radial: 8, vScale: 1, cap: true }));
+  add('iron', P(new THREE.TorusGeometry(0.42, 0.04, 6, 18), 0xffffff, { x: -0.62, y: 1.25, ry: Math.PI / 2 }));
+  for (let i = 0; i < 4; i++) add('iron', box(0.04, 0.8, 0.04, { x: -0.62, y: 1.25, rx: (i * Math.PI) / 4 }));
+  add('spirit', P(new THREE.SphereGeometry(0.14, 10, 8), 0xffffff, { y: 1.85 }));
+  return { parts, fx };
+}
+
 // 퀘스트 물체(v0.5) ─ 바다 궤짝: 쇠띠를 두른 나무 궤짝, 뚜껑은 반달
 export function chest(seed = 1) {
   const { parts, fx, add } = kit();

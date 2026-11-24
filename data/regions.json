@@ -1742,6 +1742,286 @@
             "rot": 0.4
           }
         ]
+      },
+      {
+        "id": "beast_den",
+        "name": "이무기 소",
+        "x": 1330,
+        "z": 392,
+        "r": 14,
+        "structures": [
+          {
+            "kind": "rubble",
+            "dx": -7,
+            "dz": 6,
+            "r": 0,
+            "rot": 0.6
+          },
+          {
+            "kind": "pillar_fallen",
+            "dx": 6,
+            "dz": -7,
+            "r": 0,
+            "rot": 2.2
+          },
+          {
+            "kind": "rubble",
+            "dx": 8,
+            "dz": 7,
+            "r": 0,
+            "rot": 2.8
+          }
+        ],
+        "members": [
+          {
+            "type": "imugi",
+            "dx": 0,
+            "dz": 0,
+            "yaw": 3.1
+          }
+        ]
+      },
+      {
+        "id": "survey_tent",
+        "name": "본토 측량 천막",
+        "x": 1196,
+        "z": 386,
+        "r": 13,
+        "flat": 0.8,
+        "structures": [
+          {
+            "kind": "tent_white",
+            "dx": -6.5,
+            "dz": 5,
+            "r": 1.9,
+            "rot": 2.6
+          },
+          {
+            "kind": "tent_white",
+            "dx": 6.5,
+            "dz": 6,
+            "r": 1.9,
+            "rot": -2.4
+          },
+          {
+            "kind": "banner_blue",
+            "dx": -9,
+            "dz": -4,
+            "r": 0.25,
+            "rot": 0.4
+          },
+          {
+            "kind": "banner_blue",
+            "dx": 9,
+            "dz": -3,
+            "r": 0.25,
+            "rot": -0.4
+          },
+          {
+            "kind": "crates",
+            "dx": 3,
+            "dz": 9,
+            "r": 0.8,
+            "rot": 0.3
+          },
+          {
+            "kind": "campfire",
+            "dx": 0,
+            "dz": 3,
+            "r": 0.7
+          },
+          {
+            "kind": "pump",
+            "dx": 0,
+            "dz": -5.5,
+            "r": 1.2,
+            "rot": 0
+          }
+        ],
+        "objects": [
+          {
+            "id": "o_pump",
+            "kind": "door",
+            "dx": 1.6,
+            "dz": -3.8,
+            "rot": 0,
+            "name": "영맥 펌프 시제품",
+            "verb": "살피기"
+          },
+          {
+            "id": "o_survey_notes",
+            "kind": "papers",
+            "dx": -3,
+            "dz": 1.5,
+            "rot": 0.4,
+            "name": "측량 일지",
+            "verb": "읽기"
+          }
+        ],
+        "members": [
+          {
+            "type": "surveyor",
+            "dx": -3,
+            "dz": -2,
+            "yaw": 3.1
+          },
+          {
+            "type": "surveyor",
+            "dx": 5,
+            "dz": 1,
+            "yaw": 2.5
+          },
+          {
+            "type": "surveyor_spear",
+            "dx": -7,
+            "dz": -6,
+            "yaw": 3.0
+          },
+          {
+            "type": "surveyor_spear",
+            "dx": 4,
+            "dz": -9,
+            "yaw": 3.3
+          }
+        ]
+      },
+      {
+        "id": "swamp_tower",
+        "name": "늪 탑",
+        "x": 1236,
+        "z": 410,
+        "r": 9,
+        "flat": 1.0,
+        "structures": [
+          {
+            "kind": "tower_old",
+            "dx": 0,
+            "dz": 1.5,
+            "r": 2.9,
+            "rot": 3.14
+          }
+        ],
+        "objects": [
+          {
+            "id": "o_swamp_lamp",
+            "kind": "brazier",
+            "dx": 0,
+            "dz": -3.6,
+            "rot": 0,
+            "name": "늪 탑 등잔",
+            "verb": "불씨 올리기"
+          }
+        ]
+      },
+      {
+        "id": "sunken_tower",
+        "name": "가라앉은 탑",
+        "x": 1062,
+        "z": 404,
+        "r": 16,
+        "structures": [
+          {
+            "kind": "pillar_broken",
+            "dx": 6,
+            "dz": 6,
+            "r": 0.6,
+            "rot": 0.3
+          },
+          {
+            "kind": "pillar",
+            "dx": -7,
+            "dz": 5,
+            "r": 0.6,
+            "rot": 1.2
+          },
+          {
+            "kind": "pillar_broken",
+            "dx": -6,
+            "dz": -7,
+            "r": 0.6,
+            "rot": 2.2
+          },
+          {
+            "kind": "pillar_fallen",
+            "dx": 8,
+            "dz": -5,
+            "r": 0,
+            "rot": 1.9
+          },
+          {
+            "kind": "arch",
+            "dx": 0,
+            "dz": -11,
+            "r": 0,
+            "rot": 0
+          },
+          {
+            "kind": "rubble",
+            "dx": 2,
+            "dz": 9,
+            "r": 0,
+            "rot": 1.1
+          },
+          {
+            "kind": "mural",
+            "dx": -11,
+            "dz": -1,
+            "r": 1.1,
+            "rot": 1.57
+          }
+        ],
+        "objects": [
+          {
+            "id": "o_yeogang_log",
+            "kind": "papers",
+            "dx": 1.5,
+            "dz": 2,
+            "rot": 0.8,
+            "name": "여강의 기록",
+            "verb": "읽기"
+          },
+          {
+            "id": "o_ember",
+            "kind": "chest",
+            "dx": -1.5,
+            "dz": 2.5,
+            "rot": -0.3,
+            "name": "불씨 함",
+            "verb": "열기"
+          }
+        ],
+        "members": [
+          {
+            "type": "yeogang_wraith",
+            "dx": 0,
+            "dz": 0.5,
+            "yaw": 3.1
+          },
+          {
+            "type": "mist_wraith",
+            "dx": 8,
+            "dz": 3,
+            "yaw": 2
+          },
+          {
+            "type": "mist_wraith",
+            "dx": -8,
+            "dz": 2,
+            "yaw": -2
+          },
+          {
+            "type": "mist_wraith",
+            "dx": 5,
+            "dz": -8,
+            "yaw": 2.6
+          },
+          {
+            "type": "mist_wraith",
+            "dx": -4,
+            "dz": -9,
+            "yaw": 3.4
+          }
+        ]
       }
     ]
   }

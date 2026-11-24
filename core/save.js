@@ -341,6 +341,15 @@ const MIGRATIONS = [
       if (st.econ) addMissingAgents(ctx);
     },
   },
+  {
+    // v0.6 → v0.6.1: 3장 뒷부분의 자리(이무기 소·측량 천막·가라앉은 탑)에 무리를 세운다
+    from: 10,
+    to: 11,
+    run(st, data) {
+      st.meta.engine = '0.6.1';
+      initMobs(migrationCtx(st, data, 0x61e7b3c9));
+    },
+  },
 ];
 
 // v0.5.2: 1~2장 퀘스트에 생활 단계가 끼었다. 하던 단계 번호를 새 번호로(앞에 낀 단계는 건너뛴다)

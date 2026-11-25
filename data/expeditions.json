@@ -1,0 +1,295 @@
+{
+  "mercs": {
+    "cost": 60,
+    "list": [
+      {
+        "id": "shield",
+        "name": "등불단 방패수",
+        "weapon": "wpn_sword_iron",
+        "look": {
+          "body": "m",
+          "seed": 301,
+          "chest": "heavy",
+          "legs": "heavy",
+          "tint": {
+            "shirt": "#c8c0a8",
+            "trousers": "#3a3632",
+            "sash": "#c8a050"
+          }
+        }
+      },
+      {
+        "id": "archer",
+        "name": "선단 궁수",
+        "weapon": "wpn_bow_oak",
+        "look": {
+          "body": "f",
+          "seed": 302,
+          "chest": "light",
+          "legs": "light",
+          "tint": {
+            "shirt": "#d8d0b8",
+            "vest": "#3e6a8a",
+            "trousers": "#2e3238"
+          }
+        }
+      },
+      {
+        "id": "mage",
+        "name": "학회 술사",
+        "weapon": "wpn_staff_oak",
+        "look": {
+          "body": "m",
+          "seed": 303,
+          "chest": "robe",
+          "legs": "light",
+          "tint": {
+            "robe": "#2e4a6e",
+            "sash": "#d8d0b8",
+            "trousers": "#2a2e38"
+          }
+        }
+      }
+    ]
+  },
+  "list": [
+    {
+      "id": "ex_sunken",
+      "name": "가라앉은 탑 깊은 곳",
+      "icon": "🏚️",
+      "site": "sunken_tower",
+      "requires": "c3_sunken",
+      "level": 16,
+      "minutes": 12,
+      "desc": "물에 잠긴 탑 아래층. 측량대가 남긴 장비와 여강의 그림자가 아직 떠돈다.",
+      "waves": [
+        {
+          "mist_wraith": 3
+        },
+        {
+          "surveyor": 2,
+          "surveyor_spear": 1
+        },
+        {
+          "mist_wraith": 2,
+          "surveyor": 2
+        }
+      ],
+      "boss": "ex_yeogang",
+      "reward": {
+        "silver": [
+          180,
+          240
+        ],
+        "xp": 1200,
+        "items": [
+          {
+            "item": "shard_mist",
+            "qty": [
+              2,
+              3
+            ]
+          },
+          {
+            "item": "gem_rough",
+            "qty": [
+              1,
+              2
+            ]
+          },
+          {
+            "item": "ingot_iron",
+            "qty": [
+              2,
+              3
+            ]
+          }
+        ],
+        "blueprints": [
+          "bp_sword_mist",
+          "bp_spear_mist",
+          "bp_mist_helm"
+        ]
+      }
+    },
+    {
+      "id": "ex_fort",
+      "name": "잿빛 요새 지하 창고",
+      "icon": "🏰",
+      "site": "gray_fort",
+      "requires": "c4_fort",
+      "level": 24,
+      "minutes": 12,
+      "desc": "함대가 버리고 간 요새의 지하. 남은 수병들이 화약과 안개 결정을 지킨다.",
+      "waves": [
+        {
+          "marine": 2,
+          "marine_spear": 1
+        },
+        {
+          "marine": 2,
+          "marine_spear": 2
+        },
+        {
+          "marine": 3,
+          "marine_spear": 2
+        }
+      ],
+      "boss": "ex_yeomcheol",
+      "reward": {
+        "silver": [
+          240,
+          320
+        ],
+        "xp": 2200,
+        "items": [
+          {
+            "item": "shard_mist",
+            "qty": [
+              3,
+              4
+            ]
+          },
+          {
+            "item": "ingot_iron",
+            "qty": [
+              3,
+              5
+            ]
+          },
+          {
+            "item": "leather",
+            "qty": [
+              2,
+              3
+            ]
+          }
+        ],
+        "blueprints": [
+          "bp_battleaxe_mist",
+          "bp_hammer_mist",
+          "bp_mist_greaves"
+        ]
+      }
+    },
+    {
+      "id": "ex_kiln",
+      "name": "불의 가마",
+      "icon": "🌋",
+      "site": "ember_tower",
+      "requires": "c5_fourth",
+      "level": 33,
+      "minutes": 14,
+      "desc": "불 파수꾼이 지키던 탑 밑 가마. 재와 서리의 늑대가 굴을 메운다.",
+      "waves": [
+        {
+          "ash_wolf": 3
+        },
+        {
+          "frost_wolf": 2,
+          "ash_wolf": 2
+        },
+        {
+          "ash_wolf": 3,
+          "frost_wolf": 2
+        }
+      ],
+      "boss": "ex_forge",
+      "reward": {
+        "silver": [
+          320,
+          420
+        ],
+        "xp": 3600,
+        "items": [
+          {
+            "item": "shard_mist",
+            "qty": [
+              4,
+              5
+            ]
+          },
+          {
+            "item": "gem_rough",
+            "qty": [
+              2,
+              3
+            ]
+          }
+        ],
+        "blueprints": [
+          "bp_bow_mist",
+          "bp_staff_mist",
+          "bp_mist_cuirass"
+        ]
+      }
+    },
+    {
+      "id": "ex_heart",
+      "name": "심장 아래",
+      "icon": "💠",
+      "site": "heart_core",
+      "requires": "c6_keeper",
+      "level": 45,
+      "minutes": 15,
+      "desc": "첫 등지기가 잠든 뒤에도 심장 아래에서는 폭풍이 인다. 섬에서 가장 깊은 곳.",
+      "waves": [
+        {
+          "storm_wraith": 3
+        },
+        {
+          "storm_wolf": 2,
+          "storm_wraith": 2
+        },
+        {
+          "storm_wolf": 3,
+          "storm_wraith": 2
+        }
+      ],
+      "boss": "ex_keeper",
+      "reward": {
+        "silver": [
+          420,
+          560
+        ],
+        "xp": 5600,
+        "items": [
+          {
+            "item": "shard_mist",
+            "qty": [
+              5,
+              7
+            ]
+          },
+          {
+            "item": "gem_rough",
+            "qty": [
+              3,
+              4
+            ]
+          }
+        ],
+        "blueprints": [
+          "bp_sword_mist",
+          "bp_battleaxe_mist",
+          "bp_spear_mist",
+          "bp_hammer_mist",
+          "bp_bow_mist",
+          "bp_staff_mist",
+          "bp_mist_helm",
+          "bp_mist_cuirass",
+          "bp_mist_greaves"
+        ]
+      }
+    }
+  ],
+  "firstOfDay": {
+    "bp": 0.35,
+    "mult": 1.0
+  },
+  "again": {
+    "bp": 0.08,
+    "mult": 0.5
+  },
+  "failM": 46
+}

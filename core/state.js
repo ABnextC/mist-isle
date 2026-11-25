@@ -10,7 +10,7 @@ import { initMobs } from './systems/mobs.js';
 import { newSettlement, initProjects, settlementsDaily } from './settlements.js';
 import { emptyQuests, startQuest, firstQuest } from './systems/quests.js';
 
-export const ENGINE_VERSION = '2.2.0';
+export const ENGINE_VERSION = '2.3.0';
 
 export function spawnPoint(region, terrain) {
   const [x, inland] = region.spawn;
@@ -41,6 +41,9 @@ export function newActor(data, spec, at) {
     guild: null,
     mastery: {},
     bonds: {},
+    clevel: { lvl: 1, xp: 0, attrs: { str: 0, dex: 0, int: 0, con: 0, foc: 0 } },
+    exp: { run: null, last: {} },
+    known: {},
     loadout: {},
     quests: emptyQuests(),
   };
@@ -55,7 +58,7 @@ export function createState(data, seed) {
     clock: { hour: 0, day: 0 },
     rng: seedState(seed),
     nextId: 1,
-    regions: {}, lots: {}, veins: {}, nodes: {}, settlements: {}, projects: {}, actors: {}, mobs: {}, mobGroups: {}, shots: [], arrows: [], zones: [], houses: {}, guilds: {},
+    regions: {}, lots: {}, veins: {}, nodes: {}, settlements: {}, projects: {}, actors: {}, mobs: {}, mobGroups: {}, shots: [], arrows: [], zones: [], houses: {}, guilds: {}, runs: {},
     market: emptyMarket(), orders: [], econ: null,
   };
 }

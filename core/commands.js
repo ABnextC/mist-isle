@@ -25,6 +25,8 @@ import { isUnlocked, allowedProject } from './systems/unlocks.js';
 import { objPos } from './world.js';
 import { bondable, greetDue, greet, giftDue, giftable, gift, perkOf, inviteDue } from './systems/bonds.js';
 import { spawnAlly, dismissAlly, allyOf } from './systems/allies.js';
+import { spendError, spend, resetCost as attrResetCost, resetAttrs, spentOf } from './systems/level.js';
+import { startError, startRun, leaveRun, runOf } from './systems/expeditions.js';
 
 // ── 도우미 ─────────────────────────────────────────────
 function matchSlot(data, e, slot) {
@@ -172,6 +174,7 @@ const CRAFT = {
     const r = data.recipes[c.recipe];
     if (!r) return 'no_recipe';
     if (!recipeAllowed(ctx, a, r)) return 'faction_recipe';
+    if (r.blueprint && !a.known?.[r.id]) return 'no_blueprint'; // 설계도(v2.3)
     if (a.skills[r.skill].level < r.level) return 'level_low';
     const station = stationFor(ctx, a, r.station);
     if (!station) return 'no_station';
@@ -1377,8 +1380,65 @@ const DISMISS_ALLY = {
   },
 };
 
+// 전투 레벨 능력치(v2.3): 점수 쓰기·되돌리기(은화)
+const ATTR_SPEND = {
+  validate(ctx, a, c) {
+    const e = spendError(ctx, a, c.attr, c.n ?? 1);
+    return e || {};
+  },
+  execute(ctx, a, c) {
+    spend(ctx, a, c.attr, c.n ?? 1);
+  },
+};
+const ATTR_RESET = {
+  validate(ctx, a) {
+    if (!spentOf(a)) return 'nothing';
+    const cost = attrResetCost(ctx, a);
+    if (a.silver < cost) return 'no_silver';
+    return { cost };
+  },
+  execute(ctx, a, c, p) {
+    a.silver -= p.cost;
+    resetAttrs(ctx, a);
+  },
+};
+
+// 원정(v2.3): 입구에서 시작, 언제든 그만두기(실패로 끝난다)
+const EXP_START = {
+  validate(ctx, a, c) {
+    return startError(ctx, a, c.ex, c.mercs) || {};
+  },
+  execute(ctx, a, c) {
+    startRun(ctx, a, c.ex, c.mercs || []);
+  },
+};
+const EXP_LEAVE = {
+  validate(ctx, a) {
+    return runOf(ctx, a) ? {} : 'no_run';
+  },
+  execute(ctx, a) {
+    leaveRun(ctx, a);
+  },
+};
+// 설계도 읽기(v2.3): 가방의 설계도 한 장을 써서 제작법을 익힌다
+const LEARN_BP = {
+  validate(ctx, a, c) {
+    const e = a.bag.find((x) => keyOf(x) === c.key);
+    const def = e && ctx.data.items[e.item];
+    if (!def?.blueprint) return 'bad_args';
+    if (a.known?.[def.recipe]) return 'known';
+    return { def };
+  },
+  execute(ctx, a, c, p) {
+    takeQty(a.bag, c.key, 1);
+    a.known = a.known || {};
+    a.known[p.def.recipe] = 1;
+    ctx.emit('blueprint.learn', { actor: a.id, item: p.def.id, recipe: p.def.recipe });
+  },
+};
+
 const HANDLERS = {
-  INVITE, DISMISS_ALLY, GREET, GIFT, TALK, QUEST_ACCEPT, QUEST_USE, QUEST_TRACK, FACTION_JOIN, FACTION_TASK,
+  EXP_START, EXP_LEAVE, LEARN_BP, ATTR_SPEND, ATTR_RESET, INVITE, DISMISS_ALLY, GREET, GIFT, TALK, QUEST_ACCEPT, QUEST_USE, QUEST_TRACK, FACTION_JOIN, FACTION_TASK,
   HOUSE_BUY, HOUSE_UPGRADE, HOUSE_PLACE, HOUSE_TAKE, REST, GARDEN_PLANT, GARDEN_HARVEST,
   FERRY, GUILD_CREATE, GUILD_JOIN, GUILD_LEAVE, GUILD_HIRE, GUILD_DISMISS, GUILD_GIVE, GUILD_PUT, GUILD_TAKE,
   MOVE, MOVE_INPUT, GATHER, CRAFT, EAT, STORE, TAKE, SET_AUTOPILOT, RECALL,

@@ -755,3 +755,25 @@ html, body { font-family: var(--font-body); font-weight: 450; letter-spacing: -.
 #feed .iti, .feed .iti { width: 1.6em; height: 1.6em; vertical-align: -0.45em; margin-right: 2px; }
 .qitems .iti { width: 1.5em; height: 1.5em; }
 .reward .iti { width: 1.6em; height: 1.6em; margin-right: 2px; }
+
+/* v2.3 전투 레벨·원정 */
+.vitals .lv { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+.vitals .lv b { font: 700 11.5px/1 var(--font-title); color: var(--gold-hi); text-shadow: 0 1px 2px #000; min-width: 38px; }
+.vitals .lv i { flex: 1; height: 3px; border-radius: 2px; background: rgba(0, 0, 0, .45); overflow: hidden; }
+.vitals .lv i span { display: block; height: 100%; background: linear-gradient(90deg, #c9a24a, #ffe3ae); box-shadow: 0 0 6px rgba(233, 194, 125, .6); }
+.lvhead { display: flex; gap: 14px; align-items: center; margin: 4px 0 8px; }
+.lvhead > div:last-child { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.lvbig { width: 56px; height: 56px; flex: none; border-radius: 50%; display: grid; place-items: center; font: 700 24px/1 var(--font-title); color: #2b1a05;
+  background: radial-gradient(circle at 40% 30%, #ffe9b8, #d9a556 70%, #9c7a43); box-shadow: 0 0 0 2px rgba(8, 12, 16, .8), 0 0 0 3px var(--gold), 0 0 18px rgba(233, 194, 125, .35); }
+.lvhead .bar { height: 7px; }
+.lvhead .bar span { background: linear-gradient(90deg, #c9a24a, #ffe3ae); }
+ul.attrs li.attr { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+ul.attrs .av { display: inline-block; min-width: 26px; padding: 0 6px; border-radius: 8px; background: rgba(233, 194, 125, .12); color: var(--gold-hi); text-align: center; }
+ul.attrs em { font-style: normal; font-size: 11px; }
+ul.ex li.exrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+ul.ex li.exrow small { display: block; }
+ul.ex li.exrow.locked { opacity: .55; }
+ul.ex em { font-style: normal; font-size: 11.5px; }
+ul.ex em.warn { color: #f0c060; }
+ul.attrs li.attr .btns { flex-direction: row; flex-wrap: nowrap; gap: 6px; }
+ul.attrs li.attr .btns button { min-width: 44px; }

@@ -1,5 +1,5 @@
 {
-  "dataVersion": 27,
+  "dataVersion": 28,
   "skillCap": 60,
   "time": {
     "secondsPerGameDay": 3600,
@@ -1672,5 +1672,87 @@
     "marketEvery": 7,
     "marketFee": 0.5,
     "marketDaily": 1.5
+  },
+  "level": {
+    "cap": 60,
+    "xpBase": 30,
+    "xpPow": 1.5,
+    "pointsPerLevel": 1,
+    "killBase": 8,
+    "killPerLevel": 4,
+    "bossMult": 4,
+    "hpPerLevel": 2,
+    "conHp": 3,
+    "mainDmg": 0.006,
+    "subDmg": 0.003,
+    "dexCrit": 0.0015,
+    "intMp": 1,
+    "focRegen": 0.006,
+    "resetPerPoint": 12,
+    "quest": {
+      "main": 70,
+      "perChapter": 30,
+      "side": 80,
+      "daily": 25,
+      "bond": 60,
+      "birthday": 30,
+      "faction": 50
+    },
+    "scaling": {
+      "sword": [
+        "str",
+        "dex"
+      ],
+      "axe": [
+        "str",
+        "con"
+      ],
+      "spear": [
+        "dex",
+        "str"
+      ],
+      "hammer": [
+        "str",
+        "con"
+      ],
+      "bow": [
+        "dex",
+        "foc"
+      ],
+      "staff": [
+        "int",
+        "foc"
+      ],
+      "fist": [
+        "str"
+      ]
+    },
+    "attrs": {
+      "str": {
+        "name": "힘",
+        "icon": "💪",
+        "desc": "검·대도끼·창·망치 피해"
+      },
+      "dex": {
+        "name": "민첩",
+        "icon": "🎯",
+        "desc": "활·창 피해, 치명타"
+      },
+      "int": {
+        "name": "지능",
+        "icon": "🔮",
+        "desc": "지팡이 피해, 최대 마나"
+      },
+      "con": {
+        "name": "체질",
+        "icon": "❤️",
+        "desc": "최대 체력, 대도끼·망치 피해"
+      },
+      "foc": {
+        "name": "집중",
+        "icon": "🧘",
+        "desc": "마나·기력 회복, 활·지팡이 피해"
+      }
+    }
   }
 }

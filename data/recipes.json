@@ -1,55 +1,2265 @@
 [
-  {"id": "rc_lumber_drift", "type": "refine", "name": "거친 목재 켜기", "skill": "sawing", "level": 1, "station": "sawbench", "slots": [{"key": "main", "item": "log_drift", "qty": 3}], "catalyst": "sap_birch", "output": {"item": "lumber_drift", "qty": 1}, "seconds": 4, "xp": 8},
-  {"id": "rc_lumber_birch", "type": "refine", "name": "자작나무 목재 켜기", "skill": "sawing", "level": 5, "station": "sawbench", "slots": [{"key": "main", "item": "log_birch", "qty": 3}], "catalyst": "sap_birch", "output": {"item": "lumber_birch", "qty": 1}, "seconds": 5, "xp": 14},
-  {"id": "rc_ingot_copper", "type": "refine", "name": "구리 제련", "skill": "smelting", "level": 1, "station": "smelter", "slots": [{"key": "main", "item": "ore_copper", "qty": 3}], "catalyst": "sand_fine", "output": {"item": "ingot_copper", "qty": 1}, "seconds": 5, "xp": 14},
-  {"id": "rc_cloth_reed", "type": "refine", "name": "갈대 천 짜기", "skill": "weaving", "level": 1, "station": "loom", "slots": [{"key": "main", "item": "fiber_reed", "qty": 4}], "output": {"item": "cloth_reed", "qty": 1}, "seconds": 5, "xp": 12},
-  {"id": "rc_nails_copper", "type": "refine", "refineStep": false, "name": "구리 못 만들기", "skill": "smithing", "level": 1, "station": "forge", "slots": [{"key": "main", "family": "metal", "stage": "refined", "qty": 1}], "output": {"item": "nails_copper", "qty": 10}, "seconds": 4, "xp": 13},
-  {"id": "rc_stake_wood", "type": "refine", "refineStep": false, "name": "울타리 말뚝 깎기", "skill": "carpentry", "level": 1, "station": "workbench", "slots": [{"key": "main", "family": "wood", "stage": "refined", "qty": 2}], "output": {"item": "stake_wood", "qty": 4}, "seconds": 4, "xp": 12},
-  {"id": "rc_axe_stone", "type": "craft", "name": "돌 도끼", "skill": "smithing", "level": 1, "station": "hand", "slots": [{"key": "head", "family": "stone", "stage": "raw", "qty": 3}, {"key": "handle", "family": "wood", "stage": "raw", "qty": 2}], "stats": {"gatherSpeed": {"head.grain": 0.6, "handle.flex": 0.4}, "durability": {"head.density": 0.7, "handle.strength": 0.3}}, "output": {"item": "tool_axe_stone", "qty": 1}, "seconds": 6, "xp": 25},
-  {"id": "rc_pick_stone", "type": "craft", "name": "돌 곡괭이", "skill": "smithing", "level": 1, "station": "hand", "slots": [{"key": "head", "family": "stone", "stage": "raw", "qty": 3}, {"key": "handle", "family": "wood", "stage": "raw", "qty": 2}], "stats": {"gatherSpeed": {"head.grain": 0.6, "handle.flex": 0.4}, "durability": {"head.density": 0.7, "handle.strength": 0.3}}, "output": {"item": "tool_pick_stone", "qty": 1}, "seconds": 6, "xp": 25},
-  {"id": "rc_sickle_stone", "type": "craft", "name": "돌 낫", "skill": "smithing", "level": 1, "station": "hand", "slots": [{"key": "head", "family": "stone", "stage": "raw", "qty": 3}, {"key": "handle", "family": "wood", "stage": "raw", "qty": 2}], "stats": {"gatherSpeed": {"head.grain": 0.6, "handle.flex": 0.4}, "durability": {"head.density": 0.7, "handle.strength": 0.3}}, "output": {"item": "tool_sickle_stone", "qty": 1}, "seconds": 6, "xp": 25},
-  {"id": "rc_axe_copper", "type": "craft", "name": "구리 도끼", "skill": "smithing", "level": 4, "station": "forge", "slots": [{"key": "head", "family": "metal", "stage": "refined", "qty": 3}, {"key": "handle", "family": "wood", "stage": "refined", "qty": 2}], "stats": {"gatherSpeed": {"head.hardness": 0.7, "handle.strength": 0.3}, "yield": {"head.hardness": 0.3, "head.toughness": 0.3, "handle.flex": 0.4}, "durability": {"head.toughness": 0.6, "handle.flex": 0.4}}, "output": {"item": "tool_axe_copper", "qty": 1}, "seconds": 8, "xp": 40},
-  {"id": "rc_pick_copper", "type": "craft", "name": "구리 곡괭이", "skill": "smithing", "level": 4, "station": "forge", "slots": [{"key": "head", "family": "metal", "stage": "refined", "qty": 3}, {"key": "handle", "family": "wood", "stage": "refined", "qty": 2}], "stats": {"gatherSpeed": {"head.hardness": 0.7, "handle.strength": 0.3}, "yield": {"head.hardness": 0.3, "head.toughness": 0.3, "handle.flex": 0.4}, "durability": {"head.toughness": 0.6, "handle.flex": 0.4}}, "output": {"item": "tool_pick_copper", "qty": 1}, "seconds": 8, "xp": 40},
-  {"id": "rc_sickle_copper", "type": "craft", "name": "구리 낫", "skill": "smithing", "level": 4, "station": "forge", "slots": [{"key": "head", "family": "metal", "stage": "refined", "qty": 3}, {"key": "handle", "family": "wood", "stage": "refined", "qty": 2}], "stats": {"gatherSpeed": {"head.hardness": 0.7, "handle.strength": 0.3}, "yield": {"head.hardness": 0.3, "head.toughness": 0.3, "handle.flex": 0.4}, "durability": {"head.toughness": 0.6, "handle.flex": 0.4}}, "output": {"item": "tool_sickle_copper", "qty": 1}, "seconds": 8, "xp": 40},
-  {"id": "rc_crate", "type": "craft", "name": "나무 상자", "skill": "carpentry", "level": 4, "station": "workbench", "slots": [{"key": "board", "family": "wood", "stage": "refined", "qty": 4}, {"key": "nail", "item": "nails_copper", "qty": 6}], "stats": {"comfort": {"board.flex": 0.6, "board.strength": 0.4}, "durability": {"board.strength": 0.7, "nail.toughness": 0.3}}, "output": {"item": "crate_wood", "qty": 1}, "seconds": 10, "xp": 35},
-  {"id": "rc_soup", "type": "craft", "name": "해초 버섯국", "skill": "cooking", "level": 3, "station": "kitchen", "slots": [{"key": "main", "item": "seaweed", "qty": 2}, {"key": "side", "item": "mushroom", "qty": 1}], "stats": {"buff": {"main.nutrition": 0.6, "side.nutrition": 0.4}, "minutes": {"main.flavor": 0.5, "side.flavor": 0.5}}, "output": {"item": "food_soup", "qty": 2}, "seconds": 6, "xp": 22},
-  {"id": "rc_dried_berry", "type": "craft", "name": "산딸기 말랭이", "skill": "cooking", "level": 1, "station": "kitchen", "slots": [{"key": "main", "item": "berry", "qty": 4}], "stats": {"buff": {"main.nutrition": 0.5, "main.flavor": 0.5}, "minutes": {"main.flavor": 1.0}}, "output": {"item": "food_berry", "qty": 2}, "seconds": 5, "xp": 14},
-  {"id": "rc_ingot_iron", "type": "refine", "name": "철 제련", "skill": "smelting", "level": 18, "station": "smelter", "stationTier": 2, "slots": [{"key": "main", "item": "ore_iron", "qty": 3}], "catalyst": "sand_fine", "output": {"item": "ingot_iron", "qty": 1}, "seconds": 7, "xp": 28},
-  {"id": "rc_lumber_oak", "type": "refine", "name": "참나무 켜기", "skill": "sawing", "level": 18, "station": "sawbench", "stationTier": 2, "slots": [{"key": "main", "item": "log_oak", "qty": 3}], "output": {"item": "lumber_oak", "qty": 1}, "seconds": 6, "xp": 26},
-  {"id": "rc_leather", "type": "refine", "name": "가죽 무두질", "skill": "tanning", "level": 1, "station": "tannery", "slots": [{"key": "main", "item": "hide_raw", "qty": 2}], "catalyst": "sap_birch", "output": {"item": "leather", "qty": 1}, "seconds": 5, "xp": 14},
-  {"id": "rc_club", "type": "craft", "name": "돌 몽둥이", "skill": "smithing", "level": 1, "station": "hand", "slots": [{"key": "head", "family": "stone", "stage": "raw", "qty": 3}, {"key": "handle", "family": "wood", "stage": "raw", "qty": 2}], "stats": {"attack": {"head.density": 0.6, "handle.strength": 0.4}, "durability": {"head.grain": 0.4, "handle.flex": 0.6}}, "output": {"item": "wpn_club", "qty": 1}, "seconds": 4, "xp": 10},
-  {"id": "rc_sword_copper", "type": "craft", "name": "구리 검과 방패", "skill": "smithing", "level": 6, "station": "forge", "slots": [{"key": "blade", "family": "metal", "stage": "refined", "qty": 3}, {"key": "grip", "family": "wood", "stage": "refined", "qty": 1}], "stats": {"attack": {"blade.hardness": 0.8, "grip.strength": 0.2}, "durability": {"blade.toughness": 0.6, "grip.flex": 0.4}}, "output": {"item": "wpn_sword_copper", "qty": 1}, "seconds": 9, "xp": 38},
-  {"id": "rc_battleaxe_copper", "type": "craft", "name": "구리 대도끼", "skill": "smithing", "level": 8, "station": "forge", "slots": [{"key": "head", "family": "metal", "stage": "refined", "qty": 4}, {"key": "haft", "family": "wood", "stage": "refined", "qty": 2}], "stats": {"attack": {"head.hardness": 0.7, "haft.strength": 0.3}, "durability": {"head.toughness": 0.5, "haft.flex": 0.5}}, "output": {"item": "wpn_battleaxe_copper", "qty": 1}, "seconds": 10, "xp": 44},
-  {"id": "rc_spear_copper", "type": "craft", "name": "구리 창", "skill": "smithing", "level": 7, "station": "forge", "slots": [{"key": "tip", "family": "metal", "stage": "refined", "qty": 2}, {"key": "shaft", "family": "wood", "stage": "refined", "qty": 3}], "stats": {"attack": {"tip.hardness": 0.6, "shaft.flex": 0.4}, "durability": {"tip.toughness": 0.4, "shaft.strength": 0.6}}, "output": {"item": "wpn_spear_copper", "qty": 1}, "seconds": 9, "xp": 40},
-  {"id": "rc_sword_iron", "type": "craft", "name": "철 검과 방패", "skill": "smithing", "level": 15, "station": "forge", "stationTier": 2, "slots": [{"key": "blade", "item": "ingot_iron", "qty": 3}, {"key": "grip", "family": "wood", "stage": "refined", "qty": 1}], "stats": {"attack": {"blade.hardness": 0.8, "grip.strength": 0.2}, "durability": {"blade.toughness": 0.6, "grip.flex": 0.4}}, "output": {"item": "wpn_sword_iron", "qty": 1}, "seconds": 12, "xp": 80},
-  {"id": "rc_battleaxe_iron", "type": "craft", "name": "철 대도끼", "skill": "smithing", "level": 17, "station": "forge", "stationTier": 2, "slots": [{"key": "head", "item": "ingot_iron", "qty": 4}, {"key": "haft", "family": "wood", "stage": "refined", "qty": 2}], "stats": {"attack": {"head.hardness": 0.7, "haft.strength": 0.3}, "durability": {"head.toughness": 0.5, "haft.flex": 0.5}}, "output": {"item": "wpn_battleaxe_iron", "qty": 1}, "seconds": 13, "xp": 90},
-  {"id": "rc_spear_iron", "type": "craft", "name": "철 창", "skill": "smithing", "level": 16, "station": "forge", "stationTier": 2, "slots": [{"key": "tip", "item": "ingot_iron", "qty": 2}, {"key": "shaft", "family": "wood", "stage": "refined", "qty": 3}], "stats": {"attack": {"tip.hardness": 0.6, "shaft.flex": 0.4}, "durability": {"tip.toughness": 0.4, "shaft.strength": 0.6}}, "output": {"item": "wpn_spear_iron", "qty": 1}, "seconds": 12, "xp": 84},
-  {"id": "rc_hammer_copper", "type": "craft", "name": "구리 전투 망치", "skill": "smithing", "level": 9, "station": "forge", "slots": [{"key": "head", "family": "metal", "stage": "refined", "qty": 5}, {"key": "haft", "family": "wood", "stage": "refined", "qty": 2}], "stats": {"attack": {"head.hardness": 0.5, "haft.strength": 0.5}, "durability": {"head.toughness": 0.6, "haft.flex": 0.4}}, "output": {"item": "wpn_hammer_copper", "qty": 1}, "seconds": 10, "xp": 46},
-  {"id": "rc_hammer_iron", "type": "craft", "name": "철 전투 망치", "skill": "smithing", "level": 18, "station": "forge", "stationTier": 2, "slots": [{"key": "head", "item": "ingot_iron", "qty": 5}, {"key": "haft", "family": "wood", "stage": "refined", "qty": 2}], "stats": {"attack": {"head.hardness": 0.5, "haft.strength": 0.5}, "durability": {"head.toughness": 0.6, "haft.flex": 0.4}}, "output": {"item": "wpn_hammer_iron", "qty": 1}, "seconds": 13, "xp": 92},
-  {"id": "rc_bow_birch", "type": "craft", "name": "자작 사냥 활", "skill": "carpentry", "level": 6, "station": "workbench", "slots": [{"key": "limb", "item": "lumber_birch", "qty": 3}, {"key": "string", "family": "fiber", "stage": "refined", "qty": 2}], "stats": {"attack": {"limb.flex": 0.6, "string.tenacity": 0.4}, "durability": {"limb.strength": 0.6, "string.tenacity": 0.4}}, "output": {"item": "wpn_bow_birch", "qty": 1}, "seconds": 9, "xp": 40},
-  {"id": "rc_bow_oak", "type": "craft", "name": "참나무 뿔 활", "skill": "carpentry", "level": 16, "station": "workbench", "stationTier": 2, "slots": [{"key": "limb", "item": "lumber_oak", "qty": 3}, {"key": "grip", "family": "leather", "stage": "refined", "qty": 1}, {"key": "string", "family": "fiber", "stage": "refined", "qty": 2}], "stats": {"attack": {"limb.flex": 0.6, "string.tenacity": 0.4}, "durability": {"limb.strength": 0.6, "grip.thickness": 0.4}}, "output": {"item": "wpn_bow_oak", "qty": 1}, "seconds": 12, "xp": 84},
-  {"id": "rc_staff_birch", "type": "craft", "name": "자작 지팡이", "skill": "carpentry", "level": 7, "station": "workbench", "slots": [{"key": "shaft", "item": "lumber_birch", "qty": 3}, {"key": "core", "item": "gem_rough", "qty": 1}], "stats": {"attack": {"shaft.flex": 0.5, "shaft.strength": 0.5}, "durability": {"shaft.strength": 0.7, "shaft.flex": 0.3}}, "output": {"item": "wpn_staff_birch", "qty": 1}, "seconds": 9, "xp": 42},
-  {"id": "rc_staff_oak", "type": "craft", "name": "참나무 보석 지팡이", "skill": "carpentry", "level": 17, "station": "workbench", "stationTier": 2, "slots": [{"key": "shaft", "item": "lumber_oak", "qty": 3}, {"key": "core", "item": "gem_rough", "qty": 3}, {"key": "band", "item": "ingot_iron", "qty": 1}], "stats": {"attack": {"shaft.flex": 0.5, "shaft.strength": 0.5}, "durability": {"shaft.strength": 0.7, "shaft.flex": 0.3}}, "output": {"item": "wpn_staff_oak", "qty": 1}, "seconds": 12, "xp": 88},
-  {"id": "rc_axe_iron", "type": "craft", "name": "철 도끼", "skill": "smithing", "level": 13, "station": "forge", "stationTier": 2, "slots": [{"key": "head", "item": "ingot_iron", "qty": 3}, {"key": "handle", "family": "wood", "stage": "refined", "qty": 2}], "stats": {"gatherSpeed": {"head.hardness": 0.7, "handle.strength": 0.3}, "yield": {"head.hardness": 0.3, "head.toughness": 0.3, "handle.flex": 0.4}, "durability": {"head.toughness": 0.6, "handle.flex": 0.4}}, "output": {"item": "tool_axe_iron", "qty": 1}, "seconds": 12, "xp": 76},
-  {"id": "rc_pick_iron", "type": "craft", "name": "철 곡괭이", "skill": "smithing", "level": 13, "station": "forge", "stationTier": 2, "slots": [{"key": "head", "item": "ingot_iron", "qty": 3}, {"key": "handle", "family": "wood", "stage": "refined", "qty": 2}], "stats": {"gatherSpeed": {"head.hardness": 0.7, "handle.strength": 0.3}, "yield": {"head.hardness": 0.3, "head.toughness": 0.3, "handle.flex": 0.4}, "durability": {"head.toughness": 0.6, "handle.flex": 0.4}}, "output": {"item": "tool_pick_iron", "qty": 1}, "seconds": 12, "xp": 76},
-  {"id": "rc_sickle_iron", "type": "craft", "name": "철 낫", "skill": "smithing", "level": 13, "station": "forge", "stationTier": 2, "slots": [{"key": "head", "item": "ingot_iron", "qty": 3}, {"key": "handle", "family": "wood", "stage": "refined", "qty": 2}], "stats": {"gatherSpeed": {"head.hardness": 0.7, "handle.strength": 0.3}, "yield": {"head.hardness": 0.3, "head.toughness": 0.3, "handle.flex": 0.4}, "durability": {"head.toughness": 0.6, "handle.flex": 0.4}}, "output": {"item": "tool_sickle_iron", "qty": 1}, "seconds": 12, "xp": 76},
-  {"id": "rc_leather_hood", "type": "craft", "name": "가죽 두건", "skill": "armoring", "level": 1, "station": "armorbench", "slots": [{"key": "shell", "item": "leather", "qty": 2}, {"key": "lining", "item": "cloth_reed", "qty": 1}], "stats": {"armor": {"shell.thickness": 0.8, "shell.suppleness": 0.2}, "durability": {"shell.suppleness": 0.5, "lining.tenacity": 0.5}}, "output": {"item": "arm_leather_hood", "qty": 1}, "seconds": 7, "xp": 26},
-  {"id": "rc_leather_pants", "type": "craft", "name": "가죽 바지", "skill": "armoring", "level": 1, "station": "armorbench", "slots": [{"key": "shell", "item": "leather", "qty": 3}, {"key": "lining", "item": "cloth_reed", "qty": 1}], "stats": {"armor": {"shell.thickness": 0.8, "shell.suppleness": 0.2}, "durability": {"shell.suppleness": 0.5, "lining.tenacity": 0.5}}, "output": {"item": "arm_leather_pants", "qty": 1}, "seconds": 8, "xp": 34},
-  {"id": "rc_leather_vest", "type": "craft", "name": "가죽 조끼", "skill": "armoring", "level": 2, "station": "armorbench", "slots": [{"key": "shell", "item": "leather", "qty": 4}, {"key": "lining", "item": "cloth_reed", "qty": 2}], "stats": {"armor": {"shell.thickness": 0.8, "shell.suppleness": 0.2}, "durability": {"shell.suppleness": 0.5, "lining.tenacity": 0.5}}, "output": {"item": "arm_leather_vest", "qty": 1}, "seconds": 9, "xp": 42},
-  {"id": "rc_meat", "type": "craft", "name": "구운 고기", "skill": "cooking", "level": 2, "station": "kitchen", "slots": [{"key": "main", "item": "meat_raw", "qty": 2}], "stats": {"heal": {"main.nutrition": 0.7, "main.flavor": 0.3}}, "output": {"item": "food_meat", "qty": 2}, "seconds": 5, "xp": 12},
-  {"id": "rc_cloth_hood", "type": "craft", "name": "천 두건", "skill": "weaving", "level": 3, "station": "loom", "slots": [{"key": "cloth", "item": "cloth_reed", "qty": 2}], "stats": {"armor": {"cloth.tenacity": 0.7, "cloth.softness": 0.3}, "durability": {"cloth.tenacity": 1.0}}, "output": {"item": "arm_cloth_hood", "qty": 1}, "seconds": 7, "xp": 26},
-  {"id": "rc_cloth_pants", "type": "craft", "name": "천 바지", "skill": "weaving", "level": 4, "station": "loom", "slots": [{"key": "cloth", "item": "cloth_reed", "qty": 3}], "stats": {"armor": {"cloth.tenacity": 0.7, "cloth.softness": 0.3}, "durability": {"cloth.tenacity": 1.0}}, "output": {"item": "arm_cloth_pants", "qty": 1}, "seconds": 8, "xp": 34},
-  {"id": "rc_robe", "type": "craft", "name": "여행자 로브", "skill": "weaving", "level": 6, "station": "loom", "slots": [{"key": "cloth", "item": "cloth_reed", "qty": 5}, {"key": "trim", "item": "leather", "qty": 1}], "stats": {"armor": {"cloth.tenacity": 0.6, "cloth.softness": 0.2, "trim.thickness": 0.2}, "durability": {"cloth.tenacity": 0.7, "trim.suppleness": 0.3}}, "output": {"item": "arm_robe", "qty": 1}, "seconds": 11, "xp": 56},
-  {"id": "rc_iron_helm", "type": "craft", "name": "철 투구", "skill": "armoring", "level": 14, "station": "armorbench", "stationTier": 2, "slots": [{"key": "plate", "item": "ingot_iron", "qty": 3}, {"key": "lining", "item": "leather", "qty": 1}], "stats": {"armor": {"plate.hardness": 0.7, "plate.toughness": 0.3}, "durability": {"plate.toughness": 0.6, "lining.suppleness": 0.4}}, "output": {"item": "arm_iron_helm", "qty": 1}, "seconds": 12, "xp": 78},
-  {"id": "rc_iron_greaves", "type": "craft", "name": "철 다리갑", "skill": "armoring", "level": 16, "station": "armorbench", "stationTier": 2, "slots": [{"key": "plate", "item": "ingot_iron", "qty": 4}, {"key": "lining", "item": "leather", "qty": 2}], "stats": {"armor": {"plate.hardness": 0.7, "plate.toughness": 0.3}, "durability": {"plate.toughness": 0.6, "lining.suppleness": 0.4}}, "output": {"item": "arm_iron_greaves", "qty": 1}, "seconds": 14, "xp": 92},
-  {"id": "rc_iron_cuirass", "type": "craft", "name": "철 흉갑", "skill": "armoring", "level": 18, "station": "armorbench", "stationTier": 2, "slots": [{"key": "plate", "item": "ingot_iron", "qty": 6}, {"key": "lining", "item": "leather", "qty": 2}, {"key": "padding", "item": "cloth_reed", "qty": 2}], "stats": {"armor": {"plate.hardness": 0.7, "plate.toughness": 0.3}, "durability": {"plate.toughness": 0.5, "lining.suppleness": 0.3, "padding.tenacity": 0.2}}, "output": {"item": "arm_iron_cuirass", "qty": 1}, "seconds": 16, "xp": 120},
-  {"id": "rc_lantern_ration", "type": "craft", "name": "등불 보존식", "skill": "cooking", "level": 8, "station": "kitchen", "faction": "lantern", "slots": [{"key": "main", "item": "meat_raw", "qty": 2}, {"key": "side", "item": "berry", "qty": 3}], "stats": {"buff": {"main.nutrition": 0.6, "side.nutrition": 0.4}, "minutes": {"main.flavor": 0.5, "side.flavor": 0.5}}, "output": {"item": "food_lantern", "qty": 2}, "seconds": 7, "xp": 30},
-  {"id": "rc_jerky", "type": "craft", "name": "뱃사람 육포", "skill": "cooking", "level": 6, "station": "kitchen", "faction": "fleet", "slots": [{"key": "main", "item": "meat_raw", "qty": 3}, {"key": "side", "item": "seaweed", "qty": 1}], "stats": {"buff": {"main.nutrition": 0.7, "side.nutrition": 0.3}, "minutes": {"main.flavor": 0.6, "side.flavor": 0.4}}, "output": {"item": "food_jerky", "qty": 3}, "seconds": 7, "xp": 28},
-  {"id": "rc_mist_tea", "type": "craft", "name": "영맥 차", "skill": "cooking", "level": 6, "station": "kitchen", "faction": "scholars", "slots": [{"key": "main", "item": "sap_birch", "qty": 2}, {"key": "side", "item": "mushroom", "qty": 2}], "stats": {"buff": {"main.nutrition": 0.5, "side.nutrition": 0.5}, "minutes": {"main.flavor": 0.5, "side.flavor": 0.5}}, "output": {"item": "food_tea", "qty": 2}, "seconds": 6, "xp": 26},
-  {"id": "rc_furn_stool", "type": "craft", "name": "나무 의자", "skill": "carpentry", "level": 2, "station": "workbench", "slots": [{"key": "board", "family": "wood", "stage": "refined", "qty": 3}, {"key": "nail", "item": "nails_copper", "qty": 4}], "stats": {"comfort": {"board.flex": 0.6, "board.strength": 0.4}, "durability": {"board.strength": 0.7, "nail.toughness": 0.3}}, "output": {"item": "furn_stool", "qty": 1}, "seconds": 4, "xp": 20},
-  {"id": "rc_furn_table", "type": "craft", "name": "나무 탁자", "skill": "carpentry", "level": 6, "station": "workbench", "slots": [{"key": "board", "family": "wood", "stage": "refined", "qty": 6}, {"key": "nail", "item": "nails_copper", "qty": 10}], "stats": {"comfort": {"board.flex": 0.6, "board.strength": 0.4}, "durability": {"board.strength": 0.7, "nail.toughness": 0.3}}, "output": {"item": "furn_table", "qty": 1}, "seconds": 6, "xp": 40},
-  {"id": "rc_furn_bed", "type": "craft", "name": "짚 침상", "skill": "carpentry", "level": 8, "station": "workbench", "slots": [{"key": "board", "family": "wood", "stage": "refined", "qty": 6}, {"key": "nail", "item": "nails_copper", "qty": 8}, {"key": "cloth", "item": "cloth_reed", "qty": 4}], "stats": {"comfort": {"board.flex": 0.6, "board.strength": 0.4}, "durability": {"board.strength": 0.7, "nail.toughness": 0.3}}, "output": {"item": "furn_bed", "qty": 1}, "seconds": 8, "xp": 60},
-  {"id": "rc_furn_lamp", "type": "craft", "name": "구리 등잔", "skill": "carpentry", "level": 5, "station": "workbench", "slots": [{"key": "board", "family": "wood", "stage": "refined", "qty": 2}, {"key": "nail", "item": "nails_copper", "qty": 4}, {"key": "metal", "item": "ingot_copper", "qty": 2}], "stats": {"comfort": {"board.flex": 0.6, "board.strength": 0.4}, "durability": {"board.strength": 0.7, "nail.toughness": 0.3}}, "output": {"item": "furn_lamp", "qty": 1}, "seconds": 5, "xp": 35},
-  {"id": "rc_furn_rug", "type": "craft", "name": "갈대 깔개", "skill": "carpentry", "level": 4, "station": "workbench", "slots": [{"key": "board", "family": "wood", "stage": "refined", "qty": 2}, {"key": "cloth", "item": "cloth_reed", "qty": 5}], "stats": {"comfort": {"board.flex": 0.6, "board.strength": 0.4}, "durability": {"board.strength": 1}}, "output": {"item": "furn_rug", "qty": 1}, "seconds": 5, "xp": 30},
-  {"id": "rc_furn_shelf", "type": "craft", "name": "선반", "skill": "carpentry", "level": 10, "station": "workbench", "slots": [{"key": "board", "family": "wood", "stage": "refined", "qty": 8}, {"key": "nail", "item": "nails_copper", "qty": 12}], "stats": {"comfort": {"board.flex": 0.6, "board.strength": 0.4}, "durability": {"board.strength": 0.7, "nail.toughness": 0.3}}, "output": {"item": "furn_shelf", "qty": 1}, "seconds": 8, "xp": 50}
+  {
+    "id": "rc_lumber_drift",
+    "type": "refine",
+    "name": "거친 목재 켜기",
+    "skill": "sawing",
+    "level": 1,
+    "station": "sawbench",
+    "slots": [
+      {
+        "key": "main",
+        "item": "log_drift",
+        "qty": 3
+      }
+    ],
+    "catalyst": "sap_birch",
+    "output": {
+      "item": "lumber_drift",
+      "qty": 1
+    },
+    "seconds": 4,
+    "xp": 8
+  },
+  {
+    "id": "rc_lumber_birch",
+    "type": "refine",
+    "name": "자작나무 목재 켜기",
+    "skill": "sawing",
+    "level": 5,
+    "station": "sawbench",
+    "slots": [
+      {
+        "key": "main",
+        "item": "log_birch",
+        "qty": 3
+      }
+    ],
+    "catalyst": "sap_birch",
+    "output": {
+      "item": "lumber_birch",
+      "qty": 1
+    },
+    "seconds": 5,
+    "xp": 14
+  },
+  {
+    "id": "rc_ingot_copper",
+    "type": "refine",
+    "name": "구리 제련",
+    "skill": "smelting",
+    "level": 1,
+    "station": "smelter",
+    "slots": [
+      {
+        "key": "main",
+        "item": "ore_copper",
+        "qty": 3
+      }
+    ],
+    "catalyst": "sand_fine",
+    "output": {
+      "item": "ingot_copper",
+      "qty": 1
+    },
+    "seconds": 5,
+    "xp": 14
+  },
+  {
+    "id": "rc_cloth_reed",
+    "type": "refine",
+    "name": "갈대 천 짜기",
+    "skill": "weaving",
+    "level": 1,
+    "station": "loom",
+    "slots": [
+      {
+        "key": "main",
+        "item": "fiber_reed",
+        "qty": 4
+      }
+    ],
+    "output": {
+      "item": "cloth_reed",
+      "qty": 1
+    },
+    "seconds": 5,
+    "xp": 12
+  },
+  {
+    "id": "rc_nails_copper",
+    "type": "refine",
+    "refineStep": false,
+    "name": "구리 못 만들기",
+    "skill": "smithing",
+    "level": 1,
+    "station": "forge",
+    "slots": [
+      {
+        "key": "main",
+        "family": "metal",
+        "stage": "refined",
+        "qty": 1
+      }
+    ],
+    "output": {
+      "item": "nails_copper",
+      "qty": 10
+    },
+    "seconds": 4,
+    "xp": 13
+  },
+  {
+    "id": "rc_stake_wood",
+    "type": "refine",
+    "refineStep": false,
+    "name": "울타리 말뚝 깎기",
+    "skill": "carpentry",
+    "level": 1,
+    "station": "workbench",
+    "slots": [
+      {
+        "key": "main",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 2
+      }
+    ],
+    "output": {
+      "item": "stake_wood",
+      "qty": 4
+    },
+    "seconds": 4,
+    "xp": 12
+  },
+  {
+    "id": "rc_axe_stone",
+    "type": "craft",
+    "name": "돌 도끼",
+    "skill": "smithing",
+    "level": 1,
+    "station": "hand",
+    "slots": [
+      {
+        "key": "head",
+        "family": "stone",
+        "stage": "raw",
+        "qty": 3
+      },
+      {
+        "key": "handle",
+        "family": "wood",
+        "stage": "raw",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "gatherSpeed": {
+        "head.grain": 0.6,
+        "handle.flex": 0.4
+      },
+      "durability": {
+        "head.density": 0.7,
+        "handle.strength": 0.3
+      }
+    },
+    "output": {
+      "item": "tool_axe_stone",
+      "qty": 1
+    },
+    "seconds": 6,
+    "xp": 25
+  },
+  {
+    "id": "rc_pick_stone",
+    "type": "craft",
+    "name": "돌 곡괭이",
+    "skill": "smithing",
+    "level": 1,
+    "station": "hand",
+    "slots": [
+      {
+        "key": "head",
+        "family": "stone",
+        "stage": "raw",
+        "qty": 3
+      },
+      {
+        "key": "handle",
+        "family": "wood",
+        "stage": "raw",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "gatherSpeed": {
+        "head.grain": 0.6,
+        "handle.flex": 0.4
+      },
+      "durability": {
+        "head.density": 0.7,
+        "handle.strength": 0.3
+      }
+    },
+    "output": {
+      "item": "tool_pick_stone",
+      "qty": 1
+    },
+    "seconds": 6,
+    "xp": 25
+  },
+  {
+    "id": "rc_sickle_stone",
+    "type": "craft",
+    "name": "돌 낫",
+    "skill": "smithing",
+    "level": 1,
+    "station": "hand",
+    "slots": [
+      {
+        "key": "head",
+        "family": "stone",
+        "stage": "raw",
+        "qty": 3
+      },
+      {
+        "key": "handle",
+        "family": "wood",
+        "stage": "raw",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "gatherSpeed": {
+        "head.grain": 0.6,
+        "handle.flex": 0.4
+      },
+      "durability": {
+        "head.density": 0.7,
+        "handle.strength": 0.3
+      }
+    },
+    "output": {
+      "item": "tool_sickle_stone",
+      "qty": 1
+    },
+    "seconds": 6,
+    "xp": 25
+  },
+  {
+    "id": "rc_axe_copper",
+    "type": "craft",
+    "name": "구리 도끼",
+    "skill": "smithing",
+    "level": 4,
+    "station": "forge",
+    "slots": [
+      {
+        "key": "head",
+        "family": "metal",
+        "stage": "refined",
+        "qty": 3
+      },
+      {
+        "key": "handle",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "gatherSpeed": {
+        "head.hardness": 0.7,
+        "handle.strength": 0.3
+      },
+      "yield": {
+        "head.hardness": 0.3,
+        "head.toughness": 0.3,
+        "handle.flex": 0.4
+      },
+      "durability": {
+        "head.toughness": 0.6,
+        "handle.flex": 0.4
+      }
+    },
+    "output": {
+      "item": "tool_axe_copper",
+      "qty": 1
+    },
+    "seconds": 8,
+    "xp": 40
+  },
+  {
+    "id": "rc_pick_copper",
+    "type": "craft",
+    "name": "구리 곡괭이",
+    "skill": "smithing",
+    "level": 4,
+    "station": "forge",
+    "slots": [
+      {
+        "key": "head",
+        "family": "metal",
+        "stage": "refined",
+        "qty": 3
+      },
+      {
+        "key": "handle",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "gatherSpeed": {
+        "head.hardness": 0.7,
+        "handle.strength": 0.3
+      },
+      "yield": {
+        "head.hardness": 0.3,
+        "head.toughness": 0.3,
+        "handle.flex": 0.4
+      },
+      "durability": {
+        "head.toughness": 0.6,
+        "handle.flex": 0.4
+      }
+    },
+    "output": {
+      "item": "tool_pick_copper",
+      "qty": 1
+    },
+    "seconds": 8,
+    "xp": 40
+  },
+  {
+    "id": "rc_sickle_copper",
+    "type": "craft",
+    "name": "구리 낫",
+    "skill": "smithing",
+    "level": 4,
+    "station": "forge",
+    "slots": [
+      {
+        "key": "head",
+        "family": "metal",
+        "stage": "refined",
+        "qty": 3
+      },
+      {
+        "key": "handle",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "gatherSpeed": {
+        "head.hardness": 0.7,
+        "handle.strength": 0.3
+      },
+      "yield": {
+        "head.hardness": 0.3,
+        "head.toughness": 0.3,
+        "handle.flex": 0.4
+      },
+      "durability": {
+        "head.toughness": 0.6,
+        "handle.flex": 0.4
+      }
+    },
+    "output": {
+      "item": "tool_sickle_copper",
+      "qty": 1
+    },
+    "seconds": 8,
+    "xp": 40
+  },
+  {
+    "id": "rc_crate",
+    "type": "craft",
+    "name": "나무 상자",
+    "skill": "carpentry",
+    "level": 4,
+    "station": "workbench",
+    "slots": [
+      {
+        "key": "board",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 4
+      },
+      {
+        "key": "nail",
+        "item": "nails_copper",
+        "qty": 6
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "board.flex": 0.6,
+        "board.strength": 0.4
+      },
+      "durability": {
+        "board.strength": 0.7,
+        "nail.toughness": 0.3
+      }
+    },
+    "output": {
+      "item": "crate_wood",
+      "qty": 1
+    },
+    "seconds": 10,
+    "xp": 35
+  },
+  {
+    "id": "rc_soup",
+    "type": "craft",
+    "name": "해초 버섯국",
+    "skill": "cooking",
+    "level": 3,
+    "station": "kitchen",
+    "slots": [
+      {
+        "key": "main",
+        "item": "seaweed",
+        "qty": 2
+      },
+      {
+        "key": "side",
+        "item": "mushroom",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "buff": {
+        "main.nutrition": 0.6,
+        "side.nutrition": 0.4
+      },
+      "minutes": {
+        "main.flavor": 0.5,
+        "side.flavor": 0.5
+      }
+    },
+    "output": {
+      "item": "food_soup",
+      "qty": 2
+    },
+    "seconds": 6,
+    "xp": 22
+  },
+  {
+    "id": "rc_dried_berry",
+    "type": "craft",
+    "name": "산딸기 말랭이",
+    "skill": "cooking",
+    "level": 1,
+    "station": "kitchen",
+    "slots": [
+      {
+        "key": "main",
+        "item": "berry",
+        "qty": 4
+      }
+    ],
+    "stats": {
+      "buff": {
+        "main.nutrition": 0.5,
+        "main.flavor": 0.5
+      },
+      "minutes": {
+        "main.flavor": 1.0
+      }
+    },
+    "output": {
+      "item": "food_berry",
+      "qty": 2
+    },
+    "seconds": 5,
+    "xp": 14
+  },
+  {
+    "id": "rc_ingot_iron",
+    "type": "refine",
+    "name": "철 제련",
+    "skill": "smelting",
+    "level": 18,
+    "station": "smelter",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "main",
+        "item": "ore_iron",
+        "qty": 3
+      }
+    ],
+    "catalyst": "sand_fine",
+    "output": {
+      "item": "ingot_iron",
+      "qty": 1
+    },
+    "seconds": 7,
+    "xp": 28
+  },
+  {
+    "id": "rc_lumber_oak",
+    "type": "refine",
+    "name": "참나무 켜기",
+    "skill": "sawing",
+    "level": 18,
+    "station": "sawbench",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "main",
+        "item": "log_oak",
+        "qty": 3
+      }
+    ],
+    "output": {
+      "item": "lumber_oak",
+      "qty": 1
+    },
+    "seconds": 6,
+    "xp": 26
+  },
+  {
+    "id": "rc_leather",
+    "type": "refine",
+    "name": "가죽 무두질",
+    "skill": "tanning",
+    "level": 1,
+    "station": "tannery",
+    "slots": [
+      {
+        "key": "main",
+        "item": "hide_raw",
+        "qty": 2
+      }
+    ],
+    "catalyst": "sap_birch",
+    "output": {
+      "item": "leather",
+      "qty": 1
+    },
+    "seconds": 5,
+    "xp": 14
+  },
+  {
+    "id": "rc_club",
+    "type": "craft",
+    "name": "돌 몽둥이",
+    "skill": "smithing",
+    "level": 1,
+    "station": "hand",
+    "slots": [
+      {
+        "key": "head",
+        "family": "stone",
+        "stage": "raw",
+        "qty": 3
+      },
+      {
+        "key": "handle",
+        "family": "wood",
+        "stage": "raw",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "attack": {
+        "head.density": 0.6,
+        "handle.strength": 0.4
+      },
+      "durability": {
+        "head.grain": 0.4,
+        "handle.flex": 0.6
+      }
+    },
+    "output": {
+      "item": "wpn_club",
+      "qty": 1
+    },
+    "seconds": 4,
+    "xp": 10
+  },
+  {
+    "id": "rc_sword_copper",
+    "type": "craft",
+    "name": "구리 검과 방패",
+    "skill": "smithing",
+    "level": 6,
+    "station": "forge",
+    "slots": [
+      {
+        "key": "blade",
+        "family": "metal",
+        "stage": "refined",
+        "qty": 3
+      },
+      {
+        "key": "grip",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attack": {
+        "blade.hardness": 0.8,
+        "grip.strength": 0.2
+      },
+      "durability": {
+        "blade.toughness": 0.6,
+        "grip.flex": 0.4
+      }
+    },
+    "output": {
+      "item": "wpn_sword_copper",
+      "qty": 1
+    },
+    "seconds": 9,
+    "xp": 38
+  },
+  {
+    "id": "rc_battleaxe_copper",
+    "type": "craft",
+    "name": "구리 대도끼",
+    "skill": "smithing",
+    "level": 8,
+    "station": "forge",
+    "slots": [
+      {
+        "key": "head",
+        "family": "metal",
+        "stage": "refined",
+        "qty": 4
+      },
+      {
+        "key": "haft",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "attack": {
+        "head.hardness": 0.7,
+        "haft.strength": 0.3
+      },
+      "durability": {
+        "head.toughness": 0.5,
+        "haft.flex": 0.5
+      }
+    },
+    "output": {
+      "item": "wpn_battleaxe_copper",
+      "qty": 1
+    },
+    "seconds": 10,
+    "xp": 44
+  },
+  {
+    "id": "rc_spear_copper",
+    "type": "craft",
+    "name": "구리 창",
+    "skill": "smithing",
+    "level": 7,
+    "station": "forge",
+    "slots": [
+      {
+        "key": "tip",
+        "family": "metal",
+        "stage": "refined",
+        "qty": 2
+      },
+      {
+        "key": "shaft",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 3
+      }
+    ],
+    "stats": {
+      "attack": {
+        "tip.hardness": 0.6,
+        "shaft.flex": 0.4
+      },
+      "durability": {
+        "tip.toughness": 0.4,
+        "shaft.strength": 0.6
+      }
+    },
+    "output": {
+      "item": "wpn_spear_copper",
+      "qty": 1
+    },
+    "seconds": 9,
+    "xp": 40
+  },
+  {
+    "id": "rc_sword_iron",
+    "type": "craft",
+    "name": "철 검과 방패",
+    "skill": "smithing",
+    "level": 15,
+    "station": "forge",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "blade",
+        "item": "ingot_iron",
+        "qty": 3
+      },
+      {
+        "key": "grip",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attack": {
+        "blade.hardness": 0.8,
+        "grip.strength": 0.2
+      },
+      "durability": {
+        "blade.toughness": 0.6,
+        "grip.flex": 0.4
+      }
+    },
+    "output": {
+      "item": "wpn_sword_iron",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 80
+  },
+  {
+    "id": "rc_battleaxe_iron",
+    "type": "craft",
+    "name": "철 대도끼",
+    "skill": "smithing",
+    "level": 17,
+    "station": "forge",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "head",
+        "item": "ingot_iron",
+        "qty": 4
+      },
+      {
+        "key": "haft",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "attack": {
+        "head.hardness": 0.7,
+        "haft.strength": 0.3
+      },
+      "durability": {
+        "head.toughness": 0.5,
+        "haft.flex": 0.5
+      }
+    },
+    "output": {
+      "item": "wpn_battleaxe_iron",
+      "qty": 1
+    },
+    "seconds": 13,
+    "xp": 90
+  },
+  {
+    "id": "rc_spear_iron",
+    "type": "craft",
+    "name": "철 창",
+    "skill": "smithing",
+    "level": 16,
+    "station": "forge",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "tip",
+        "item": "ingot_iron",
+        "qty": 2
+      },
+      {
+        "key": "shaft",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 3
+      }
+    ],
+    "stats": {
+      "attack": {
+        "tip.hardness": 0.6,
+        "shaft.flex": 0.4
+      },
+      "durability": {
+        "tip.toughness": 0.4,
+        "shaft.strength": 0.6
+      }
+    },
+    "output": {
+      "item": "wpn_spear_iron",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 84
+  },
+  {
+    "id": "rc_hammer_copper",
+    "type": "craft",
+    "name": "구리 전투 망치",
+    "skill": "smithing",
+    "level": 9,
+    "station": "forge",
+    "slots": [
+      {
+        "key": "head",
+        "family": "metal",
+        "stage": "refined",
+        "qty": 5
+      },
+      {
+        "key": "haft",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "attack": {
+        "head.hardness": 0.5,
+        "haft.strength": 0.5
+      },
+      "durability": {
+        "head.toughness": 0.6,
+        "haft.flex": 0.4
+      }
+    },
+    "output": {
+      "item": "wpn_hammer_copper",
+      "qty": 1
+    },
+    "seconds": 10,
+    "xp": 46
+  },
+  {
+    "id": "rc_hammer_iron",
+    "type": "craft",
+    "name": "철 전투 망치",
+    "skill": "smithing",
+    "level": 18,
+    "station": "forge",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "head",
+        "item": "ingot_iron",
+        "qty": 5
+      },
+      {
+        "key": "haft",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "attack": {
+        "head.hardness": 0.5,
+        "haft.strength": 0.5
+      },
+      "durability": {
+        "head.toughness": 0.6,
+        "haft.flex": 0.4
+      }
+    },
+    "output": {
+      "item": "wpn_hammer_iron",
+      "qty": 1
+    },
+    "seconds": 13,
+    "xp": 92
+  },
+  {
+    "id": "rc_bow_birch",
+    "type": "craft",
+    "name": "자작 사냥 활",
+    "skill": "carpentry",
+    "level": 6,
+    "station": "workbench",
+    "slots": [
+      {
+        "key": "limb",
+        "item": "lumber_birch",
+        "qty": 3
+      },
+      {
+        "key": "string",
+        "family": "fiber",
+        "stage": "refined",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "attack": {
+        "limb.flex": 0.6,
+        "string.tenacity": 0.4
+      },
+      "durability": {
+        "limb.strength": 0.6,
+        "string.tenacity": 0.4
+      }
+    },
+    "output": {
+      "item": "wpn_bow_birch",
+      "qty": 1
+    },
+    "seconds": 9,
+    "xp": 40
+  },
+  {
+    "id": "rc_bow_oak",
+    "type": "craft",
+    "name": "참나무 뿔 활",
+    "skill": "carpentry",
+    "level": 16,
+    "station": "workbench",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "limb",
+        "item": "lumber_oak",
+        "qty": 3
+      },
+      {
+        "key": "grip",
+        "family": "leather",
+        "stage": "refined",
+        "qty": 1
+      },
+      {
+        "key": "string",
+        "family": "fiber",
+        "stage": "refined",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "attack": {
+        "limb.flex": 0.6,
+        "string.tenacity": 0.4
+      },
+      "durability": {
+        "limb.strength": 0.6,
+        "grip.thickness": 0.4
+      }
+    },
+    "output": {
+      "item": "wpn_bow_oak",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 84
+  },
+  {
+    "id": "rc_staff_birch",
+    "type": "craft",
+    "name": "자작 지팡이",
+    "skill": "carpentry",
+    "level": 7,
+    "station": "workbench",
+    "slots": [
+      {
+        "key": "shaft",
+        "item": "lumber_birch",
+        "qty": 3
+      },
+      {
+        "key": "core",
+        "item": "gem_rough",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attack": {
+        "shaft.flex": 0.5,
+        "shaft.strength": 0.5
+      },
+      "durability": {
+        "shaft.strength": 0.7,
+        "shaft.flex": 0.3
+      }
+    },
+    "output": {
+      "item": "wpn_staff_birch",
+      "qty": 1
+    },
+    "seconds": 9,
+    "xp": 42
+  },
+  {
+    "id": "rc_staff_oak",
+    "type": "craft",
+    "name": "참나무 보석 지팡이",
+    "skill": "carpentry",
+    "level": 17,
+    "station": "workbench",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "shaft",
+        "item": "lumber_oak",
+        "qty": 3
+      },
+      {
+        "key": "core",
+        "item": "gem_rough",
+        "qty": 3
+      },
+      {
+        "key": "band",
+        "item": "ingot_iron",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attack": {
+        "shaft.flex": 0.5,
+        "shaft.strength": 0.5
+      },
+      "durability": {
+        "shaft.strength": 0.7,
+        "shaft.flex": 0.3
+      }
+    },
+    "output": {
+      "item": "wpn_staff_oak",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 88
+  },
+  {
+    "id": "rc_axe_iron",
+    "type": "craft",
+    "name": "철 도끼",
+    "skill": "smithing",
+    "level": 13,
+    "station": "forge",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "head",
+        "item": "ingot_iron",
+        "qty": 3
+      },
+      {
+        "key": "handle",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "gatherSpeed": {
+        "head.hardness": 0.7,
+        "handle.strength": 0.3
+      },
+      "yield": {
+        "head.hardness": 0.3,
+        "head.toughness": 0.3,
+        "handle.flex": 0.4
+      },
+      "durability": {
+        "head.toughness": 0.6,
+        "handle.flex": 0.4
+      }
+    },
+    "output": {
+      "item": "tool_axe_iron",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 76
+  },
+  {
+    "id": "rc_pick_iron",
+    "type": "craft",
+    "name": "철 곡괭이",
+    "skill": "smithing",
+    "level": 13,
+    "station": "forge",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "head",
+        "item": "ingot_iron",
+        "qty": 3
+      },
+      {
+        "key": "handle",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "gatherSpeed": {
+        "head.hardness": 0.7,
+        "handle.strength": 0.3
+      },
+      "yield": {
+        "head.hardness": 0.3,
+        "head.toughness": 0.3,
+        "handle.flex": 0.4
+      },
+      "durability": {
+        "head.toughness": 0.6,
+        "handle.flex": 0.4
+      }
+    },
+    "output": {
+      "item": "tool_pick_iron",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 76
+  },
+  {
+    "id": "rc_sickle_iron",
+    "type": "craft",
+    "name": "철 낫",
+    "skill": "smithing",
+    "level": 13,
+    "station": "forge",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "head",
+        "item": "ingot_iron",
+        "qty": 3
+      },
+      {
+        "key": "handle",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "gatherSpeed": {
+        "head.hardness": 0.7,
+        "handle.strength": 0.3
+      },
+      "yield": {
+        "head.hardness": 0.3,
+        "head.toughness": 0.3,
+        "handle.flex": 0.4
+      },
+      "durability": {
+        "head.toughness": 0.6,
+        "handle.flex": 0.4
+      }
+    },
+    "output": {
+      "item": "tool_sickle_iron",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 76
+  },
+  {
+    "id": "rc_leather_hood",
+    "type": "craft",
+    "name": "가죽 두건",
+    "skill": "armoring",
+    "level": 1,
+    "station": "armorbench",
+    "slots": [
+      {
+        "key": "shell",
+        "item": "leather",
+        "qty": 2
+      },
+      {
+        "key": "lining",
+        "item": "cloth_reed",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "armor": {
+        "shell.thickness": 0.8,
+        "shell.suppleness": 0.2
+      },
+      "durability": {
+        "shell.suppleness": 0.5,
+        "lining.tenacity": 0.5
+      }
+    },
+    "output": {
+      "item": "arm_leather_hood",
+      "qty": 1
+    },
+    "seconds": 7,
+    "xp": 26
+  },
+  {
+    "id": "rc_leather_pants",
+    "type": "craft",
+    "name": "가죽 바지",
+    "skill": "armoring",
+    "level": 1,
+    "station": "armorbench",
+    "slots": [
+      {
+        "key": "shell",
+        "item": "leather",
+        "qty": 3
+      },
+      {
+        "key": "lining",
+        "item": "cloth_reed",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "armor": {
+        "shell.thickness": 0.8,
+        "shell.suppleness": 0.2
+      },
+      "durability": {
+        "shell.suppleness": 0.5,
+        "lining.tenacity": 0.5
+      }
+    },
+    "output": {
+      "item": "arm_leather_pants",
+      "qty": 1
+    },
+    "seconds": 8,
+    "xp": 34
+  },
+  {
+    "id": "rc_leather_vest",
+    "type": "craft",
+    "name": "가죽 조끼",
+    "skill": "armoring",
+    "level": 2,
+    "station": "armorbench",
+    "slots": [
+      {
+        "key": "shell",
+        "item": "leather",
+        "qty": 4
+      },
+      {
+        "key": "lining",
+        "item": "cloth_reed",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "armor": {
+        "shell.thickness": 0.8,
+        "shell.suppleness": 0.2
+      },
+      "durability": {
+        "shell.suppleness": 0.5,
+        "lining.tenacity": 0.5
+      }
+    },
+    "output": {
+      "item": "arm_leather_vest",
+      "qty": 1
+    },
+    "seconds": 9,
+    "xp": 42
+  },
+  {
+    "id": "rc_meat",
+    "type": "craft",
+    "name": "구운 고기",
+    "skill": "cooking",
+    "level": 2,
+    "station": "kitchen",
+    "slots": [
+      {
+        "key": "main",
+        "item": "meat_raw",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "heal": {
+        "main.nutrition": 0.7,
+        "main.flavor": 0.3
+      }
+    },
+    "output": {
+      "item": "food_meat",
+      "qty": 2
+    },
+    "seconds": 5,
+    "xp": 12
+  },
+  {
+    "id": "rc_cloth_hood",
+    "type": "craft",
+    "name": "천 두건",
+    "skill": "weaving",
+    "level": 3,
+    "station": "loom",
+    "slots": [
+      {
+        "key": "cloth",
+        "item": "cloth_reed",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "armor": {
+        "cloth.tenacity": 0.7,
+        "cloth.softness": 0.3
+      },
+      "durability": {
+        "cloth.tenacity": 1.0
+      }
+    },
+    "output": {
+      "item": "arm_cloth_hood",
+      "qty": 1
+    },
+    "seconds": 7,
+    "xp": 26
+  },
+  {
+    "id": "rc_cloth_pants",
+    "type": "craft",
+    "name": "천 바지",
+    "skill": "weaving",
+    "level": 4,
+    "station": "loom",
+    "slots": [
+      {
+        "key": "cloth",
+        "item": "cloth_reed",
+        "qty": 3
+      }
+    ],
+    "stats": {
+      "armor": {
+        "cloth.tenacity": 0.7,
+        "cloth.softness": 0.3
+      },
+      "durability": {
+        "cloth.tenacity": 1.0
+      }
+    },
+    "output": {
+      "item": "arm_cloth_pants",
+      "qty": 1
+    },
+    "seconds": 8,
+    "xp": 34
+  },
+  {
+    "id": "rc_robe",
+    "type": "craft",
+    "name": "여행자 로브",
+    "skill": "weaving",
+    "level": 6,
+    "station": "loom",
+    "slots": [
+      {
+        "key": "cloth",
+        "item": "cloth_reed",
+        "qty": 5
+      },
+      {
+        "key": "trim",
+        "item": "leather",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "armor": {
+        "cloth.tenacity": 0.6,
+        "cloth.softness": 0.2,
+        "trim.thickness": 0.2
+      },
+      "durability": {
+        "cloth.tenacity": 0.7,
+        "trim.suppleness": 0.3
+      }
+    },
+    "output": {
+      "item": "arm_robe",
+      "qty": 1
+    },
+    "seconds": 11,
+    "xp": 56
+  },
+  {
+    "id": "rc_iron_helm",
+    "type": "craft",
+    "name": "철 투구",
+    "skill": "armoring",
+    "level": 14,
+    "station": "armorbench",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "plate",
+        "item": "ingot_iron",
+        "qty": 3
+      },
+      {
+        "key": "lining",
+        "item": "leather",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "armor": {
+        "plate.hardness": 0.7,
+        "plate.toughness": 0.3
+      },
+      "durability": {
+        "plate.toughness": 0.6,
+        "lining.suppleness": 0.4
+      }
+    },
+    "output": {
+      "item": "arm_iron_helm",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 78
+  },
+  {
+    "id": "rc_iron_greaves",
+    "type": "craft",
+    "name": "철 다리갑",
+    "skill": "armoring",
+    "level": 16,
+    "station": "armorbench",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "plate",
+        "item": "ingot_iron",
+        "qty": 4
+      },
+      {
+        "key": "lining",
+        "item": "leather",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "armor": {
+        "plate.hardness": 0.7,
+        "plate.toughness": 0.3
+      },
+      "durability": {
+        "plate.toughness": 0.6,
+        "lining.suppleness": 0.4
+      }
+    },
+    "output": {
+      "item": "arm_iron_greaves",
+      "qty": 1
+    },
+    "seconds": 14,
+    "xp": 92
+  },
+  {
+    "id": "rc_iron_cuirass",
+    "type": "craft",
+    "name": "철 흉갑",
+    "skill": "armoring",
+    "level": 18,
+    "station": "armorbench",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "plate",
+        "item": "ingot_iron",
+        "qty": 6
+      },
+      {
+        "key": "lining",
+        "item": "leather",
+        "qty": 2
+      },
+      {
+        "key": "padding",
+        "item": "cloth_reed",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "armor": {
+        "plate.hardness": 0.7,
+        "plate.toughness": 0.3
+      },
+      "durability": {
+        "plate.toughness": 0.5,
+        "lining.suppleness": 0.3,
+        "padding.tenacity": 0.2
+      }
+    },
+    "output": {
+      "item": "arm_iron_cuirass",
+      "qty": 1
+    },
+    "seconds": 16,
+    "xp": 120
+  },
+  {
+    "id": "rc_lantern_ration",
+    "type": "craft",
+    "name": "등불 보존식",
+    "skill": "cooking",
+    "level": 8,
+    "station": "kitchen",
+    "faction": "lantern",
+    "slots": [
+      {
+        "key": "main",
+        "item": "meat_raw",
+        "qty": 2
+      },
+      {
+        "key": "side",
+        "item": "berry",
+        "qty": 3
+      }
+    ],
+    "stats": {
+      "buff": {
+        "main.nutrition": 0.6,
+        "side.nutrition": 0.4
+      },
+      "minutes": {
+        "main.flavor": 0.5,
+        "side.flavor": 0.5
+      }
+    },
+    "output": {
+      "item": "food_lantern",
+      "qty": 2
+    },
+    "seconds": 7,
+    "xp": 30
+  },
+  {
+    "id": "rc_jerky",
+    "type": "craft",
+    "name": "뱃사람 육포",
+    "skill": "cooking",
+    "level": 6,
+    "station": "kitchen",
+    "faction": "fleet",
+    "slots": [
+      {
+        "key": "main",
+        "item": "meat_raw",
+        "qty": 3
+      },
+      {
+        "key": "side",
+        "item": "seaweed",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "buff": {
+        "main.nutrition": 0.7,
+        "side.nutrition": 0.3
+      },
+      "minutes": {
+        "main.flavor": 0.6,
+        "side.flavor": 0.4
+      }
+    },
+    "output": {
+      "item": "food_jerky",
+      "qty": 3
+    },
+    "seconds": 7,
+    "xp": 28
+  },
+  {
+    "id": "rc_mist_tea",
+    "type": "craft",
+    "name": "영맥 차",
+    "skill": "cooking",
+    "level": 6,
+    "station": "kitchen",
+    "faction": "scholars",
+    "slots": [
+      {
+        "key": "main",
+        "item": "sap_birch",
+        "qty": 2
+      },
+      {
+        "key": "side",
+        "item": "mushroom",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "buff": {
+        "main.nutrition": 0.5,
+        "side.nutrition": 0.5
+      },
+      "minutes": {
+        "main.flavor": 0.5,
+        "side.flavor": 0.5
+      }
+    },
+    "output": {
+      "item": "food_tea",
+      "qty": 2
+    },
+    "seconds": 6,
+    "xp": 26
+  },
+  {
+    "id": "rc_furn_stool",
+    "type": "craft",
+    "name": "나무 의자",
+    "skill": "carpentry",
+    "level": 2,
+    "station": "workbench",
+    "slots": [
+      {
+        "key": "board",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 3
+      },
+      {
+        "key": "nail",
+        "item": "nails_copper",
+        "qty": 4
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "board.flex": 0.6,
+        "board.strength": 0.4
+      },
+      "durability": {
+        "board.strength": 0.7,
+        "nail.toughness": 0.3
+      }
+    },
+    "output": {
+      "item": "furn_stool",
+      "qty": 1
+    },
+    "seconds": 4,
+    "xp": 20
+  },
+  {
+    "id": "rc_furn_table",
+    "type": "craft",
+    "name": "나무 탁자",
+    "skill": "carpentry",
+    "level": 6,
+    "station": "workbench",
+    "slots": [
+      {
+        "key": "board",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 6
+      },
+      {
+        "key": "nail",
+        "item": "nails_copper",
+        "qty": 10
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "board.flex": 0.6,
+        "board.strength": 0.4
+      },
+      "durability": {
+        "board.strength": 0.7,
+        "nail.toughness": 0.3
+      }
+    },
+    "output": {
+      "item": "furn_table",
+      "qty": 1
+    },
+    "seconds": 6,
+    "xp": 40
+  },
+  {
+    "id": "rc_furn_bed",
+    "type": "craft",
+    "name": "짚 침상",
+    "skill": "carpentry",
+    "level": 8,
+    "station": "workbench",
+    "slots": [
+      {
+        "key": "board",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 6
+      },
+      {
+        "key": "nail",
+        "item": "nails_copper",
+        "qty": 8
+      },
+      {
+        "key": "cloth",
+        "item": "cloth_reed",
+        "qty": 4
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "board.flex": 0.6,
+        "board.strength": 0.4
+      },
+      "durability": {
+        "board.strength": 0.7,
+        "nail.toughness": 0.3
+      }
+    },
+    "output": {
+      "item": "furn_bed",
+      "qty": 1
+    },
+    "seconds": 8,
+    "xp": 60
+  },
+  {
+    "id": "rc_furn_lamp",
+    "type": "craft",
+    "name": "구리 등잔",
+    "skill": "carpentry",
+    "level": 5,
+    "station": "workbench",
+    "slots": [
+      {
+        "key": "board",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 2
+      },
+      {
+        "key": "nail",
+        "item": "nails_copper",
+        "qty": 4
+      },
+      {
+        "key": "metal",
+        "item": "ingot_copper",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "board.flex": 0.6,
+        "board.strength": 0.4
+      },
+      "durability": {
+        "board.strength": 0.7,
+        "nail.toughness": 0.3
+      }
+    },
+    "output": {
+      "item": "furn_lamp",
+      "qty": 1
+    },
+    "seconds": 5,
+    "xp": 35
+  },
+  {
+    "id": "rc_furn_rug",
+    "type": "craft",
+    "name": "갈대 깔개",
+    "skill": "carpentry",
+    "level": 4,
+    "station": "workbench",
+    "slots": [
+      {
+        "key": "board",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 2
+      },
+      {
+        "key": "cloth",
+        "item": "cloth_reed",
+        "qty": 5
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "board.flex": 0.6,
+        "board.strength": 0.4
+      },
+      "durability": {
+        "board.strength": 1
+      }
+    },
+    "output": {
+      "item": "furn_rug",
+      "qty": 1
+    },
+    "seconds": 5,
+    "xp": 30
+  },
+  {
+    "id": "rc_furn_shelf",
+    "type": "craft",
+    "name": "선반",
+    "skill": "carpentry",
+    "level": 10,
+    "station": "workbench",
+    "slots": [
+      {
+        "key": "board",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 8
+      },
+      {
+        "key": "nail",
+        "item": "nails_copper",
+        "qty": 12
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "board.flex": 0.6,
+        "board.strength": 0.4
+      },
+      "durability": {
+        "board.strength": 0.7,
+        "nail.toughness": 0.3
+      }
+    },
+    "output": {
+      "item": "furn_shelf",
+      "qty": 1
+    },
+    "seconds": 8,
+    "xp": 50
+  },
+  {
+    "id": "rc_ingot_mist",
+    "type": "refine",
+    "name": "안개강 제련",
+    "skill": "smelting",
+    "level": 30,
+    "station": "smelter",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "main",
+        "item": "ingot_iron",
+        "qty": 2
+      },
+      {
+        "key": "core",
+        "item": "shard_mist",
+        "qty": 1
+      }
+    ],
+    "output": {
+      "item": "ingot_mist",
+      "qty": 1
+    },
+    "seconds": 10,
+    "xp": 60
+  },
+  {
+    "id": "rc_sword_mist",
+    "type": "craft",
+    "name": "안개강 검과 방패",
+    "skill": "smithing",
+    "level": 29,
+    "station": "forge",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "blade",
+        "item": "ingot_mist",
+        "qty": 3
+      },
+      {
+        "key": "grip",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attack": {
+        "blade.hardness": 0.8,
+        "grip.strength": 0.2
+      },
+      "durability": {
+        "blade.toughness": 0.6,
+        "grip.flex": 0.4
+      }
+    },
+    "output": {
+      "item": "wpn_sword_mist",
+      "qty": 1
+    },
+    "seconds": 16,
+    "xp": 144,
+    "blueprint": "bp_sword_mist"
+  },
+  {
+    "id": "rc_battleaxe_mist",
+    "type": "craft",
+    "name": "안개강 대도끼",
+    "skill": "smithing",
+    "level": 31,
+    "station": "forge",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "head",
+        "item": "ingot_mist",
+        "qty": 4
+      },
+      {
+        "key": "haft",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "attack": {
+        "head.hardness": 0.7,
+        "haft.strength": 0.3
+      },
+      "durability": {
+        "head.toughness": 0.5,
+        "haft.flex": 0.5
+      }
+    },
+    "output": {
+      "item": "wpn_battleaxe_mist",
+      "qty": 1
+    },
+    "seconds": 17,
+    "xp": 162,
+    "blueprint": "bp_battleaxe_mist"
+  },
+  {
+    "id": "rc_spear_mist",
+    "type": "craft",
+    "name": "안개강 창",
+    "skill": "smithing",
+    "level": 30,
+    "station": "forge",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "tip",
+        "item": "ingot_mist",
+        "qty": 2
+      },
+      {
+        "key": "shaft",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 3
+      }
+    ],
+    "stats": {
+      "attack": {
+        "tip.hardness": 0.6,
+        "shaft.flex": 0.4
+      },
+      "durability": {
+        "tip.toughness": 0.4,
+        "shaft.strength": 0.6
+      }
+    },
+    "output": {
+      "item": "wpn_spear_mist",
+      "qty": 1
+    },
+    "seconds": 16,
+    "xp": 151,
+    "blueprint": "bp_spear_mist"
+  },
+  {
+    "id": "rc_hammer_mist",
+    "type": "craft",
+    "name": "안개강 전투 망치",
+    "skill": "smithing",
+    "level": 32,
+    "station": "forge",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "head",
+        "item": "ingot_mist",
+        "qty": 5
+      },
+      {
+        "key": "haft",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "attack": {
+        "head.hardness": 0.5,
+        "haft.strength": 0.5
+      },
+      "durability": {
+        "head.toughness": 0.6,
+        "haft.flex": 0.4
+      }
+    },
+    "output": {
+      "item": "wpn_hammer_mist",
+      "qty": 1
+    },
+    "seconds": 17,
+    "xp": 165,
+    "blueprint": "bp_hammer_mist"
+  },
+  {
+    "id": "rc_bow_mist",
+    "type": "craft",
+    "name": "영맥 뿔 활",
+    "skill": "carpentry",
+    "level": 30,
+    "station": "workbench",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "limb",
+        "item": "lumber_oak",
+        "qty": 3
+      },
+      {
+        "key": "grip",
+        "family": "leather",
+        "stage": "refined",
+        "qty": 1
+      },
+      {
+        "key": "string",
+        "family": "fiber",
+        "stage": "refined",
+        "qty": 2
+      },
+      {
+        "key": "core",
+        "item": "shard_mist",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "attack": {
+        "limb.flex": 0.6,
+        "string.tenacity": 0.4
+      },
+      "durability": {
+        "limb.strength": 0.6,
+        "grip.thickness": 0.4
+      }
+    },
+    "output": {
+      "item": "wpn_bow_mist",
+      "qty": 1
+    },
+    "seconds": 16,
+    "xp": 151,
+    "blueprint": "bp_bow_mist"
+  },
+  {
+    "id": "rc_staff_mist",
+    "type": "craft",
+    "name": "영맥 결정 지팡이",
+    "skill": "carpentry",
+    "level": 31,
+    "station": "workbench",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "shaft",
+        "item": "lumber_oak",
+        "qty": 3
+      },
+      {
+        "key": "core",
+        "item": "gem_rough",
+        "qty": 3
+      },
+      {
+        "key": "band",
+        "item": "ingot_mist",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attack": {
+        "shaft.flex": 0.5,
+        "shaft.strength": 0.5
+      },
+      "durability": {
+        "shaft.strength": 0.7,
+        "shaft.flex": 0.3
+      }
+    },
+    "output": {
+      "item": "wpn_staff_mist",
+      "qty": 1
+    },
+    "seconds": 16,
+    "xp": 158,
+    "blueprint": "bp_staff_mist"
+  },
+  {
+    "id": "rc_mist_helm",
+    "type": "craft",
+    "name": "안개강 투구",
+    "skill": "armoring",
+    "level": 28,
+    "station": "armorbench",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "plate",
+        "item": "ingot_mist",
+        "qty": 3
+      },
+      {
+        "key": "lining",
+        "item": "leather",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "armor": {
+        "plate.hardness": 0.7,
+        "plate.toughness": 0.3
+      },
+      "durability": {
+        "plate.toughness": 0.6,
+        "lining.suppleness": 0.4
+      }
+    },
+    "output": {
+      "item": "arm_mist_helm",
+      "qty": 1
+    },
+    "seconds": 16,
+    "xp": 140,
+    "blueprint": "bp_mist_helm"
+  },
+  {
+    "id": "rc_mist_cuirass",
+    "type": "craft",
+    "name": "안개강 흉갑",
+    "skill": "armoring",
+    "level": 32,
+    "station": "armorbench",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "plate",
+        "item": "ingot_mist",
+        "qty": 6
+      },
+      {
+        "key": "lining",
+        "item": "leather",
+        "qty": 2
+      },
+      {
+        "key": "padding",
+        "item": "cloth_reed",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "armor": {
+        "plate.hardness": 0.7,
+        "plate.toughness": 0.3
+      },
+      "durability": {
+        "plate.toughness": 0.5,
+        "lining.suppleness": 0.3,
+        "padding.tenacity": 0.2
+      }
+    },
+    "output": {
+      "item": "arm_mist_cuirass",
+      "qty": 1
+    },
+    "seconds": 20,
+    "xp": 216,
+    "blueprint": "bp_mist_cuirass"
+  },
+  {
+    "id": "rc_mist_greaves",
+    "type": "craft",
+    "name": "안개강 다리갑",
+    "skill": "armoring",
+    "level": 30,
+    "station": "armorbench",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "plate",
+        "item": "ingot_mist",
+        "qty": 4
+      },
+      {
+        "key": "lining",
+        "item": "leather",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "armor": {
+        "plate.hardness": 0.7,
+        "plate.toughness": 0.3
+      },
+      "durability": {
+        "plate.toughness": 0.6,
+        "lining.suppleness": 0.4
+      }
+    },
+    "output": {
+      "item": "arm_mist_greaves",
+      "qty": 1
+    },
+    "seconds": 18,
+    "xp": 165,
+    "blueprint": "bp_mist_greaves"
+  }
 ]

@@ -1613,5 +1613,356 @@
         "round": 0
       }
     }
+  },
+  {
+    "id": "shard_mist",
+    "name": "안개 결정",
+    "stage": "raw",
+    "tier": 3,
+    "value": 140,
+    "icon": "🔷",
+    "note": "원정 두목과 깊은 곳 짐승에게서만 나온다"
+  },
+  {
+    "id": "ingot_mist",
+    "name": "안개강 주괴",
+    "family": "metal",
+    "stage": "refined",
+    "tier": 3,
+    "value": 320,
+    "icon": "🧈"
+  },
+  {
+    "id": "wpn_sword_mist",
+    "name": "안개강 검과 방패",
+    "kind": "equipment",
+    "stage": "weapon",
+    "tier": 3,
+    "value": 1352,
+    "icon": "🗡️",
+    "weapon": {
+      "type": "sword",
+      "tier": 3
+    },
+    "statConvert": {
+      "attack": {
+        "base": 19.8,
+        "per": 0.15,
+        "round": 1
+      },
+      "durability": {
+        "base": 338,
+        "per": 7,
+        "round": 0
+      }
+    },
+    "weight": 1.6
+  },
+  {
+    "id": "wpn_battleaxe_mist",
+    "name": "안개강 대도끼",
+    "kind": "equipment",
+    "stage": "weapon",
+    "tier": 3,
+    "value": 1560,
+    "icon": "🪓",
+    "weapon": {
+      "type": "axe",
+      "tier": 3
+    },
+    "statConvert": {
+      "attack": {
+        "base": 19.8,
+        "per": 0.15,
+        "round": 1
+      },
+      "durability": {
+        "base": 364,
+        "per": 7,
+        "round": 0
+      }
+    },
+    "weight": 2.9
+  },
+  {
+    "id": "wpn_spear_mist",
+    "name": "안개강 창",
+    "kind": "equipment",
+    "stage": "weapon",
+    "tier": 3,
+    "value": 1300,
+    "icon": "🔱",
+    "weapon": {
+      "type": "spear",
+      "tier": 3
+    },
+    "statConvert": {
+      "attack": {
+        "base": 19.8,
+        "per": 0.15,
+        "round": 1
+      },
+      "durability": {
+        "base": 312,
+        "per": 7,
+        "round": 0
+      }
+    },
+    "weight": 2.3
+  },
+  {
+    "id": "wpn_hammer_mist",
+    "name": "안개강 전투 망치",
+    "kind": "equipment",
+    "stage": "weapon",
+    "tier": 3,
+    "value": 1612,
+    "icon": "🔨",
+    "weapon": {
+      "type": "hammer",
+      "tier": 3
+    },
+    "statConvert": {
+      "attack": {
+        "base": 19.8,
+        "per": 0.15,
+        "round": 1
+      },
+      "durability": {
+        "base": 390,
+        "per": 7,
+        "round": 0
+      }
+    },
+    "weight": 4.1
+  },
+  {
+    "id": "wpn_bow_mist",
+    "name": "영맥 뿔 활",
+    "kind": "equipment",
+    "stage": "weapon",
+    "tier": 3,
+    "value": 1248,
+    "icon": "🏹",
+    "weapon": {
+      "type": "bow",
+      "tier": 3
+    },
+    "statConvert": {
+      "attack": {
+        "base": 19.8,
+        "per": 0.15,
+        "round": 1
+      },
+      "durability": {
+        "base": 299,
+        "per": 7,
+        "round": 0
+      }
+    },
+    "weight": 1.3
+  },
+  {
+    "id": "wpn_staff_mist",
+    "name": "영맥 결정 지팡이",
+    "kind": "equipment",
+    "stage": "weapon",
+    "tier": 3,
+    "value": 1456,
+    "icon": "🪄",
+    "weapon": {
+      "type": "staff",
+      "tier": 3
+    },
+    "statConvert": {
+      "attack": {
+        "base": 19.8,
+        "per": 0.15,
+        "round": 1
+      },
+      "durability": {
+        "base": 299,
+        "per": 7,
+        "round": 0
+      }
+    },
+    "weight": 1.6
+  },
+  {
+    "id": "arm_mist_helm",
+    "name": "안개강 투구",
+    "kind": "equipment",
+    "stage": "armor",
+    "tier": 3,
+    "value": 1118,
+    "icon": "⛑️",
+    "weight": 2.9,
+    "armor": {
+      "slot": "head",
+      "class": "heavy"
+    },
+    "statConvert": {
+      "armor": {
+        "base": 7.9,
+        "per": 0.1,
+        "round": 1
+      },
+      "durability": {
+        "base": 286,
+        "per": 6,
+        "round": 0
+      }
+    }
+  },
+  {
+    "id": "arm_mist_cuirass",
+    "name": "안개강 흉갑",
+    "kind": "equipment",
+    "stage": "armor",
+    "tier": 3,
+    "value": 2392,
+    "icon": "🛡️",
+    "weight": 8.6,
+    "armor": {
+      "slot": "chest",
+      "class": "heavy"
+    },
+    "statConvert": {
+      "armor": {
+        "base": 15.8,
+        "per": 0.2,
+        "round": 1
+      },
+      "durability": {
+        "base": 416,
+        "per": 8,
+        "round": 0
+      }
+    }
+  },
+  {
+    "id": "arm_mist_greaves",
+    "name": "안개강 다리갑",
+    "kind": "equipment",
+    "stage": "armor",
+    "tier": 3,
+    "value": 1664,
+    "icon": "🦿",
+    "weight": 5.0,
+    "armor": {
+      "slot": "legs",
+      "class": "heavy"
+    },
+    "statConvert": {
+      "armor": {
+        "base": 11.2,
+        "per": 0.14,
+        "round": 1
+      },
+      "durability": {
+        "base": 338,
+        "per": 7,
+        "round": 0
+      }
+    }
+  },
+  {
+    "id": "bp_sword_mist",
+    "name": "설계도: 안개강 검과 방패",
+    "blueprint": true,
+    "stage": "misc",
+    "tier": 3,
+    "value": 600,
+    "icon": "📘",
+    "recipe": "rc_sword_mist",
+    "nogift": true
+  },
+  {
+    "id": "bp_battleaxe_mist",
+    "name": "설계도: 안개강 대도끼",
+    "blueprint": true,
+    "stage": "misc",
+    "tier": 3,
+    "value": 600,
+    "icon": "📘",
+    "recipe": "rc_battleaxe_mist",
+    "nogift": true
+  },
+  {
+    "id": "bp_spear_mist",
+    "name": "설계도: 안개강 창",
+    "blueprint": true,
+    "stage": "misc",
+    "tier": 3,
+    "value": 600,
+    "icon": "📘",
+    "recipe": "rc_spear_mist",
+    "nogift": true
+  },
+  {
+    "id": "bp_hammer_mist",
+    "name": "설계도: 안개강 전투 망치",
+    "blueprint": true,
+    "stage": "misc",
+    "tier": 3,
+    "value": 600,
+    "icon": "📘",
+    "recipe": "rc_hammer_mist",
+    "nogift": true
+  },
+  {
+    "id": "bp_bow_mist",
+    "name": "설계도: 영맥 뿔 활",
+    "blueprint": true,
+    "stage": "misc",
+    "tier": 3,
+    "value": 600,
+    "icon": "📘",
+    "recipe": "rc_bow_mist",
+    "nogift": true
+  },
+  {
+    "id": "bp_staff_mist",
+    "name": "설계도: 영맥 결정 지팡이",
+    "blueprint": true,
+    "stage": "misc",
+    "tier": 3,
+    "value": 600,
+    "icon": "📘",
+    "recipe": "rc_staff_mist",
+    "nogift": true
+  },
+  {
+    "id": "bp_mist_helm",
+    "name": "설계도: 안개강 투구",
+    "blueprint": true,
+    "stage": "misc",
+    "tier": 3,
+    "value": 600,
+    "icon": "📘",
+    "recipe": "rc_mist_helm",
+    "nogift": true
+  },
+  {
+    "id": "bp_mist_cuirass",
+    "name": "설계도: 안개강 흉갑",
+    "blueprint": true,
+    "stage": "misc",
+    "tier": 3,
+    "value": 600,
+    "icon": "📘",
+    "recipe": "rc_mist_cuirass",
+    "nogift": true
+  },
+  {
+    "id": "bp_mist_greaves",
+    "name": "설계도: 안개강 다리갑",
+    "blueprint": true,
+    "stage": "misc",
+    "tier": 3,
+    "value": 600,
+    "icon": "📘",
+    "recipe": "rc_mist_greaves",
+    "nogift": true
   }
 ]

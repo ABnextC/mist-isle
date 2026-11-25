@@ -2,6 +2,7 @@
 // 모든 판정은 코어가 30Hz로 한다. 화면은 이벤트(combat.*)를 보고 연출만 한다.
 
 import { hurtMob, isAlive, applyMobFx, fxOn } from './mobs.js';
+import { levelPassives, mergeP } from './level.js';
 import { nearestSettlement } from '../world.js';
 import { masteryOf, passivesOf, gainXp, abilityOf } from './mastery.js';
 
@@ -53,7 +54,11 @@ export function weaponOf(ctx, a) {
 }
 
 // 지금 든 무기의 숙련 패시브
-export const passivesNow = (ctx, a) => passivesOf(ctx, a, weaponOf(ctx, a).mastery);
+// 전투 레벨·능력치(v2.3)를 무기 숙련 보너스에 더한다
+export const passivesNow = (ctx, a) => {
+  const w = weaponOf(ctx, a).mastery;
+  return mergeP(passivesOf(ctx, a, w), levelPassives(ctx, a, w));
+};
 
 // 몸에 걸린 기운(v1.1): 스킬 버프·구른 뒤 버프. 같은 키는 더한다
 export function auraSum(a, t, key) {

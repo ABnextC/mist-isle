@@ -4,7 +4,7 @@
 const MOVE_KEYS = { w: 'f', arrowup: 'f', s: 'b', arrowdown: 'b', a: 'l', arrowleft: 'l', d: 'r', arrowright: 'r' };
 // v1.1: 1·2·3 무기 스킬, X 무기 바꾸기, N 무기 숙련, Esc 창 닫기/메뉴
 const ACT_KEYS = {
-  e: 'interact', f: 'interact', h: 'recall', i: 'bag', b: 'bag', tab: 'bag', c: 'craft', k: 'skills', l: 'log', j: 'journal', n: 'mastery',
+  e: 'interact', f: 'interact', h: 'recall', i: 'bag', b: 'bag', tab: 'bag', c: 'craft', k: 'skills', l: 'log', j: 'journal', n: 'mastery', p: 'char', o: 'exped',
   escape: 'esc', ' ': 'dodge', r: 'heavy', f3: 'perf', 1: 'skill0', 2: 'skill1', 3: 'skill2', x: 'swap',
 };
 // 전투(v0.3, PC): 마우스 왼쪽 짧게 = 약공, 길게 눌렀다 떼기 = 강공, 오른쪽 누르는 동안 = 막기, Space = 구르기, Q 누르는 동안 = 막기

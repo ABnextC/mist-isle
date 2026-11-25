@@ -20,33 +20,38 @@ export const accompanying = (state, npc) => Object.values(state.actors).some((x)
 // 잡은 몫은 주인에게
 export const creditOf = (ctx, a) => (a?.kind === 'ally' ? ctx.state.actors[a.ally.owner] || a : a);
 
+// 곁에서 싸우는 행위자 하나를 세운다(단짝 동행·원정 동료가 함께 쓴다)
+export function makeAlly(ctx, a, { id, name, look, weapon, until, npc = null, merc = null, dx = 1.4, dz = -1.2 }) {
+  const al = newActor(ctx.data, { id, name, kind: 'ally', at: [Math.round((a.x + dx) * 1000) / 1000, Math.round((a.z + dz) * 1000) / 1000] });
+  al.look = look;
+  al.home = a.home;
+  al.ally = { owner: a.id, npc, merc, until: Math.round(until * 100) / 100, moveAt: 0 };
+  al.ai = { on: true, profile: 'ally', manual: true, mem: {} };
+  const def = ctx.data.items[weapon];
+  const scores = Object.fromEntries(Object.keys(def.statConvert).map((k) => [k, 65]));
+  const stats = convertStats(def.statConvert, scores);
+  const w = { uid: ctx.newId('it'), item: def.id, stats, scores, star: starOf(65, ctx.cfg.stars), masterwork: false, crafter: name, dur: stats.durability ?? null, maxDur: stats.durability ?? null, broken: false };
+  al.bag.push(w);
+  al.equip.weapon = w.uid;
+  ctx.state.actors[id] = al;
+  return al;
+}
+
 export function spawnAlly(ctx, a, npc) {
   const n = ctx.data.npcs[npc];
   const t = ctx.state.t;
   const id = `ally_${a.id}`;
-  const al = newActor(ctx.data, { id, name: n.name, kind: 'ally', at: [Math.round((a.x + 1.4) * 1000) / 1000, Math.round((a.z - 1.2) * 1000) / 1000] });
-  al.look = n.look;
-  al.home = a.home;
-  al.ally = { owner: a.id, npc, until: Math.round((t + B(ctx).companionSec) * 100) / 100, moveAt: 0 };
-  al.ai = { on: true, profile: 'ally', manual: true, mem: {} };
-  const def = ctx.data.items[n.perk.weapon];
-  const scores = Object.fromEntries(Object.keys(def.statConvert).map((k) => [k, 65]));
-  const stats = convertStats(def.statConvert, scores);
-  const w = { uid: ctx.newId('it'), item: def.id, stats, scores, star: starOf(65, ctx.cfg.stars), masterwork: false, crafter: n.name, dur: stats.durability ?? null, maxDur: stats.durability ?? null, broken: false };
-  al.bag.push(w);
-  al.equip.weapon = w.uid;
-  ctx.state.actors[id] = al;
+  const al = makeAlly(ctx, a, { id, name: n.name, look: n.look, weapon: n.perk.weapon, until: t + B(ctx).companionSec, npc });
   a.ally = { id, npc, until: al.ally.until };
   markInvite(ctx, a, npc);
   ctx.emit('ally.join', { actor: a.id, npc, ally: id, until: al.ally.until });
   return al;
 }
-
 export function dismissAlly(ctx, al, reason) {
   const o = ctx.state.actors[al.ally.owner];
   delete ctx.state.actors[al.id];
   if (o?.ally?.id === al.id) o.ally = null;
-  ctx.emit('ally.leave', { actor: al.ally.owner, npc: al.ally.npc, ally: al.id, reason });
+  ctx.emit('ally.leave', { actor: al.ally.owner, npc: al.ally.npc, merc: al.ally.merc || null, ally: al.id, reason });
 }
 
 function threat(ctx, o, al) {

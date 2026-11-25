@@ -519,6 +519,38 @@ async function boot() {
       case 'esc': if (hud.isOpen()) hud.close(); else hud.toggle('hub'); break;
       case 'hub': hud.toggle('hub'); break;
       case 'mastery': hud.toggle('mastery'); break;
+      case 'char': hud.toggle('char'); break;
+      case 'exped': hud.toggle('exped'); break;
+      case 'attr': {
+        const [attr, n] = v.split(':');
+        const r = game.dispatch({ type: 'ATTR_SPEND', actor: PID, attr, n: Number(n) });
+        if (!r.ok) hud.toast(ERR[r.error] || r.error, 'bad');
+        break;
+      }
+      case 'attr-reset': {
+        const r = game.dispatch({ type: 'ATTR_RESET', actor: PID });
+        if (!r.ok) hud.toast(ERR[r.error] || r.error, 'bad');
+        break;
+      }
+      case 'exp-merc': {
+        const s = (hud.panel.mercs ||= []);
+        const i = s.indexOf(v);
+        if (i >= 0) s.splice(i, 1);
+        else if (s.length < 2) s.push(v);
+        break;
+      }
+      case 'exp-start': {
+        const r = game.dispatch({ type: 'EXP_START', actor: PID, ex: v, mercs: hud.panel.mercs || [] });
+        if (!r.ok) hud.toast(ERR[r.error] || r.error, 'bad');
+        else hud.close();
+        break;
+      }
+      case 'exp-leave': game.dispatch({ type: 'EXP_LEAVE', actor: PID }); break;
+      case 'learn-bp': {
+        const r = game.dispatch({ type: 'LEARN_BP', actor: PID, key: v });
+        if (!r.ok) hud.toast(ERR[r.error] || r.error, 'bad');
+        break;
+      }
       case 'skill0':
       case 'skill1':
       case 'skill2': {
@@ -797,7 +829,7 @@ async function boot() {
       if (!(T.boss || T.elite) || m.mode === 'dead' || m.mode === 'away') continue;
       if (m.target !== PID && m.hp >= T.hp) continue;
       if (Math.hypot(m.x - a.x, m.z - a.z) > 35) continue;
-      if (!best || T.boss) best = { name: T.name, hp: m.hp, max: T.hp, boss: !!T.boss, phase: m.phase || 0 };
+      if (!best || T.boss) best = { name: `Lv ${T.level ?? '?'} ${T.name}`, hp: m.hp, max: T.hp, boss: !!T.boss, phase: m.phase || 0 };
     }
     return best;
   }
@@ -814,6 +846,39 @@ async function boot() {
   game.on('bond.gift', (ev) => {
     if (ev.actor !== PID || hud.panel?.kind !== 'talk') return;
     hud.open('talk', { npc: ev.npc, gift: true, react: ev });
+  });
+  // 전투 레벨·원정(v2.3)
+  game.on('level.up', (ev) => {
+    if (ev.actor !== PID) return;
+    hud.banner(`⭐ 전투 레벨 ${ev.lvl} — 능력치 점수 ${ev.points} (P)`, 3200);
+    fx.levelUp?.();
+  });
+  game.on('exp.start', (ev) => {
+    if (ev.actor !== PID) return;
+    const ex = data.expeditions[ev.ex];
+    hud.banner(`${ex.icon} ${ex.name}`, 2600);
+  });
+  game.on('exp.wave', (ev) => {
+    if (ev.actor !== PID) return;
+    if (ev.boss) hud.banner(`☠️ ${ev.name}`, 2600);
+    else if (ev.wave > 1) hud.toast(`⚔️ 물결 ${ev.wave}/${ev.waves}`, 'info');
+  });
+  game.on('exp.clear', (ev) => {
+    if (ev.actor !== PID) return;
+    const ex = data.expeditions[ev.ex];
+    hud.banner(`🏆 ${ex.name} 공략 — ${Math.floor(ev.sec / 60)}분 ${ev.sec % 60}초`, 3600);
+    const parts = [`🪙 ${ev.silver}`, `⭐ ${ev.xp}`, ...ev.items.map((x) => `${data.items[x.item].name} ×${x.qty}`)];
+    setTimeout(() => hud.toast(`${ev.first ? '오늘 첫 공략' : '다시 공략(보상 절반)'} · ${parts.join(' · ')}`, 'good', 8000), 1500);
+    if (ev.bp) setTimeout(() => hud.banner(`📘 ${data.items[ev.bp].name}!`, 3400), 4200);
+  });
+  game.on('exp.fail', (ev) => {
+    if (ev.actor !== PID) return;
+    const why = { down: '쓰러졌다', left: '원정지를 떠났다', time: '시간이 다 됐다' }[ev.reason] || '그만뒀다';
+    hud.toast(`🏳️ 원정 실패 — ${why}. 잃은 것은 없다`, 'warn', 5000);
+  });
+  game.on('blueprint.learn', (ev) => {
+    if (ev.actor !== PID) return;
+    hud.toast(`📘 「${data.recipes[ev.recipe].name}」 제작법을 익혔다 — ${data.stations[data.recipes[ev.recipe].station].name}에서 만든다`, 'good', 6000);
   });
   game.on('bond.thanks', (ev) => {
     if (ev.actor !== PID) return;

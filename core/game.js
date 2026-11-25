@@ -28,6 +28,7 @@ import { mobsTick } from './systems/mobs.js';
 import { combatTick, arrowsTick } from './systems/combat.js';
 import { fightersTick } from './ai/fighter.js';
 import { alliesTick } from './systems/allies.js';
+import { expeditionsTick } from './systems/expeditions.js';
 import { dayOfMonth, seasonOf, isMarketDay } from './systems/calendar.js';
 import { agentsTick } from './systems/agents.js';
 import { questsTick } from './systems/quests.js';
@@ -98,6 +99,7 @@ function wrap(ctx, bus) {
       nodesTick(ctx);
       focusTick(ctx);
       questsTick(ctx);
+      expeditionsTick(ctx);
       const h = ctx.clock.hour(state.t);
       if (h !== state.clock.hour) {
         state.clock.hour = h;
@@ -125,6 +127,7 @@ function wrap(ctx, bus) {
   return {
     state,
     data,
+    _ctx: ctx, // 시험·도구용(화면은 쓰지 않는다)
     clock: ctx.clock,
     terrain: ctx.terrain,
     get statics() { return ctx.statics; },

@@ -39,6 +39,7 @@ METAL = {
     'copper': ('#cf7438', '#f2b27a'),
     'iron': ('#7f93a3', '#d6e2ea'),
     'bronze': ('#b0813a', '#ecc98a'),
+    'mist': ('#6f93ae', '#dff4ff'),
 }
 LEATHER = '#8a5a33'
 CLOTH = '#c9b98d'
@@ -489,30 +490,30 @@ def robe(s):
     s.add(L('M13,54 L51,54', '#c8a050', 1.8, 0.85))
     s.add(HL('M21,16 L19,28', 0.45, 1.4))
 
-def helm(s):
+def helm(s, metal='iron'):
     s.shadow(32, 56, 18, 3)
-    fill = s.lin(METAL['iron'][0], 0.4, -0.35)
+    fill = s.lin(METAL[metal][0], 0.4, -0.35)
     s.add(P('M12,40 Q10,14 32,10 Q54,14 52,40 L46,40 L46,32 L18,32 L18,40 Z', fill))
-    s.add(R(10, 38, 44, 8, s.lin(METAL['iron'][0], 0.2, -0.35), 3))
-    s.add(P('M29,32 L35,32 L34,52 L30,52 Z', s.lin(METAL['iron'][1], 0.2, -0.3), 1.6))
-    s.add(L('M32,10 L32,30', shade(METAL['iron'][0], -0.35), 2, 0.8))
+    s.add(R(10, 38, 44, 8, s.lin(METAL[metal][0], 0.2, -0.35), 3))
+    s.add(P('M29,32 L35,32 L34,52 L30,52 Z', s.lin(METAL[metal][1], 0.2, -0.3), 1.6))
+    s.add(L('M32,10 L32,30', shade(METAL[metal][0], -0.35), 2, 0.8))
     for x in (16, 24, 40, 48):
         s.add(C(x, 42, 1.2, '#e8eef2', 0))
     s.add(HL('M18,24 Q22,14 30,12.5', 0.75, 1.8))
 
-def cuirass(s):
+def cuirass(s, metal='iron'):
     s.shadow(32, 58, 19, 3)
-    fill = s.lin(METAL['iron'][0], 0.4, -0.35)
+    fill = s.lin(METAL[metal][0], 0.4, -0.35)
     s.add(P('M12,12 L24,8 Q32,14 40,8 L52,12 L50,28 Q52,42 46,54 Q32,58 18,54 Q12,42 14,28 Z', fill))
-    s.add(L('M32,14 L32,54', shade(METAL['iron'][0], -0.4), 1.4, 0.8))
-    s.add(L('M16,30 Q32,36 48,30 M18,42 Q32,47 46,42', shade(METAL['iron'][0], -0.35), 1.4, 0.8))
-    s.add(P('M12,12 L24,8 L22,18 L10,20 Z', s.lin(METAL['iron'][1], 0.15, -0.3), 1.6) + P('M52,12 L40,8 L42,18 L54,20 Z', s.lin(METAL['iron'][1], 0.15, -0.3), 1.6))
+    s.add(L('M32,14 L32,54', shade(METAL[metal][0], -0.4), 1.4, 0.8))
+    s.add(L('M16,30 Q32,36 48,30 M18,42 Q32,47 46,42', shade(METAL[metal][0], -0.35), 1.4, 0.8))
+    s.add(P('M12,12 L24,8 L22,18 L10,20 Z', s.lin(METAL[metal][1], 0.15, -0.3), 1.6) + P('M52,12 L40,8 L42,18 L54,20 Z', s.lin(METAL[metal][1], 0.15, -0.3), 1.6))
     s.add(HL('M18,22 Q22,16 28,14', 0.75, 1.8))
 
-def greaves(s):
+def greaves(s, metal='iron'):
     s.shadow(32, 58, 20, 3)
     for (x, k, flip) in [(21, 0, -1), (43, -0.07, 1)]:
-        base = shade(METAL['iron'][0], k)
+        base = shade(METAL[metal][0], k)
         fill = s.lin(base, 0.4, -0.35)
         # 정강이판: 위는 좁고 무릎에서 둥글게, 발등으로 꺾인다
         s.add(P(f'M{x - 6},10 Q{x},7 {x + 6},10 L{x + 7},38 Q{x + 7},46 {x + 6 + flip * 6},50 L{x + 6 + flip * 8},55 L{x - 7},55 L{x - 6},40 Z', fill))
@@ -792,6 +793,44 @@ def spirit_stone(s):
     s.add(L('M32,10 L32,44 M16,22 L48,22 M20,44 L32,22 L44,44', '#7fb8d8', 1, 0.7))
     s.add(L('M24,16 l3,-3', '#fff', 1.8, 0.95))
 
+def bow_mist(s):
+    bow(s, 'oak')
+    s.add(C(49, 32, 9, s.glow('#8fe0ff', 0.6), 0))
+    s.add(P(poly([(49, 26), (53, 32), (49, 38), (45, 32)]), s.lin('#7cc6ff', 0.5, -0.25), 1.4))
+    s.add(L('M18,6 L18,58', '#bfe8ff', 1.4, 0.9))
+
+def staff_mist(s):
+    s.shadow(30, 57, 14, 3)
+    handle(s, 14, 58, 40, 14, 4.4, 'oak')
+    s.add(C(44, 10, 14, s.glow('#8fe0ff', 0.6), 0))
+    s.add(L('M37,18 Q32,6 42,2 M41,16 Q52,14 51,5', INK, 4, 1) + L('M37,18 Q32,6 42,2 M41,16 Q52,14 51,5', '#6f93ae', 2.4, 1))
+    s.add(P(poly([(44, 0), (50, 8), (44, 18), (38, 8)]), s.lin('#7cc6ff', 0.5, -0.3), 1.6))
+    s.add(L('M42,5 l1.5,-2.5', '#fff', 1.4, 0.9))
+
+def blueprint(s, glyph):
+    s.shadow(32, 56, 22, 3)
+    s.add(P('M10,14 L50,14 L50,50 L10,50 Z', s.lin('#2f5f8f', 0.25, -0.3)))
+    s.add(L('M14,20 h32 M14,44 h32 M16,18 v28 M44,18 v28', '#9cc8ec', 0.8, 0.45))
+    s.add(G(glyph, 'translate(30 32)'))
+    s.add(R(46, 10, 8, 44, s.lin('#d8c8a0'), 4, 1.8))
+    s.add(R(6, 10, 8, 44, s.lin('#d8c8a0'), 4, 1.8))
+    s.add(C(44, 46, 4.2, s.rad('#4fd1c5', 0.4, -0.3), 1.6))
+
+def bp_glyph(kind):
+    w = '#f2f8ff'
+    G_ = {
+        'sword': L('M-10,10 L10,-12 M-12,6 L-6,12 M-12,12 l3,-3', w, 1.8),
+        'battleaxe': L('M-10,12 L8,-10', w, 1.8) + L('M4,-14 Q14,-12 12,-2 L6,-6 Z M2,-8 Q-6,-10 -6,-2 L0,-4 Z', w, 1.4),
+        'spear': L('M-12,12 L10,-10', w, 1.6) + L('M8,-8 L13,-13 L11,-6 Z', w, 1.4),
+        'hammer': L('M-10,12 L4,-4', w, 1.8) + L('M-2,-10 L10,-2 L6,4 L-6,-4 Z', w, 1.4),
+        'bow': L('M-8,-13 Q10,-4 -8,13 M-8,-13 L-8,13', w, 1.6),
+        'staff': L('M-10,12 L6,-6', w, 1.8) + L('M6,-6 m-3,-3 l5,-5 l3,3 l-5,5 Z', w, 1.4),
+        'helm': L('M-10,6 Q-10,-10 0,-11 Q10,-10 10,6 L-10,6 M-1,-4 L1,-4 L1,10 L-1,10', w, 1.6),
+        'cuirass': L('M-11,-10 L-4,-12 Q0,-8 4,-12 L11,-10 L10,4 Q8,12 0,13 Q-8,12 -10,4 Z M0,-8 L0,12', w, 1.4),
+        'greaves': L('M-9,-12 L-3,-12 L-3,10 L-11,10 Z M3,-12 L9,-12 L11,10 L3,10 Z', w, 1.4),
+    }
+    return G_[kind]
+
 # ════════════════ 물건 → 그림 ════════════════
 ICONS = {
     'log_drift': lambda s: log(s, 'drift'), 'log_birch': lambda s: log(s, 'birch'), 'log_oak': lambda s: log(s, 'oak'),
@@ -825,7 +864,14 @@ ICONS = {
     'qi_log': lambda s: book(s, '#3e5a6a', wet=True), 'qi_ledger': lambda s: book(s, '#7a4a2a', torn=True), 'qi_crate': lambda s: crate(s, True),
     'qi_orders': scroll, 'qi_chart': chart, 'qi_shard': lambda s: shard(s, '#5aa8ff'), 'qi_stone': spirit_stone,
     'qi_mural': lambda s: scroll(s, '#3a6a8a', True), 'qi_bell': bell,
+    # v2.3 원정 물건
+    'shard_mist': lambda s: crystal(s, '#7cc6ff', glow=True, cluster=True), 'ingot_mist': lambda s: ingot(s, 'mist'),
+    'wpn_sword_mist': lambda s: sword_shield(s, 'mist'), 'wpn_battleaxe_mist': lambda s: axe(s, 'mist', True), 'wpn_spear_mist': lambda s: spear(s, 'mist'),
+    'wpn_hammer_mist': lambda s: hammer(s, 'mist'), 'wpn_bow_mist': lambda s: bow_mist(s), 'wpn_staff_mist': lambda s: staff_mist(s),
+    'arm_mist_helm': lambda s: helm(s, 'mist'), 'arm_mist_cuirass': lambda s: cuirass(s, 'mist'), 'arm_mist_greaves': lambda s: greaves(s, 'mist'),
 }
+for _k, _g in [('sword_mist', 'sword'), ('battleaxe_mist', 'battleaxe'), ('spear_mist', 'spear'), ('hammer_mist', 'hammer'), ('bow_mist', 'bow'), ('staff_mist', 'staff'), ('mist_helm', 'helm'), ('mist_cuirass', 'cuirass'), ('mist_greaves', 'greaves')]:
+    ICONS['bp_' + _k] = (lambda g: lambda s: blueprint(s, bp_glyph(g)))(_g)
 
 def build():
     items = json.load(open(os.path.join(ROOT, 'data', 'items.json')))

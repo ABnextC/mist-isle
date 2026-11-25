@@ -1,12 +1,111 @@
 [
-  {"id": "orders", "name": "주문 게시판", "icon": "📋", "when": {"quest": "c3_wall"}, "hint": "3장, 본섬에 건너가면 열린다", "desc": "마을이 붙인 주문을 채우고 은화를 받는다"},
-  {"id": "projects", "name": "마을 사업", "icon": "🏗️", "when": {"quest": "c3_wall"}, "hint": "3장, 본섬에 건너가면 열린다", "desc": "물자와 은화를 모아 작업대·집·도로를 올린다", "allow": [{"project": "pj_f_forge", "quest": "c2_forge"}]},
-  {"id": "transport", "name": "마을 간 운송", "icon": "🚚", "when": {"quest": "c3_wall"}, "hint": "3장, 본섬에 건너가면 열린다", "desc": "창고 물건을 다른 마을 창고로 바로 보낸다"},
-  {"id": "rumors", "name": "산지 소문", "icon": "🗺️", "when": {"quest": "c3_wall"}, "hint": "3장, 본섬에 건너가면 열린다", "desc": "좋은 재료가 나는 산지 소문을 게시판과 미니맵에서 본다"},
-  {"id": "faction", "name": "세력", "icon": "🚩", "when": {"quest": "c4_confess"}, "hint": "4장 「윤서의 고백」 뒤에 열린다", "desc": "등불단·자유 선단·안개 학회 가운데 하나에 든다"},
-  {"id": "pvp", "name": "필드 PvP·분쟁 구역", "icon": "⚔️", "when": {"chapter": "ch4"}, "hint": "4장에서 열린다", "desc": "다른 세력과 들판에서 겨룬다", "soon": true},
-  {"id": "expedition", "name": "원정", "icon": "🏛️", "when": {"chapter": "ch4"}, "hint": "4장에서 열린다", "desc": "동료와 함께 옛 탑과 요새를 친다. 두목은 설계도를 떨군다. 3장 가라앉은 탑에서 한 번 맛본다", "soon": true},
-  {"id": "territory", "name": "영지전", "icon": "🏰", "when": {"chapter": "ch4"}, "hint": "4장에서 열린다", "desc": "정착지를 두고 길드끼리 싸운다", "soon": true},
-  {"id": "housing", "name": "내 집", "icon": "🏠", "when": {"chapter": "ch4"}, "hint": "4장에 들어서면(3장을 마치면) 열린다", "desc": "집터를 사서 가구를 놓고 텃밭을 기른다. 집에서 쉬면 숙련 경험이 오른다"},
-  {"id": "guild", "name": "조합", "icon": "🤝", "when": {"chapter": "ch4"}, "hint": "4장에 들어서면(3장을 마치면) 열린다", "desc": "조합을 세우거나 들어 함께 큰 일감을 채운다. 조합 창고를 같이 쓴다"}
+  {
+    "id": "orders",
+    "name": "주문 게시판",
+    "icon": "📋",
+    "when": {
+      "quest": "c3_wall"
+    },
+    "hint": "3장, 본섬에 건너가면 열린다",
+    "desc": "마을이 붙인 주문을 채우고 은화를 받는다"
+  },
+  {
+    "id": "projects",
+    "name": "마을 사업",
+    "icon": "🏗️",
+    "when": {
+      "quest": "c3_wall"
+    },
+    "hint": "3장, 본섬에 건너가면 열린다",
+    "desc": "물자와 은화를 모아 작업대·집·도로를 올린다",
+    "allow": [
+      {
+        "project": "pj_f_forge",
+        "quest": "c2_forge"
+      }
+    ]
+  },
+  {
+    "id": "transport",
+    "name": "마을 간 운송",
+    "icon": "🚚",
+    "when": {
+      "quest": "c3_wall"
+    },
+    "hint": "3장, 본섬에 건너가면 열린다",
+    "desc": "창고 물건을 다른 마을 창고로 바로 보낸다"
+  },
+  {
+    "id": "rumors",
+    "name": "산지 소문",
+    "icon": "🗺️",
+    "when": {
+      "quest": "c3_wall"
+    },
+    "hint": "3장, 본섬에 건너가면 열린다",
+    "desc": "좋은 재료가 나는 산지 소문을 게시판과 미니맵에서 본다"
+  },
+  {
+    "id": "faction",
+    "name": "세력",
+    "icon": "🚩",
+    "when": {
+      "quest": "c4_confess"
+    },
+    "hint": "4장 「윤서의 고백」 뒤에 열린다",
+    "desc": "등불단·자유 선단·안개 학회 가운데 하나에 든다"
+  },
+  {
+    "id": "pvp",
+    "name": "필드 PvP·분쟁 구역",
+    "icon": "⚔️",
+    "when": {
+      "chapter": "ch4"
+    },
+    "hint": "4장에서 열린다",
+    "desc": "다른 세력과 들판에서 겨룬다",
+    "soon": true
+  },
+  {
+    "id": "expedition",
+    "name": "원정",
+    "icon": "🏛️",
+    "when": {
+      "chapter": "ch4"
+    },
+    "hint": "4장에서 열린다",
+    "desc": "옛 탑·요새·가마·심장 아래를 친다. 동료를 데려갈 수 있고, 두목은 설계도를 떨군다.",
+    "soon": false
+  },
+  {
+    "id": "territory",
+    "name": "영지전",
+    "icon": "🏰",
+    "when": {
+      "chapter": "ch4"
+    },
+    "hint": "4장에서 열린다",
+    "desc": "정착지를 두고 길드끼리 싸운다",
+    "soon": true
+  },
+  {
+    "id": "housing",
+    "name": "내 집",
+    "icon": "🏠",
+    "when": {
+      "chapter": "ch4"
+    },
+    "hint": "4장에 들어서면(3장을 마치면) 열린다",
+    "desc": "집터를 사서 가구를 놓고 텃밭을 기른다. 집에서 쉬면 숙련 경험이 오른다"
+  },
+  {
+    "id": "guild",
+    "name": "조합",
+    "icon": "🤝",
+    "when": {
+      "chapter": "ch4"
+    },
+    "hint": "4장에 들어서면(3장을 마치면) 열린다",
+    "desc": "조합을 세우거나 들어 함께 큰 일감을 채운다. 조합 창고를 같이 쓴다"
+  }
 ]

@@ -20,6 +20,8 @@ import { npcPos } from '../../core/world.js';
 import { bondable, bondPts, bondTier, tierName, nextTier, giftDue, giftable, knownLikes, bondLines, B as bondCfg, isBirthday, daysToBirthday, perkOf, inviteDue } from '../../core/systems/bonds.js';
 import { allyOf } from '../../core/systems/allies.js';
 import { icon, ii } from './icons.js';
+import { levelOf, needXp as lvNeed, freePoints, ATTRS, levelPassives, resetCost as attrCost, spentOf } from '../../core/systems/level.js';
+import { runOf, expUnlocked, nearEntrance, firstToday, expHint } from '../../core/systems/expeditions.js';
 import { seasonOf, dayOfMonth, isMarketDay } from '../../core/systems/calendar.js';
 import { questCtx, lifeSteps } from './quest.js';
 import { isUnlocked, allowedProject, chapterReached } from '../../core/systems/unlocks.js';
@@ -66,7 +68,7 @@ export function createHud(root, game, { touch, onAct }) {
     <div class="bottom">
       <div class="progress" data-k="progress"><span></span></div>
       <div class="prompt" data-k="prompt"></div>
-      <div class="vitals" data-k="vitals"><div class="hp"><span data-k="hpbar"></span><em data-k="hp"></em></div><div class="st"><span data-k="stbar"></span></div><div class="mp" data-k="mp"><span data-k="mpbar"></span></div></div>
+      <div class="vitals" data-k="vitals"><div class="lv" data-k="lv"><b data-k="lvn"></b><i><span data-k="lvbar"></span></i></div><div class="hp"><span data-k="hpbar"></span><em data-k="hp"></em></div><div class="st"><span data-k="stbar"></span></div><div class="mp" data-k="mp"><span data-k="mpbar"></span></div></div>
       <div class="skillbar" data-k="skillbar"></div>
       ${touch ? '' : '<div class="keys">E 상호작용 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기 · 1·2·3 스킬 · X 무기 바꾸기 · <b>Esc 메뉴</b></div>'}
     </div>
@@ -80,7 +82,7 @@ export function createHud(root, game, { touch, onAct }) {
   const $ = (k) => root.querySelector(`[data-k="${k}"]`);
   const el = {
     clock: $('clock'), silver: $('silver'), focus: $('focus'),
-    vitals: $('vitals'), hp: $('hp'), hpbar: $('hpbar'), stbar: $('stbar'), mp: $('mp'), mpbar: $('mpbar'), downed: $('downed'), hurtfx: $('hurtfx'), focusbar: $('focusbar'), buffs: $('buffs'), quest: $('quest'),
+    vitals: $('vitals'), lv: $('lv'), lvn: $('lvn'), lvbar: $('lvbar'), hp: $('hp'), hpbar: $('hpbar'), stbar: $('stbar'), mp: $('mp'), mpbar: $('mpbar'), downed: $('downed'), hurtfx: $('hurtfx'), focusbar: $('focusbar'), buffs: $('buffs'), quest: $('quest'),
     where: $('where'), feed: $('feed'), banner: $('banner'), progress: $('progress'), prompt: $('prompt'),
     actbtn: $('actbtn'), ptitle: $('ptitle'), pbody: $('pbody'), toast: $('toast'), skillbar: $('skillbar'),
     boss: $('boss'), bossname: $('bossname'), bossfill: $('bossfill'),
@@ -330,6 +332,11 @@ export function createHud(root, game, { touch, onAct }) {
       el.mp.style.display = mpShow ? '' : 'none';
       if (mpShow) el.mpbar.style.width = `${((a.cb.mp ?? 0) / (a.cb.maxMp || 100)) * 100}%`;
       set(el.hp, `${Math.ceil(a.cb.hp)}`);
+      // 전투 레벨(v2.3)
+      const LV = levelOf(a);
+      const capped = LV.lvl >= data.config.level.cap;
+      set(el.lvn, `Lv ${LV.lvl}${freePoints(qctxL(), a) > 0 ? ' ✦' : ''}`);
+      el.lvbar.style.width = `${capped ? 100 : (LV.xp / lvNeed(qctxL(), LV.lvl)) * 100}%`;
       const busy = a.cb.hp < a.cb.maxHp || a.cb.st < C.stamina || Object.values(game.state.mobs).some((m) => m.target === PID && m.mode !== 'dead');
       el.vitals.classList.toggle('dim', !busy);
       el.vitals.classList.toggle('low', a.cb.hp < a.cb.maxHp * 0.3);
@@ -342,7 +349,13 @@ export function createHud(root, game, { touch, onAct }) {
     set(el.buffs, [...ldTag, ...a.buffs.map((b) => `🍽️ 채집량 +${Math.round(b.value * 100)}% · ${Math.ceil((b.endsAt - game.state.t) / 60)}분`)].join('  '));
     // 목표까지 거리: 멀면 5m 단위로(글자가 덜 바뀌게)
     const qd = questDist == null ? '' : questDist < 30 ? ` · ${Math.round(questDist)}m` : ` · ${Math.round(questDist / 5) * 5}m`;
-    setHtml(el.quest, q ? `<b>${q.kind === 'main' ? '📜' : '🎯'} ${esc(q.title)}</b><span>${esc(q.text)}${q.goal ? `${qd} ➜ ${esc(q.goal.label)}` : ''}</span>` : '');
+    // 원정 중(v2.3)이면 추적기 자리에 원정 진행을 보인다
+    const run = runOf(qctxL(), a);
+    if (run) {
+      const ex = data.expeditions[run.ex];
+      const left = Math.max(0, Math.ceil(run.until - game.state.t));
+      setHtml(el.quest, `<b>${ex.icon} ${esc(ex.name)}</b><span>${run.boss ? '☠️ 두목' : `물결 ${run.wave + 1}/${ex.waves.length}`} · 남은 시간 ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}</span>`);
+    } else setHtml(el.quest, q ? `<b>${q.kind === 'main' ? '📜' : '🎯'} ${esc(q.title)}</b><span>${esc(q.text)}${q.goal ? `${qd} ➜ ${esc(q.goal.label)}` : ''}</span>` : '');
     // 부두목·두목 체력 막대(v0.5)
     el.boss.classList.toggle('on', !!boss);
     if (boss) {
@@ -471,6 +484,65 @@ export function createHud(root, game, { touch, onAct }) {
   }
 
   // ── 전체 메뉴(v1.1, Esc·☰) ──
+  const qctxL = () => questCtx(game);
+  // 능력치 창(v2.3): 전투 레벨·경험치·능력치 다섯·지금 무기에 붙는 힘
+  function charHtml(a) {
+    const C = qctxL();
+    const LV = levelOf(a);
+    const S = data.config.level;
+    const free = freePoints(C, a);
+    const capped = LV.lvl >= S.cap;
+    const need = lvNeed(C, LV.lvl);
+    const wE = a.equip?.weapon && a.bag.find((x) => x.uid === a.equip.weapon);
+    const wType = wE ? data.items[wE.item].weapon.type : 'fist';
+    const mType = wType === 'club' ? 'hammer' : wType;
+    const P = levelPassives(C, a, mType) || {};
+    const sc = S.scaling[mType] || S.scaling.fist;
+    const rows = ATTRS.map((k) => {
+      const A = S.attrs[k];
+      const v = LV.attrs[k] || 0;
+      const tag = sc[0] === k ? '<em class="ok">주</em>' : sc[1] === k ? '<em class="muted">부</em>' : '';
+      return `<li class="attr"><div><b>${A.icon} ${A.name} <span class="av">${v}</span> ${tag}</b><small>${esc(A.desc)}</small></div><div class="btns"><button data-act="attr" data-v="${k}:1" ${free < 1 ? 'disabled' : ''}>+1</button><button data-act="attr" data-v="${k}:5" ${free < 5 ? 'disabled' : ''}>+5</button></div></li>`;
+    }).join('');
+    const wName = wE ? data.items[wE.item].name : '맨손';
+    const eff = [`피해 +${Math.round((P.dmg || 0) * 1000) / 10}%`, `최대 체력 +${Math.round(P.maxHp || 0)}`];
+    if (P.crit) eff.push(`치명 +${Math.round(P.crit * 1000) / 10}%`);
+    if (P.maxMp) eff.push(`최대 마나 +${Math.round(P.maxMp)}`);
+    if (P.mpRegen) eff.push(`마나 회복 +${Math.round(P.mpRegen * 100)}%`);
+    return `<div class="lvhead"><div class="lvbig">${LV.lvl}</div><div><b>전투 레벨</b><small>${capped ? '최고 레벨' : `${LV.xp} / ${need}`}</small><div class="bar"><span style="width:${capped ? 100 : (LV.xp / need) * 100}%"></span></div></div></div>
+      <p class="muted">짐승을 잡고 의뢰·원정을 끝내면 오른다. 레벨마다 체력 +${S.hpPerLevel}, 능력치 점수 +${S.pointsPerLevel}. 무기 숙련(N)과 따로 오른다.</p>
+      <h3>능력치 <small class="${free ? 'ok' : 'muted'}">남은 점수 ${free}</small></h3>
+      <ul class="list attrs">${rows}</ul>
+      <h3>지금 무기: ${esc(wName)}</h3><p class="muted">주 능력치 1점당 피해 +${S.mainDmg * 100}%, 부 능력치 +${S.subDmg * 100}%</p><p>${eff.join(' · ')}</p>
+      <div class="btns"><button data-act="attr-reset" ${spentOf(a) ? '' : 'disabled'}>점수 되돌리기 · 🪙${attrCost(C, a)}</button></div>`;
+  }
+  // 원정 창(v2.3)
+  function expedHtml(a) {
+    const C = qctxL();
+    const E = data.expeditionCfg;
+    const run = runOf(C, a);
+    if (run) {
+      const ex = data.expeditions[run.ex];
+      const left = Math.max(0, Math.ceil(run.until - game.state.t));
+      return `<div class="qtag">${ex.icon} ${esc(ex.name)} · 진행 중</div><p>${run.boss ? '☠️ 두목과 싸우는 중' : `물결 ${run.wave + 1}/${ex.waves.length}`} · 남은 시간 ${Math.floor(left / 60)}분 ${left % 60}초</p>
+        <p class="muted">쓰러지거나 원정지를 멀리 떠나면 실패한다. 잃는 것은 없다.</p><div class="btns"><button data-act="exp-leave">그만두기</button></div>`;
+    }
+    const sel = panel.mercs || [];
+    const mercs = E.mercs.list.map((m) => `<button data-act="exp-merc" data-v="${m.id}" class="${sel.includes(m.id) ? 'on' : ''}">${ii(data.items[m.weapon])} ${esc(m.name)}</button>`).join('');
+    const rows = E.list.map((ex) => {
+      const open = expUnlocked(C, a, ex);
+      const near = open && nearEntrance(C, a, ex);
+      const h = expHint(C, a, ex);
+      const lvTag = `<em class="${h === 'ok' ? 'ok' : h === 'hard' ? 'warn' : 'no'}">권장 Lv ${ex.level}</em>`;
+      const bps = ex.reward.blueprints.slice(0, 4).map((b) => ii(data.items[b])).join('');
+      const first = firstToday(C, a, ex.id) ? '<em class="ok">오늘 첫 공략</em>' : '<em class="muted">오늘 이미 공략(보상 절반)</em>';
+      const btn = !open ? `<button disabled>🔒 ${esc(data.quests[ex.requires]?.name || '')} 뒤</button>` : near ? `<button class="pri" data-act="exp-start" data-v="${ex.id}">들어가기${sel.length ? ` · 🪙${sel.length * E.mercs.cost}` : ''}</button>` : '<button disabled>입구로 가야 한다</button>';
+      return `<li class="exrow ${open ? '' : 'locked'}"><div><b>${ex.icon} ${esc(ex.name)}</b> ${lvTag}<small>${esc(ex.desc)}</small><small>📍 ${esc(data.sites[ex.site]?.name || ex.site)} · ${open ? first : ''} · 물결 ${ex.waves.length} + 두목 「${esc(data.creatures[ex.boss].name)}」 · ${ex.minutes}분</small><small>보상: 안개 결정·은화·경험치 ${ex.reward.xp} · 설계도 ${bps}</small></div>${btn}</li>`;
+    }).join('');
+    return `<p class="muted">이야기에서 쳤던 곳을 다시 친다. 하루 첫 공략은 보상이 온전하고 설계도(📘)가 잘 나온다. 설계도를 읽으면 안개강 장비를 만들 수 있다.</p>
+      <h3>동료(최대 둘, 한 명당 🪙${E.mercs.cost})</h3><div class="row">${mercs}</div><p class="muted">단짝 동행(🏹)도 함께 싸운다.</p>
+      <ul class="list ex">${rows}</ul>`;
+  }
   function hubHtml(a) {
     const cd = Math.max(0, (a.recallReadyAt || 0) - game.state.t);
     const pts = Object.keys(data.weapons.types).reduce((s, w) => s + Math.max(0, mOf(a, w).lvl - mOf(a, w).nodes.length), 0);
@@ -478,7 +550,9 @@ export function createHud(root, game, { touch, onAct }) {
     return `<div class="tiles">
       ${tile('bag', icon('bag'), '가방', 'I')}
       ${tile('craft', icon('craft'), '제작', 'C')}
+      ${tile('char', icon('users'), '능력치', 'P', freePoints(qctxL(), a) ? `점수 ${freePoints(qctxL(), a)}` : `Lv ${levelOf(a).lvl}`)}
       ${tile('mastery', icon('mastery'), '무기 숙련', 'N', pts ? `점수 ${pts}` : '')}
+      ${tile('exped', icon('flame'), '원정', 'O', runOf(qctxL(), a) ? '진행 중' : '')}
       ${tile('skills', icon('skills'), '생활 스킬', 'K')}
       ${tile('journal', icon('journal'), '일지', 'J')}
       ${tile('log', icon('log'), '기록', 'L')}
@@ -584,6 +658,7 @@ export function createHud(root, game, { touch, onAct }) {
     const rows = sortEntries(a.bag).map((e) => {
       const def = data.items[e.item];
       let act = def.kind === 'consumable' ? `<button data-act="eat" data-v="${esc(keyOf(e))}">먹기</button>` : '';
+      if (def.blueprint) act = a.known?.[def.recipe] ? '<small class="muted">이미 앎</small>' : `<button data-act="learn-bp" data-v="${esc(keyOf(e))}">읽기</button>`;
       if (def.armor) {
         const on = Object.values(a.equip || {}).includes(e.uid);
         act = `<button data-act="equip" data-v="${e.uid}" class="${on ? 'on' : ''}">${on ? '벗기' : '끼기'}</button>`;
@@ -643,6 +718,8 @@ export function createHud(root, game, { touch, onAct }) {
     const pools = town ? [a.bag, storeOf(a, town.id)] : [a.bag];
     // 세력 전용 레시피(v0.7)는 내 세력 것만 보인다
     const recipes = data.lists.recipes.filter((r) => r.station === station && (!r.faction || r.faction === factionOf(a)));
+    // 설계도(v2.3): 모르는 설계도 제작법은 맨 뒤에 잠근 채로 보인다
+    recipes.sort((x, y) => (x.blueprint && !a.known?.[x.id] ? 1 : 0) - (y.blueprint && !a.known?.[y.id] ? 1 : 0));
     const queue = a.queue.map((j, i) => {
       const r = data.recipes[j.recipe];
       const span = Math.max(0.01, j.endsAt - j.startsAt);
@@ -1313,7 +1390,7 @@ export function createHud(root, game, { touch, onAct }) {
   }
 
   const TITLE_ICON = { '☰': 'menu', '⚔️': 'mastery', '🎒': 'bag', '📈': 'skills', '📜': 'log', '📋': 'board', '⚖️': 'market', '⚙️': 'settings', '📖': 'journal', '💬': 'talk', '🏠': 'home' };
-  const TITLES = { hub: '☰ 메뉴', mastery: '⚔️ 무기 숙련', bag: '🎒 가방', skills: '📈 생활 스킬', log: '📜 기록', board: '📋 마을 게시판', market: '⚖️ 등대 마을 거래소', menu: '⚙️ 설정', journal: '📖 일지' };
+  const TITLES = { hub: '☰ 메뉴', char: '⭐ 능력치', exped: '🔥 원정', mastery: '⚔️ 무기 숙련', bag: '🎒 가방', skills: '📈 생활 스킬', log: '📜 기록', board: '📋 마을 게시판', market: '⚖️ 등대 마을 거래소', menu: '⚙️ 설정', journal: '📖 일지' };
 
   function renderPanel(force) {
     if (!panel) return;
@@ -1325,6 +1402,8 @@ export function createHud(root, game, { touch, onAct }) {
     if (panel.kind === 'bag') html = bagHtml(a);
     else if (panel.kind === 'hub') html = hubHtml(a);
     else if (panel.kind === 'mastery') html = masteryHtml(a);
+    else if (panel.kind === 'char') html = charHtml(a);
+    else if (panel.kind === 'exped') html = expedHtml(a);
     else if (panel.kind === 'craft') {
       const st = data.stations[panel.station];
       title = `${st.icon} ${panel.station === 'hand' ? '맨손 제작' : st.name}`;

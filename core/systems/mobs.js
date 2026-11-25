@@ -5,6 +5,7 @@
 //       밤에만 나오는 안개 늑대(away 상태), 임시 짐승(습격 물결·부하, 죽으면 사라진다), 쓰러뜨리면 바로 들어오는 전리품.
 
 import { creditOf } from './allies.js';
+import { gainLevelXp, mobXp } from './level.js';
 import { rollProps, rollQty, round3 } from '../formulas.js';
 import { fitsHabitat, regionAt } from '../terrain.js';
 import { addEntry, slotsNeeded } from '../inventory.js';
@@ -453,6 +454,7 @@ function kill(ctx, m, a) {
   ctx.emit('mob.die', { mob: m.id, species: m.type, actor: a.id, x: m.x, z: m.z, temp: !!m.temp });
   // 동행(v1.7)이 잡은 짐승은 주인 몫
   const own = creditOf(ctx, a);
+  gainLevelXp(ctx, own, mobXp(ctx, own, m.type), 'kill'); // 전투 레벨(v2.3)
   if (type.drops) autoLoot(ctx, m, own, type);
   questKill(ctx, own, m);
   onKill(ctx, a, m);

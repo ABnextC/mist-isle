@@ -3,7 +3,7 @@
 
 // 퀘스트 단계 종류(v0.5.2에 생활 단계를 더했다)
 export const STEP_TYPES = ['talk', 'go', 'kill', 'use', 'defend', 'have', 'eat', 'store', 'repair', 'sell', 'project', 'faction'];
-export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects', 'npcs', 'quests', 'unlocks', 'factions', 'housing', 'guilds', 'weapons'];
+export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects', 'npcs', 'quests', 'unlocks', 'factions', 'housing', 'guilds', 'weapons', 'expeditions'];
 
 export function buildData(raw) {
   const problems = [];
@@ -238,6 +238,17 @@ export function buildData(raw) {
   for (const j of guilds.jobs) if (!items[j.item]) problems.push(`조합 일감 ${j.item} 없음`);
   if (problems.length) throw new Error('데이터 오류\n- ' + problems.join('\n- '));
 
+  // 원정(v2.3)
+  const EXP = raw.expeditions || { list: [], mercs: { list: [] } };
+  for (const e of EXP.list) {
+    if (!raw.regions.some((r) => r.sites.some((s) => s.id === e.site))) problems.push(`원정 ${e.id}: 자리 ${e.site} 없음`);
+    if (!raw.creatures.some((c) => c.id === e.boss)) problems.push(`원정 ${e.id}: 두목 ${e.boss} 없음`);
+    for (const w of e.waves) for (const t of Object.keys(w)) if (!raw.creatures.some((c) => c.id === t)) problems.push(`원정 ${e.id}: 짐승 ${t} 없음`);
+    for (const it of e.reward.items) if (!items[it.item]) problems.push(`원정 ${e.id}: 보상 ${it.item} 없음`);
+    for (const b of e.reward.blueprints) if (!items[b]?.blueprint) problems.push(`원정 ${e.id}: 설계도 ${b} 없음`);
+  }
+  for (const m of EXP.mercs.list) if (!items[m.weapon]?.weapon) problems.push(`원정 동료 ${m.id}: 무기 ${m.weapon}`);
+  for (const it of raw.items) if (it.blueprint && !raw.recipes.some((r) => r.id === it.recipe && r.blueprint === it.id)) problems.push(`설계도 ${it.id}: 제작법 ${it.recipe} 짝 없음`);
   // 하루 동선·말 바뀌기(v1.5)
   for (const n of raw.npcs) {
     // 호감도(v1.6): 선물 물건과 정이 든 뒤의 말
@@ -292,6 +303,8 @@ export function buildData(raw) {
     questItems: Q.items,
     chapters: Q.chapters,
     unlocks,
+    expeditions: Object.fromEntries((raw.expeditions?.list || []).map((e) => [e.id, e])),
+    expeditionCfg: raw.expeditions || { list: [], mercs: { list: [] } },
     lists: {
       projects: projectList,
       unlocks: unlockList,

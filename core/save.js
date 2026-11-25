@@ -527,6 +527,20 @@ const MIGRATIONS = [
       st.meta.engine = '2.2.0';
     },
   },
+  {
+    // v2.2 → v2.3: 전투 레벨·원정·설계도. 개척자마다 레벨 1부터, 원정 기록·아는 설계도는 빈 채로
+    from: 27,
+    to: 28,
+    run(st) {
+      for (const a of Object.values(st.actors)) {
+        a.clevel = a.clevel || { lvl: 1, xp: 0, attrs: { str: 0, dex: 0, int: 0, con: 0, foc: 0 } };
+        a.exp = a.exp || { run: null, last: {} };
+        a.known = a.known || {};
+      }
+      st.runs = st.runs || {};
+      st.meta.engine = '2.3.0';
+    },
+  },
 ];
 
 // v0.5.2: 1~2장 퀘스트에 생활 단계가 끼었다. 하던 단계 번호를 새 번호로(앞에 낀 단계는 건너뛴다)

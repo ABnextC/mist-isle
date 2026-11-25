@@ -14,7 +14,9 @@ import { allOrders, bookOf } from '../core/market.js';
 import { storeOf, nearestSettlement, npcPos, sitePos, objPos, stationFor } from '../core/world.js';
 import { yawTo } from '../core/systems/combat.js';
 import { mOf, needXp, loadoutOf, abilityOf, passivesOf } from '../core/systems/mastery.js';
-import { spawnTemp } from '../core/systems/mobs.js';
+import { spawnTemp, hurtMob } from '../core/systems/mobs.js';
+import { gainLevelXp, levelPassives } from '../core/systems/level.js';
+import { passivesNow } from '../core/systems/combat.js';
 import { settlementDaily } from '../core/settlements.js';
 import { isUnlocked, allowedProject, chapterReached } from '../core/systems/unlocks.js';
 import { stepNpc, npcMark, available, npcShown } from '../core/systems/quests.js';
@@ -1315,7 +1317,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '2.2.0');
+  eq(st.meta.engine, '2.3.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1507,7 +1509,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '2.2.0');
+  eq(st.meta.engine, '2.3.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -2221,6 +2223,84 @@ test('물건 아이콘: 모든 물건과 퀘스트 물건에 그림이 있다(to
   const miss = [...Object.keys(data.items), ...Object.keys(data.questItems)].filter((id) => !have.has(id));
   eq(miss.join(','), '', '그림 없는 물건');
   ok(!/display:\s*none/.test(svg.slice(0, 300)), '숨김은 display:none이 아니어야 그라데이션이 보인다');
+});
+
+console.log('전투 레벨·원정 (v2.3)');
+
+test('전투 레벨: 짐승을 잡고 의뢰를 끝내면 오르고, 점수를 능력치에 쓰면 그 무기 피해·체력이 는다. 되돌리기는 은화', () => {
+  const { g, a, m } = lone('wolf');
+  const C = g._ctx;
+  eq(a.clevel.lvl, 1);
+  hurtMob(C, m, a, 1e6);
+  ok(a.clevel.xp > 0 || a.clevel.lvl > 1, '잡으면 경험치');
+  gainLevelXp(C, a, 5000, 'test');
+  ok(a.clevel.lvl >= 10, `레벨 ${a.clevel.lvl}`);
+  const pts = a.clevel.lvl - 1;
+  eq(g.dispatch({ type: 'ATTR_SPEND', actor: 'p1', attr: 'str', n: pts + 1 }).error, 'no_points');
+  const P0 = passivesNow(C, a);
+  ok(g.dispatch({ type: 'ATTR_SPEND', actor: 'p1', attr: 'con', n: 3 }).ok);
+  near(passivesNow(C, a).maxHp - P0.maxHp, 9, 1e-9, '체질 3 → 체력 9');
+  // 망치·대도끼(힘)에는 붙고, 지팡이(지능)에는 안 붙는다
+  ok(g.dispatch({ type: 'ATTR_SPEND', actor: 'p1', attr: 'str', n: 4 }).ok);
+  near(levelPassives(C, a, 'hammer').dmg, 4 * data.config.level.mainDmg + 3 * data.config.level.subDmg, 1e-9, '망치: 힘 주, 체질 부');
+  eq(levelPassives(C, a, 'staff').dmg, 0, '지팡이엔 힘이 안 붙는다');
+  a.silver = 0;
+  eq(g.dispatch({ type: 'ATTR_RESET', actor: 'p1' }).error, 'no_silver');
+  a.silver = 1000;
+  ok(g.dispatch({ type: 'ATTR_RESET', actor: 'p1' }).ok);
+  eq(a.silver, 1000 - 7 * data.config.level.resetPerPoint);
+  eq(a.clevel.attrs.str + a.clevel.attrs.con, 0);
+});
+
+test('원정: 입구에서 시작하면 물결 셋 뒤 두목, 깨면 결정·경험치·은화를 받고 같은 날 다시 하면 절반. 떠나면 실패, 설계도를 읽어야 안개강 장비를 만든다', () => {
+  const g = createGame({ data, seed: 9, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  const C = g._ctx;
+  const ex = data.expeditions.ex_sunken;
+  const s = sitePos(C, ex.site);
+  Object.assign(a, { x: s.x + s.r + 4, z: s.z });
+  eq(g.dispatch({ type: 'EXP_START', actor: 'p1', ex: ex.id }).error, 'locked', '이야기에서 먼저 친다');
+  a.quests.done.c3_sunken = 1;
+  a.silver = 500;
+  const evs = [];
+  g.on('exp.clear', (e) => evs.push(e));
+  g.on('exp.fail', (e) => evs.push(e));
+  ok(g.dispatch({ type: 'EXP_START', actor: 'p1', ex: ex.id, mercs: ['shield', 'archer'] }).ok, '시작');
+  eq(a.silver, 500 - 2 * data.expeditionCfg.mercs.cost, '동료 값');
+  ok(g.state.actors.merc_p1_0 && g.state.actors.merc_p1_1, '동료 둘');
+  eq(g.dispatch({ type: 'EXP_START', actor: 'p1', ex: ex.id }).error, 'in_run');
+  const wipe = () => {
+    const run = Object.values(g.state.runs)[0];
+    const gr = g.state.mobGroups[run.group];
+    for (const id of [...gr.mobs]) if (g.state.mobs[id] && g.state.mobs[id].hp > 0) hurtMob(C, g.state.mobs[id], a, 1e6);
+  };
+  let sawBoss = false;
+  for (let i = 0; i < 12 && !evs.length; i++) {
+    const run = Object.values(g.state.runs)[0];
+    if (run?.boss) sawBoss = true;
+    a.cb.hp = a.cb.maxHp;
+    wipe();
+    g.advance(1.1);
+  }
+  ok(sawBoss, '두목이 나왔다');
+  eq(evs[0]?.ex, ex.id, '깼다');
+  ok(evs[0].first, '오늘 첫 공략');
+  ok(countItem([a.bag, storeOf(a, a.home)], 'shard_mist') >= 2, '안개 결정');
+  ok(!g.state.actors.merc_p1_0, '동료는 돌아갔다');
+  ok(a.clevel.lvl > 1, '경험치');
+  // 다시: 같은 날이면 절반
+  a.silver = 0;
+  ok(g.dispatch({ type: 'EXP_START', actor: 'p1', ex: ex.id }).ok);
+  Object.assign(a, { x: s.x + 200, z: s.z });
+  g.advance(1.1);
+  eq(evs[1]?.reason, 'left', '떠나면 실패');
+  ok(!Object.keys(g.state.runs).length);
+  // 설계도
+  ok(data.recipes.rc_sword_mist.blueprint, '안개강 검은 설계도 제작법');
+  a.bag.push({ item: 'bp_sword_mist', lot: null, bonus: null, qty: 1 });
+  ok(g.dispatch({ type: 'LEARN_BP', actor: 'p1', key: keyOf(a.bag.find((e) => e.item === 'bp_sword_mist')) }).ok);
+  ok(a.known.rc_sword_mist, '익혔다');
+  eq(countItem([a.bag], 'bp_sword_mist'), 0, '한 장 썼다');
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

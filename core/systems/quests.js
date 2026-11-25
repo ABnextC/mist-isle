@@ -16,6 +16,7 @@ import { factionDef, factionOf, gainInfluence } from './factions.js';
 import { projectProgress } from '../settlements.js';
 import { bondTier, questBond, dailyMult, isBirthday } from './bonds.js';
 import { accompanying } from './allies.js';
+import { gainLevelXp } from './level.js';
 
 export const TALK_RANGE = 3.6;
 export const USE_RANGE = 2.6;
@@ -91,6 +92,13 @@ function complete(ctx, a, id) {
   for (const it of q.takes || []) delete Q.items[it];
   const reward = giveReward(ctx, a, q);
   questBond(ctx, a, q);
+  // 전투 레벨(v2.3): 의뢰마다 경험치
+  {
+    const QX = ctx.data.config.level.quest;
+    const k = q.kind === 'side' ? (q.repeat === 'daily' ? 'daily' : q.repeat === 'birthday' ? 'birthday' : q.bond ? 'bond' : q.faction ? 'faction' : 'side') : 'main';
+    const ch = k === 'main' ? Math.max(0, (ctx.data.chapters || []).findIndex((c) => c.quests?.includes(q.id))) : 0;
+    gainLevelXp(ctx, a, (QX[k] || 0) + (k === 'main' ? ch * QX.perChapter : 0), 'quest');
+  }
   // 표식(v0.5.1): 등불의 각인처럼 이야기로 얻는 능력
   for (const g of q.grants || []) {
     a.marks = a.marks || {};

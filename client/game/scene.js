@@ -20,6 +20,8 @@ export function createScene(canvas, { tier, textures }) {
   scene.fog = new THREE.FogExp2(0x9fb0c0, 0.003);
   let fogMul = 1;
   let fogNow = 1;
+  const sunNdc = new THREE.Vector3();
+  const raysCol = new THREE.Color();
   const camera = new THREE.PerspectiveCamera(52, 1, 0.12, 6000);
 
   // 해(낮)와 달(밤)을 번갈아 맡는 주광 하나. 그림자는 이 빛만 드리운다.
@@ -97,6 +99,16 @@ export function createScene(canvas, { tier, textures }) {
     }
     fill.intensity = 0.55 * night;
     post.setNight(night);
+    // 빛내림(v2.0): 해가 화면 앞쪽에 있고 낮을수록 짙다(안개가 짙으면 더)
+    {
+      sunNdc.copy(camera.position).addScaledVector(sky.sunDir, 1000).project(camera);
+      const front = sunNdc.z < 1 ? 1 : 0;
+      const onScreen = 1 - THREE.MathUtils.smoothstep(Math.max(Math.abs(sunNdc.x), Math.abs(sunNdc.y)), 1.1, 1.9);
+      const low = 0.45 + 0.55 * (1 - THREE.MathUtils.smoothstep(st.sunElev, 0.15, 0.8));
+      const k = front * onScreen * low * Math.max(0, 1 - night * 1.4) * THREE.MathUtils.smoothstep(st.sunElev, -0.02, 0.06) * (0.32 + 0.22 * fogNow);
+      raysCol.copy(sky.sunColor).multiplyScalar(0.55);
+      post.setRays(sunNdc.x * 0.5 + 0.5, sunNdc.y * 0.5 + 0.5, k, raysCol, t);
+    }
     // 해가 낮을수록 그림자 여드름이 생기니 띄움을 키운다
     const lowSun = 1 - THREE.MathUtils.smoothstep(Math.abs(st.sunElev), 0.08, 0.45);
     key.shadow.normalBias = 0.035 + 0.12 * lowSun;
@@ -155,8 +167,18 @@ export function createScene(canvas, { tier, textures }) {
     const t2 = performance.now();
     return { compileMs: Math.round(t1 - t0), drawMs: Math.round(t2 - t1), programs: renderer.info.programs.length };
   }
+  // 초상화(v2.0): 얼굴 앞에 작은 카메라를 두고 화면 구석에 한 번 그린 뒤 2D 캔버스로 떠 온다.
+  // 바로 뒤에 본 장면을 그리므로 화면에는 남지 않는다. 화면 출력(톤 매핑·색 공간)이 그대로 적용된다.
+  const pcam = new THREE.PerspectiveCamera(26, 1, 0.05, 80);
+  function portrait(head, from, size = 160) {
+    const S = Math.min(size, renderer.domElement.width, renderer.domElement.height);
+    pcam.position.copy(from);
+    pcam.lookAt(head);
+    pcam.updateMatrixWorld();
+    return post.snapshot(pcam, S).toDataURL('image/jpeg', 0.86);
+  }
   return {
-    renderer, scene, camera, key, setTime, applyTier, resize, warm,
+    renderer, scene, camera, key, setTime, applyTier, resize, warm, portrait,
     setFog(m) { fogMul = m; },
     post,
     render: () => post.render(),

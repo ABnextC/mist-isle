@@ -107,7 +107,13 @@ export function createHud(root, game, { touch, onAct }) {
   let quietAt = -1;
   let bannerUntil = 0;
   let chapterEndAt = -1;
-  const settings = { focus: false, speed: 1, resetArmed: 0, gfx: 'auto', gfxNow: '' };
+  const settings = { focus: false, speed: 1, resetArmed: 0, gfx: 'auto', gfxNow: '', talkCam: true, particles: true };
+  // 연출 설정(v2.0): 대화 카메라·계절 입자
+  try {
+    const fx = JSON.parse(localStorage.getItem('mist-isle:fx') || '{}');
+    if (fx.talkCam === false) settings.talkCam = false;
+    if (fx.particles === false) settings.particles = false;
+  } catch { /* 기본값 */ }
   let fps = 0;
 
   root.addEventListener('pointerdown', () => { holding = true; });
@@ -908,6 +914,12 @@ export function createHud(root, game, { touch, onAct }) {
     const bl = bondLines(questCtx(game), a, npc.id);
     return bl ? [...bl, ...bl, ...lines] : lines;
   }
+  // 초상화(v2.0): main이 NPC 얼굴을 찍어 넣어 준다
+  const portraits = new Map();
+  const npcHead = (npc) => {
+    const url = portraits.get(npc.id);
+    return `<div class="npchead">${url ? `<img class="portrait" src="${url}" alt="">` : '<span class="portrait"></span>'}<div class="who"><b>${esc(npc.name)}</b><small>${esc(npc.title)}</small></div></div>`;
+  };
   // 호감도(v1.6)
   const hearts = (t) => '♥'.repeat(t) + '♡'.repeat(Math.max(0, 4 - t));
   function bondStrip(a, npcId) {
@@ -939,7 +951,7 @@ export function createHud(root, game, { touch, onAct }) {
   }
   function giftHtml(a, npc) {
     const ctx = questCtx(game);
-    const head = `<div class="npchead"><b>${esc(npc.name)}</b> <small>${esc(npc.title)}</small></div>${bondStrip(a, npc.id)}`;
+    const head = `${npcHead(npc)}${bondStrip(a, npc.id)}`;
     if (panel.react) {
       const r = panel.react;
       const [ic, line] = REACT[r.react];
@@ -957,7 +969,7 @@ export function createHud(root, game, { touch, onAct }) {
     const ctx = questCtx(game);
     const npc = data.npcs[panel.npc];
     if (panel.gift) return giftHtml(a, npc);
-    const head = `<div class="npchead"><b>${esc(npc.name)}</b> <small>${esc(npc.title)}</small></div>${bondStrip(a, panel.npc)}`;
+    const head = `${npcHead(npc)}${bondStrip(a, panel.npc)}`;
     const giftBtn = bondable(ctx, panel.npc) ? `<button data-act="gift-open">🎁 선물${giftDue(ctx, a, panel.npc) ? '' : ' ✓'}</button>` : '';
     const after = panel.after;
     if (after) {
@@ -1287,6 +1299,7 @@ export function createHud(root, game, { touch, onAct }) {
       <h3>화질</h3><div class="row">${gf}</div>
       <p class="muted">지금 ${esc(settings.gfxNow)} · 그림자·후처리·해상도는 바로 바뀌고, 풀 양·지형·텍스처 해상도는 다시 열 때 바뀐다. 자동은 여유가 있으면 최고까지 올린다.</p>
       <div class="row"><button data-act="perf" class="${settings.perf ? 'on' : ''}">📊 성능 표시 (F3)</button></div>
+      <h3>연출</h3><div class="row"><button data-act="fx-talkcam" class="${settings.talkCam ? 'on' : ''}">🎬 대화 카메라</button><button data-act="fx-particles" class="${settings.particles ? 'on' : ''}">🍂 계절 입자</button></div>
       <h3>시험용 시간 배속</h3><div class="row">${sp}</div>
       <h3>도움</h3><div class="row">
         <button data-act="auto" class="${a.ai?.on ? 'on' : ''}">🤖 봇에게 맡기기</button>
@@ -1373,6 +1386,10 @@ export function createHud(root, game, { touch, onAct }) {
     hurt,
     settings,
     get panel() { return panel; },
+    setPortrait(id, url) {
+      portraits.set(id, url);
+      if (panel?.kind === 'talk' && panel.npc === id) renderPanel(true);
+    },
     minimapCanvas: root.querySelector('.minimap'),
     joyEl: root.querySelector('.joy'),
     knobEl: root.querySelector('.joy .knob'),

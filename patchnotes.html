@@ -6,11 +6,15 @@
 <meta name="robots" content="noindex, nofollow, noarchive">
 <title>안개섬 개척기 — 패치노트</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌫️%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="vendor/fonts/pretendard/pretendardvariable-dynamic-subset.css">
+<link rel="stylesheet" href="vendor/fonts/gowun-batang/700.css">
 <style>
   :root { --bg:#0f1418; --card:#172028; --line:#24313b; --text:#e7edf1; --muted:#8ea1ae; --accent:#6fc3b2; --warm:#e9b45f; color-scheme: dark; }
   * { box-sizing: border-box; }
   body { margin:0; background:var(--bg); color:var(--text);
-    font:15px/1.6 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif; }
+    font:15px/1.6 "Pretendard Variable", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
+  header h1, .ver h2 { font-family: "Gowun Batang", serif; font-weight: 700; letter-spacing: .3px; }
+  article { box-shadow: 0 0 0 1px rgba(233, 194, 125, .08); }
   main { max-width: 760px; margin: 0 auto; padding: 20px 16px 60px; }
   header h1 { font-size: 22px; margin: 0; }
   header p { color: var(--muted); margin: 4px 0 0; }
@@ -42,6 +46,53 @@
     <h1>🌫️ 안개섬 개척기 패치노트</h1>
     <p>생활 중심 MMORPG 웹게임 · <a href="index.html">게임 열기</a> · <a href="debug.html">엔진 점검판</a></p>
   </header>
+
+  <article>
+    <div class="ver"><h2>v2.0 안개 속 등불 · 화면 고급화</h2><span>2026-11-25 · 개발자 결정 반영("기본 내용이 다 패치되면 2.0으로 그래픽·UI 고급화")</span></div>
+    <p class="lead">놀이 내용은 그대로 두고, 보이는 것과 손에 닿는 것을 한 단계 올렸다.</p>
+    <h3>글꼴과 첫 화면</h3>
+    <ul>
+      <li>본문은 프리텐다드, 제목·이름·배너는 고운바탕을 쓴다. 두 글꼴 모두 게임에 함께 실려 처음부터 같은 모양으로 보인다.</li>
+      <li>불러오는 화면을 제목 화면으로 바꿨다. 「안개섬 개척기」 글자와 흐르는 안개를 띄우고, 다 불러오면 천천히 걷힌다.</li>
+    </ul>
+    <h3>창과 알림</h3>
+    <ul>
+      <li>창에 금빛 겹테와 모서리 장식을 둘렀다. 제목 밑엔 장식줄을, 소제목 앞엔 ◆를 달았다.</li>
+      <li>주요 단추는 금빛, 탭은 둥근 알약 모양이다. 대사는 말풍선으로 보인다.</li>
+      <li>배너는 고운바탕으로 바꾸고 양옆에 장식선을 그었다. 나타날 때 글자가 모이듯 떠오른다.</li>
+      <li>토스트 왼쪽엔 종류별 색 띠를 붙였다.</li>
+    </ul>
+    <h3>상태 표시</h3>
+    <ul>
+      <li>지도는 둥근 지도로 바꾸고 금테와 북(N) 표시를 붙였다.</li>
+      <li>체력 막대엔 눈금과 윤기를, 스킬 바엔 금테와 안쪽 그늘을 넣었다.</li>
+      <li>NPC 이름표는 고운바탕으로 바꿨다. 직함엔 작은 판을 깔고, 머리 위 ! ?는 살짝 떠오르게 했다.</li>
+    </ul>
+    <h3>대화 장면</h3>
+    <ul>
+      <li><b>초상화</b>: 말을 걸면 그 사람 얼굴을 그 자리의 빛으로 찍어 대화창에 둥근 초상으로 띄운다. 아침·저녁·밤마다 빛이 다르다.</li>
+      <li><b>대화 카메라</b>: 대화하는 동안 카메라가 어깨 너머로 나와 상대를 함께 잡는다. 창을 닫으면 원래 시점으로 돌아간다.</li>
+    </ul>
+    <h3>그래픽</h3>
+    <ul>
+      <li><b>계절 입자</b>: 계절마다 흩날리는 것이 다르다.
+        <ul>
+          <li>봄: 꽃잎</li>
+          <li>여름: 낮엔 꽃가루, 밤엔 반딧불</li>
+          <li>가을: 낙엽</li>
+          <li>겨울: 눈</li>
+        </ul>
+        모든 화질에서 보이고, 화질이 낮으면 양을 줄인다.
+      </li>
+      <li><b>빛내림</b>(중간 화질 이상): 해가 낮게 떠 화면 안에 있으면 하늘 틈으로 햇살 기둥이 비친다.</li>
+      <li><b>필름 결</b>(중간 화질 이상): 아주 옅은 알갱이로 화면 질감을 살렸다.</li>
+    </ul>
+    <h3>설정</h3>
+    <ul>
+      <li>설정 → 연출에서 대화 카메라와 계절 입자를 끌 수 있다.</li>
+    </ul>
+    <p class="note">데이터 버전 25. 저장 모양은 그대로다. 패치노트 쪽도 같은 글꼴을 쓴다.</p>
+  </article>
 
   <article>
     <div class="ver"><h2>v1.8 계절·장날·생일 잔치</h2><span>2026-11-25 · 개발자 결정 반영("마을 행사와 계절")</span></div>

@@ -6,6 +6,12 @@ export function createCamera(camera, terrain) {
   const st = { yaw: 0, pitch: 0.38, dist: 9 };
   const target = new THREE.Vector3();
   let first = true;
+  // 대화 장면(v2.0): ov = { x, y, z, yaw, dist, pitch }가 있으면 그쪽으로 천천히 옮겨 간다
+  let mixK = 0;
+  const ovT = new THREE.Vector3();
+  const tgV = new THREE.Vector3();
+  let ovLast = null;
+  const lerpAng = (a, b, k) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * k;
 
   return {
     st,
@@ -22,7 +28,7 @@ export function createCamera(camera, terrain) {
       const fz = Math.cos(st.yaw);
       return [fx * forward - fz * right, fz * forward + fx * right];
     },
-    update(dt, px, py, pz) {
+    update(dt, px, py, pz, ov = null) {
       const want = new THREE.Vector3(px, py + 1.5, pz);
       if (first) {
         target.copy(want);
@@ -30,14 +36,29 @@ export function createCamera(camera, terrain) {
       } else {
         target.lerp(want, 1 - Math.exp(-dt * 10));
       }
-      const cp = Math.cos(st.pitch);
-      let x = target.x - Math.sin(st.yaw) * cp * st.dist;
-      let z = target.z - Math.cos(st.yaw) * cp * st.dist;
-      let y = target.y + Math.sin(st.pitch) * st.dist;
+      if (ov) ovLast = ov;
+      mixK += ((ov ? 1 : 0) - mixK) * (1 - Math.exp(-dt * 3.2));
+      if (mixK < 0.001) ovLast = null;
+      let yaw = st.yaw;
+      let pitch = st.pitch;
+      let dist = st.dist;
+      const tg = tgV.copy(target);
+      if (ovLast) {
+        const k = mixK * mixK * (3 - 2 * mixK);
+        yaw = lerpAng(st.yaw, ovLast.yaw, k);
+        pitch = st.pitch + (ovLast.pitch - st.pitch) * k;
+        dist = st.dist + (ovLast.dist - st.dist) * k;
+        ovT.set(ovLast.x, ovLast.y, ovLast.z);
+        tg.lerp(ovT, k);
+      }
+      const cp = Math.cos(pitch);
+      let x = tg.x - Math.sin(yaw) * cp * dist;
+      let z = tg.z - Math.cos(yaw) * cp * dist;
+      let y = tg.y + Math.sin(pitch) * dist;
       const ground = Math.max(terrain.height(x, z), 0) + 0.7;
       if (y < ground) y = ground;
       camera.position.set(x, y, z);
-      camera.lookAt(target);
+      camera.lookAt(tg);
     },
   };
 }

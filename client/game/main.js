@@ -10,6 +10,8 @@ import { starOf } from '../../core/formulas.js';
 import { stars, ERR, josa } from '../../core/text.js';
 import { bondTier, isBirthday } from '../../core/systems/bonds.js';
 import { seasonOf } from '../../core/systems/calendar.js';
+import { createParticles } from './gfx/particles.js';
+const nightK0 = (sky) => sky.night;
 import { createScene } from './scene.js';
 import { startTier, createAutoTuner, chosenTier, setChosenTier, TIERS } from './gfx/quality.js';
 import { bakeMaterials, makeCanvasTextures } from './gfx/texgen.js';
@@ -83,7 +85,7 @@ async function boot() {
   const canvas = document.getElementById('view');
   const tier = startTier(touch);
   const say = async (msg) => {
-    bootEl.textContent = msg;
+    (bootEl.querySelector('.bootmsg') || bootEl).textContent = msg;
     await new Promise((r) => setTimeout(r, 30));
   };
   const ctex = makeCanvasTextures();
@@ -100,6 +102,9 @@ async function boot() {
   const water = createWater(view.scene, { hf: ground.hf, tex, tier, still: region.zones?.find((z) => z.id === 'swamp')?.z0 ?? 1e9 });
   const flora = createFlora(view.scene, { hf: ground.hf, paths: ground.paths, ground, region, tier, mats, ctex, game });
   const grass = createGrass(view.scene, { hf: ground.hf, ground, tier });
+  // 계절 입자(v2.0)
+  const particles = createParticles(view.scene, { count: 900 });
+  particles.setDensity(tier.id === 'low' ? 0.45 : tier.id === 'medium' ? 0.75 : 1);
   window.__mist.gfx = { view, tier, tex, mats, ground, flora, grass };
   const lantern = new THREE.PointLight(0xffd59a, 0, 11, 1.4); // 밤에 들고 다니는 등불
   view.scene.add(lantern);
@@ -353,6 +358,7 @@ async function boot() {
       // 호감도(v1.6): 말을 걸면 하루 한 번 인사로 정이 든다(못 하면 그냥 넘어간다)
       game.dispatch({ type: 'GREET', actor: PID, npc: t.id });
       hud.open('talk', { npc: t.id });
+      ui.portrait = t.id; // 초상화(v2.0): 다음 그리기 전에 얼굴을 찍는다
     } else if (t.kind === 'obj') {
       // 배에 오르기(v0.6): 돌아올 수 없으니 먼저 묻는다
       if (data.objects[t.id]?.cross) hud.open('cross', { obj: t.id });
@@ -580,6 +586,13 @@ async function boot() {
         actorsView.rebuild(PID);
         break;
       case 'focus-toggle': hud.settings.focus = !hud.settings.focus; break;
+      case 'fx-talkcam':
+      case 'fx-particles': {
+        const k = act === 'fx-talkcam' ? 'talkCam' : 'particles';
+        hud.settings[k] = !hud.settings[k];
+        try { localStorage.setItem('mist-isle:fx', JSON.stringify({ talkCam: hud.settings.talkCam, particles: hud.settings.particles })); } catch { /* 저장 못 해도 이번엔 적용 */ }
+        break;
+      }
       case 'perf': perf.toggle(); hud.settings.perf = perf.on; break;
       case 'gfx': {
         setChosenTier(v);
@@ -1035,7 +1048,17 @@ async function boot() {
       }
     }
     const p = actorsView.positionOf(PID);
-    cam.update(dt, p.x, p.y, p.z);
+    // 대화 장면(v2.0): 말 상대와 나를 어깨 너머로 잡는다
+    let ov = null;
+    if (hud.panel?.kind === 'talk' && hud.settings.talkCam !== false) {
+      const q = actorsView.positionOf(`npc:${hud.panel.npc}`);
+      if (q && Math.hypot(q.x - p.x, q.z - p.z) < 8) {
+        const th = Math.atan2(q.x - p.x, q.z - p.z);
+        const wide = window.innerWidth > 720;
+        ov = { x: p.x + (q.x - p.x) * 0.62, y: Math.max(p.y, q.y) + 1.35, z: p.z + (q.z - p.z) * 0.62, yaw: th + (wide ? 0.62 : 0.4), dist: wide ? 4.6 : 5.2, pitch: 0.16 };
+      }
+    }
+    cam.update(dt, p.x, p.y, p.z, ov);
     focusVec.set(p.x, p.y, p.z);
     const t = game.state.t;
     const sec = now / 1000;
@@ -1051,6 +1074,9 @@ async function boot() {
       seasonNow.frost += (sn.frost - seasonNow.frost) * Math.min(1, dt * 0.5);
       G.uSeason.value.set(...seasonNow.tint);
       G.uFrost.value = seasonNow.frost;
+      const cp = view.camera.position;
+      particles.mesh.visible = hud.settings.particles !== false;
+      particles.update(sn.id, nightK0(sky), cp, ground.hf.height(cp.x, cp.z), sec, dt, view.renderer.domElement.height);
     }
     const nightK = sky.night;
     G.uDay.value = sky.day;
@@ -1080,6 +1106,19 @@ async function boot() {
     }
     perf.lap('hud');
     perf.drawBegin();
+    // 초상화(v2.0)
+    if (ui.portrait) {
+      const id = ui.portrait;
+      ui.portrait = null;
+      const p = actorsView.positionOf(`npc:${id}`);
+      const a = me();
+      if (p && a) {
+        const head = new THREE.Vector3(p.x, p.y + 1.58, p.z);
+        const d = Math.hypot(a.x - p.x, a.z - p.z) || 1;
+        const from = new THREE.Vector3(p.x + ((a.x - p.x) / d) * 1.05, p.y + 1.66, p.z + ((a.z - p.z) / d) * 1.05);
+        try { hud.setPortrait(id, view.portrait(head, from)); } catch { /* 초상화 없이 간다 */ }
+      }
+    }
     view.render();
     perf.drawEnd();
     perf.end(now);
@@ -1095,7 +1134,8 @@ async function boot() {
     if (!booted) {
       booted = true;
       firstFrame = false;
-      bootEl.remove();
+      bootEl.classList.add('gone');
+      setTimeout(() => bootEl.remove(), 900);
       if (game.state.t < 2) {
         const q0 = data.quests[data.chapters[0].quests[0]];
         hud.toast(`🌫️ ${q0.intro.join(' ')}`, 'info');

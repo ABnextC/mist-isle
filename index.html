@@ -7,13 +7,15 @@
 <meta name="theme-color" content="#0e1418">
 <title>안개섬 개척기</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌫️%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="vendor/fonts/pretendard/pretendardvariable-dynamic-subset.css">
+<link rel="stylesheet" href="vendor/fonts/gowun-batang/700.css">
 <link rel="stylesheet" href="client/game/game.css">
 <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.min.js", "three-addons": "./vendor/three/addons.min.js" } }</script>
 </head>
 <body>
 <canvas id="view"></canvas>
 <div id="hud"></div>
-<div id="boot" class="boot">안개섬에 상륙하는 중…</div>
+<div id="boot" class="boot"><div class="fogA"></div><div class="fogB"></div><div class="logo"><small>MIST ISLE</small><h1>안개섬 개척기</h1><p>안개 너머, 등불 하나로 여는 삶</p></div><div class="bootmsg">안개섬에 상륙하는 중…</div><div class="bootbar"><i></i></div></div>
 <script type="module" src="client/game/main.js"></script>
 </body>
 </html>

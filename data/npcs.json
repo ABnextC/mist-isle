@@ -221,8 +221,8 @@
     "id": "yunseo_port",
     "name": "윤서",
     "title": "본토 학자",
-    "dx": 14,
-    "dz": 8,
+    "dx": 16,
+    "dz": 12,
     "yaw": -2.2,
     "look": {
       "body": "f",
@@ -390,5 +390,692 @@
       "…어머니의 등불이 이렇게 밝았던가.",
       "본토엔… 다른 길을 찾아 주시오."
     ]
+  },
+  {
+    "id": "seondeok",
+    "name": "순덕",
+    "title": "생선 장수",
+    "dx": -9,
+    "dz": 6,
+    "yaw": 1.2,
+    "look": {
+      "body": "f",
+      "seed": 101,
+      "chest": "robe",
+      "legs": "light",
+      "tint": {
+        "robe": "#6a5a48",
+        "sash": "#c87a3a",
+        "shirt": "#e0d6c0",
+        "trousers": "#3a342c"
+      }
+    },
+    "chat": [
+      "오늘 고등어는 눈이 맑아. 살 거면 지금 사.",
+      "검은 돛이 사라진 뒤로 장이 좀 서는구먼."
+    ],
+    "at": "s_lighthouse"
+  },
+  {
+    "id": "makdong",
+    "name": "막동",
+    "title": "견습 선원",
+    "dx": -3,
+    "dz": -13,
+    "yaw": -1.4,
+    "look": {
+      "body": "m",
+      "seed": 102,
+      "chest": "light",
+      "legs": "light",
+      "tint": {
+        "shirt": "#c8c0a8",
+        "vest": "#4a5a6a",
+        "trousers": "#3a3a3a",
+        "scarf": "#a83a2a"
+      }
+    },
+    "chat": [
+      "배만 있으면 당장이라도 바다로 나갈 텐데요.",
+      "강두 대장님은 무섭지만 노는 잘 저어요."
+    ],
+    "at": "s_lighthouse"
+  },
+  {
+    "id": "soli",
+    "name": "솔이",
+    "title": "약초꾼",
+    "dx": -10,
+    "dz": -4,
+    "yaw": 1.0,
+    "look": {
+      "body": "f",
+      "seed": 103,
+      "chest": "robe",
+      "legs": "light",
+      "head": "robe",
+      "tint": {
+        "robe": "#4a6a3a",
+        "sash": "#c8b070",
+        "hood": "#3e5a32",
+        "shirt": "#d8d0b8",
+        "trousers": "#3a3228"
+      }
+    },
+    "chat": [
+      "버섯은 그늘진 참나무 밑에 숨어 있어요.",
+      "산딸기는 볕 드는 덤불이 제일 달아요."
+    ],
+    "at": "s_forest"
+  },
+  {
+    "id": "gombo",
+    "name": "곰보 영감",
+    "title": "나무꾼",
+    "dx": 11,
+    "dz": -7,
+    "yaw": -1.0,
+    "look": {
+      "body": "m",
+      "seed": 104,
+      "chest": "light",
+      "legs": "light",
+      "weapon": "wpn_battleaxe_copper",
+      "tint": {
+        "shirt": "#a8a090",
+        "vest": "#5a4630",
+        "trousers": "#3a3026",
+        "lthr": "#4a3420"
+      }
+    },
+    "chat": [
+      "나무는 베는 만큼 심어야 하는 법이여.",
+      "요새 밤마다 늑대 우는 소리가 가까워."
+    ],
+    "at": "s_forest"
+  },
+  {
+    "id": "jogae",
+    "name": "조개댁",
+    "title": "어부",
+    "dx": -6,
+    "dz": -4,
+    "yaw": 0.6,
+    "look": {
+      "body": "f",
+      "seed": 105,
+      "chest": "light",
+      "legs": "light",
+      "tint": {
+        "shirt": "#d0c8b0",
+        "vest": "#3a5a6a",
+        "trousers": "#2e3a44",
+        "scarf": "#d8b048"
+      }
+    },
+    "chat": [
+      "포구 이름이 갈매기인 건, 갈매기가 우리보다 먼저 와 살았기 때문이지.",
+      "그물만 성하면 굶을 일은 없어."
+    ],
+    "at": "s_gull"
+  },
+  {
+    "id": "noseon",
+    "name": "노 선장",
+    "title": "물러난 뱃사람",
+    "dx": 6,
+    "dz": 5,
+    "yaw": -2.2,
+    "look": {
+      "body": "m",
+      "seed": 106,
+      "chest": "heavy",
+      "legs": "light",
+      "tint": {
+        "shirt": "#d8d4c8",
+        "vest": "#2a3a4a",
+        "trousers": "#2a2e36",
+        "scarf": "#8a8f98"
+      }
+    },
+    "chat": [
+      "마흔 해를 바다에서 살았지. 이젠 파도 소리만 들어도 날씨를 알아.",
+      "내 배 「물수리」가 이 근처에서 가라앉았어."
+    ],
+    "at": "s_gull"
+  },
+  {
+    "id": "baram",
+    "name": "바람",
+    "title": "그물 짓는 이",
+    "dx": -4,
+    "dz": 8,
+    "yaw": 2.6,
+    "look": {
+      "body": "f",
+      "seed": 107,
+      "chest": "robe",
+      "legs": "light",
+      "tint": {
+        "robe": "#5a6a7a",
+        "sash": "#a8c0c8",
+        "shirt": "#e0dcd0",
+        "trousers": "#34383e"
+      }
+    },
+    "chat": [
+      "갈대를 꼬아 줄을 만들고, 줄을 엮어 그물을 만들지.",
+      "바닷바람이 그물을 금방 삭게 해."
+    ],
+    "at": "s_gull"
+  },
+  {
+    "id": "cheongun",
+    "name": "청운",
+    "title": "숲의 은자",
+    "dx": 2,
+    "dz": -3,
+    "yaw": 0.2,
+    "look": {
+      "body": "m",
+      "seed": 108,
+      "chest": "robe",
+      "legs": "light",
+      "head": "robe",
+      "tint": {
+        "robe": "#5a5248",
+        "sash": "#8a7a5a",
+        "hood": "#4a443a",
+        "shirt": "#c8c0ac",
+        "trousers": "#3a362e"
+      }
+    },
+    "chat": [
+      "숲은 말이 없지만 다 기억하네.",
+      "밤에 오래된 등불터 쪽에서 우는 것들이 있지."
+    ],
+    "site": "hermit_hut"
+  },
+  {
+    "id": "darae",
+    "name": "다래",
+    "title": "낚시꾼",
+    "dx": 2,
+    "dz": -2,
+    "yaw": -0.4,
+    "look": {
+      "body": "f",
+      "seed": 109,
+      "chest": "light",
+      "legs": "light",
+      "tint": {
+        "shirt": "#c8b898",
+        "vest": "#6a5038",
+        "trousers": "#3a3428",
+        "scarf": "#5a8a6a"
+      }
+    },
+    "chat": [
+      "물고기는 기다리는 사람한테만 와.",
+      "고기 굽는 냄새는 멧돼지 고기가 제일이지."
+    ],
+    "site": "fish_rock"
+  },
+  {
+    "id": "doseon",
+    "name": "도선",
+    "title": "뱃사공",
+    "dx": -12,
+    "dz": 4,
+    "yaw": 1.3,
+    "look": {
+      "body": "m",
+      "seed": 110,
+      "chest": "light",
+      "legs": "light",
+      "tint": {
+        "shirt": "#b8b098",
+        "vest": "#3a4a3a",
+        "trousers": "#2e3228",
+        "scarf": "#6a8aa8"
+      }
+    },
+    "chat": [
+      "나루에서 느티골까지 물길로 반나절이면 가.",
+      "물안개 사람들은 배를 잘 안 타. 늪이 길이라 그런가."
+    ],
+    "at": "s_port"
+  },
+  {
+    "id": "pal",
+    "name": "팔복",
+    "title": "장꾼",
+    "dx": 13,
+    "dz": -2,
+    "yaw": -1.6,
+    "look": {
+      "body": "m",
+      "seed": 111,
+      "chest": "light",
+      "legs": "light",
+      "tint": {
+        "shirt": "#d0c4a8",
+        "vest": "#7a4a2a",
+        "trousers": "#3a302a",
+        "scarf": "#c8a050"
+      }
+    },
+    "chat": [
+      "싸게 사서 비싸게 판다. 장사는 그게 다야.",
+      "함대가 물러가니 물건이 다시 돈다니까."
+    ],
+    "at": "s_port"
+  },
+  {
+    "id": "okhwa",
+    "name": "옥화",
+    "title": "느티골 촌장",
+    "dx": -12,
+    "dz": -2,
+    "yaw": 0.7,
+    "look": {
+      "body": "f",
+      "seed": 112,
+      "chest": "robe",
+      "legs": "light",
+      "tint": {
+        "robe": "#7a5a3a",
+        "sash": "#d8b060",
+        "shirt": "#e8e0cc",
+        "trousers": "#3a3228"
+      }
+    },
+    "chat": [
+      "느티나무가 마을을 지켜 준다고들 하지.",
+      "밭이 넓어지니 멧돼지가 먼저 알고 오는구먼."
+    ],
+    "at": "s_valley"
+  },
+  {
+    "id": "hansol",
+    "name": "한솔",
+    "title": "목수",
+    "dx": 9,
+    "dz": 8,
+    "yaw": -2.4,
+    "look": {
+      "body": "m",
+      "seed": 113,
+      "chest": "light",
+      "legs": "light",
+      "tint": {
+        "shirt": "#c8b490",
+        "vest": "#6a5236",
+        "trousers": "#3a3026",
+        "lthr": "#4a3420"
+      }
+    },
+    "chat": [
+      "나무는 결을 따라 켜야 안 터져요.",
+      "개울 건너는 다리가 삐걱대서 큰일이에요."
+    ],
+    "at": "s_valley"
+  },
+  {
+    "id": "ggul",
+    "name": "꿀벌댁",
+    "title": "양봉가",
+    "dx": 4,
+    "dz": -11,
+    "yaw": -0.3,
+    "look": {
+      "body": "f",
+      "seed": 114,
+      "chest": "light",
+      "legs": "light",
+      "tint": {
+        "shirt": "#e0d098",
+        "vest": "#8a6a2a",
+        "trousers": "#4a3a28",
+        "scarf": "#e0b030"
+      }
+    },
+    "chat": [
+      "벌이 들꽃을 찾아가는 길이 곧 계절이야.",
+      "꿀은 아침 일찍 떠야 맑아."
+    ],
+    "at": "s_valley"
+  },
+  {
+    "id": "beodeul",
+    "name": "버들 할매",
+    "title": "여울 어른",
+    "dx": -5,
+    "dz": -5,
+    "yaw": 0.7,
+    "look": {
+      "body": "f",
+      "seed": 115,
+      "chest": "robe",
+      "legs": "light",
+      "head": "robe",
+      "tint": {
+        "robe": "#5a6a4a",
+        "sash": "#a8b080",
+        "hood": "#4a5a3e",
+        "shirt": "#d8d4c0",
+        "trousers": "#3a3a30"
+      }
+    },
+    "chat": [
+      "여울물 소리가 바뀌면 손님이 오는 게야.",
+      "물안개 사람들과는 오래 이웃이었지."
+    ],
+    "at": "s_willow"
+  },
+  {
+    "id": "jaegan",
+    "name": "재간",
+    "title": "대장장이",
+    "dx": 7,
+    "dz": 8,
+    "yaw": -2.2,
+    "look": {
+      "body": "m",
+      "seed": 116,
+      "chest": "heavy",
+      "legs": "light",
+      "tint": {
+        "shirt": "#a89880",
+        "vest": "#3a3028",
+        "trousers": "#2e2a26",
+        "lthr": "#3a2818"
+      }
+    },
+    "chat": [
+      "쇠는 거짓말을 안 해. 두드린 만큼 단단해지지.",
+      "구리가 모자라서 못도 제대로 못 쳐."
+    ],
+    "at": "s_willow"
+  },
+  {
+    "id": "miru",
+    "name": "미루",
+    "title": "물들이는 이",
+    "dx": -11,
+    "dz": 3,
+    "yaw": 1.6,
+    "look": {
+      "body": "f",
+      "seed": 117,
+      "chest": "robe",
+      "legs": "light",
+      "tint": {
+        "robe": "#8a3a5a",
+        "sash": "#d8a8c0",
+        "shirt": "#e8dcd8",
+        "trousers": "#3a2e36"
+      }
+    },
+    "chat": [
+      "산딸기를 끓이면 고운 붉은빛이 나요.",
+      "갈대 천에 물을 들이면 늪 사람들도 좋아해요."
+    ],
+    "at": "s_willow"
+  },
+  {
+    "id": "jumo",
+    "name": "금순",
+    "title": "주막 주모",
+    "dx": -1,
+    "dz": 1,
+    "yaw": 0.1,
+    "look": {
+      "body": "f",
+      "seed": 118,
+      "chest": "robe",
+      "legs": "light",
+      "tint": {
+        "robe": "#7a4a3a",
+        "sash": "#e0c080",
+        "shirt": "#ece4d4",
+        "trousers": "#3a302a"
+      }
+    },
+    "chat": [
+      "국밥 한 그릇에 나루 소식 한 숟갈 얹어 줄게.",
+      "뱃사람, 사냥꾼, 학자 양반… 여긴 다 모여."
+    ],
+    "site": "ferry_inn"
+  },
+  {
+    "id": "aksa",
+    "name": "소리",
+    "title": "떠돌이 악사",
+    "dx": 4,
+    "dz": -3,
+    "yaw": -1.0,
+    "look": {
+      "body": "m",
+      "seed": 119,
+      "chest": "light",
+      "legs": "light",
+      "tint": {
+        "shirt": "#d8c8a8",
+        "vest": "#3a4a6a",
+        "trousers": "#2e3040",
+        "scarf": "#c84a4a"
+      }
+    },
+    "chat": [
+      "노래는 길에서 주워 길에 두고 가는 거요.",
+      "물안개 사람들 노래는 늪 냄새가 나지."
+    ],
+    "site": "ferry_inn"
+  },
+  {
+    "id": "beomdol",
+    "name": "범돌",
+    "title": "늙은 사냥꾼",
+    "dx": -2,
+    "dz": -3,
+    "yaw": 0.3,
+    "look": {
+      "body": "m",
+      "seed": 120,
+      "chest": "light",
+      "legs": "light",
+      "weapon": "wpn_spear_copper",
+      "tint": {
+        "shirt": "#8a7a5a",
+        "vest": "#5a4028",
+        "trousers": "#3a3020",
+        "lthr": "#4a3018"
+      }
+    },
+    "chat": [
+      "짐승은 발자국보다 냄새를 먼저 남기지.",
+      "여울이 아비 여강하곤 같이 사냥을 다녔어."
+    ],
+    "site": "hunter_lodge"
+  },
+  {
+    "id": "nallae",
+    "name": "날래",
+    "title": "사냥꾼",
+    "dx": 4,
+    "dz": -2,
+    "yaw": -0.6,
+    "look": {
+      "body": "f",
+      "seed": 121,
+      "chest": "light",
+      "legs": "light",
+      "weapon": "wpn_spear_copper",
+      "tint": {
+        "shirt": "#9a8a6a",
+        "vest": "#4a5a3a",
+        "trousers": "#2e3226",
+        "lthr": "#3a2a18"
+      }
+    },
+    "chat": [
+      "안개 늑대는 무리 우두머리부터 끊어야 해요.",
+      "범돌 어른 잔소리는 반만 들으면 돼요."
+    ],
+    "site": "hunter_lodge"
+  },
+  {
+    "id": "seoksu",
+    "name": "석수",
+    "title": "잿고개 광부",
+    "dx": 9,
+    "dz": -9,
+    "yaw": -1.0,
+    "look": {
+      "body": "m",
+      "seed": 122,
+      "chest": "light",
+      "legs": "light",
+      "tint": {
+        "shirt": "#8a8478",
+        "vest": "#3a3430",
+        "trousers": "#2a2826",
+        "lthr": "#2a2018"
+      }
+    },
+    "chat": [
+      "잿빛 비탈 밑엔 좋은 구리가 숨어 있어.",
+      "늑대가 굴 앞까지 내려와서 일을 못 해."
+    ],
+    "at": "s_ash"
+  },
+  {
+    "id": "musoe",
+    "name": "무쇠",
+    "title": "숯가마 주인",
+    "dx": -5,
+    "dz": -5,
+    "yaw": 0.6,
+    "look": {
+      "body": "m",
+      "seed": 123,
+      "chest": "heavy",
+      "legs": "light",
+      "tint": {
+        "shirt": "#7a7068",
+        "vest": "#2a2622",
+        "trousers": "#2a2624",
+        "lthr": "#2a1e14"
+      }
+    },
+    "chat": [
+      "좋은 숯은 참나무에서 나와. 여긴 참나무가 없어 탈이지.",
+      "불은 사흘 밤낮을 지켜야 숯이 돼."
+    ],
+    "at": "s_kiln"
+  },
+  {
+    "id": "danbi",
+    "name": "단비",
+    "title": "숯가마 약사",
+    "dx": 10,
+    "dz": -2,
+    "yaw": -2.3,
+    "look": {
+      "body": "f",
+      "seed": 124,
+      "chest": "robe",
+      "legs": "light",
+      "tint": {
+        "robe": "#3a5a6a",
+        "sash": "#a8d0d8",
+        "shirt": "#e0e4e4",
+        "trousers": "#2e343a"
+      }
+    },
+    "chat": [
+      "서리 늑대 가죽은 동상에 좋아요.",
+      "숯 연기에 기침하는 사람이 많아서 약이 늘 모자라요."
+    ],
+    "at": "s_kiln"
+  },
+  {
+    "id": "gangjang",
+    "name": "갱장",
+    "title": "광부 우두머리",
+    "dx": 0,
+    "dz": -3,
+    "yaw": 0.0,
+    "look": {
+      "body": "m",
+      "seed": 125,
+      "chest": "heavy",
+      "legs": "light",
+      "weapon": "wpn_hammer_copper",
+      "tint": {
+        "shirt": "#9a9080",
+        "vest": "#4a3a2a",
+        "trousers": "#2e2a24",
+        "lthr": "#3a2818"
+      }
+    },
+    "chat": [
+      "굴은 산의 혈관이야. 함부로 파면 산이 앓지.",
+      "함대 수병들이 굴 입구를 막고 쇠를 실어 갔어."
+    ],
+    "site": "miner_camp"
+  },
+  {
+    "id": "boreum",
+    "name": "보름",
+    "title": "야영지 요리사",
+    "dx": 6,
+    "dz": 6,
+    "yaw": -2.3,
+    "look": {
+      "body": "f",
+      "seed": 126,
+      "chest": "light",
+      "legs": "light",
+      "tint": {
+        "shirt": "#d8cca8",
+        "vest": "#6a4a3a",
+        "trousers": "#3a302a",
+        "scarf": "#d89a3a"
+      }
+    },
+    "chat": [
+      "심장 앞에서도 배는 고파요.",
+      "여기 물은 이상하게 달아요. 영맥 탓일까요."
+    ],
+    "at": "s_gate"
+  },
+  {
+    "id": "suryeon",
+    "name": "수련",
+    "title": "순례자",
+    "dx": 2,
+    "dz": -3,
+    "yaw": 0.2,
+    "look": {
+      "body": "f",
+      "seed": 127,
+      "chest": "robe",
+      "legs": "light",
+      "head": "robe",
+      "tint": {
+        "robe": "#d8d4c8",
+        "sash": "#8aa0c8",
+        "hood": "#c8c4b8",
+        "shirt": "#ece8e0",
+        "trousers": "#5a5a64"
+      }
+    },
+    "chat": [
+      "첫 등지기는 돌무지 하나하나에 이름을 새겼대요.",
+      "심장은 무서운 게 아니에요. 아픈 거예요."
+    ],
+    "site": "pilgrim_cairn"
   }
 ]

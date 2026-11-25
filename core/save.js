@@ -458,6 +458,18 @@ const MIGRATIONS = [
       initMobs(ctx);
     },
   },
+  {
+    // v1.3 → v1.4: 사람들의 섬. 있던 지역에 새로 생긴 마을(갈매기 포구·버들 여울·숯가마 마을)을 세운다
+    from: 19,
+    to: 20,
+    run(st, data) {
+      st.meta.engine = '1.4.0';
+      for (const region of data.lists.regions) {
+        if (!st.regions[region.id]) continue;
+        for (const sdef of region.settlements) if (!st.settlements[sdef.id]) st.settlements[sdef.id] = newSettlement(region, sdef, data.config);
+      }
+    },
+  },
 ];
 
 // v0.5.2: 1~2장 퀘스트에 생활 단계가 끼었다. 하던 단계 번호를 새 번호로(앞에 낀 단계는 건너뛴다)

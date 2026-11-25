@@ -519,8 +519,13 @@ export function stepText(ctx, a, id) {
 // NPC 머리 위 표시: ! 이야기 시작·새 의뢰, ? 이야기 이어 가기(끝내기 포함)
 export function npcMark(ctx, a, npc) {
   const id = talkDue(ctx, a, npc)[0];
-  if (!id) return null;
+  if (!id) return npcOffers(ctx, a, npc).length && npcShown(ctx, a, npc) ? 'side' : null;
   return a.quests.active[id].step === 0 ? '!' : '?';
+}
+
+// 이 사람이 줄 수 있는 부가 퀘스트(v1.4)
+export function npcOffers(ctx, a, npc) {
+  return ctx.data.lists.quests.filter((q) => q.giver === npc && available(ctx, a, q));
 }
 
 export const hasMark = (a, mark) => a?.marks?.[mark] != null;

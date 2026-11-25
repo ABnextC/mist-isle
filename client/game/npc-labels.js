@@ -32,7 +32,7 @@ export function createNpcLabels(overlay, game, positionOf) {
       }
       const d = Math.hypot(p.x - camera.position.x, p.z - camera.position.z);
       const mark = me ? npcMark(ctx, me, n.id) : null;
-      if (d > (mark ? 70 : 24)) {
+      if (d > (mark === 'side' ? 40 : mark ? 70 : 24)) {
         e.classList.remove('on');
         continue;
       }
@@ -46,9 +46,9 @@ export function createNpcLabels(overlay, game, positionOf) {
       e.style.transform = `translate(${((tmp.x + 1) / 2) * W}px, ${((1 - tmp.y) / 2) * H}px)`;
       const [b, span, small] = e.children;
       if (b._t !== (mark || '')) {
-        b.textContent = mark || '';
+        b.textContent = mark === 'side' ? '!' : mark || '';
         b._t = mark || '';
-        b.className = mark === '!' ? 'new' : mark === '?' ? 'due' : '';
+        b.className = mark === '!' ? 'new' : mark === '?' ? 'due' : mark === 'side' ? 'side' : '';
       }
       if (span._t !== n.name) span.textContent = span._t = n.name;
       if (small._t !== n.title) small.textContent = small._t = n.title;

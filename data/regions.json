@@ -264,6 +264,87 @@
             "build": "pj_f_house2"
           }
         ]
+      },
+      {
+        "id": "s_gull",
+        "name": "갈매기 포구",
+        "x": 330,
+        "z": 105,
+        "radius": 15,
+        "flat": "local",
+        "pop": 8,
+        "cap": 12,
+        "stations": [
+          {
+            "type": "storage",
+            "dx": -1,
+            "dz": -8,
+            "rot": 0
+          },
+          {
+            "type": "kitchen",
+            "dx": 7,
+            "dz": -5,
+            "rot": -2.4
+          },
+          {
+            "type": "workbench",
+            "dx": -8,
+            "dz": 4,
+            "rot": 1.4
+          }
+        ],
+        "structures": [
+          {
+            "kind": "board",
+            "dx": 3,
+            "dz": -3,
+            "r": 0.5,
+            "rot": 0
+          },
+          {
+            "kind": "campfire",
+            "dx": 0,
+            "dz": 2,
+            "r": 0.7,
+            "rot": 0
+          },
+          {
+            "kind": "cabin",
+            "dx": -12,
+            "dz": -9,
+            "r": 2.6,
+            "rot": 0.8
+          },
+          {
+            "kind": "cabin",
+            "dx": 12,
+            "dz": 9,
+            "r": 2.6,
+            "rot": -2.3
+          },
+          {
+            "kind": "house",
+            "dx": 0,
+            "dz": 13,
+            "r": 3.2,
+            "rot": 3.14
+          },
+          {
+            "kind": "crates",
+            "dx": 10,
+            "dz": -10,
+            "r": 0.8,
+            "rot": 0.3
+          },
+          {
+            "kind": "tent",
+            "dx": -12,
+            "dz": 10,
+            "r": 1.9,
+            "rot": 2.2
+          }
+        ]
       }
     ],
     "decor": [
@@ -1137,6 +1218,76 @@
             "cross": "swamp_shore"
           }
         ]
+      },
+      {
+        "id": "hermit_hut",
+        "name": "솔바람 오두막",
+        "x": 60,
+        "z": 300,
+        "r": 9,
+        "flat": "local",
+        "structures": [
+          {
+            "kind": "cabin",
+            "dx": 0,
+            "dz": 5,
+            "r": 2.6,
+            "rot": 3.14
+          },
+          {
+            "kind": "campfire",
+            "dx": 0,
+            "dz": -1.5,
+            "r": 0.7,
+            "rot": 0
+          },
+          {
+            "kind": "crates",
+            "dx": 4,
+            "dz": 3,
+            "r": 0.8,
+            "rot": 0.4
+          },
+          {
+            "kind": "altar",
+            "dx": -4,
+            "dz": 2,
+            "r": 0.8,
+            "rot": 0.6
+          }
+        ]
+      },
+      {
+        "id": "fish_rock",
+        "name": "바위 낚시터",
+        "beach": [
+          110,
+          3.5
+        ],
+        "r": 7,
+        "structures": [
+          {
+            "kind": "tent",
+            "dx": -3,
+            "dz": 3,
+            "r": 1.9,
+            "rot": 2.6
+          },
+          {
+            "kind": "crates",
+            "dx": 3,
+            "dz": 2,
+            "r": 0.8,
+            "rot": 0.3
+          },
+          {
+            "kind": "campfire",
+            "dx": 0,
+            "dz": -1,
+            "r": 0.7,
+            "rot": 0
+          }
+        ]
       }
     ],
     "island": "등대섬"
@@ -1426,6 +1577,99 @@
             "r": 2.6,
             "rot": 0.7,
             "build": "pj_v_house2"
+          }
+        ]
+      },
+      {
+        "id": "s_willow",
+        "name": "버들 여울",
+        "x": 1090,
+        "z": 200,
+        "radius": 16,
+        "flat": "local",
+        "pop": 9,
+        "cap": 13,
+        "stations": [
+          {
+            "type": "storage",
+            "dx": -1,
+            "dz": -9,
+            "rot": 0
+          },
+          {
+            "type": "kitchen",
+            "dx": 8,
+            "dz": -5,
+            "rot": -2.4
+          },
+          {
+            "type": "loom",
+            "dx": -9,
+            "dz": -3,
+            "rot": 1.5
+          },
+          {
+            "type": "tannery",
+            "dx": -9,
+            "dz": 6,
+            "rot": 1.6
+          },
+          {
+            "type": "workbench",
+            "dx": 9,
+            "dz": 5,
+            "rot": -1.6
+          }
+        ],
+        "structures": [
+          {
+            "kind": "board",
+            "dx": 3,
+            "dz": -3,
+            "r": 0.5,
+            "rot": 0
+          },
+          {
+            "kind": "campfire",
+            "dx": 0,
+            "dz": 2,
+            "r": 0.7,
+            "rot": 0
+          },
+          {
+            "kind": "house",
+            "dx": -13,
+            "dz": -12,
+            "r": 3.2,
+            "rot": 0.7
+          },
+          {
+            "kind": "house",
+            "dx": 13,
+            "dz": -12,
+            "r": 3.2,
+            "rot": -0.7
+          },
+          {
+            "kind": "cabin",
+            "dx": 0,
+            "dz": 14,
+            "r": 2.6,
+            "rot": 3.14
+          },
+          {
+            "kind": "cabin",
+            "dx": -14,
+            "dz": 13,
+            "r": 2.6,
+            "rot": 2.4
+          },
+          {
+            "kind": "crates",
+            "dx": 14,
+            "dz": 12,
+            "r": 0.8,
+            "rot": 0.6
           }
         ]
       }
@@ -2372,6 +2616,89 @@
             "ferry": "c6_gate"
           }
         ]
+      },
+      {
+        "id": "ferry_inn",
+        "name": "물레방아 주막",
+        "x": 1268,
+        "z": 118,
+        "r": 11,
+        "flat": "local",
+        "structures": [
+          {
+            "kind": "house",
+            "dx": 0,
+            "dz": 6,
+            "r": 3.2,
+            "rot": 3.14
+          },
+          {
+            "kind": "campfire",
+            "dx": -3,
+            "dz": -2,
+            "r": 0.7,
+            "rot": 0
+          },
+          {
+            "kind": "crates",
+            "dx": 6,
+            "dz": 2,
+            "r": 0.8,
+            "rot": 0.5
+          },
+          {
+            "kind": "banner",
+            "dx": -7,
+            "dz": -3,
+            "r": 0.25,
+            "rot": 0
+          },
+          {
+            "kind": "tent",
+            "dx": 7,
+            "dz": -5,
+            "r": 1.9,
+            "rot": -0.6
+          }
+        ]
+      },
+      {
+        "id": "hunter_lodge",
+        "name": "사냥꾼 쉼터",
+        "x": 1420,
+        "z": 300,
+        "r": 10,
+        "flat": "local",
+        "structures": [
+          {
+            "kind": "cabin",
+            "dx": 0,
+            "dz": 5,
+            "r": 2.6,
+            "rot": 3.14
+          },
+          {
+            "kind": "campfire",
+            "dx": 0,
+            "dz": -1.5,
+            "r": 0.7,
+            "rot": 0
+          },
+          {
+            "kind": "tent_red",
+            "dx": -6,
+            "dz": 0,
+            "r": 1.9,
+            "rot": 1.6
+          },
+          {
+            "kind": "crates",
+            "dx": 6,
+            "dz": 1,
+            "r": 0.8,
+            "rot": 0.2
+          }
+        ]
       }
     ]
   },
@@ -2510,6 +2837,93 @@
             "dz": -14,
             "r": 2.6,
             "rot": 0.7
+          }
+        ]
+      },
+      {
+        "id": "s_kiln",
+        "name": "숯가마 마을",
+        "x": 2330,
+        "z": 100,
+        "radius": 15,
+        "flat": "local",
+        "pop": 7,
+        "cap": 11,
+        "stations": [
+          {
+            "type": "storage",
+            "dx": -1,
+            "dz": -8,
+            "rot": 0
+          },
+          {
+            "type": "kitchen",
+            "dx": 7,
+            "dz": -5,
+            "rot": -2.4
+          },
+          {
+            "type": "smelter",
+            "dx": -9,
+            "dz": 2,
+            "rot": 1.5
+          },
+          {
+            "type": "forge",
+            "dx": 8,
+            "dz": 6,
+            "rot": -2.2
+          }
+        ],
+        "structures": [
+          {
+            "kind": "board",
+            "dx": 3,
+            "dz": -3,
+            "r": 0.5,
+            "rot": 0
+          },
+          {
+            "kind": "campfire",
+            "dx": 0,
+            "dz": 2,
+            "r": 0.7,
+            "rot": 0
+          },
+          {
+            "kind": "cabin",
+            "dx": -12,
+            "dz": -10,
+            "r": 2.6,
+            "rot": 0.8
+          },
+          {
+            "kind": "cabin",
+            "dx": 0,
+            "dz": 13,
+            "r": 2.6,
+            "rot": 3.14
+          },
+          {
+            "kind": "tent",
+            "dx": 13,
+            "dz": -9,
+            "r": 1.9,
+            "rot": -0.8
+          },
+          {
+            "kind": "tent",
+            "dx": -13,
+            "dz": 10,
+            "r": 1.9,
+            "rot": 2.2
+          },
+          {
+            "kind": "crates",
+            "dx": 12,
+            "dz": 12,
+            "r": 0.8,
+            "rot": 0.2
           }
         ]
       }
@@ -2875,6 +3289,51 @@
             "dx": 10,
             "dz": 2,
             "yaw": 3.8
+          }
+        ]
+      },
+      {
+        "id": "miner_camp",
+        "name": "광부 굴막",
+        "x": 2080,
+        "z": 200,
+        "r": 10,
+        "flat": "local",
+        "structures": [
+          {
+            "kind": "tent",
+            "dx": -5,
+            "dz": 4,
+            "r": 1.9,
+            "rot": 2.4
+          },
+          {
+            "kind": "tent",
+            "dx": 5,
+            "dz": 4,
+            "r": 1.9,
+            "rot": -2.4
+          },
+          {
+            "kind": "campfire",
+            "dx": 0,
+            "dz": -1,
+            "r": 0.7,
+            "rot": 0
+          },
+          {
+            "kind": "crates",
+            "dx": 7,
+            "dz": -3,
+            "r": 0.8,
+            "rot": 0.4
+          },
+          {
+            "kind": "rubble",
+            "dx": -7,
+            "dz": -4,
+            "r": 0,
+            "rot": 0.3
           }
         ]
       }
@@ -3405,6 +3864,51 @@
             "dx": 0,
             "dz": -2,
             "yaw": 3.1
+          }
+        ]
+      },
+      {
+        "id": "pilgrim_cairn",
+        "name": "순례자 돌무지",
+        "x": 3100,
+        "z": 300,
+        "r": 9,
+        "flat": "local",
+        "structures": [
+          {
+            "kind": "altar",
+            "dx": 0,
+            "dz": 4,
+            "r": 0.8,
+            "rot": 3.14
+          },
+          {
+            "kind": "pillar_broken",
+            "dx": -4,
+            "dz": 4,
+            "r": 0.6,
+            "rot": 0.4
+          },
+          {
+            "kind": "pillar_broken",
+            "dx": 4,
+            "dz": 4,
+            "r": 0.6,
+            "rot": 2.4
+          },
+          {
+            "kind": "tent_white",
+            "dx": -5,
+            "dz": -3,
+            "r": 1.9,
+            "rot": 1.2
+          },
+          {
+            "kind": "campfire",
+            "dx": 1,
+            "dz": -1.5,
+            "r": 0.7,
+            "rot": 0
           }
         ]
       }

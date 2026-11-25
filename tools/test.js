@@ -17,7 +17,7 @@ import { mOf, needXp, loadoutOf, abilityOf, passivesOf } from '../core/systems/m
 import { spawnTemp } from '../core/systems/mobs.js';
 import { settlementDaily } from '../core/settlements.js';
 import { isUnlocked, allowedProject, chapterReached } from '../core/systems/unlocks.js';
-import { stepNpc } from '../core/systems/quests.js';
+import { stepNpc, npcMark } from '../core/systems/quests.js';
 import { rankOf, xpMult, extraChance, feeMult, recipeAllowed, tasksOf, factionOnEvent } from '../core/systems/factions.js';
 import { addXp } from '../core/systems/progress.js';
 import { plotPos, homeOf, comfortOf } from '../core/systems/housing.js';
@@ -1312,7 +1312,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '1.3.0');
+  eq(st.meta.engine, '1.4.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1504,7 +1504,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '1.3.0');
+  eq(st.meta.engine, '1.4.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -1918,6 +1918,51 @@ test('지팡이: 스킬은 마나를 쓰고(모자라면 못 쓴다), 화염구�
   eq(g.dispatch({ type: 'ABILITY', actor: 'p1', slot: 0 }).error, 'no_mana');
   g.advance(2);
   ok(a.cb.mp > 5 + cfg.combat.manaRegen * 1.5, '마나가 찬다');
+});
+
+console.log('사람들의 섬 (v1.4)');
+
+test('부가 의뢰: 앞 이야기를 마치면 마을 사람에게 받고(머리 위 초록 !), 건넬 것을 모아 오면 보상을 받는다. 한 번만 받는다', () => {
+  const g = createGame({ data, seed: 9, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  const W = { state: g.state, data, statics: g.statics, terrain: g.terrain };
+  const at = (npc) => { const p = npcPos(W, npc); Object.assign(a, { x: p.x + 1, z: p.z }); };
+  at('jogae');
+  eq(npcMark(W, a, 'jogae'), null, '아직 1장 초반');
+  eq(g.dispatch({ type: 'QUEST_ACCEPT', actor: 'p1', quest: 'sq_lh_fish' }).error, 'not_available');
+  a.quests.done.q1_ashore = 1;
+  a.quests.done.q2_chest = 1;
+  eq(npcMark(W, a, 'jogae'), 'side', '부가 의뢰 표시');
+  eq(g.dispatch({ type: 'QUEST_ACCEPT', actor: 'p1', quest: 'sq_lh_fish' }).error, 'too_far', '순덕 곁이 아니다');
+  at('seondeok');
+  ok(g.dispatch({ type: 'QUEST_ACCEPT', actor: 'p1', quest: 'sq_lh_fish' }).ok, '받기');
+  eq(npcMark(W, a, 'seondeok'), '!', '건넬 차례');
+  eq(g.dispatch({ type: 'TALK', actor: 'p1', npc: 'seondeok' }).error, 'need_items');
+  a.bag.push({ item: 'seaweed', lot: null, bonus: null, qty: 5 });
+  const s0 = a.silver;
+  ok(g.dispatch({ type: 'TALK', actor: 'p1', npc: 'seondeok' }).ok, '건넨다');
+  g.advance(0.2);
+  ok(a.quests.done.sq_lh_fish != null, '끝');
+  eq(a.silver, s0 + 40);
+  eq(countItem([a.bag], 'seaweed'), 1, '넷만 가져간다');
+  ok(countItem([a.bag, storeOf(a, a.home)], 'food_soup') >= 2, '국 보상');
+  eq(g.dispatch({ type: 'QUEST_ACCEPT', actor: 'p1', quest: 'sq_lh_fish' }).error, 'not_available', '다시는 못 받는다');
+});
+
+test('부가 의뢰 사람과 새 마을: 모든 부가 의뢰는 있는 사람이 주고, 그 사람은 걸을 수 있는 땅에 서 있으며, 새 마을 셋에 창고가 있다', () => {
+  const g = createGame({ data, seed: 9 });
+  const W = { state: g.state, data, statics: g.statics, terrain: g.terrain };
+  const side = data.lists.quests.filter((q) => q.kind === 'side');
+  ok(side.length >= 25, `부가 의뢰 ${side.length}개`);
+  for (const q of side) {
+    ok(data.npcs[q.giver], `${q.id} 주는 사람`);
+    const p = npcPos(W, q.giver);
+    ok(p && g.terrain.walkable(p.x, p.z), `${q.giver} 자리`);
+  }
+  for (const s of ['s_gull', 's_willow', 's_kiln']) {
+    ok(g.state.settlements[s], s);
+    ok(g.state.settlements[s].stations.some((st) => st.type === 'storage'), `${s} 창고`);
+  }
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

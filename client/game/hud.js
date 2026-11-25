@@ -12,7 +12,7 @@ import { settlementAt, storeOf, standingTier, reachable } from '../../core/world
 import { openProjects, projectOpen, needLeft, silverLeft, projectProgress, shipFee, upkeepOf } from '../../core/settlements.js';
 import { zoneAt, regionAt } from '../../core/terrain.js';
 import { ENGINE_VERSION } from '../../core/state.js';
-import { stepText, talkDue, boardOffers, available, TALK_RANGE, takeMet, takeProgress, stepSay } from '../../core/systems/quests.js';
+import { stepText, talkDue, boardOffers, available, TALK_RANGE, takeMet, takeProgress, stepSay, npcOffers, npcShown } from '../../core/systems/quests.js';
 import { factionOf, rankOf, tasksOf, taskDone } from '../../core/systems/factions.js';
 import { comfortOf, restValue } from '../../core/systems/housing.js';
 import { guildLevel, aiRoom, hireable } from '../../core/systems/guilds.js';
@@ -934,6 +934,15 @@ export function createHud(root, game, { touch, onAct }) {
       }
       return `${tag}${stepSay(ctx, a, st).map((l) => `<p class="say">${esc(l)}</p>`).join('')}<div class="btns"><button data-act="talk-do" data-v="${panel.npc}">${esc(st.reply || '알겠다')}</button></div>`;
     }
+    // 부가 퀘스트(v1.4): 이 사람이 줄 수 있는 의뢰
+    const offers = npcOffers(ctx, a, panel.npc);
+    if (offers.length) {
+      const q = offers[0];
+      panel.chat ??= Math.floor(Math.random() * npc.chat.length);
+      return `${head}<p class="say">${esc(npc.chat[panel.chat % npc.chat.length])}</p><div class="qtag">부가 의뢰 · ${esc(q.name)}</div><p class="say">${esc(q.summary)}</p>
+        <p class="muted">▶ ${q.steps.map((st) => esc(st.text)).join(' → ')}</p>${rewardHtml(q.reward)}
+        <div class="btns"><button class="pri" data-act="quest-accept" data-v="${q.id}">맡겠습니다</button><button data-act="close">다음에</button></div>`;
+    }
     // 세력 지도자(v0.7): 세력이 열렸으면 세력 창을 보인다
     const fdef = data.factions.list.find((f) => f.leader === panel.npc);
     if (fdef && isUnlocked(ctx, a, 'faction')) return `${head}${factionHtml(a, fdef, ctx)}`;
@@ -1034,6 +1043,19 @@ export function createHud(root, game, { touch, onAct }) {
       }
       if (!body) body = '<p class="muted">아직 기록이 없다.</p>';
       body += questItemsHtml(a);
+    } else if (tab === 'side') {
+      // 부가 의뢰(v1.4): 하는 중 · 받을 수 있는 곳 · 끝낸 수
+      const qctx = questCtx(game);
+      const act = Object.keys(Q.active).filter((id) => data.quests[id]?.kind === 'side');
+      body = act.length ? `<h3>하는 중</h3><ul class="qlist">${act.map((id) => activeQuestHtml(a, id)).join('')}</ul>` : '<p class="muted">맡은 부가 의뢰가 없다. 머리 위에 초록 ! 가 뜬 사람에게 말을 걸어 보자.</p>';
+      const offers = data.lists.quests.filter((q) => q.kind === 'side' && available(qctx, a, q) && npcShown(qctx, a, q.giver));
+      if (offers.length) {
+        const where = (npc) => { const n = data.npcs[npc]; return n.at ? data.settlements?.[n.at]?.name || game.state.settlements[n.at]?.name || '' : data.sites?.[n.site]?.name || ''; };
+        body += `<h3>받을 수 있는 의뢰</h3><ul class="list">${offers.map((q) => `<li><div><b>${esc(q.name)}</b><small>${esc(data.npcs[q.giver].name)} · ${esc(where(q.giver))} · 🪙 ${q.reward?.silver || 0}</small></div></li>`).join('')}</ul>`;
+      }
+      const doneN = data.lists.quests.filter((q) => q.kind === 'side' && Q.done[q.id] != null).length;
+      const all = data.lists.quests.filter((q) => q.kind === 'side').length;
+      body += `<p class="muted">끝낸 부가 의뢰 ${doneN}/${all}</p>`;
     } else if (tab === 'bounty') {
       body = bountyHtml(a).replace(/<button data-act="quest-accept"[^>]*>받기<\/button>/g, '<small class="muted">게시판에서</small>');
     } else {
@@ -1047,7 +1069,7 @@ export function createHud(root, game, { touch, onAct }) {
         ${factionOf(a) ? (() => { const f = data.factions.list.find((x) => x.id === factionOf(a)); const r = rankOf(questCtx(game), a); return `<h3>${f.icon} ${esc(f.name)}</h3><p>${esc(data.factions.ranks[r - 1].name)} · 영향력 ${Math.round(a.faction.inf)} — 지도자에게 말을 걸면 의뢰와 혜택을 본다</p>`; })() : ''}
         <h3>열리는 것</h3><p class="muted">등대섬(1~2장)에서는 기본 생활과 전투를 익힌다. 3장에서 본섬으로 건너가면 경제가, 4장에서 세력과 큰 콘텐츠가 열린다.</p><ul class="life">${unl}</ul>`;
     }
-    return tabsHtml([['main', '메인'], ['bounty', '현상금'], ['life', '생활 안내']], tab) + body;
+    return tabsHtml([['main', '메인'], ['side', '부가'], ['bounty', '현상금'], ['life', '생활 안내']], tab) + body;
   }
 
   // ── 거래소 ─────────────────────────────────────────

@@ -537,3 +537,5 @@ ul.life li.done { color: var(--muted); }
 /* 마나(v1.2) */
 .vitals .mp { position: relative; height: 5px; border-radius: 3px; background: rgba(10, 12, 14, 0.6); overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12); }
 .vitals .mp span { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #2f6fd0, #8fd0ff); }
+/* 부가 의뢰 표시(v1.4) */
+.npctag b.side { color: #7ff08a; text-shadow: 0 0 6px rgba(80, 220, 110, .7), 0 1px 2px #000; }

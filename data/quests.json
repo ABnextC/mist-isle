@@ -2824,6 +2824,836 @@
         }
       },
       "next": null
+    },
+    {
+      "id": "sq_lh_fish",
+      "kind": "side",
+      "giver": "seondeok",
+      "requires": [
+        "q2_chest"
+      ],
+      "name": "저녁 찬거리",
+      "summary": "순덕이 국에 넣을 미역을 찾는다. 바닷가 바위에 붙은 걸 따 오면 된다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "seondeok",
+          "text": "순덕에게 미역 4 건네기",
+          "take": {
+            "seaweed": 4
+          },
+          "say": [
+            "이 정도면 한 솥 끓이겠네.",
+            "국 끓으면 한 그릇 떠 줄 테니 들고 가."
+          ],
+          "reply": "여기 있습니다"
+        }
+      ],
+      "reward": {
+        "silver": 40,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "sq_lh_drift",
+      "kind": "side",
+      "giver": "makdong",
+      "requires": [
+        "q1_ashore"
+      ],
+      "name": "등대 땔감",
+      "summary": "막동이 등대 불 지킬 땔감을 모은다. 마른 표류목이 필요하다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "makdong",
+          "text": "막동에게 표류목 6 건네기",
+          "take": {
+            "log_drift": 6
+          },
+          "say": [
+            "우와, 이거면 사흘은 버티겠어요!",
+            "해림 할머니한테 칭찬받겠다."
+          ],
+          "reply": "보태 줄게"
+        }
+      ],
+      "reward": {
+        "silver": 30
+      }
+    },
+    {
+      "id": "sq_fo_mush",
+      "kind": "side",
+      "giver": "soli",
+      "requires": [
+        "q4_forest"
+      ],
+      "name": "버섯 바구니",
+      "summary": "솔이가 약을 지을 버섯을 찾는다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "soli",
+          "text": "솔이에게 버섯 5 건네기",
+          "take": {
+            "mushroom": 5
+          },
+          "say": [
+            "향이 좋네요. 그늘에서 잘 자란 거예요.",
+            "이건 고마움의 표시예요. 산딸기 말랭이, 걷다가 드세요."
+          ],
+          "reply": "여기 있습니다"
+        }
+      ],
+      "reward": {
+        "silver": 50,
+        "items": [
+          {
+            "item": "food_berry",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "sq_fo_wolves",
+      "kind": "side",
+      "giver": "gombo",
+      "requires": [
+        "q4_forest"
+      ],
+      "name": "늑대 울음",
+      "summary": "곰보 영감네 나무터에 늑대가 내려온다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "wolf"
+          ],
+          "count": 4,
+          "text": "숲의 늑대 4마리 쫓아내기"
+        },
+        {
+          "type": "talk",
+          "npc": "gombo",
+          "text": "곰보 영감에게 알리기",
+          "say": [
+            "허허, 이제 좀 조용하겠구먼.",
+            "고마운 김에 하나 일러 주지. 참나무는 북쪽 숲이 제일 곧아."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 70
+      }
+    },
+    {
+      "id": "sq_gu_crab",
+      "kind": "side",
+      "giver": "jogae",
+      "requires": [
+        "q2_chest"
+      ],
+      "name": "그물 끊는 놈들",
+      "summary": "갈매기 포구 그물을 해안 게들이 끊어 놓는다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "crab"
+          ],
+          "count": 6,
+          "text": "해안 게 6마리 잡기"
+        },
+        {
+          "type": "talk",
+          "npc": "jogae",
+          "text": "조개댁에게 알리기",
+          "say": [
+            "그물이 성하니 내일은 만선이겠어.",
+            "국 한 솥 끓였어. 가져가."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 45,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "sq_gu_log",
+      "kind": "side",
+      "giver": "noseon",
+      "requires": [
+        "q2_chest"
+      ],
+      "name": "빛바랜 항해일지",
+      "summary": "노 선장의 옛 배 「물수리」가 남쪽 작은 만에 가라앉았다. 무엇이 남았는지 보고 와 달라 한다.",
+      "steps": [
+        {
+          "type": "go",
+          "site": "cove",
+          "text": "남쪽 작은 만에 가 보기"
+        },
+        {
+          "type": "talk",
+          "npc": "noseon",
+          "text": "노 선장에게 본 것 전하기",
+          "say": [
+            "…돛대 끝이 아직 물 위에 있더라고? 그 녀석, 끝까지 버티는구먼.",
+            "고맙네. 마흔 해 동안 묻어 둔 걸 이제야 내려놓겠어."
+          ],
+          "reply": "편히 쉬세요"
+        }
+      ],
+      "reward": {
+        "silver": 60
+      }
+    },
+    {
+      "id": "sq_gu_net",
+      "kind": "side",
+      "giver": "baram",
+      "requires": [
+        "q4_forest"
+      ],
+      "name": "새 그물",
+      "summary": "바람이 새 그물을 엮을 갈대와 갈대 천을 모은다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "baram",
+          "text": "바람에게 갈대 8·갈대 천 2 건네기",
+          "take": {
+            "fiber_reed": 8,
+            "cloth_reed": 2
+          },
+          "say": [
+            "이거면 그물 두 채는 엮겠어.",
+            "포구 사람들이 고마워할 거야."
+          ],
+          "reply": "여기 있습니다"
+        }
+      ],
+      "reward": {
+        "silver": 80
+      }
+    },
+    {
+      "id": "sq_he_spirit",
+      "kind": "side",
+      "giver": "cheongun",
+      "requires": [
+        "c2_ruins"
+      ],
+      "name": "숲의 망령",
+      "summary": "청운이 밤마다 숲에서 우는 망령을 잠재워 달라 한다. 망령은 밤에만 나온다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "mist_wraith"
+          ],
+          "count": 3,
+          "text": "밤에 안개 망령 3 잠재우기"
+        },
+        {
+          "type": "talk",
+          "npc": "cheongun",
+          "text": "청운에게 돌아가기",
+          "say": [
+            "조용해졌구먼. 저것들도 원래는 길 잃은 넋이었네.",
+            "이 돌을 가져가게. 숲이 준 게야."
+          ],
+          "reply": "감사합니다"
+        }
+      ],
+      "reward": {
+        "silver": 120,
+        "items": [
+          {
+            "item": "gem_rough",
+            "qty": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "sq_fi_boar",
+      "kind": "side",
+      "giver": "darae",
+      "requires": [
+        "q5_supplies"
+      ],
+      "name": "멧돼지 고기",
+      "summary": "다래가 낚시터 사람들과 나눌 고기를 구한다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "darae",
+          "text": "다래에게 날고기 3 건네기",
+          "take": {
+            "meat_raw": 3
+          },
+          "say": [
+            "오늘 밤은 낚시터에서 잔치네!",
+            "구운 걸로 하나 챙겨 가."
+          ],
+          "reply": "여기 있습니다"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_meat",
+            "qty": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "sq_po_errand",
+      "kind": "side",
+      "giver": "doseon",
+      "requires": [
+        "c3_mistfolk"
+      ],
+      "name": "느티골 편지",
+      "summary": "도선이 느티골 촌장 옥화에게 소식을 전해 달라 한다. 다리를 놓을지 묻는 편지다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "okhwa",
+          "text": "느티골 옥화에게 편지 전하기",
+          "say": [
+            "도선이 보냈다고? 다리 이야기구먼.",
+            "좋다고 전해 주게. 목수 한솔이가 마침 손이 빈다네."
+          ],
+          "reply": "전하겠습니다"
+        },
+        {
+          "type": "talk",
+          "npc": "doseon",
+          "text": "도선에게 답 전하기",
+          "say": [
+            "촌장님이 좋다고? 하하, 이제 노 젓는 날도 끝이구먼.",
+            "아니지, 다리가 놓여도 배 탈 사람은 타겠지."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 60
+      }
+    },
+    {
+      "id": "sq_va_boar",
+      "kind": "side",
+      "giver": "okhwa",
+      "requires": [
+        "c3_wall"
+      ],
+      "name": "밭을 망치는 멧돼지",
+      "summary": "느티골 밭을 멧돼지가 파헤친다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "boar"
+          ],
+          "count": 3,
+          "text": "멧돼지 3마리 쫓아내기"
+        },
+        {
+          "type": "talk",
+          "npc": "okhwa",
+          "text": "옥화에게 알리기",
+          "say": [
+            "올가을 수확은 지켰구먼.",
+            "마을 사람들이 조금씩 모은 걸세. 받아 두게."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 90
+      }
+    },
+    {
+      "id": "sq_va_bridge",
+      "kind": "side",
+      "giver": "hansol",
+      "requires": [
+        "c3_wall"
+      ],
+      "name": "다리 고치기",
+      "summary": "한솔이 개울 다리를 고칠 널빤지와 못을 모은다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "hansol",
+          "text": "한솔에게 자작 목재 8·구리 못 10 건네기",
+          "take": {
+            "lumber_birch": 8,
+            "nails_copper": 10
+          },
+          "say": [
+            "결이 곧네요. 좋은 목재예요.",
+            "다리 다 놓으면 첫 번째로 건너세요."
+          ],
+          "reply": "여기 있습니다"
+        }
+      ],
+      "reward": {
+        "silver": 120
+      }
+    },
+    {
+      "id": "sq_wi_wraith",
+      "kind": "side",
+      "giver": "beodeul",
+      "requires": [
+        "c3_mistfolk"
+      ],
+      "name": "여울의 밤",
+      "summary": "버들 할매가 늪 쪽에서 밤마다 나오는 망령을 걱정한다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "mist_wraith"
+          ],
+          "count": 4,
+          "text": "늪의 안개 망령 4 잠재우기"
+        },
+        {
+          "type": "talk",
+          "npc": "beodeul",
+          "text": "버들 할매에게 돌아가기",
+          "say": [
+            "여울물 소리가 다시 맑아졌구먼.",
+            "아라한테도 고맙다고 전해 주게. 늪 사람들 덕도 있을 테니."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 110
+      }
+    },
+    {
+      "id": "sq_wi_copper",
+      "kind": "side",
+      "giver": "jaegan",
+      "requires": [
+        "c3_wall"
+      ],
+      "name": "쇠가 모자라",
+      "summary": "재간의 대장간에 구리가 떨어졌다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "jaegan",
+          "text": "재간에게 구리 주괴 6 건네기",
+          "take": {
+            "ingot_copper": 6
+          },
+          "say": [
+            "이야, 이제 망치질 좀 하겠네.",
+            "덤이야. 못 한 줌 쳐 줄게."
+          ],
+          "reply": "여기 있습니다"
+        }
+      ],
+      "reward": {
+        "silver": 100,
+        "items": [
+          {
+            "item": "nails_copper",
+            "qty": 10
+          }
+        ]
+      }
+    },
+    {
+      "id": "sq_wi_dye",
+      "kind": "side",
+      "giver": "miru",
+      "requires": [
+        "c3_wall"
+      ],
+      "name": "물감 열매",
+      "summary": "미루가 갈대 천을 붉게 물들일 산딸기를 찾는다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "miru",
+          "text": "미루에게 산딸기 10 건네기",
+          "take": {
+            "berry": 10
+          },
+          "say": [
+            "이 빛깔 좀 봐요. 늪 노을 같아요.",
+            "물들인 천은 여울 사람들 옷이 될 거예요."
+          ],
+          "reply": "여기 있습니다"
+        }
+      ],
+      "reward": {
+        "silver": 70
+      }
+    },
+    {
+      "id": "sq_in_soup",
+      "kind": "side",
+      "giver": "jumo",
+      "requires": [
+        "c3_wall"
+      ],
+      "name": "주막 국솥",
+      "summary": "금순의 주막에 손님이 몰려 국이 모자란다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "jumo",
+          "text": "금순에게 국 3 건네기",
+          "take": {
+            "food_soup": 3
+          },
+          "say": [
+            "살았다! 오늘 밤 손님은 다 받겠네.",
+            "자, 이건 품삯. 국값보다 후하게 쳤어."
+          ],
+          "reply": "여기 있습니다"
+        }
+      ],
+      "reward": {
+        "silver": 90
+      }
+    },
+    {
+      "id": "sq_in_flute",
+      "kind": "side",
+      "giver": "aksa",
+      "requires": [
+        "c3_beast"
+      ],
+      "name": "잃어버린 피리",
+      "summary": "악사 소리가 늪 탑 근처에서 피리를 떨어뜨렸다고 한다. 탑까지 다녀와 달라 한다.",
+      "steps": [
+        {
+          "type": "go",
+          "site": "swamp_tower",
+          "text": "늪의 탑 근처 살피기"
+        },
+        {
+          "type": "talk",
+          "npc": "aksa",
+          "text": "소리에게 돌아가기",
+          "say": [
+            "찾았소? …아니, 부러졌다고? 하하, 괜찮소. 그 피리는 거기서 제 노래를 다 불렀나 보오.",
+            "대신 그 이야기로 새 노래를 지으리다."
+          ],
+          "reply": "기대할게요"
+        }
+      ],
+      "reward": {
+        "silver": 100
+      }
+    },
+    {
+      "id": "sq_hu_hides",
+      "kind": "side",
+      "giver": "beomdol",
+      "requires": [
+        "c3_wall"
+      ],
+      "name": "가죽 다섯 장",
+      "summary": "범돌이 겨울 채비로 짐승 가죽을 모은다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "beomdol",
+          "text": "범돌에게 날가죽 5 건네기",
+          "take": {
+            "hide_raw": 5
+          },
+          "say": [
+            "손질이 깔끔하구먼. 제법이야.",
+            "무두질한 걸 두 장 줄 테니 쓰게."
+          ],
+          "reply": "여기 있습니다"
+        }
+      ],
+      "reward": {
+        "silver": 90,
+        "items": [
+          {
+            "item": "leather",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "sq_hu_mistwolf",
+      "kind": "side",
+      "giver": "nallae",
+      "requires": [
+        "c3_beast"
+      ],
+      "name": "안개 늑대 무리",
+      "summary": "날래가 사냥꾼 쉼터를 맴도는 안개 늑대 무리를 함께 끊자고 한다. 늑대는 밤에 나온다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "mist_wolf"
+          ],
+          "count": 5,
+          "text": "밤에 안개 늑대 5마리 잡기"
+        },
+        {
+          "type": "talk",
+          "npc": "nallae",
+          "text": "날래에게 알리기",
+          "say": [
+            "우두머리부터 끊었어요? 역시.",
+            "범돌 어른도 이번엔 잔소리 안 할 거예요."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 140
+      }
+    },
+    {
+      "id": "sq_as_wolves",
+      "kind": "side",
+      "giver": "seoksu",
+      "requires": [
+        "c5_ridge"
+      ],
+      "name": "잿빛 이빨",
+      "summary": "석수의 굴 앞까지 잿빛 늑대가 내려온다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "ash_wolf"
+          ],
+          "count": 5,
+          "text": "잿빛 늑대 5마리 쫓아내기"
+        },
+        {
+          "type": "talk",
+          "npc": "seoksu",
+          "text": "석수에게 알리기",
+          "say": [
+            "이제 굴에 들어가 보겠구먼.",
+            "처음 캔 구리는 자네 몫이야."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 180,
+        "items": [
+          {
+            "item": "ingot_copper",
+            "qty": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": "sq_ki_oak",
+      "kind": "side",
+      "giver": "musoe",
+      "requires": [
+        "c5_ridge"
+      ],
+      "name": "숯가마 장작",
+      "summary": "무쇠의 숯가마에 참나무 통나무가 필요하다. 능선엔 참나무가 없다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "musoe",
+          "text": "무쇠에게 참나무 통나무 6 건네기",
+          "take": {
+            "log_oak": 6
+          },
+          "say": [
+            "이 무게 좀 봐. 이게 진짜 숯감이지.",
+            "사흘 뒤 숯이 나오면 마을이 따뜻해질 거야."
+          ],
+          "reply": "여기 있습니다"
+        }
+      ],
+      "reward": {
+        "silver": 160
+      }
+    },
+    {
+      "id": "sq_ki_frost",
+      "kind": "side",
+      "giver": "danbi",
+      "requires": [
+        "c5_watcher"
+      ],
+      "name": "서리 늑대 가죽",
+      "summary": "단비가 동상 약을 만들 서리 늑대를 찾는다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "frost_wolf"
+          ],
+          "count": 4,
+          "text": "서리 늑대 4마리 잡기"
+        },
+        {
+          "type": "talk",
+          "npc": "danbi",
+          "text": "단비에게 돌아가기",
+          "say": [
+            "고마워요. 올겨울엔 손발 잃는 사람이 없을 거예요.",
+            "약초차예요. 몸이 노곤할 때 드세요."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 200,
+        "items": [
+          {
+            "item": "food_tea",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "sq_mi_marines",
+      "kind": "side",
+      "giver": "gangjang",
+      "requires": [
+        "c5_ridge"
+      ],
+      "name": "굴을 막은 수병",
+      "summary": "갱장이 굴 입구를 막은 함대 수병들을 몰아내 달라 한다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "marine",
+            "marine_spear"
+          ],
+          "count": 3,
+          "text": "함대 수병 3 물리치기"
+        },
+        {
+          "type": "talk",
+          "npc": "gangjang",
+          "text": "갱장에게 알리기",
+          "say": [
+            "굴이 다시 숨을 쉬는구먼.",
+            "쇠는 우리가 캐서 우리가 쓴다. 이건 고마움이야."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 200,
+        "items": [
+          {
+            "item": "ingot_iron",
+            "qty": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "sq_ga_food",
+      "kind": "side",
+      "giver": "boreum",
+      "requires": [
+        "c6_gate"
+      ],
+      "name": "야영지 솥",
+      "summary": "보름이 야영지 사람들 먹일 고기 요리를 모은다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "boreum",
+          "text": "보름에게 구운 고기 4 건네기",
+          "take": {
+            "food_meat": 4
+          },
+          "say": [
+            "오늘 밤은 다들 배부르게 자겠네요.",
+            "심장 앞에서 먹는 밥이라니, 언젠가 이야깃거리가 될 거예요."
+          ],
+          "reply": "여기 있습니다"
+        }
+      ],
+      "reward": {
+        "silver": 220
+      }
+    },
+    {
+      "id": "sq_pi_storm",
+      "kind": "side",
+      "giver": "suryeon",
+      "requires": [
+        "c6_gate"
+      ],
+      "name": "폭풍을 달래다",
+      "summary": "수련이 돌무지 둘레를 떠도는 폭풍 망령을 잠재워 달라 한다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "storm_wraith"
+          ],
+          "count": 4,
+          "text": "폭풍 망령 4 잠재우기"
+        },
+        {
+          "type": "talk",
+          "npc": "suryeon",
+          "text": "수련에게 돌아가기",
+          "say": [
+            "돌무지에 새 이름을 하나 새길게요. 당신이 잠재운 넋들의 몫으로요.",
+            "심장이 조금 덜 아파하는 것 같아요."
+          ],
+          "reply": "고마워요"
+        }
+      ],
+      "reward": {
+        "silver": 300,
+        "items": [
+          {
+            "item": "gem_rough",
+            "qty": 2
+          }
+        ]
+      }
     }
   ]
 }

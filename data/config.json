@@ -1,5 +1,5 @@
 {
-  "dataVersion": 19,
+  "dataVersion": 20,
   "skillCap": 60,
   "time": {
     "secondsPerGameDay": 3600,
@@ -155,7 +155,10 @@
       "s_port": 5,
       "s_valley": 3,
       "s_ash": 0,
-      "s_gate": 0
+      "s_gate": 0,
+      "s_gull": 0,
+      "s_willow": 0,
+      "s_kiln": 0
     },
     "lifeDays": [
       2,
@@ -715,7 +718,10 @@
       "s_port": 3,
       "s_valley": 2,
       "s_ash": 2,
-      "s_gate": 2
+      "s_gate": 2,
+      "s_gull": 3,
+      "s_willow": 2,
+      "s_kiln": 2
     }
   },
   "econ": {
@@ -1024,7 +1030,10 @@
       "s_port": "food_berry",
       "s_valley": "food_meat",
       "s_ash": "food_meat",
-      "s_gate": "food_meat"
+      "s_gate": "food_meat",
+      "s_gull": "food_berry",
+      "s_willow": "food_meat",
+      "s_kiln": "food_meat"
     }
   },
   "town": {
@@ -1035,7 +1044,10 @@
       "s_port": 0.9,
       "s_valley": 1.15,
       "s_ash": 1.15,
-      "s_gate": 1.15
+      "s_gate": 1.15,
+      "s_gull": 0.9,
+      "s_willow": 1.15,
+      "s_kiln": 1.15
     },
     "demand": {
       "s_lighthouse": {
@@ -1112,6 +1124,49 @@
         "ingot_iron": 2
       },
       "s_gate": {
+        "food_meat": 4,
+        "food_berry": 4,
+        "food_soup": 2,
+        "stake_wood": 8,
+        "nails_copper": 16,
+        "lumber_birch": 4,
+        "stone": 10,
+        "cloth_reed": 3,
+        "leather": 2,
+        "lumber_oak": 3,
+        "ingot_iron": 2
+      },
+      "s_gull": {
+        "lumber_birch": 16,
+        "lumber_drift": 16,
+        "ingot_copper": 8,
+        "cloth_reed": 10,
+        "nails_copper": 60,
+        "stake_wood": 16,
+        "food_berry": 16,
+        "food_soup": 8,
+        "stone": 20,
+        "log_drift": 20,
+        "fiber_reed": 20,
+        "leather": 8,
+        "food_meat": 8,
+        "lumber_oak": 4,
+        "ingot_iron": 3
+      },
+      "s_willow": {
+        "food_meat": 4,
+        "food_berry": 4,
+        "food_soup": 2,
+        "stake_wood": 8,
+        "nails_copper": 16,
+        "lumber_birch": 4,
+        "stone": 10,
+        "cloth_reed": 3,
+        "leather": 2,
+        "lumber_oak": 3,
+        "ingot_iron": 2
+      },
+      "s_kiln": {
         "food_meat": 4,
         "food_berry": 4,
         "food_soup": 2,
@@ -1381,6 +1436,41 @@
         }
       },
       "s_gate": {
+        "sawbench": {
+          "log_oak": 3
+        },
+        "smelter": {
+          "log_oak": 4
+        },
+        "forge": {
+          "log_oak": 3
+        }
+      },
+      "s_gull": {
+        "sawbench": {
+          "stone": 2
+        },
+        "smelter": {
+          "stone": 3,
+          "log_birch": 4
+        },
+        "forge": {
+          "stone": 2,
+          "log_birch": 3
+        }
+      },
+      "s_willow": {
+        "sawbench": {
+          "log_oak": 3
+        },
+        "smelter": {
+          "log_oak": 4
+        },
+        "forge": {
+          "log_oak": 3
+        }
+      },
+      "s_kiln": {
         "sawbench": {
           "log_oak": 3
         },

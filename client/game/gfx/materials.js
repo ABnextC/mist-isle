@@ -6,21 +6,26 @@
 import * as THREE from 'three';
 import { NOISE } from './glsl.js';
 
-export const G = { uTime: { value: 0 }, uWind: { value: 1 }, uDay: { value: 1 }, uSeason: { value: new THREE.Vector4(1, 1, 1, 0) }, uFrost: { value: 0 } };
+export const G = { uTime: { value: 0 }, uWind: { value: 1 }, uDay: { value: 1 }, uSeason: { value: new THREE.Vector4(1, 1, 1, 0) }, uFrost: { value: 0 }, uRecolor: { value: 0 } };
 // 계절 색(v1.8): 초록빛을 계절 색으로 옮긴다. green=1이면 초록 여부를 묻지 않고 다 옮긴다(땅 풀빛)
 export const SEASON_GLSL = `
   uniform vec4 uSeason;
   uniform float uFrost;
+  uniform float uRecolor;
   vec3 seasonize(vec3 c, float green) {
     float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
     float gr = max(green, clamp((c.g - max(c.r, c.b)) / max(c.g, 1e-3) * 4.0, 0.0, 1.0));
-    c = mix(c, c * uSeason.rgb, gr * uSeason.a);
+    // 곱하기(봄·여름 빛깔 조정)와 다시 칠하기(가을: 밝기는 두고 빛깔만 바꾼다, v2.1)
+    vec3 tint = uSeason.rgb / max(dot(uSeason.rgb, vec3(0.2126, 0.7152, 0.0722)), 1e-3);
+    vec3 re = l * tint * 0.95;
+    c = mix(c, mix(c * uSeason.rgb, re, uRecolor), gr * uSeason.a);
     c = mix(c, mix(vec3(l * 1.6 + 0.05), vec3(0.8, 0.85, 0.95) * (l * 1.4 + 0.12), 0.45), gr * uFrost);
     return c;
   }`;
 export const seasonUniforms = (sh) => {
   sh.uniforms.uSeason = G.uSeason;
   sh.uniforms.uFrost = G.uFrost;
+  sh.uniforms.uRecolor = G.uRecolor;
 };
 
 const PACKED_N = `

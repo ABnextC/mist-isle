@@ -116,7 +116,15 @@ export function createSky(renderer, scene, { tier, textures }) {
   function probeFog(camera) {
     if (probing) return;
     camera.getWorldDirection(probeDir);
-    probeCam.rotation.set(0.12, Math.atan2(-probeDir.x, -probeDir.z), 0);
+    // 해 쪽 하늘을 그대로 재면 해무리가 안개빛이 되어 화면이 하얗게 날아간다(v2.1).
+    // 해가 떠 있으면 해에서 70° 넘게 비켜선 지평선을 잰다. 해 쪽 눈부심은 하늘과 블룸이 맡는다.
+    let yaw = Math.atan2(-probeDir.x, -probeDir.z);
+    if (sunDir.y > -0.1) {
+      const sy = Math.atan2(-sunDir.x, -sunDir.z);
+      const d = Math.atan2(Math.sin(yaw - sy), Math.cos(yaw - sy));
+      if (Math.abs(d) < 1.22) yaw = sy + (d >= 0 ? 1.22 : -1.22);
+    }
+    probeCam.rotation.set(0.12, yaw, 0);
     const prev = renderer.getRenderTarget();
     const keep = skyScale.value;
     skyScale.value = keep * PROBE_SCALE;

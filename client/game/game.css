@@ -735,3 +735,13 @@ html, body { font-family: var(--font-body); font-weight: 450; letter-spacing: -.
 .pbody button.pri:hover:not([disabled]) { background: linear-gradient(180deg, #fde2aa 0%, #ebbd73 55%, #cf9a50 100%); }
 .pbody p.say { border-left: 0; }
 .boot .bootmsg { max-width: min(86vw, 520px); text-align: center; line-height: 1.5; word-break: keep-all; padding: 0 12px; }
+
+/* v2.1 선 아이콘 */
+.ico { width: 1.1em; height: 1.1em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; vertical-align: -0.2em; }
+.panel h2 { display: flex; align-items: center; gap: 9px; }
+.panel h2 .ico { width: 20px; height: 20px; color: var(--gold); filter: drop-shadow(0 0 6px rgba(233, 194, 125, .35)); }
+.panel header button .ico { width: 15px; height: 15px; stroke-width: 2.2; }
+.menubtn .ico { width: 20px; height: 20px; stroke-width: 2; }
+.tiles .tile > span { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: radial-gradient(circle at 50% 35%, rgba(255, 220, 160, .2), rgba(233, 194, 125, .04) 70%); box-shadow: inset 0 0 0 1px rgba(233, 194, 125, .28); color: var(--gold-hi); }
+.tiles .tile > span .ico { width: 22px; height: 22px; stroke-width: 1.7; filter: drop-shadow(0 0 5px rgba(233, 194, 125, .35)); }
+.tiles .tile:hover:not([disabled]) > span { box-shadow: inset 0 0 0 1px var(--hair-hi), 0 0 14px rgba(233, 194, 125, .25); }

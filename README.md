@@ -95,3 +95,4 @@ docs/          진행 현황, 패치별 규격(v0.3 전투·v0.4 정착지), 페
 ## 글꼴
 
 - 프리텐다드(Pretendard), 고운바탕(Gowun Batang): SIL Open Font License 1.1. 파일과 라이선스는 `vendor/fonts/`에 있다.
+- 틀 아이콘: Lucide(ISC). 쓰는 것만 `client/game/icons.js`에 옮겼고, 라이선스는 `vendor/icons/`에 있다.

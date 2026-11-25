@@ -19,6 +19,7 @@ import { guildLevel, aiRoom, hireable } from '../../core/systems/guilds.js';
 import { npcPos } from '../../core/world.js';
 import { bondable, bondPts, bondTier, tierName, nextTier, giftDue, giftable, knownLikes, bondLines, B as bondCfg, isBirthday, daysToBirthday, perkOf, inviteDue } from '../../core/systems/bonds.js';
 import { allyOf } from '../../core/systems/allies.js';
+import { icon } from './icons.js';
 import { seasonOf, dayOfMonth, isMarketDay } from '../../core/systems/calendar.js';
 import { questCtx, lifeSteps } from './quest.js';
 import { isUnlocked, allowedProject, chapterReached } from '../../core/systems/unlocks.js';
@@ -59,7 +60,7 @@ export function createHud(root, game, { touch, onAct }) {
     </div>
     <div class="bossbar" data-k="boss"><b data-k="bossname"></b><i><span data-k="bossfill"></span></i></div>
     <div class="tr"><canvas class="minimap"></canvas><div class="where" data-k="where"></div></div>
-    <button class="menubtn" data-act="hub" title="메뉴 (Esc)" aria-label="메뉴">☰</button>
+    <button class="menubtn" data-act="hub" title="메뉴 (Esc)" aria-label="메뉴">${icon('menu')}</button>
     <div class="feed" data-k="feed"></div>
     <div class="banner" data-k="banner"></div>
     <div class="bottom">
@@ -73,7 +74,7 @@ export function createHud(root, game, { touch, onAct }) {
     <div class="downed" data-k="downed"></div>
     <div class="hurtfx" data-k="hurtfx"></div>
     <div class="joy"><div class="knob"></div></div>
-    <aside class="panel" hidden><header><h2 data-k="ptitle"></h2><button data-act="close" aria-label="닫기">✕</button></header><div class="pbody" data-k="pbody"></div></aside>
+    <aside class="panel" hidden><header><h2 data-k="ptitle"></h2><button data-act="close" aria-label="닫기">${icon('close')}</button></header><div class="pbody" data-k="pbody"></div></aside>
     <div class="toast" data-k="toast"></div>`;
 
   const $ = (k) => root.querySelector(`[data-k="${k}"]`);
@@ -475,14 +476,14 @@ export function createHud(root, game, { touch, onAct }) {
     const pts = Object.keys(data.weapons.types).reduce((s, w) => s + Math.max(0, mOf(a, w).lvl - mOf(a, w).nodes.length), 0);
     const tile = (act, icon, name, key, note = '', dis = false) => `<button class="tile" data-act="${act}" ${dis ? 'disabled' : ''}><span>${icon}</span><b>${name}</b>${note ? `<small>${note}</small>` : ''}${!touch && key ? `<kbd>${key}</kbd>` : ''}</button>`;
     return `<div class="tiles">
-      ${tile('bag', '🎒', '가방', 'I')}
-      ${tile('craft', '🔨', '제작', 'C')}
-      ${tile('mastery', '⚔️', '무기 숙련', 'N', pts ? `점수 ${pts}` : '')}
-      ${tile('skills', '📈', '생활 스킬', 'K')}
-      ${tile('journal', '📖', '일지', 'J')}
-      ${tile('log', '📜', '기록', 'L')}
-      ${tile('recall', '🏠', '귀환', 'H', cd > 0 ? `${Math.ceil(cd / 60)}분 뒤` : esc(townName(a.home)), cd > 0 || a.action?.type === 'recall')}
-      ${tile('menu', '⚙️', '설정', '')}
+      ${tile('bag', icon('bag'), '가방', 'I')}
+      ${tile('craft', icon('craft'), '제작', 'C')}
+      ${tile('mastery', icon('mastery'), '무기 숙련', 'N', pts ? `점수 ${pts}` : '')}
+      ${tile('skills', icon('skills'), '생활 스킬', 'K')}
+      ${tile('journal', icon('journal'), '일지', 'J')}
+      ${tile('log', icon('log'), '기록', 'L')}
+      ${tile('recall', icon('recall'), '귀환', 'H', cd > 0 ? `${Math.ceil(cd / 60)}분 뒤` : esc(townName(a.home)), cd > 0 || a.action?.type === 'recall')}
+      ${tile('menu', icon('settings'), '설정', '')}
     </div>
     ${touch ? '' : `<h3>조작</h3><p class="muted keyhelp">WASD 이동 · 마우스 끌기 시점 · 휠 거리 · E 상호작용 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기 · 1·2·3 무기 스킬 · X 무기 바꾸기 · Esc 창 닫기/메뉴</p>`}
     <div class="row"><a href="patchnotes.html">패치노트</a><span class="muted">v${ENGINE_VERSION}</span></div>`;
@@ -1311,6 +1312,7 @@ export function createHud(root, game, { touch, onAct }) {
       <div class="row"><a href="patchnotes.html">패치노트</a><a href="debug.html">엔진 점검판</a><span class="muted">v${ENGINE_VERSION}</span></div>`;
   }
 
+  const TITLE_ICON = { '☰': 'menu', '⚔️': 'mastery', '🎒': 'bag', '📈': 'skills', '📜': 'log', '📋': 'board', '⚖️': 'market', '⚙️': 'settings', '📖': 'journal', '💬': 'talk', '🏠': 'home' };
   const TITLES = { hub: '☰ 메뉴', mastery: '⚔️ 무기 숙련', bag: '🎒 가방', skills: '📈 생활 스킬', log: '📜 기록', board: '📋 마을 게시판', market: '⚖️ 등대 마을 거래소', menu: '⚙️ 설정', journal: '📖 일지' };
 
   function renderPanel(force) {
@@ -1363,7 +1365,16 @@ export function createHud(root, game, { touch, onAct }) {
         + `<p class="muted">📦 등대섬 두 마을 창고 짐은 ${esc(port)} 창고로 옮겨 준다. 가방과 입은 장비는 그대로 간다.</p>`
         + '<p class="muted">⚖️ 등대섬 장터에 걸어 둔 내 주문은 거둬서 돌려준다.</p>';
     }
-    set(el.ptitle, title);
+    // 창 제목(v2.1): 앞 이모지가 틀 아이콘에 있으면 선 아이콘으로 바꿔 단다
+    {
+      const sp = title.indexOf(' ');
+      const ic = TITLE_ICON[sp > 0 ? title.slice(0, sp) : ''];
+      const h = ic ? `${icon(ic)}<span>${esc(title.slice(sp + 1))}</span>` : esc(title);
+      if (el.ptitle._h !== h) {
+        el.ptitle.innerHTML = h;
+        el.ptitle._h = h;
+      }
+    }
     setHtml(el.pbody, html);
   }
 

@@ -1,5 +1,5 @@
 {
-  "dataVersion": 25,
+  "dataVersion": 26,
   "skillCap": 60,
   "time": {
     "secondsPerGameDay": 3600,
@@ -1639,12 +1639,13 @@
         },
         "say": "숲에 버섯이 돋고 참나무가 단단해진다.",
         "tint": [
-          1.9,
-          0.88,
-          0.32,
-          0.95
+          1.65,
+          0.78,
+          0.28,
+          0.9
         ],
-        "frost": 0
+        "frost": 0,
+        "recolor": 0.85
       },
       {
         "id": "winter",

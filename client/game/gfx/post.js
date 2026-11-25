@@ -81,7 +81,16 @@ export function createPost(renderer, scene, camera) {
       gtao.updateGtaoMaterial({ radius: 0.9, distanceExponent: 1.5, thickness: 1.2, scale: 1.1, samples: aoSamples });
       gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: aoSamples });
     }
-    if (cfg.bloom && !bloom) bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.14, 0.5, 4.6);
+    if (cfg.bloom && !bloom) {
+      bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.14, 0.5, 4.6);
+      // 해 원반은 HDR 값이 수천이라 블룸이 화면 전체를 하얗게 덮었다(새벽 역광, v2.1). 번질 빛의 밝기에 상한을 둔다
+      const hp = bloom.materialHighPassFilter;
+      hp.fragmentShader = hp.fragmentShader.replace(
+        'gl_FragColor = mix( outputColor, texel, alpha );',
+        'vec4 o = mix( outputColor, texel, alpha ); float bl = dot( o.rgb, vec3( 0.2126, 0.7152, 0.0722 ) ); o.rgb *= min( 1.0, 12.0 / max( bl, 1e-4 ) ); gl_FragColor = o;',
+      );
+      hp.needsUpdate = true;
+    }
     if (cfg.aa === 'smaa' && !smaa) smaa = new SMAAPass();
     if (cfg.aa === 'fxaa' && !fxaa) fxaa = new FXAAPass();
   }
@@ -188,5 +197,5 @@ export function createPost(renderer, scene, camera) {
     if (col) grade.uniforms.uSunCol.value.copy(col);
     grade.uniforms.uTime.value = t;
   };
-  return { configure, setSize, render, target, setNight, setGrade, setRays, snapshot };
+  return { configure, setSize, render, target, setNight, setGrade, setRays, snapshot, get bloomPass() { return bloom; } };
 }

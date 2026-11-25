@@ -90,7 +90,7 @@ async function boot() {
   };
   const ctex = makeCanvasTextures();
   const view = createScene(canvas, { tier, textures: ctex });
-  const seasonNow = { tint: [1, 1, 1, 0], frost: 0 };
+  const seasonNow = { tint: [1, 1, 1, 0], frost: 0, recolor: 0 };
   // 섬이 여럿(v0.6): 내가 있는 섬만 그린다. 다른 섬으로 건너가면 저장하고 다시 불러온다
   const region = regionAt(data.lists.regions, game.state.actors[PID].x);
   setArea(region.bounds);
@@ -1068,7 +1068,9 @@ async function boot() {
     // 계절 색(v1.8): 계절이 바뀌면 천천히 옮긴다
     {
       const sn = seasonOf(questCtx(game));
-      if (!seasonNow.id) Object.assign(seasonNow, { tint: [...sn.tint], frost: sn.frost });
+      if (!seasonNow.id) Object.assign(seasonNow, { tint: [...sn.tint], frost: sn.frost, recolor: sn.recolor || 0 });
+      seasonNow.recolor += ((sn.recolor || 0) - seasonNow.recolor) * Math.min(1, dt * 0.5);
+      G.uRecolor.value = seasonNow.recolor;
       seasonNow.id = sn.id;
       seasonNow.tint = seasonNow.tint.map((v, i) => v + (sn.tint[i] - v) * Math.min(1, dt * 0.5));
       seasonNow.frost += (sn.frost - seasonNow.frost) * Math.min(1, dt * 0.5);

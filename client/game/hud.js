@@ -43,11 +43,14 @@ function matchSlot(data, e, slot) {
 export function createHud(root, game, { touch, onAct }) {
   const { data } = game;
   root.innerHTML = `
+    <div class="vig"></div>
     <div class="tl">
-      <div class="clock" data-k="clock"></div>
-      <div class="focus"><span data-k="focusbar"></span><em data-k="focus"></em></div>
-      <div class="silver" data-k="silver"></div>
-      <div class="buffs" data-k="buffs"></div>
+      <div class="card">
+        <div class="clock" data-k="clock"></div>
+        <div class="focus"><span data-k="focusbar"></span><em data-k="focus"></em></div>
+        <div class="silver" data-k="silver"></div>
+        <div class="buffs" data-k="buffs"></div>
+      </div>
       <div class="quest" data-k="quest" data-act="journal" title="일지 (J)"></div>
     </div>
     <div class="bossbar" data-k="boss"><b data-k="bossname"></b><i><span data-k="bossfill"></span></i></div>
@@ -59,12 +62,12 @@ export function createHud(root, game, { touch, onAct }) {
       <div class="prompt" data-k="prompt"></div>
       <div class="vitals" data-k="vitals"><div class="hp"><span data-k="hpbar"></span><em data-k="hp"></em></div><div class="st"><span data-k="stbar"></span></div></div>
       <div class="dock">
-        <button data-act="recall" data-k="recall" title="귀환 지점으로 귀환 (H)">🏠<small>귀환</small></button>
-        <button data-act="bag" title="가방 (I)">🎒<small>가방</small></button>
-        <button data-act="craft" title="제작 (C)">🔨<small>제작</small></button>
-        <button data-act="skills" title="스킬 (K)">📈<small>스킬</small></button>
-        <button data-act="journal" title="일지 (J)">📖<small>일지</small></button>
-        <button data-act="log" title="기록 (L)">📜<small>기록</small></button>
+        <button data-act="recall" data-k="recall" title="귀환 지점으로 귀환 (H)">🏠<small>귀환</small><kbd>H</kbd></button>
+        <button data-act="bag" title="가방 (I)">🎒<small>가방</small><kbd>I</kbd></button>
+        <button data-act="craft" title="제작 (C)">🔨<small>제작</small><kbd>C</kbd></button>
+        <button data-act="skills" title="스킬 (K)">📈<small>스킬</small><kbd>K</kbd></button>
+        <button data-act="journal" title="일지 (J)">📖<small>일지</small><kbd>J</kbd></button>
+        <button data-act="log" title="기록 (L)">📜<small>기록</small><kbd>L</kbd></button>
         <button data-act="menu" title="설정">⚙️<small>설정</small></button>
       </div>
       ${touch ? '' : '<div class="keys">WASD 이동 · 드래그 시점 · 휠 거리 · E 상호작용·대화 · J 일지 · H 귀환 · I 가방 · C 제작 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기</div>'}
@@ -369,12 +372,16 @@ export function createHud(root, game, { touch, onAct }) {
     panel = { kind, ...opts };
     panelEl.hidden = false;
     root.classList.add('panel-open');
+    root.dataset.panel = kind;
+    for (const b of root.querySelectorAll('.dock button')) b.classList.toggle('open', b.dataset.act === kind);
     renderPanel(true);
   }
   function close() {
     panel = null;
     panelEl.hidden = true;
     root.classList.remove('panel-open');
+    delete root.dataset.panel;
+    for (const b of root.querySelectorAll('.dock button.open')) b.classList.remove('open');
   }
   function toggle(kind, opts) {
     if (panel && panel.kind === kind && panel.station === opts?.station) close();
@@ -389,15 +396,16 @@ export function createHud(root, game, { touch, onAct }) {
       const dur = e.maxDur ? ` · 내구 ${e.dur}/${e.maxDur}` : '';
       const kind = def.armor ? `${ARMOR_CLASS[def.armor.class] || ''} · ` : '';
       const kg = def.weight ? ` · ${def.weight}kg` : '';
-      return `<li><div><b>${def.icon || ''} ${def.name}</b>${starHtml}${e.masterwork ? ' ✨' : ''}${e.broken ? ' <em class="no">부서짐</em>' : ''}<small>${kind}${fmtStats(e.stats)}${dur}${kg}</small></div>${act || ''}</li>`;
+      const wear = e.maxDur ? `<u style="width:${Math.round((e.dur / e.maxDur) * 100)}%"></u>` : '';
+      return `<li class="it${e.broken ? ' broken' : ''}"><i class="ic">${def.icon || '·'}${wear}</i><div><b>${def.name}</b>${starHtml}${e.masterwork ? ' ✨' : ''}${e.broken ? ' <em class="no">부서짐</em>' : ''}<small>${kind}${fmtStats(e.stats)}${dur}${kg}</small></div>${act || ''}</li>`;
     }
     if (def.kind === 'consumable') {
-      return `<li><div><b>${def.icon || ''} ${def.name}</b> ×${e.qty}${starHtml}<small>${fmtStats(e.stats)}</small></div>${act || ''}</li>`;
+      return `<li class="it"><i class="ic">${def.icon || '·'}<em>${e.qty}</em></i><div><b>${def.name}</b>${starHtml}<small>${fmtStats(e.stats)}</small></div>${act || ''}</li>`;
     }
     const lot = e.lot ? game.state.lots[e.lot] : null;
     const bonus = e.bonus ? ' · ' + Object.entries(e.bonus).map(([k, v]) => `${data.config.propNames[k]} +${v}`).join(', ') : '';
     const detail = lot ? `${esc(lot.name)} · ${fmtProps(effectiveProps(e, game.state.lots), data)}${bonus}` : esc(def.note || '');
-    return `<li><div><b>${def.icon || ''} ${def.name}</b> ×${e.qty}${starHtml}<small>${detail}</small></div>${act || ''}</li>`;
+    return `<li class="it"><i class="ic">${def.icon || '·'}<em>${e.qty}</em></i><div><b>${def.name}</b>${starHtml}<small>${detail}</small></div>${act || ''}</li>`;
   }
 
   function sortEntries(list) {
@@ -507,10 +515,11 @@ export function createHud(root, game, { touch, onAct }) {
       if (pv.ok && pv.stats) result = `예상 <span class="stars">${stars(pv.star)}</span> ${fmtStats(pv.stats)} · 걸작 ${(pv.masterwork * 100).toFixed(1)}%`;
       else if (pv.ok && pv.props) result = `예상 ${fmtProps(pv.props, data)}${pv.step ? ` · 약한 속성 +${pv.step}` : ''}`;
       const why = pv.ok ? '' : `<small class="no">${ERR[pv.error] || pv.error}</small>`;
-      return `<li class="rc"><div><b>${sk.icon} ${r.name}</b> <small>${sk.name} ${r.level} · ${r.seconds}초</small>
+      const outIcon = data.items[r.output?.item]?.icon || sk.icon;
+      return `<li class="rc it${pv.ok ? ' can' : ''}"><i class="ic">${outIcon}${r.output?.qty > 1 ? `<em>${r.output.qty}</em>` : ''}</i><div><b>${r.name}</b> <small>${sk.icon} ${sk.name} ${r.level} · ${r.seconds}초</small>
         <small>${mats}${r.catalyst ? ` · 촉매 ${itemName(data, r.catalyst)}(있으면 사용)` : ''}</small>
         ${result ? `<small class="pv">${result}</small>` : ''}${why}</div>
-        <div class="btns"><button data-act="craft-do" data-v="${r.id}" data-n="1" ${pv.ok ? '' : 'disabled'}>만들기</button>
+        <div class="btns"><button class="pri" data-act="craft-do" data-v="${r.id}" data-n="1" ${pv.ok ? '' : 'disabled'}>만들기</button>
         <button data-act="craft-do" data-v="${r.id}" data-n="5" ${pv.ok ? '' : 'disabled'}>×5</button></div></li>`;
     }).join('');
     // 수리(v0.2.1): 대장간에서만
@@ -539,7 +548,7 @@ export function createHud(root, game, { touch, onAct }) {
     const rows = data.lists.skills.filter((s) => !('opens' in s)).map((s) => {
       const p = xpProgress(a.skills[s.id].xp, data.curve, cap);
       const pct = p.need ? (p.into / p.need) * 100 : 100;
-      return `<li class="sk"><span>${s.icon} ${s.name}</span><b>${p.level}</b><div class="bar"><span style="width:${pct}%"></span></div></li>`;
+      return `<li class="sk"><span><i class="ic sm">${s.icon}</i>${s.name}</span><b>${p.level}<small>${p.need ? `${Math.floor(p.into)}/${p.need}` : '최고'}</small></b><div class="bar"><span style="width:${pct}%"></span></div></li>`;
     }).join('');
     const later = data.lists.skills.filter((s) => 'opens' in s).map((s) => `${s.icon}${s.name}${s.opens ? `(${s.opens})` : ''}`).join(' · ');
     return `<ul class="list skills">${rows}</ul><p class="muted">지금 상한 ${cap}. 나중에 열림: ${later}</p>`;

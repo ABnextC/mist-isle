@@ -96,6 +96,7 @@ export function createScene(canvas, { tier, textures }) {
       placeKey(sky.moonDir, focus);
     }
     fill.intensity = 0.55 * night;
+    post.setNight(night);
     // 해가 낮을수록 그림자 여드름이 생기니 띄움을 키운다
     const lowSun = 1 - THREE.MathUtils.smoothstep(Math.abs(st.sunElev), 0.08, 0.45);
     key.shadow.normalBias = 0.035 + 0.12 * lowSun;
@@ -105,7 +106,7 @@ export function createScene(canvas, { tier, textures }) {
     fogNow += (fogMul - fogNow) * 0.02;
     scene.fog.density = lerp(lerp(0.0026, 0.0042, st.gold), 0.0085, night) * fogNow;
     scene.environmentIntensity = lerp(lerp(0.7, 1.0, st.gold), 1.2, night);
-    renderer.toneMappingExposure = lerp(lerp(0.72, 1.15, st.gold), 1.3, night);
+    renderer.toneMappingExposure = lerp(lerp(0.66, 1.1, st.gold), 1.3, night);
     return st;
   }
 
@@ -157,6 +158,7 @@ export function createScene(canvas, { tier, textures }) {
   return {
     renderer, scene, camera, key, setTime, applyTier, resize, warm,
     setFog(m) { fogMul = m; },
+    post,
     render: () => post.render(),
     get tier() { return current; },
   };

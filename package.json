@@ -1,6 +1,6 @@
 {
   "name": "mist-isle",
-  "version": "2.7.0",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
   "description": "안개섬 개척기(가제) — 생활 중심 MMORPG 웹게임",
@@ -9,6 +9,7 @@
     "sim": "node tools/headless.js --days 3 --seed 42",
     "personas": "node tools/personas.js --days 7 --seed 2026",
     "serve": "python3 -m http.server 8000",
+    "server": "node server/index.js --port 8787",
     "economy": "node tools/economy.js --days 60 --seed 7",
     "combat": "node tools/combat.js --trials 30"
   }

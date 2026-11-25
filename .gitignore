@@ -3,3 +3,7 @@ node_modules/
 *.log
 tools/charforge/data/
 __pycache__/
+
+# 멀티 서버가 저장하는 섬(v3.0)
+server/world.json
+server/world.json.tmp

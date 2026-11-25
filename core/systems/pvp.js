@@ -35,7 +35,7 @@ export const sideOf = (a) => (a?.kind === 'rival' ? a.rival.faction : a?.faction
 // a와 b가 서로 칠 수 있는가
 export function hostile(ctx, a, b) {
   if (!a || !b || a === b || !a.cb || !b.cb) return false;
-  if (a.cb.downUntil > 0 || b.cb.downUntil > 0) return false;
+  if (a.cb.downUntil > 0 || b.cb.downUntil > 0 || a.offline || b.offline) return false; // 나간 사람(v3.0)은 건드리지 않는다
   const A = rootOf(ctx, a);
   const B = rootOf(ctx, b);
   if (!A || !B || A === B) return false;

@@ -46,11 +46,12 @@ import { createNpcLabels } from './npc-labels.js';
 import { createAudio, LEVELS } from './audio/index.js';
 import { createRivalLabels } from './rival-labels.js';
 import { createSiegeView } from './siege-view.js';
+import { connectNet, netGame, wsUrl } from './net.js';
 import { ownerInfo, tagOf, liveWarOf } from '../../core/systems/territory.js';
 
 const SAVE_KEY = 'mist-isle:v1';
 const OLD_KEY = 'mist-isle:v0';
-const PID = 'p1';
+let PID = 'p1'; // 멀티(v3.0)에선 서버가 정해 준다
 const touch = window.matchMedia('(pointer: coarse)').matches;
 const bootEl = document.getElementById('boot');
 
@@ -82,8 +83,33 @@ async function boot() {
   // 시험용: ?seed=숫자&fresh 로 정해진 섬을 새로 연다
   const params = new URLSearchParams(window.location.search);
   const fixedSeed = Number(params.get('seed')) || null;
-  const game = (!params.has('fresh') && restore(data)) || createGame({ data, seed: fixedSeed ?? Date.now() % 1_000_000_007 });
-  window.__mist = { game };
+  // 멀티 시험(v3.0): ?server=auto(같은 주소) 또는 ?server=주소:포트 로 서버에 붙는다
+  const srvParam = params.get('server');
+  const netBuf = { chats: [], status: [] };
+  let net = null;
+  let game;
+  if (srvParam) {
+    (bootEl.querySelector('.bootmsg') || bootEl).textContent = '서버에 붙는 중…';
+    const name = (params.get('name') || readStore('mist-isle:netname') || '개척자').slice(0, 12);
+    try {
+      net = await connectNet({
+        url: wsUrl(srvParam), name, id: readStore('mist-isle:netid'), data,
+        onChat: (m) => (netBuf.onChat ? netBuf.onChat(m) : netBuf.chats.push(m)),
+        onStatus: (s) => (netBuf.onStatus ? netBuf.onStatus(s) : netBuf.status.push(s)),
+      });
+    } catch (e) {
+      (bootEl.querySelector('.bootmsg') || bootEl).textContent = `서버에 붙지 못했다: ${e.message}`;
+      return;
+    }
+    try {
+      localStorage.setItem('mist-isle:netid', net.pid);
+      localStorage.setItem('mist-isle:netname', name);
+    } catch { /* 저장 불가 */ }
+    game = netGame(net);
+    PID = net.pid;
+  } else game = (!params.has('fresh') && restore(data)) || createGame({ data, seed: fixedSeed ?? Date.now() % 1_000_000_007 });
+  game.pid = PID;
+  window.__mist = { game, net };
 
   // 캐릭터 모양은 워커가 따로 깎는다(질감 굽기·지형 만들기와 나란히)
   const actorBase = prepareActorBase();
@@ -277,6 +303,10 @@ async function boot() {
   window.__mist.ui = ui; // 확인 도구용
 
   function save(say) {
+    if (net) {
+      if (say) hud.toast('🌐 멀티에서는 서버가 섬을 저장한다', 'info');
+      return;
+    }
     try {
       localStorage.setItem(SAVE_KEY, game.save());
       if (say) hud.toast('저장했다', 'good');
@@ -477,8 +507,7 @@ async function boot() {
       case 'block-on':
         stopBot();
         ui.gather = null;
-        me().yaw = aimYaw();
-        game.dispatch({ type: 'BLOCK', actor: PID, on: true });
+        game.dispatch({ type: 'BLOCK', actor: PID, on: true, yaw: aimYaw() });
         break;
       case 'block-off': game.dispatch({ type: 'BLOCK', actor: PID, on: false }); break;
       case 'equip': game.dispatch({ type: 'EQUIP', actor: PID, uid: v }); break;
@@ -680,6 +709,10 @@ async function boot() {
         break;
       case 'save': save(true); break;
       case 'reset':
+        if (net) {
+          hud.toast('🌐 멀티에서는 새 섬을 열 수 없다', 'warn');
+          break;
+        }
         if (hud.settings.resetArmed > performance.now()) {
           const fresh = createGame({ data, seed: Date.now() % 1_000_000_007 });
           try { localStorage.setItem(SAVE_KEY, fresh.save()); } catch { /* 저장 불가 */ }
@@ -922,6 +955,55 @@ async function boot() {
     if (ev.actor !== PID || hud.panel?.kind !== 'talk') return;
     hud.open('talk', { npc: ev.npc, gift: true, react: ev });
   });
+  // 멀티(v3.0): 들어옴·나감·말하기·연결 상태
+  if (net) {
+    const chatBox = document.createElement('div');
+    chatBox.className = 'netchat';
+    chatBox.innerHTML = '<div class="lines"></div><input maxlength="140" placeholder="Enter로 말하기 · Esc 닫기">';
+    document.body.appendChild(chatBox);
+    const lines = chatBox.firstChild;
+    const inputEl = chatBox.lastChild;
+    const addLine = (html) => {
+      const d = document.createElement('div');
+      d.innerHTML = html;
+      lines.appendChild(d);
+      while (lines.children.length > 6) lines.firstChild.remove();
+      setTimeout(() => d.classList.add('old'), 20000);
+    };
+    const escH = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    netBuf.onChat = (m) => addLine(`<b>${escH(m.name)}</b> ${escH(m.text)}`);
+    netBuf.onStatus = (s) => {
+      if (s.kind === 'closed') hud.banner('🌐 서버와 끊겼다 — 새로 고침하면 다시 붙는다', 8000);
+      else if (s.kind === 'resync') hud.toast('🌐 섬을 다시 맞추는 중…', 'info');
+      else if (s.kind === 'error') hud.toast(`🌐 서버: ${s.error}`, 'warn');
+    };
+    for (const m of netBuf.chats) netBuf.onChat(m);
+    for (const s of netBuf.status) netBuf.onStatus(s);
+    window.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      if (document.activeElement === inputEl) {
+        const text = inputEl.value.trim();
+        if (text) net.chat(text);
+        inputEl.value = '';
+        inputEl.blur();
+        chatBox.classList.remove('typing');
+      } else if (!document.activeElement || document.activeElement === document.body) {
+        chatBox.classList.add('typing');
+        inputEl.focus();
+        e.preventDefault();
+      }
+    });
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        inputEl.blur();
+        chatBox.classList.remove('typing');
+      }
+      e.stopPropagation();
+    });
+    game.on('net.join', (ev) => { if (ev.actor !== PID) addLine(`<i>🌐 ${escH(ev.name)} 들어옴</i>`); });
+    game.on('net.leave', (ev) => { if (ev.actor !== PID) addLine(`<i>🌐 ${escH(ev.name)} 나감</i>`); });
+    addLine(`<i>🌐 서버에 붙었다 — ${escH(game.state.actors[PID].name)} (${PID}) · 함께 ${[...net.players.keys()].length}명</i>`);
+  }
   // 영지전(v2.7)
   const qc = () => questCtx(game);
   const townOf = (sid) => game.state.settlements[sid]?.name || sid;
@@ -1093,6 +1175,11 @@ async function boot() {
     fade.className = 'crossfade';
     fade.textContent = ev.ferry ? '⛵ 배로 건너는 중…' : '🌫️ 안개 벽을 건너는 중…';
     document.body.appendChild(fade);
+    if (net) {
+      // 멀티: 서버가 내 자리를 쥐고 있다. 다시 붙으면 새 섬이 그려진다
+      setTimeout(() => location.reload(), 1800);
+      return;
+    }
     let saved = false;
     try {
       localStorage.setItem(SAVE_KEY, game.save());

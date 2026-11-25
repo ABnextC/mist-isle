@@ -677,6 +677,8 @@ const BLOCK = {
   },
   execute(ctx, a, c) {
     const on = !!c.on;
+    // 막을 방향(v3.0): 화면이 직접 고치던 것을 명령으로
+    if (on && Number.isFinite(c.yaw)) a.yaw = Math.round(c.yaw * 1000) / 1000;
     if (!a.cb || a.cb.block === on) return;
     if (on) cancelGather(ctx, a, 'block');
     a.cb.block = on;

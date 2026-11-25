@@ -148,6 +148,18 @@ function wrap(ctx, bus) {
         fastTick();
       }
     },
+    // 멀티(v3.0): 틱을 정확히 n개 나아간다(쌓인 몫과 상관없이)
+    step(n = 1) {
+      for (let i = 0; i < n; i++) fastTick();
+    },
+    // 멀티(v3.0): 서버가 보낸 세이브로 상태를 제자리에서 바꾼다(화면이 쥔 game은 그대로)
+    adopt(save) {
+      const next = deserialize(save, data);
+      for (const k of Object.keys(state)) delete state[k];
+      Object.assign(state, next);
+      ctx.obstaclesDirty = true;
+      refreshObstacles(ctx);
+    },
     save: () => serialize(state),
     hash: () => hashState(state),
     // 다음 틱까지 쌓인 몫(0~1). 화면이 틱 사이를 보간할 때 쓴다(상태에는 안 들어간다)

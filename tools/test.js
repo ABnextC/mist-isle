@@ -33,7 +33,11 @@ import { plotPos, homeOf, comfortOf } from '../core/systems/housing.js';
 import { hireable, guildLevel } from '../core/systems/guilds.js';
 import { stepText } from '../core/systems/quests.js';
 import { readFileSync } from 'node:fs';
-import { moodFor, composePiece, MOODS } from '../client/game/audio/score.js';
+import { stepWith, sanitizeCmd } from '../core/net.js';
+import { startServer } from '../server/index.js';
+import { connectNet, netGame } from '../client/game/net.js';
+import { frame, parseFrames } from '../server/ws.js';
+import { moodFor, composePiece, MOODS, makeRng } from '../client/game/audio/score.js';
 import { SFX } from '../client/game/audio/sfx.js';
 
 const LH = 's_lighthouse';
@@ -1323,7 +1327,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '2.7.0');
+  eq(st.meta.engine, '3.0.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1515,7 +1519,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '2.7.0');
+  eq(st.meta.engine, '3.0.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -2675,6 +2679,116 @@ test('자리에 없으면 물자로 셈하고, AI 조합은 며칠마다 선전�
   g.state.territory.nextAi = 0;
   for (let i = 0; i < 6 && !decl.length; i++) { g.state.territory.nextAi = 0; territoryDaily(C); }
   ok(decl.length >= 1 && decl[0].att.startsWith('ai:'), 'AI 선전포고');
+});
+
+console.log('멀티 시험 (v3.0)');
+
+async function atest(name, fn) {
+  if (ONLY && !name.includes(ONLY)) return;
+  try {
+    await fn();
+    pass++;
+    console.log(`  ✓ ${name}`);
+  } catch (e) {
+    fail++;
+    console.log(`  ✗ ${name}\n    ${e.message}`);
+  }
+}
+
+test('록스텝: 같은 틱 묶음을 같은 순서로 적용하면 서버와 손님 섬이 끝까지 같다(들어옴·명령·나감·통째 다시 받기)', () => {
+  const server = createGame({ data, seed: 11, actors: [] });
+  const ops0 = [{ op: 'join', id: 'p1', name: '하나' }];
+  const save = server.save();
+  const client = loadGame({ data, save });
+  stepWith(server, ops0);
+  stepWith(client, ops0);
+  ok(server.state.actors.p1 && client.state.actors.p1, '들어왔다');
+  ok(Object.keys(server.state.actors.p1.quests.active).length, '첫 퀘스트');
+  const rng = makeRng(5);
+  for (let i = 0; i < 1500; i++) {
+    const ops = [];
+    if (i === 100) ops.push({ op: 'join', id: 'p2', name: '둘' });
+    if (i % 20 === 0) for (const id of ['p1', 'p2']) if (server.state.actors[id]) {
+      const ang = rng() * Math.PI * 2;
+      ops.push({ op: 'cmd', cmd: sanitizeCmd({ type: 'MOVE_INPUT', dx: Math.sin(ang), dz: Math.cos(ang), actor: 'p9' }, id) });
+    }
+    if (i === 700) ops.push({ op: 'cmd', cmd: { type: 'ATTACK', actor: 'p1', kind: 'light', yaw: 1 } });
+    if (i === 900) ops.push({ op: 'leave', id: 'p2' });
+    stepWith(server, ops);
+    stepWith(client, ops);
+    if (i % 150 === 0) eq(client.hash(), server.hash(), `틱 ${server.state.tick} 해시`);
+  }
+  eq(client.hash(), server.hash(), '마지막 해시');
+  ok(server.state.actors.p2.offline, '나간 사람은 멈춰 남는다');
+  // 통째 다시 받기: 손님 상태를 망가뜨린 뒤 서버 세이브로 맞춘다
+  client.state.actors.p1.x += 5;
+  ok(client.hash() !== server.hash(), '어긋났다');
+  client.adopt(server.save());
+  eq(client.hash(), server.hash(), '다시 맞았다');
+  eq(sanitizeCmd({ type: 'MOVE_INPUT', actor: 'p2', dx: 1 }, 'p1').actor, 'p1', '남의 명령인 척은 내 것으로 바뀐다');
+  eq(sanitizeCmd({ type: 'bad type!' }, 'p1'), null);
+});
+
+test('WebSocket 프레임: 가린(손님) 프레임을 풀고, 큰 프레임 길이(16·64비트)를 읽는다', () => {
+  for (const n of [5, 300, 70000]) {
+    const body = Buffer.alloc(n, 65);
+    const f = frame(body);
+    const r = parseFrames(f);
+    eq(r.frames.length, 1);
+    eq(r.frames[0].data.length, n, `길이 ${n}`);
+  }
+  // 손님 프레임(가림)
+  const text = Buffer.from('안개섬', 'utf8');
+  const mask = Buffer.from([1, 2, 3, 4]);
+  const masked = Buffer.from(text.map((b, i) => b ^ mask[i & 3]));
+  const f = Buffer.concat([Buffer.from([0x81, 0x80 | masked.length]), mask, masked]);
+  const r = parseFrames(Buffer.concat([f, f.subarray(0, 3)]));
+  eq(r.frames[0].data.toString('utf8'), '안개섬');
+  eq(r.rest.length, 3, '덜 온 프레임은 남긴다');
+});
+
+await atest('서버에 둘이 붙어 같은 섬을 돈다: 서로 보이고, 움직임이 같게 보이며, 해시가 어긋나지 않는다. 말하기·나가기', async () => {
+  const srv = await startServer({ port: 0, seed: 7, world: null, quiet: true });
+  const url = `ws://127.0.0.1:${srv.port}/ws`;
+  const chats = [];
+  const A = await connectNet({ url, name: '가람', data, onChat: (m) => chats.push(m) });
+  const B = await connectNet({ url, name: '누리', data });
+  eq(A.pid, 'p1');
+  eq(B.pid, 'p2');
+  const pump = async (ms) => {
+    const until = Date.now() + ms;
+    while (Date.now() < until) {
+      A.pump();
+      B.pump();
+      await new Promise((r) => setTimeout(r, 15));
+    }
+  };
+  await pump(400);
+  ok(A.game.state.actors.p2 && B.game.state.actors.p1, '서로 보인다');
+  // 화면처럼 감싼 game으로 명령한다(감싼 dispatch는 서버로 보내고, 틱 적용은 코어로 바로)
+  const GA = netGame(A);
+  ok(GA.dispatch({ type: 'MOVE_INPUT', actor: 'p1', dx: 1, dz: 0 }).ok, '감싼 dispatch');
+  B.send({ type: 'MOVE_INPUT', actor: 'p2', dx: 0, dz: 1 });
+  await pump(1500);
+  A.send({ type: 'MOVE_INPUT', actor: 'p1', dx: 0, dz: 0 });
+  B.send({ type: 'MOVE_INPUT', actor: 'p2', dx: 0, dz: 0 });
+  A.chat('안녕');
+  await pump(5500);
+  const ga = A.game.state;
+  const gb = B.game.state;
+  const gs = srv.game.state;
+  // 같은 틱까지 맞춰 비교
+  while (ga.tick < gs.tick || gb.tick < gs.tick) await pump(50);
+  ok(Math.abs(ga.actors.p1.x - gb.actors.p1.x) < 1e-9 && Math.abs(ga.actors.p2.z - gb.actors.p2.z) < 1e-9, '두 손님의 위치가 같다');
+  ok(gs.actors.p1.x !== gs.actors.p2.x, '움직였다');
+  ok(Math.abs(ga.actors.p1.x - gs.actors.p1.x) < 1e-9 && ga.actors.p1.x > A.game.state.actors.p2.x - 50, '감싼 손님도 서버와 같은 자리');
+  eq(A.desyncs + B.desyncs, 0, '해시 어긋남 없음');
+  ok(chats.some((m) => m.text === '안녕' && m.name === '가람'), '말하기');
+  B.close();
+  await pump(600);
+  ok(A.game.state.actors.p2.offline, '나간 사람');
+  A.close();
+  await srv.close();
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

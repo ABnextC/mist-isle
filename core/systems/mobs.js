@@ -282,7 +282,7 @@ function nearestActor(ctx, m, r, type = null) {
   let best = null;
   let bd = r;
   for (const a of Object.values(ctx.state.actors)) {
-    if (isDown(a) || a.kind === 'rival') continue; // 다른 세력 개척자(v2.6)는 짐승이 건드리지 않는다
+    if (isDown(a) || a.kind === 'rival' || a.offline) continue; // 다른 세력 개척자(v2.6)·나간 사람(v3.0)은 짐승이 건드리지 않는다
     if (type?.wake && !canWake(type, a)) continue;
     const d = Math.hypot(a.x - m.x, a.z - m.z);
     if (d < bd) {

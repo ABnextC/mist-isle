@@ -25,7 +25,8 @@ export function createRivalLabels(overlay, game, positionOf, pid) {
     const me = game.state.actors[pid];
     const seen = new Set();
     for (const a of Object.values(game.state.actors)) {
-      if (a.kind !== 'rival') continue;
+      const other = a.kind === 'player' && a.id !== pid; // 멀티(v3.0): 다른 개척자
+      if (a.kind !== 'rival' && !other) continue;
       seen.add(a.id);
       const e = el(a.id);
       const p = positionOf(a.id);
@@ -44,12 +45,12 @@ export function createRivalLabels(overlay, game, positionOf, pid) {
       e.classList.toggle('hostile', !!foe);
       e.style.transform = `translate(${((tmp.x + 1) / 2) * W}px, ${((1 - tmp.y) / 2) * H}px)`;
       e.firstChild.style.width = `${Math.max(0, (a.cb.hp / a.cb.maxHp) * 100)}%`;
-      const band = game.data.rivals.bands.find((b) => b.id === a.rival.band);
-      const txt = `Lv ${a.clevel.lvl} ${a.name} · ${band?.name || a.rival.title || ''}`;
+      const band = other ? null : game.data.rivals.bands.find((x) => x.id === a.rival.band);
+      const txt = other ? `Lv ${a.clevel.lvl} ${a.name}${a.offline ? ' · 자리 비움' : ''}` : `Lv ${a.clevel.lvl} ${a.name} · ${band?.name || a.rival.title || ''}`;
       const b = e.lastChild;
       if (b._t !== txt) {
         b.textContent = b._t = txt;
-        b.style.color = a.rival.color;
+        b.style.color = other ? '#9fe0d0' : a.rival.color;
       }
     }
     for (const [id, e] of els) {

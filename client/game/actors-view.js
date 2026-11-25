@@ -62,7 +62,7 @@ export function createActorsView(scene, game, hf, camera = null) {
   }
   const outfitKey = (o) => `${o.head}|${o.chest}|${o.legs}`;
   function make(a, keep) {
-    const player = a.kind === 'player';
+    const player = a.id === (game.pid || 'p1'); // 멀티(v3.0): 다른 사람은 저마다 다른 옷
     const look = a.look || null;
     let idx = 0;
     if (!player && !look) {

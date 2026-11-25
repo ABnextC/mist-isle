@@ -97,6 +97,8 @@ export const ERR = {
   no_ally: '같이 다니는 사람이 없다',
   no_points: '남은 능력치 점수가 없다',
   locked: '아직 열리지 않았다',
+  night_only: '밤에만 핀다 — 해가 진 뒤에 캐자',
+  potion_cd: '물약을 막 마셨다. 조금 뒤에',
   in_run: '이미 원정 중이다',
   no_run: '원정 중이 아니다',
   known: '이미 아는 제작법이다',
@@ -145,6 +147,7 @@ export function josa(word, withFinal, without) {
 export const STAT_NAMES = {
   gatherSpeed: '속도', yield: '산출', durability: '내구', comfort: '쾌적', buff: '효과', minutes: '지속',
   attack: '공격력', armor: '방어', heal: '회복',
+  power: '세기', sec: '지속', attr: '능력치', gather: '채집량',
 };
 
 export const stars = (n) => '★'.repeat(n) + '☆'.repeat(5 - n);
@@ -157,6 +160,10 @@ export function fmtStat(stat, v) {
   if (stat === 'gatherSpeed') return `×${v.toFixed(2)}`;
   if (stat === 'yield' || stat === 'buff') return `+${Math.round(v * 100)}%`;
   if (stat === 'minutes') return `${v}분`;
+  if (stat === 'power') return `${Math.round(v * 100)}%`;
+  if (stat === 'sec') return `${v}초`;
+  if (stat === 'gather') return `+${Math.round(v * 1000) / 10}%`;
+  if (stat === 'attr') return `+${v}`;
   return String(v);
 }
 

@@ -195,6 +195,24 @@
             "dz": 10,
             "rot": 2.7,
             "build": "pj_f_armorbench"
+          },
+          {
+            "type": "alembic",
+            "dx": 7.9,
+            "dz": -1.2,
+            "rot": -1.42
+          },
+          {
+            "type": "stonebench",
+            "dx": 2.9,
+            "dz": -7.4,
+            "rot": -0.37
+          },
+          {
+            "type": "tinkerbench",
+            "dx": -1.6,
+            "dz": 7.8,
+            "rot": 2.94
           }
         ],
         "structures": [
@@ -229,7 +247,7 @@
             "dx": 15,
             "dz": 9,
             "r": 1.9,
-            "rot": -2.0
+            "rot": -2
           },
           {
             "kind": "tent",
@@ -578,6 +596,24 @@
           5,
           9
         ]
+      },
+      {
+        "node": "node_fish",
+        "common": 8,
+        "cluster": [
+          3,
+          6
+        ],
+        "rotating": 0
+      },
+      {
+        "node": "node_moonherb",
+        "common": 6,
+        "cluster": [
+          3,
+          6
+        ],
+        "rotating": 0
       }
     ],
     "zones": [
@@ -627,12 +663,12 @@
           {
             "kind": "campfire",
             "dx": 4.5,
-            "dz": 4.0,
+            "dz": 4,
             "r": 0.7
           },
           {
             "kind": "tent_black",
-            "dx": -6.0,
+            "dx": -6,
             "dz": 2.5,
             "r": 1.9,
             "rot": 1.25
@@ -646,7 +682,7 @@
           },
           {
             "kind": "palisade",
-            "dx": -4.0,
+            "dx": -4,
             "dz": -7.5,
             "r": 0,
             "rot": 0.2,
@@ -673,19 +709,19 @@
         "members": [
           {
             "type": "raider_scout",
-            "dx": 3.0,
+            "dx": 3,
             "dz": 6.5,
             "yaw": 0.2
           },
           {
             "type": "raider_scout",
             "dx": -2.5,
-            "dz": 6.0,
+            "dz": 6,
             "yaw": -0.4
           },
           {
             "type": "raider_scout",
-            "dx": 8.0,
+            "dx": 8,
             "dz": 1.5,
             "yaw": 1.4
           },
@@ -693,7 +729,7 @@
             "type": "raider_thrower",
             "dx": -1.5,
             "dz": -2.6,
-            "yaw": 3.0
+            "yaw": 3
           }
         ]
       },
@@ -707,7 +743,7 @@
           {
             "kind": "tent_black",
             "dx": -8.5,
-            "dz": 6.0,
+            "dz": 6,
             "r": 1.9,
             "rot": 0.8
           },
@@ -727,15 +763,15 @@
           },
           {
             "kind": "tent_red",
-            "dx": 0.0,
-            "dz": -3.0,
+            "dx": 0,
+            "dz": -3,
             "r": 2.1,
-            "rot": 0.0
+            "rot": 0
           },
           {
             "kind": "campfire",
             "dx": 1.5,
-            "dz": 5.0,
+            "dz": 5,
             "r": 0.7
           },
           {
@@ -755,21 +791,21 @@
           {
             "kind": "crates",
             "dx": 5.5,
-            "dz": -7.0,
+            "dz": -7,
             "r": 0.8,
             "rot": 0.3
           },
           {
             "kind": "crates",
-            "dx": -4.0,
+            "dx": -4,
             "dz": 10.5,
             "r": 0.8,
-            "rot": 2.0
+            "rot": 2
           },
           {
             "kind": "palisade",
             "dx": -14.5,
-            "dz": -10.0,
+            "dz": -10,
             "r": 0,
             "rot": 0.9,
             "len": 9.6
@@ -784,8 +820,8 @@
           },
           {
             "kind": "palisade",
-            "dx": 14.0,
-            "dz": 9.0,
+            "dx": 14,
+            "dz": 9,
             "r": 0,
             "rot": -1.9,
             "len": 8
@@ -795,8 +831,8 @@
           {
             "id": "o_crate_1",
             "kind": "supply",
-            "dx": -5.0,
-            "dz": -10.0,
+            "dx": -5,
+            "dz": -10,
             "rot": 0.3,
             "name": "숲머리 보급 상자"
           },
@@ -811,7 +847,7 @@
           {
             "id": "o_crate_3",
             "kind": "supply",
-            "dx": -12.0,
+            "dx": -12,
             "dz": 3.5,
             "rot": 1.2,
             "name": "숲머리 보급 상자"
@@ -820,20 +856,20 @@
         "members": [
           {
             "type": "raider",
-            "dx": -3.0,
+            "dx": -3,
             "dz": 8.5,
-            "yaw": 0.0
+            "yaw": 0
           },
           {
             "type": "raider",
-            "dx": 6.0,
-            "dz": 11.0,
+            "dx": 6,
+            "dz": 11,
             "yaw": 0.4
           },
           {
             "type": "raider",
-            "dx": -11.0,
-            "dz": -2.0,
+            "dx": -11,
+            "dz": -2,
             "yaw": -1.5
           },
           {
@@ -844,27 +880,27 @@
           },
           {
             "type": "raider_spear",
-            "dx": -6.0,
+            "dx": -6,
             "dz": -11.5,
             "yaw": 2.8
           },
           {
             "type": "raider_axe",
-            "dx": 4.0,
-            "dz": -9.0,
-            "yaw": 3.0
+            "dx": 4,
+            "dz": -9,
+            "yaw": 3
           },
           {
             "type": "raider_thrower",
             "dx": 0.5,
             "dz": 13.5,
-            "yaw": 0.0
+            "yaw": 0
           },
           {
             "type": "raider_lt",
-            "dx": 0.0,
+            "dx": 0,
             "dz": 0.8,
-            "yaw": 0.0
+            "yaw": 0
           }
         ]
       },
@@ -879,7 +915,7 @@
         "structures": [
           {
             "kind": "ship_black",
-            "dx": 0.0,
+            "dx": 0,
             "dz": -9.5,
             "r": 3.6,
             "rot": 1.45
@@ -887,36 +923,36 @@
           {
             "kind": "campfire",
             "dx": -3.5,
-            "dz": 6.0,
+            "dz": 6,
             "r": 0.7
           },
           {
             "kind": "tent_black",
             "dx": 7.5,
-            "dz": 8.0,
+            "dz": 8,
             "r": 1.9,
             "rot": -2.4
           },
           {
             "kind": "crates",
             "dx": -6.5,
-            "dz": -2.0,
+            "dz": -2,
             "r": 0.8,
             "rot": 0.9
           },
           {
             "kind": "banner",
-            "dx": 4.0,
+            "dx": 4,
             "dz": -3.5,
             "r": 0.25,
-            "rot": 0.0
+            "rot": 0
           }
         ],
         "objects": [
           {
             "id": "o_captain_chest",
             "kind": "chest",
-            "dx": 2.0,
+            "dx": 2,
             "dz": -4.8,
             "rot": 0.2,
             "name": "도철의 궤짝"
@@ -934,14 +970,14 @@
         "members": [
           {
             "type": "raider_captain",
-            "dx": 0.0,
-            "dz": 2.0,
-            "yaw": 0.0
+            "dx": 0,
+            "dz": 2,
+            "yaw": 0
           },
           {
             "type": "raider_axe",
-            "dx": -5.0,
-            "dz": 4.0,
+            "dx": -5,
+            "dz": 4,
             "yaw": -0.4
           },
           {
@@ -989,7 +1025,7 @@
         "structures": [
           {
             "kind": "wreck",
-            "dx": -1.0,
+            "dx": -1,
             "dz": -5.5,
             "r": 3.2,
             "rot": 2.3
@@ -997,7 +1033,7 @@
           {
             "kind": "banner_blue",
             "dx": 3.5,
-            "dz": -2.0,
+            "dz": -2,
             "r": 0.25,
             "rot": 2.6
           },
@@ -1010,20 +1046,20 @@
           },
           {
             "kind": "campfire",
-            "dx": 6.0,
+            "dx": 6,
             "dz": 4.5,
             "r": 0.7
           },
           {
             "kind": "crates",
-            "dx": 12.0,
-            "dz": 4.0,
+            "dx": 12,
+            "dz": 4,
             "r": 0.8,
             "rot": 1.1
           },
           {
             "kind": "papers",
-            "dx": 4.0,
+            "dx": 4,
             "dz": 8.5,
             "r": 0.75,
             "rot": 0.4
@@ -1111,13 +1147,13 @@
           {
             "kind": "mural",
             "dx": -12.5,
-            "dz": 0.0,
+            "dz": 0,
             "r": 1.1,
             "rot": 1.57
           },
           {
             "kind": "rubble",
-            "dx": -6.0,
+            "dx": -6,
             "dz": -10.5,
             "r": 0,
             "rot": 0.4
@@ -1125,7 +1161,7 @@
           {
             "kind": "rubble",
             "dx": 8.5,
-            "dz": 10.0,
+            "dz": 10,
             "r": 0,
             "rot": 2.1
           }
@@ -1135,7 +1171,7 @@
             "id": "o_brazier_1",
             "kind": "brazier",
             "dx": 5.6,
-            "dz": 0.0,
+            "dz": 0,
             "rot": 0,
             "name": "꺼진 옛 화로",
             "verb": "불 넣기"
@@ -1163,7 +1199,7 @@
           {
             "type": "stone_haetae",
             "dx": 3.6,
-            "dz": 0.0,
+            "dz": 0,
             "yaw": 1.57
           },
           {
@@ -1176,24 +1212,24 @@
             "type": "mist_wraith",
             "dx": 9.5,
             "dz": -6.5,
-            "yaw": 2.0
+            "yaw": 2
           },
           {
             "type": "mist_wraith",
             "dx": -3.5,
-            "dz": 11.0,
+            "dz": 11,
             "yaw": 0.2
           },
           {
             "type": "mist_wraith",
-            "dx": -4.0,
+            "dx": -4,
             "dz": -11.5,
-            "yaw": 3.0
+            "yaw": 3
           },
           {
             "type": "mist_wraith",
-            "dx": -10.0,
-            "dz": 6.0,
+            "dx": -10,
+            "dz": 6,
             "yaw": -0.9
           }
         ]
@@ -1395,6 +1431,24 @@
             "dx": 7,
             "dz": -13,
             "rot": 0.3
+          },
+          {
+            "type": "alembic",
+            "dx": 4.2,
+            "dz": -6.8,
+            "rot": -0.55
+          },
+          {
+            "type": "stonebench",
+            "dx": -3.8,
+            "dz": -7,
+            "rot": 0.5
+          },
+          {
+            "type": "tinkerbench",
+            "dx": -6.3,
+            "dz": 5,
+            "rot": 2.24
           }
         ],
         "structures": [
@@ -1553,7 +1607,7 @@
             "dx": 15,
             "dz": 9,
             "r": 1.9,
-            "rot": -2.0
+            "rot": -2
           },
           {
             "kind": "tent",
@@ -1906,6 +1960,33 @@
           5,
           9
         ]
+      },
+      {
+        "node": "node_fish",
+        "common": 8,
+        "cluster": [
+          3,
+          6
+        ],
+        "rotating": 0
+      },
+      {
+        "node": "node_fish_eel",
+        "common": 8,
+        "cluster": [
+          3,
+          6
+        ],
+        "rotating": 0
+      },
+      {
+        "node": "node_moonherb",
+        "common": 10,
+        "cluster": [
+          3,
+          6
+        ],
+        "rotating": 0
       }
     ],
     "zones": [
@@ -2129,7 +2210,7 @@
             "type": "surveyor_spear",
             "dx": -7,
             "dz": -6,
-            "yaw": 3.0
+            "yaw": 3
           },
           {
             "type": "surveyor_spear",
@@ -2145,7 +2226,7 @@
         "x": 1236,
         "z": 410,
         "r": 9,
-        "flat": 1.0,
+        "flat": 1,
         "structures": [
           {
             "kind": "tower_old",
@@ -2734,7 +2815,7 @@
       "inland": 16,
       "hills": 12,
       "ridge": 30,
-      "townHeight": 2.0,
+      "townHeight": 2,
       "wadeDepth": -1.1,
       "edge": 20
     },
@@ -2790,6 +2871,24 @@
             "dx": -5,
             "dz": 10,
             "rot": 2.7
+          },
+          {
+            "type": "alembic",
+            "dx": 7.9,
+            "dz": -1.2,
+            "rot": -1.42
+          },
+          {
+            "type": "stonebench",
+            "dx": 2.9,
+            "dz": -7.4,
+            "rot": -0.37
+          },
+          {
+            "type": "tinkerbench",
+            "dx": -6.8,
+            "dz": -4.2,
+            "rot": 1.02
           }
         ],
         "structures": [
@@ -2817,7 +2916,7 @@
             "dx": 15,
             "dz": 9,
             "r": 1.9,
-            "rot": -2.0
+            "rot": -2
           },
           {
             "kind": "tent",
@@ -3050,6 +3149,24 @@
           5,
           9
         ]
+      },
+      {
+        "node": "node_fish_trout",
+        "common": 8,
+        "cluster": [
+          3,
+          6
+        ],
+        "rotating": 0
+      },
+      {
+        "node": "node_moonherb",
+        "common": 6,
+        "cluster": [
+          3,
+          6
+        ],
+        "rotating": 0
       }
     ],
     "zones": [
@@ -3371,7 +3488,7 @@
       "inland": 15,
       "hills": 13,
       "ridge": 22,
-      "townHeight": 2.0,
+      "townHeight": 2,
       "wadeDepth": -1.1,
       "edge": 20
     },
@@ -3427,6 +3544,24 @@
             "dx": -5,
             "dz": 10,
             "rot": 2.7
+          },
+          {
+            "type": "alembic",
+            "dx": 7.9,
+            "dz": -1.2,
+            "rot": -1.42
+          },
+          {
+            "type": "stonebench",
+            "dx": 2.9,
+            "dz": -7.4,
+            "rot": -0.37
+          },
+          {
+            "type": "tinkerbench",
+            "dx": -6.8,
+            "dz": -4.2,
+            "rot": 1.02
           }
         ],
         "structures": [
@@ -3454,7 +3589,7 @@
             "dx": 15,
             "dz": 9,
             "r": 1.9,
-            "rot": -2.0
+            "rot": -2
           },
           {
             "kind": "tent",
@@ -3588,6 +3723,24 @@
           5,
           9
         ]
+      },
+      {
+        "node": "node_fish_glow",
+        "common": 8,
+        "cluster": [
+          3,
+          6
+        ],
+        "rotating": 0
+      },
+      {
+        "node": "node_moonherb",
+        "common": 8,
+        "cluster": [
+          3,
+          6
+        ],
+        "rotating": 0
       }
     ],
     "zones": [
@@ -3738,7 +3891,7 @@
             "dx": -9,
             "dz": -4,
             "r": 1.9,
-            "rot": 2.0
+            "rot": 2
           },
           {
             "kind": "banner_blue",

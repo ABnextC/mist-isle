@@ -560,6 +560,24 @@ async function boot() {
         break;
       }
       case 'swap': game.dispatch({ type: 'SWAP_WEAPON', actor: PID }); break;
+      case 'potion': {
+        // 물약 바로 마시기(v2.4): 지금 가장 모자란 것부터 — 체력, 마나, 기력, 그다음 강건
+        const cb = a?.cb;
+        if (!cb) break;
+        const has = (kind) => a.bag.find((e) => data.items[e.item].potion === kind);
+        const order = [];
+        if (cb.hp < cb.maxHp * 0.85) order.push('heal');
+        if ((cb.mp ?? 100) < (cb.maxMp ?? 100) * 0.5) order.push('mana');
+        if (cb.st < data.config.combat.stamina * 0.5) order.push('stamina');
+        order.push('guard', 'heal', 'stamina', 'mana');
+        const pick = order.map(has).find(Boolean);
+        if (!pick) {
+          hud.toast('🧪 가방에 물약이 없다 — 약제대에서 만든다', 'warn');
+          break;
+        }
+        game.dispatch({ type: 'EAT', actor: PID, key: keyOf(pick) });
+        break;
+      }
       case 'learn': game.dispatch({ type: 'MASTERY_LEARN', actor: PID, node: v }); break;
       case 'lo-set': { const [w, slot, node] = String(v).split(':'); game.dispatch({ type: 'LOADOUT_SET', actor: PID, weapon: w, slot: +slot, node: node || null }); break; }
       case 'm-reset': game.dispatch({ type: 'MASTERY_RESET', actor: PID, weapon: v }); break;
@@ -654,6 +672,7 @@ async function boot() {
 
   const hud = createHud(document.getElementById('hud'), game, { touch, onAct });
   window.__mist.hud = hud; // 확인 도구용
+  window.__mist.onAct = (act, v, n) => onAct(act, v, n);
   let liveTier = tier;
   function applyTier(t) {
     liveTier = t;
@@ -766,7 +785,8 @@ async function boot() {
       const type = data.nodes[n.type];
       const lot = state.lots[state.veins[n.vein].lot];
       best.label = `${type.name} ${stars(starOf(avgProps(lot.props), data.config.stars))}`;
-      best.verb = '캐기';
+      best.verb = type.skill === 'fishing' ? '낚기' : '캐기';
+      if (type.night && !game.clock.isNight(state.t)) best.label += ' — 밤에만 핀다';
       best.radius = (type.solid || 0.5) + 0.6;
       if (n.charges <= 0) {
         best.idle = true;
@@ -846,6 +866,13 @@ async function boot() {
   game.on('bond.gift', (ev) => {
     if (ev.actor !== PID || hud.panel?.kind !== 'talk') return;
     hud.open('talk', { npc: ev.npc, gift: true, react: ev });
+  });
+  // 물약(v2.4)
+  game.on('potion', (ev) => {
+    if (ev.actor !== PID) return;
+    const def = data.items[ev.item];
+    const what = ev.kind === 'heal' ? `체력 +${ev.value}` : ev.kind === 'mana' ? `마나 +${ev.value}` : ev.kind === 'stamina' ? `기력 회복 ↑ ${ev.sec}초` : `받는 피해 −${Math.round(ev.power * 100)}% ${ev.sec}초`;
+    hud.toast(`🧪 ${def.name} — ${what}`, 'good');
   });
   // 전투 레벨·원정(v2.3)
   game.on('level.up', (ev) => {

@@ -3,7 +3,7 @@
 
 import { makeRng, seedState } from './rng.js';
 import { makeTerrain, makeWorld, fitsHabitat, hashStr } from './terrain.js';
-import { stationLayout } from './world.js';
+import { stationLayout, stationAt } from './world.js';
 import { pickCenter, pickNodeSpot, openVein } from './systems/veins.js';
 import { initCombat, emptyEquip } from './systems/combat.js';
 import { initMobs, groupSpot } from './systems/mobs.js';
@@ -539,6 +539,36 @@ const MIGRATIONS = [
       }
       st.runs = st.runs || {};
       st.meta.engine = '2.3.0';
+    },
+  },
+  {
+    // v2.3 → v2.4: 생활 스킬 완성. 마을에 약제대·석공대·공예대를 놓고, 물고기 떼·달맞이풀 산지를 연다
+    from: 28,
+    to: 29,
+    run(st, data) {
+      const ctx = migrationCtx(st, data, 0x24f15a11);
+      for (const region of data.lists.regions) {
+        for (const sdef of region.settlements) {
+          const s = st.settlements[sdef.id];
+          if (!s) continue;
+          for (const sd of sdef.stations) {
+            if (sd.build || s.stations.some((x) => x.type === sd.type)) continue;
+            s.stations.push(stationAt(sdef, sd));
+          }
+        }
+        if (!st.regions[region.id]) continue;
+        for (const vc of region.veins) {
+          if (Object.values(st.veins).some((v) => v.node === vc.node && v.region === region.id)) continue;
+          if (vc.common) openVein(ctx, region, vc, { common: true });
+          for (let i = 0; i < (vc.rotating || 0); i++) openVein(ctx, region, vc, { initial: true });
+        }
+      }
+      for (const a of Object.values(st.actors)) {
+        if (!a.equip) continue;
+        if (!('ring' in a.equip)) a.equip.ring = null;
+        if (!('neck' in a.equip)) a.equip.neck = null;
+      }
+      st.meta.engine = '2.4.0';
     },
   },
 ];

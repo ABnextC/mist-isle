@@ -20,7 +20,7 @@ export function initCombat(cfg) {
 }
 
 // weapon2(v1.1): 등에 멘 둘째 무기. 바꾸면 weapon과 자리를 맞바꾼다
-export const emptyEquip = () => ({ weapon: null, weapon2: null, head: null, chest: null, legs: null });
+export const emptyEquip = () => ({ weapon: null, weapon2: null, head: null, chest: null, legs: null, ring: null, neck: null });
 
 export function angDiff(a, b) {
   let d = a - b;
@@ -358,8 +358,22 @@ export function aimAt(ctx, a, yaw, range, aimDeg) {
   return best ? Math.round(yawTo(a, best.m) * 1000) / 1000 : yaw;
 }
 
+// 화살(v2.4): 활은 가방의 가장 좋은 화살 묶음을 하나씩 쓴다(없어도 쏜다, 있으면 더 아프다)
+function useAmmo(ctx, a) {
+  let best = null;
+  for (const e of a.bag) {
+    const d = ctx.data.items[e.item];
+    if (d?.ammo && e.qty > 0 && (!best || d.ammo.dmg > ctx.data.items[best.item].ammo.dmg)) best = e;
+  }
+  if (!best) return 0;
+  best.qty -= 1;
+  if (best.qty <= 0) a.bag.splice(a.bag.indexOf(best), 1);
+  return ctx.data.items[best.item].ammo.dmg;
+}
+
 export function fire(ctx, a, w, yaw, o) {
   const t = ctx.state.t;
+  if (w.mastery === 'bow' && a.kind === 'player') o = { ...o, mult: o.mult * (1 + useAmmo(ctx, a)) };
   const sx = Math.sin(yaw);
   const sz = Math.cos(yaw);
   const id = ctx.newId('p');
@@ -374,13 +388,13 @@ export function fire(ctx, a, w, yaw, o) {
 const cos3 = (v) => Math.round(v * 1000) / 1000;
 
 function arrowHit(ctx, a, s, m) {
-  const P = passivesOf(ctx, a, s.w);
+  const P = mergeP(passivesOf(ctx, a, s.w), levelPassives(ctx, a, s.w));
   const w = { mastery: s.w, attack: s.attack };
   dealHit(ctx, a, m, s.attack * s.mult, { w, P, heavy: s.heavy, ability: s.ability, fx: s.fx, guardBreak: s.guardBreak });
 }
 
 function explode(ctx, a, s, x, z) {
-  const P = passivesOf(ctx, a, s.w);
+  const P = mergeP(passivesOf(ctx, a, s.w), levelPassives(ctx, a, s.w));
   const w = { mastery: s.w, attack: s.attack };
   for (const m of Object.values(ctx.state.mobs)) {
     if (!isAlive(m) || s.hit.includes(m.id)) continue;

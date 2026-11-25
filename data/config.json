@@ -1,5 +1,5 @@
 {
-  "dataVersion": 28,
+  "dataVersion": 29,
   "skillCap": 60,
   "time": {
     "secondsPerGameDay": 3600,
@@ -1329,7 +1329,8 @@
       }
     },
     "mana": 100,
-    "manaRegen": 6
+    "manaRegen": 6,
+    "potionCd": 15
   },
   "settle": {
     "prosper": {

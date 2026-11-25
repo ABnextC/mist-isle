@@ -15,7 +15,7 @@ import { storeOf, nearestSettlement, npcPos, sitePos, objPos, stationFor } from 
 import { yawTo } from '../core/systems/combat.js';
 import { mOf, needXp, loadoutOf, abilityOf, passivesOf } from '../core/systems/mastery.js';
 import { spawnTemp, hurtMob } from '../core/systems/mobs.js';
-import { gainLevelXp, levelPassives } from '../core/systems/level.js';
+import { gainLevelXp, levelPassives, jewelGather } from '../core/systems/level.js';
 import { passivesNow } from '../core/systems/combat.js';
 import { settlementDaily } from '../core/settlements.js';
 import { isUnlocked, allowedProject, chapterReached } from '../core/systems/unlocks.js';
@@ -875,7 +875,7 @@ test('v0.3 세이브를 불러오면 창고·거래소·의뢰가 등대 마을 
   eq(bookOf({ state: st }, LH).asks.length, before.market.asks.length, '팔자 보존');
   ok(bookOf({ state: st }, LH).bids.filter((b) => b.kind === 'town').every((b) => b.owner === LH), '마을 수요의 주인');
   ok(st.orders.every((o) => o.at === LH), '의뢰는 등대 마을 것');
-  ok(st.settlements[FR] && st.settlements[FR].stations.length === 2, '숲머리(창고·조리대)');
+  eq(st.settlements[FR]?.stations.map((x) => x.type).sort().join(','), 'alembic,kitchen,stonebench,storage,tinkerbench', '숲머리(창고·조리대 + v2.4 작업대 셋)');
   eq(st.econ.agents.length, cfg.econ.agents.length, 'AI 개척민 수');
   const f = st.settlements[FR];
   let inside = 0;
@@ -1317,7 +1317,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '2.3.0');
+  eq(st.meta.engine, '2.4.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1509,7 +1509,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '2.3.0');
+  eq(st.meta.engine, '2.4.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -2301,6 +2301,125 @@ test('원정: 입구에서 시작하면 물결 셋 뒤 두목, 깨면 결정·�
   ok(g.dispatch({ type: 'LEARN_BP', actor: 'p1', key: keyOf(a.bag.find((e) => e.item === 'bp_sword_mist')) }).ok);
   ok(a.known.rc_sword_mist, '익혔다');
   eq(countItem([a.bag], 'bp_sword_mist'), 0, '한 장 썼다');
+});
+
+console.log('생활 스킬 완성 (v2.4)');
+
+test('다섯 생활 스킬이 열리고, 네 마을에 약제대·석공대·공예대가 있다', () => {
+  const g = createGame({ data, seed: 7, actors: [{ id: 'p1', kind: 'player' }] });
+  for (const id of ['fishing', 'masonry', 'tinkering', 'jewelcraft', 'alchemy']) ok(!data.skills[id].opens, `${id} 열림`);
+  for (const sid of ['s_forest', 's_port', 's_ash', 's_gate']) {
+    const s = g.state.settlements[sid];
+    for (const type of ['alembic', 'stonebench', 'tinkerbench']) ok(s.stations.some((x) => x.type === type), `${sid} ${type}`);
+  }
+  for (const id of ['node_fish', 'node_fish_eel', 'node_fish_trout', 'node_fish_glow', 'node_moonherb']) ok(Object.values(g.state.nodes).some((n) => n.type === id), `${id} 산지`);
+});
+
+test('낚시: 낚싯대 없이는 못 낚고, 있으면 물고기가 잡힌다. 달맞이풀은 밤에만 캔다', () => {
+  const g = createGame({ data, seed: 5, actors: [{ id: 'p1', kind: 'player' }] });
+  g.state.econ = null;
+  const a = g.state.actors.p1;
+  const node = Object.values(g.state.nodes).find((n) => n.type === 'node_fish');
+  Object.assign(a, { x: node.x, z: node.z });
+  eq(g.dispatch({ type: 'GATHER', actor: 'p1', node: node.id }).error, 'need_tool', '맨손 낚시는 안 된다');
+  a.bag.push(kit('tool_rod_wood', 50, 'u_rod'));
+  ok(g.dispatch({ type: 'GATHER', actor: 'p1', node: node.id }).ok, '낚는다');
+  g.advance(12);
+  ok(countItem([a.bag], 'fish_small') >= 1, '전어');
+  const herb = Object.values(g.state.nodes).find((n) => n.type === 'node_moonherb');
+  Object.assign(a, { x: herb.x, z: herb.z });
+  a.skills.harvesting.level = 30;
+  a.bag.push(kit('tool_sickle_stone', 50, 'u_sickle'));
+  ok(!g.clock.isNight(g.state.t), '낮');
+  eq(g.dispatch({ type: 'GATHER', actor: 'p1', node: herb.id }).error, 'night_only');
+  const T = data.config.time;
+  g.advance((T.dayFraction - T.startPhase) * T.secondsPerGameDay + 5);
+  ok(g.clock.isNight(g.state.t), '밤');
+  Object.assign(a, { x: herb.x, z: herb.z });
+  const r = g.dispatch({ type: 'GATHER', actor: 'p1', node: herb.id });
+  ok(r.ok, '밤엔 캔다 ' + r.error);
+});
+
+test('물약: 회복은 바로 차고 기력·강건은 잠깐 기운. 같은 물약 시간 안엔 다시 못 마신다', () => {
+  const g = createGame({ data, seed: 3, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  a.bag.push(kit('potion_heal', 60, 'u_ph'), kit('potion_guard', 60, 'u_pg'));
+  a.bag.find((e) => e.uid === 'u_ph').qty = 2;
+  a.cb.hp = 10;
+  ok(g.dispatch({ type: 'EAT', actor: 'p1', key: keyOf(a.bag.find((e) => e.item === 'potion_heal')) }).ok, '회복 물약');
+  ok(a.cb.hp > 10 + a.cb.maxHp * 0.3, `체력 ${a.cb.hp}`);
+  eq(g.dispatch({ type: 'EAT', actor: 'p1', key: keyOf(a.bag.find((e) => e.item === 'potion_guard')) }).error, 'potion_cd', '바로 또는 안 된다');
+  g.advance(data.config.combat.potionCd + 1);
+  ok(g.dispatch({ type: 'EAT', actor: 'p1', key: keyOf(a.bag.find((e) => e.item === 'potion_guard')) }).ok, '강건 물약');
+  ok(a.cb.aura?.some((x) => x.src === 'potion_guard' && x.dr > 0), '강건 기운');
+});
+
+test('장신구: 반지·목걸이 자리에 끼면 능력치·채집량이 붙는다', () => {
+  const g = createGame({ data, seed: 3, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  const C = g._ctx;
+  a.bag.push(kit('ring_copper_str', 60, 'u_ring'), kit('neck_gather', 60, 'u_neck'));
+  const d0 = levelPassives(C, a, 'sword').dmg;
+  ok(g.dispatch({ type: 'EQUIP', actor: 'p1', uid: 'u_ring' }).ok);
+  eq(a.equip.ring, 'u_ring', '반지 자리');
+  ok(levelPassives(C, a, 'sword').dmg > d0, '힘 반지 → 검 피해');
+  eq(jewelGather(C, a), 0);
+  ok(g.dispatch({ type: 'EQUIP', actor: 'p1', uid: 'u_neck' }).ok);
+  eq(a.equip.neck, 'u_neck', '목걸이 자리');
+  ok(jewelGather(C, a) > 0.03, '채집량');
+  ok(g.dispatch({ type: 'UNEQUIP', actor: 'p1', slot: 'ring' }).ok);
+  near(levelPassives(C, a, 'sword').dmg, d0, 1e-9, '빼면 그대로');
+});
+
+test('화살: 활은 가방의 좋은 화살부터 쓰고 더 아프게 맞힌다', () => {
+  const { g, a, m } = lone('wolf');
+  const C = g._ctx;
+  a.bag.push(kit('wpn_bow_birch', 50, 'u_bow'));
+  ok(g.dispatch({ type: 'EQUIP', actor: 'p1', uid: 'u_bow' }).ok);
+  a.bag.push({ item: 'arrows_copper', lot: null, bonus: null, qty: 3 }, { item: 'arrows_iron', lot: null, bonus: null, qty: 2 });
+  place(g, a, m, 9);
+  ok(g.dispatch({ type: 'ATTACK', actor: 'p1', kind: 'light', yaw: yawTo(a, m) }).ok, '쏜다');
+  g.advance(1.5);
+  eq(countItem([a.bag], 'arrows_iron'), 1, '철 화살부터');
+  eq(countItem([a.bag], 'arrows_copper'), 3);
+  ok(C, 'ctx');
+});
+
+test('새 작업대에서 물약·다듬은 돌·반지·화살·낚싯대를 만든다', () => {
+  const g = createGame({ data, seed: 3, actors: [{ id: 'p1', kind: 'player' }] });
+  g.state.econ = null;
+  const a = g.state.actors.p1;
+  for (const sk of ['alchemy', 'masonry', 'jewelcraft', 'tinkering']) a.skills[sk].level = 30;
+  const lotOf = (item) => {
+    const l = Object.values(g.state.lots).find((x) => x.item === item);
+    if (l) return l.id;
+    const id = 'L_t_' + item;
+    g.state.lots[id] = { id, item, name: item, props: Object.fromEntries(data.items[item].props.map((p) => [p, 50])), vein: null, mix: false };
+    return id;
+  };
+  const give = (item, qty) => a.bag.push({ item, lot: data.items[item].props ? lotOf(item) : null, bonus: null, qty });
+  const at = (type) => {
+    const s = g.state.settlements.s_forest.stations.find((x) => x.type === type);
+    Object.assign(a, { x: s.x + Math.sin(s.rot) * 1.4, z: s.z + Math.cos(s.rot) * 1.4 });
+  };
+  const make = (rid, out) => {
+    const r = g.dispatch({ type: 'CRAFT', actor: 'p1', recipe: rid });
+    ok(r.ok, `${rid}: ${r.error}`);
+    g.advance(data.recipes[rid].seconds + 3);
+    ok(countItem([a.bag, storeOf(a, 's_forest')], out) >= 1, out);
+  };
+  at('alembic');
+  give('sap_birch', 1); give('berry', 3);
+  make('rc_potion_stamina', 'potion_stamina');
+  at('stonebench');
+  give('stone', 4);
+  make('rc_stone_cut', 'stone_cut');
+  give('ingot_copper', 2); give('gem_cut', 1);
+  make('rc_ring_copper_str', 'ring_copper_str');
+  at('tinkerbench');
+  give('lumber_birch', 3); give('ingot_copper', 2); give('cloth_reed', 1);
+  make('rc_arrows_copper', 'arrows_copper');
+  make('rc_rod_copper', 'tool_rod_copper');
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

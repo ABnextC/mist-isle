@@ -302,6 +302,7 @@ export function createTownView(scene, game, hf, { mats, terrain, region, me = nu
     const dimK = beacon === 'dim' ? 0.35 + 0.25 * Math.max(0, Math.sin(time * 0.9) * Math.sin(time * 2.3 + 1)) + (Math.sin(time * 17) > 0.93 ? -0.2 : 0) : 1;
     windowMat.emissiveIntensity = 2.2 * night;
     mats.glass.emissiveIntensity = 0.05 + 3.5 * night;
+    if (mats.moonPetal) mats.moonPetal.emissiveIntensity = 0.12 + 1.1 * night; // 달맞이풀(v2.4)은 밤에 빛난다
     mats.lens.emissiveIntensity = (0.05 + 3.5 * night) * dimK;
     mats.coal.emissiveIntensity = 1.4 + 0.6 * Math.sin(time * 3.1) * Math.sin(time * 1.7);
     for (const { l, max, flicker, always = 0 } of lights) {

@@ -2261,5 +2261,776 @@
     "seconds": 18,
     "xp": 165,
     "blueprint": "bp_mist_greaves"
+  },
+  {
+    "id": "rc_rod_wood",
+    "type": "craft",
+    "name": "나무 낚싯대",
+    "skill": "tinkering",
+    "level": 1,
+    "station": "hand",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "rod",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 1
+      },
+      {
+        "key": "line",
+        "item": "fiber_reed",
+        "qty": 3
+      }
+    ],
+    "stats": {
+      "gatherSpeed": {
+        "rod.flex": 0.6,
+        "line.tenacity": 0.4
+      },
+      "durability": {
+        "rod.strength": 0.7,
+        "line.tenacity": 0.3
+      }
+    },
+    "output": {
+      "item": "tool_rod_wood",
+      "qty": 1
+    },
+    "seconds": 6,
+    "xp": 20
+  },
+  {
+    "id": "rc_rod_copper",
+    "type": "craft",
+    "name": "구리 낚싯대",
+    "skill": "tinkering",
+    "level": 10,
+    "station": "tinkerbench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "rod",
+        "item": "lumber_birch",
+        "qty": 2
+      },
+      {
+        "key": "reel",
+        "item": "ingot_copper",
+        "qty": 1
+      },
+      {
+        "key": "line",
+        "item": "cloth_reed",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "gatherSpeed": {
+        "rod.flex": 0.5,
+        "reel.hardness": 0.2,
+        "line.tenacity": 0.3
+      },
+      "durability": {
+        "rod.strength": 0.5,
+        "reel.toughness": 0.5
+      }
+    },
+    "output": {
+      "item": "tool_rod_copper",
+      "qty": 1
+    },
+    "seconds": 9,
+    "xp": 55
+  },
+  {
+    "id": "rc_rod_iron",
+    "type": "craft",
+    "name": "철 낚싯대",
+    "skill": "tinkering",
+    "level": 22,
+    "station": "tinkerbench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "rod",
+        "item": "lumber_oak",
+        "qty": 2
+      },
+      {
+        "key": "reel",
+        "item": "ingot_iron",
+        "qty": 1
+      },
+      {
+        "key": "line",
+        "item": "cloth_reed",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "gatherSpeed": {
+        "rod.flex": 0.5,
+        "reel.hardness": 0.2,
+        "line.tenacity": 0.3
+      },
+      "durability": {
+        "rod.strength": 0.5,
+        "reel.toughness": 0.5
+      }
+    },
+    "output": {
+      "item": "tool_rod_iron",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 95
+  },
+  {
+    "id": "rc_arrows_copper",
+    "type": "refine",
+    "name": "구리 화살",
+    "skill": "tinkering",
+    "level": 6,
+    "station": "tinkerbench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "shaft",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 1
+      },
+      {
+        "key": "head",
+        "item": "ingot_copper",
+        "qty": 1
+      }
+    ],
+    "output": {
+      "item": "arrows_copper",
+      "qty": 20
+    },
+    "seconds": 6,
+    "xp": 24
+  },
+  {
+    "id": "rc_arrows_iron",
+    "type": "refine",
+    "name": "철 화살",
+    "skill": "tinkering",
+    "level": 20,
+    "station": "tinkerbench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "shaft",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 1
+      },
+      {
+        "key": "head",
+        "item": "ingot_iron",
+        "qty": 1
+      }
+    ],
+    "output": {
+      "item": "arrows_iron",
+      "qty": 20
+    },
+    "seconds": 7,
+    "xp": 40
+  },
+  {
+    "id": "rc_stone_cut",
+    "type": "refine",
+    "name": "돌 다듬기",
+    "skill": "masonry",
+    "level": 1,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "main",
+        "item": "stone",
+        "qty": 4
+      }
+    ],
+    "output": {
+      "item": "stone_cut",
+      "qty": 1
+    },
+    "seconds": 5,
+    "xp": 12
+  },
+  {
+    "id": "rc_gem_cut",
+    "type": "refine",
+    "name": "원석 연마",
+    "skill": "masonry",
+    "level": 14,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "main",
+        "item": "gem_rough",
+        "qty": 1
+      },
+      {
+        "key": "grit",
+        "item": "sand_fine",
+        "qty": 2
+      }
+    ],
+    "output": {
+      "item": "gem_cut",
+      "qty": 1
+    },
+    "seconds": 8,
+    "xp": 40
+  },
+  {
+    "id": "rc_stone_lamp",
+    "type": "craft",
+    "name": "석등",
+    "skill": "masonry",
+    "level": 8,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "body",
+        "item": "stone_cut",
+        "qty": 6
+      },
+      {
+        "key": "wick",
+        "item": "fiber_reed",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "body.density": 0.6,
+        "wick.tenacity": 0.4
+      },
+      "durability": {
+        "body.density": 0.7,
+        "body.grain": 0.3
+      }
+    },
+    "output": {
+      "item": "furn_stone_lamp",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 60
+  },
+  {
+    "id": "rc_hearth",
+    "type": "craft",
+    "name": "돌 화덕",
+    "skill": "masonry",
+    "level": 16,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "body",
+        "item": "stone_cut",
+        "qty": 10
+      },
+      {
+        "key": "grate",
+        "item": "ingot_iron",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "body.density": 0.6,
+        "grate.hardness": 0.4
+      },
+      "durability": {
+        "body.grain": 0.6,
+        "grate.toughness": 0.4
+      }
+    },
+    "output": {
+      "item": "furn_hearth",
+      "qty": 1
+    },
+    "seconds": 15,
+    "xp": 90
+  },
+  {
+    "id": "rc_ring_copper_str",
+    "type": "craft",
+    "name": "구리 힘 반지",
+    "skill": "jewelcraft",
+    "level": 6,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_copper",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attr": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1.0
+      }
+    },
+    "output": {
+      "item": "ring_copper_str",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 100
+  },
+  {
+    "id": "rc_ring_copper_dex",
+    "type": "craft",
+    "name": "구리 민첩 반지",
+    "skill": "jewelcraft",
+    "level": 6,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_copper",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attr": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1.0
+      }
+    },
+    "output": {
+      "item": "ring_copper_dex",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 100
+  },
+  {
+    "id": "rc_ring_iron_foc",
+    "type": "craft",
+    "name": "철 집중 반지",
+    "skill": "jewelcraft",
+    "level": 20,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_iron",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attr": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1.0
+      }
+    },
+    "output": {
+      "item": "ring_iron_foc",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 130
+  },
+  {
+    "id": "rc_neck_iron_int",
+    "type": "craft",
+    "name": "철 지혜 목걸이",
+    "skill": "jewelcraft",
+    "level": 20,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_iron",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attr": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1.0
+      }
+    },
+    "output": {
+      "item": "neck_iron_int",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 130
+  },
+  {
+    "id": "rc_neck_iron_con",
+    "type": "craft",
+    "name": "철 체질 목걸이",
+    "skill": "jewelcraft",
+    "level": 20,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_iron",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attr": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1.0
+      }
+    },
+    "output": {
+      "item": "neck_iron_con",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 130
+  },
+  {
+    "id": "rc_neck_gather",
+    "type": "craft",
+    "name": "채집꾼 목걸이",
+    "skill": "jewelcraft",
+    "level": 24,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_iron",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "gather": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1.0
+      }
+    },
+    "output": {
+      "item": "neck_gather",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 130
+  },
+  {
+    "id": "rc_potion_stamina",
+    "type": "craft",
+    "name": "기력 물약",
+    "skill": "alchemy",
+    "level": 1,
+    "station": "alembic",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "base",
+        "item": "sap_birch",
+        "qty": 1
+      },
+      {
+        "key": "herb",
+        "item": "berry",
+        "qty": 3
+      }
+    ],
+    "stats": {
+      "power": {
+        "herb.nutrition": 1.0
+      },
+      "sec": {
+        "herb.flavor": 1.0
+      }
+    },
+    "output": {
+      "item": "potion_stamina",
+      "qty": 1
+    },
+    "seconds": 6,
+    "xp": 18
+  },
+  {
+    "id": "rc_potion_heal",
+    "type": "craft",
+    "name": "회복 물약",
+    "skill": "alchemy",
+    "level": 8,
+    "station": "alembic",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "base",
+        "item": "sap_birch",
+        "qty": 1
+      },
+      {
+        "key": "herb",
+        "item": "herb_moon",
+        "qty": 1
+      },
+      {
+        "key": "body",
+        "item": "mushroom",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "power": {
+        "herb.potency": 0.6,
+        "body.nutrition": 0.4
+      }
+    },
+    "output": {
+      "item": "potion_heal",
+      "qty": 1
+    },
+    "seconds": 7,
+    "xp": 30
+  },
+  {
+    "id": "rc_potion_mana",
+    "type": "craft",
+    "name": "마나 물약",
+    "skill": "alchemy",
+    "level": 14,
+    "station": "alembic",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "base",
+        "item": "sap_birch",
+        "qty": 1
+      },
+      {
+        "key": "herb",
+        "item": "herb_moon",
+        "qty": 2
+      },
+      {
+        "key": "dust",
+        "item": "gem_rough",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "power": {
+        "herb.potency": 1.0
+      }
+    },
+    "output": {
+      "item": "potion_mana",
+      "qty": 1
+    },
+    "seconds": 8,
+    "xp": 42
+  },
+  {
+    "id": "rc_potion_guard",
+    "type": "craft",
+    "name": "강건 물약",
+    "skill": "alchemy",
+    "level": 22,
+    "station": "alembic",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "herb",
+        "item": "herb_moon",
+        "qty": 2
+      },
+      {
+        "key": "body",
+        "item": "fish_eel",
+        "qty": 1
+      },
+      {
+        "key": "grit",
+        "item": "stone_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "power": {
+        "herb.potency": 0.5,
+        "body.nutrition": 0.5
+      },
+      "sec": {
+        "herb.duration": 1.0
+      }
+    },
+    "output": {
+      "item": "potion_guard",
+      "qty": 1
+    },
+    "seconds": 9,
+    "xp": 60
+  },
+  {
+    "id": "rc_fish_grill",
+    "type": "craft",
+    "name": "전어 구이",
+    "skill": "cooking",
+    "level": 2,
+    "station": "kitchen",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "main",
+        "item": "fish_small",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "heal": {
+        "main.nutrition": 1.0
+      }
+    },
+    "output": {
+      "item": "food_fish_grill",
+      "qty": 1
+    },
+    "seconds": 5,
+    "xp": 14
+  },
+  {
+    "id": "rc_eel",
+    "type": "craft",
+    "name": "장어 구이",
+    "skill": "cooking",
+    "level": 12,
+    "station": "kitchen",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "main",
+        "item": "fish_eel",
+        "qty": 2
+      },
+      {
+        "key": "side",
+        "item": "sap_birch",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "buff": {
+        "main.nutrition": 1.0
+      },
+      "minutes": {
+        "main.flavor": 1.0
+      }
+    },
+    "output": {
+      "item": "food_eel",
+      "qty": 1
+    },
+    "seconds": 6,
+    "xp": 30
+  },
+  {
+    "id": "rc_fish_stew",
+    "type": "craft",
+    "name": "송어 매운탕",
+    "skill": "cooking",
+    "level": 22,
+    "station": "kitchen",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "main",
+        "item": "fish_trout",
+        "qty": 2
+      },
+      {
+        "key": "side",
+        "item": "mushroom",
+        "qty": 2
+      },
+      {
+        "key": "herb",
+        "item": "herb_moon",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "heal": {
+        "main.nutrition": 0.6,
+        "side.nutrition": 0.2,
+        "herb.potency": 0.2
+      }
+    },
+    "output": {
+      "item": "food_fish_stew",
+      "qty": 1
+    },
+    "seconds": 8,
+    "xp": 50
   }
 ]

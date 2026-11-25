@@ -28,7 +28,7 @@ import { isUnlocked, allowedProject, chapterReached } from '../../core/systems/u
 
 const PID = 'p1';
 const FAMILY = { wood: '나무', metal: '금속', stone: '돌', fiber: '섬유', food: '식재료', herb: '약초' };
-const STAGE = { raw: '원자재', refined: '정제품', component: '부품' };
+const STAGE = { raw: '원자재', refined: '정제품', component: '부품', ammo: '화살' };
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const DIRS = ['북', '북동', '동', '남동', '남', '남서', '서', '북서'];
 export const BULK_KEEP = 20; // 한꺼번에 팔 때 종류마다 남길 개수
@@ -70,9 +70,9 @@ export function createHud(root, game, { touch, onAct }) {
       <div class="prompt" data-k="prompt"></div>
       <div class="vitals" data-k="vitals"><div class="lv" data-k="lv"><b data-k="lvn"></b><i><span data-k="lvbar"></span></i></div><div class="hp"><span data-k="hpbar"></span><em data-k="hp"></em></div><div class="st"><span data-k="stbar"></span></div><div class="mp" data-k="mp"><span data-k="mpbar"></span></div></div>
       <div class="skillbar" data-k="skillbar"></div>
-      ${touch ? '' : '<div class="keys">E 상호작용 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기 · 1·2·3 스킬 · X 무기 바꾸기 · <b>Esc 메뉴</b></div>'}
+      ${touch ? '' : '<div class="keys">E 상호작용 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기 · 1·2·3 스킬 · X 무기 바꾸기 · G 물약 · <b>Esc 메뉴</b></div>'}
     </div>
-    ${touch ? '<button class="act-btn" data-act="interact" data-k="actbtn">✋</button><div class="cbtns"><button data-hold="attack" title="공격(길게 강공)">⚔️</button><button data-hold="block" title="막기">🛡️</button><button data-tap="dodge" title="구르기">🌀</button></div>' : ''}
+    ${touch ? '<button class="act-btn" data-act="interact" data-k="actbtn">✋</button><div class="cbtns"><button data-hold="attack" title="공격(길게 강공)">⚔️</button><button data-hold="block" title="막기">🛡️</button><button data-tap="dodge" title="구르기">🌀</button><button data-tap="potion" title="물약">🧪</button></div>' : ''}
     <div class="downed" data-k="downed"></div>
     <div class="hurtfx" data-k="hurtfx"></div>
     <div class="joy"><div class="knob"></div></div>
@@ -559,7 +559,7 @@ export function createHud(root, game, { touch, onAct }) {
       ${tile('recall', icon('recall'), '귀환', 'H', cd > 0 ? `${Math.ceil(cd / 60)}분 뒤` : esc(townName(a.home)), cd > 0 || a.action?.type === 'recall')}
       ${tile('menu', icon('settings'), '설정', '')}
     </div>
-    ${touch ? '' : `<h3>조작</h3><p class="muted keyhelp">WASD 이동 · 마우스 끌기 시점 · 휠 거리 · E 상호작용 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기 · 1·2·3 무기 스킬 · X 무기 바꾸기 · Esc 창 닫기/메뉴</p>`}
+    ${touch ? '' : `<h3>조작</h3><p class="muted keyhelp">WASD 이동 · 마우스 끌기 시점 · 휠 거리 · E 상호작용 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기 · 1·2·3 무기 스킬 · X 무기 바꾸기 · G 물약 · Esc 창 닫기/메뉴</p>`}
     <div class="row"><a href="patchnotes.html">패치노트</a><span class="muted">v${ENGINE_VERSION}</span></div>`;
   }
 
@@ -631,13 +631,19 @@ export function createHud(root, game, { touch, onAct }) {
       <div class="row"><button class="mini" data-act="m-reset" data-v="${W}" ${m.nodes.length && a.silver >= cost ? '' : 'disabled'}>↺ 다시 찍기 (${cost}은화)</button></div>`;
   }
 
-  const SLOT_NAME = { weapon: '손에 든 무기', weapon2: '등에 멘 무기', head: '머리', chest: '몸통', legs: '다리' };
+  const SLOT_NAME = { weapon: '손에 든 무기', weapon2: '등에 멘 무기', head: '머리', chest: '몸통', legs: '다리', ring: '반지', neck: '목걸이' };
+  // 장신구(v2.4): 무엇이 얼마나 붙는지
+  function jewelLine(def, e) {
+    if (def.jewel.gather) return `채집량 +${Math.round((e.stats.gather || 0) * 1000) / 10}%`;
+    const at = data.config.level.attrs[def.jewel.attr];
+    return `${at?.icon || ''}${at?.name || def.jewel.attr} +${e.stats.attr || 0}`;
+  }
   function equipHtml(a) {
     const cells = Object.entries(SLOT_NAME).map(([slot, name]) => {
       const e = a.equip?.[slot] ? a.bag.find((x) => x.uid === a.equip[slot]) : null;
       if (!e) return `<div class="eq"><small>${name}</small><b class="muted">비어 있음</b></div>`;
       const def = data.items[e.item];
-      const v = def.weapon ? `공격력 ${e.stats.attack}` : `${ARMOR_CLASS[def.armor?.class] || ''} · 방어 ${e.stats.armor}`;
+      const v = def.weapon ? `공격력 ${e.stats.attack}` : def.jewel ? jewelLine(def, e) : `${ARMOR_CLASS[def.armor?.class] || ''} · 방어 ${e.stats.armor}`;
       return `<div class="eq ${e.broken ? 'broken' : ''}"><small>${name} · ${def.weight || 0}kg</small><b>${ii(def)} ${def.name}</b><small>${stars(e.star ?? 0)} · ${v} · 내구 ${e.dur}/${e.maxDur}</small></div>`;
     }).join('');
     const armor = ['head', 'chest', 'legs'].reduce((s, k) => { const e = a.equip?.[k] ? a.bag.find((x) => x.uid === a.equip[k]) : null; return s + (e && !e.broken ? e.stats.armor : 0); }, 0);
@@ -657,9 +663,9 @@ export function createHud(root, game, { touch, onAct }) {
     const town = settlementAt({ state: game.state }, a);
     const rows = sortEntries(a.bag).map((e) => {
       const def = data.items[e.item];
-      let act = def.kind === 'consumable' ? `<button data-act="eat" data-v="${esc(keyOf(e))}">먹기</button>` : '';
+      let act = def.kind === 'consumable' ? `<button data-act="eat" data-v="${esc(keyOf(e))}">${def.potion ? '마시기' : '먹기'}</button>` : '';
       if (def.blueprint) act = a.known?.[def.recipe] ? '<small class="muted">이미 앎</small>' : `<button data-act="learn-bp" data-v="${esc(keyOf(e))}">읽기</button>`;
-      if (def.armor) {
+      if (def.armor || def.jewel) {
         const on = Object.values(a.equip || {}).includes(e.uid);
         act = `<button data-act="equip" data-v="${e.uid}" class="${on ? 'on' : ''}">${on ? '벗기' : '끼기'}</button>`;
       } else if (def.weapon) {

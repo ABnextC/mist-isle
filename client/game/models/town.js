@@ -394,7 +394,62 @@ function armorbench() {
   return { parts, fx };
 }
 
-export const STATIONS = { forge, smelter, sawbench, workbench, loom, kitchen, storage, tannery, armorbench };
+// 약제대(v2.4): 작은 화로 위 증류 플라스크, 굽은 관, 약초 다발이 걸린 선반
+function alembic() {
+  const { parts, fx, add } = kit();
+  add('planks', box(1.3, 0.07, 0.65, { y: 0.82 }));
+  for (const [x, z] of [[-0.58, -0.26], [0.58, -0.26], [-0.58, 0.26], [0.58, 0.26]]) add('planksDark', box(0.07, 0.82, 0.07, { x, y: 0.41, z }));
+  // 화로와 플라스크
+  add('stone', cyl(0.2, 0.24, 0.22, 10, { x: -0.25, y: 0.97 }));
+  add('glass', lathe([[0, 0], [0.16, 0.02], [0.22, 0.14], [0.2, 0.28], [0.08, 0.38], [0.05, 0.55], [0.06, 0.58], [0, 0.58]], 14).translate(-0.25, 1.08, 0));
+  add('spirit', P(new THREE.SphereGeometry(0.15, 12, 8), 0x7fc6a0, { x: -0.25, y: 1.22, sy: 0.7 }));
+  add('copperMetal', taperTube([V(-0.25, 1.64, 0), V(0.05, 1.7, 0), V(0.38, 1.45, 0.05), V(0.45, 1.05, 0.05)], [0.022, 0.021, 0.02, 0.018], { radial: 6 }));
+  add('glass', lathe([[0, 0], [0.09, 0], [0.1, 0.14], [0.04, 0.2], [0.04, 0.24], [0, 0.24]], 10).translate(0.45, 0.855, 0.05));
+  for (let i = 0; i < 3; i++) add('clay', lathe([[0, 0], [0.06, 0], [0.07, 0.1], [0.035, 0.15], [0, 0.15]], 10).translate(0.15 + i * 0.13, 0.855, -0.2));
+  // 선반과 약초
+  add('planksDark', box(0.06, 1.6, 0.06, { x: 0.9, y: 0.8, z: 0.1 }));
+  add('planks', box(0.55, 0.05, 0.3, { x: 0.9, y: 1.35, z: 0.1 }));
+  for (let i = 0; i < 3; i++) add('fern', P(new THREE.ConeGeometry(0.07, 0.32, 5), 0x6f8f4a, { x: 0.74 + i * 0.15, y: 1.16, z: 0.1, rx: Math.PI }));
+  fx.fires.push({ p: V(-0.25, 1.02, 0), s: 0.22 });
+  fx.lights.push({ kind: 'torch', p: V(-0.25, 1.25, 0) });
+  return { parts, fx };
+}
+
+// 석공대(v2.4): 돌 작업 받침에 걸친 마름돌, 끌·망치, 다듬은 돌 더미
+function stonebench() {
+  const { parts, fx, add } = kit();
+  const R = rng(57);
+  add('stone', box(1.2, 0.62, 0.8, { y: 0.31 }));
+  add('rockBare', box(0.7, 0.32, 0.45, { x: -0.1, y: 0.78, ry: 0.15 }));
+  add('iron', box(0.03, 0.03, 0.22, { x: 0.35, y: 0.64, z: 0.15, ry: 0.6 }));
+  add('planksDark', box(0.04, 0.04, 0.32, { x: 0.32, y: 0.65, z: -0.15, ry: -0.4 }));
+  add('iron', box(0.12, 0.08, 0.08, { x: 0.38, y: 0.66, z: -0.27, ry: -0.4 }));
+  for (let i = 0; i < 6; i++) {
+    const row = i < 3 ? 0 : 1;
+    add('stone', box(0.34, 0.18, 0.22, { x: 1.0 + (i % 3) * 0.12 - row * 0.05, y: 0.09 + row * 0.19, z: -0.15 + (i % 3) * 0.2 - row * 0.05, ry: (R() - 0.5) * 0.3 }));
+  }
+  add('sawdust', cyl(0.5, 0.55, 0.02, 12, { y: 0.01, z: 0.4 }));
+  return { parts, fx };
+}
+
+// 공예대(v2.4): 작업 탁자에 바이스, 감긴 줄, 걸어 둔 낚싯대와 화살 통
+function tinkerbench() {
+  const { parts, fx, add } = kit();
+  add('planks', box(1.5, 0.08, 0.7, { y: 0.84 }));
+  for (const [x, z] of [[-0.66, -0.28], [0.66, -0.28], [-0.66, 0.28], [0.66, 0.28]]) add('planksDark', box(0.08, 0.84, 0.08, { x, y: 0.42, z }));
+  add('iron', box(0.22, 0.14, 0.16, { x: 0.5, y: 0.95, z: 0.2 }));
+  add('iron', cyl(0.015, 0.015, 0.3, 5, { x: 0.5, y: 0.98, z: 0.36, rx: Math.PI / 2 }));
+  add('rope', P(new THREE.TorusGeometry(0.1, 0.035, 6, 14), 0xffffff, { x: -0.3, y: 0.9, z: 0.1, rx: Math.PI / 2 }));
+  add('copperMetal', cyl(0.06, 0.06, 0.05, 10, { x: 0.05, y: 0.905, z: -0.15, rx: Math.PI / 2 }));
+  // 기대 세운 낚싯대 둘
+  for (const [x, lean] of [[-0.95, 0.12], [-1.05, -0.08]]) add('birch', taperTube([V(x, 0, -0.25), V(x + lean, 2.3, -0.3)], [0.02, 0.008], { radial: 5 }));
+  // 화살 통
+  add('leather', cyl(0.11, 0.09, 0.55, 10, { x: 0.95, y: 0.28, z: -0.15 }));
+  for (let i = 0; i < 5; i++) add('planks', cyl(0.008, 0.008, 0.5, 3, { x: 0.92 + (i % 3) * 0.03, y: 0.7, z: -0.17 + (i % 2) * 0.04, rz: (i - 2) * 0.05 }));
+  return { parts, fx };
+}
+
+export const STATIONS = { forge, smelter, sawbench, workbench, loom, kitchen, storage, tannery, armorbench, alembic, stonebench, tinkerbench };
 
 export function wreck() {
   const { parts, fx, add } = kit();

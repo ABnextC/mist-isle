@@ -1964,5 +1964,520 @@
     "icon": "📘",
     "recipe": "rc_mist_greaves",
     "nogift": true
+  },
+  {
+    "id": "fish_small",
+    "name": "은빛 전어",
+    "family": "food",
+    "stage": "raw",
+    "tier": 1,
+    "value": 6,
+    "icon": "🐟"
+  },
+  {
+    "id": "fish_eel",
+    "name": "늪 뱀장어",
+    "family": "food",
+    "stage": "raw",
+    "tier": 2,
+    "value": 14,
+    "icon": "🐟"
+  },
+  {
+    "id": "fish_trout",
+    "name": "서리 송어",
+    "family": "food",
+    "stage": "raw",
+    "tier": 3,
+    "value": 22,
+    "icon": "🐟"
+  },
+  {
+    "id": "fish_glow",
+    "name": "안개 물고기",
+    "family": "food",
+    "stage": "raw",
+    "tier": 3,
+    "value": 30,
+    "icon": "🐟"
+  },
+  {
+    "id": "herb_moon",
+    "name": "달맞이풀",
+    "family": "herb",
+    "stage": "raw",
+    "tier": 2,
+    "value": 16,
+    "icon": "🌼",
+    "note": "밤에만 핀다"
+  },
+  {
+    "id": "food_fish_grill",
+    "name": "전어 구이",
+    "kind": "consumable",
+    "stage": "food",
+    "tier": 1,
+    "value": 22,
+    "icon": "🐟",
+    "effect": "heal",
+    "statConvert": {
+      "heal": {
+        "base": 26,
+        "per": 0.5,
+        "round": 0
+      }
+    }
+  },
+  {
+    "id": "food_eel",
+    "name": "장어 구이",
+    "kind": "consumable",
+    "stage": "food",
+    "tier": 2,
+    "value": 40,
+    "icon": "🍢",
+    "buff": "gatherYield",
+    "statConvert": {
+      "buff": {
+        "base": 0.06,
+        "per": 0.0012,
+        "round": 3
+      },
+      "minutes": {
+        "base": 14,
+        "per": 0.25,
+        "round": 0
+      }
+    }
+  },
+  {
+    "id": "food_fish_stew",
+    "name": "송어 매운탕",
+    "kind": "consumable",
+    "stage": "food",
+    "tier": 3,
+    "value": 60,
+    "icon": "🍲",
+    "effect": "heal",
+    "statConvert": {
+      "heal": {
+        "base": 48,
+        "per": 0.8,
+        "round": 0
+      }
+    }
+  },
+  {
+    "id": "potion_heal",
+    "name": "회복 물약",
+    "kind": "consumable",
+    "stage": "potion",
+    "tier": 2,
+    "value": 45,
+    "icon": "🧪",
+    "potion": "heal",
+    "statConvert": {
+      "power": {
+        "base": 0.3,
+        "per": 0.003,
+        "round": 3
+      }
+    }
+  },
+  {
+    "id": "potion_stamina",
+    "name": "기력 물약",
+    "kind": "consumable",
+    "stage": "potion",
+    "tier": 1,
+    "value": 30,
+    "icon": "🧪",
+    "potion": "stamina",
+    "statConvert": {
+      "power": {
+        "base": 0.4,
+        "per": 0.004,
+        "round": 3
+      },
+      "sec": {
+        "base": 60,
+        "per": 0.6,
+        "round": 0
+      }
+    }
+  },
+  {
+    "id": "potion_mana",
+    "name": "마나 물약",
+    "kind": "consumable",
+    "stage": "potion",
+    "tier": 2,
+    "value": 45,
+    "icon": "🧪",
+    "potion": "mana",
+    "statConvert": {
+      "power": {
+        "base": 0.4,
+        "per": 0.004,
+        "round": 3
+      }
+    }
+  },
+  {
+    "id": "potion_guard",
+    "name": "강건 물약",
+    "kind": "consumable",
+    "stage": "potion",
+    "tier": 3,
+    "value": 70,
+    "icon": "🧪",
+    "potion": "guard",
+    "statConvert": {
+      "power": {
+        "base": 0.08,
+        "per": 0.0008,
+        "round": 3
+      },
+      "sec": {
+        "base": 90,
+        "per": 0.9,
+        "round": 0
+      }
+    }
+  },
+  {
+    "id": "stone_cut",
+    "name": "다듬은 돌",
+    "family": "stone",
+    "stage": "refined",
+    "tier": 1,
+    "value": 18,
+    "icon": "🧱"
+  },
+  {
+    "id": "gem_cut",
+    "name": "연마 보석",
+    "stage": "refined",
+    "tier": 2,
+    "value": 150,
+    "icon": "💎"
+  },
+  {
+    "id": "furn_stone_lamp",
+    "name": "석등",
+    "kind": "equipment",
+    "stage": "furniture",
+    "tier": 2,
+    "value": 220,
+    "icon": "🏮",
+    "statConvert": {
+      "comfort": {
+        "base": 11,
+        "per": 0.5,
+        "round": 0
+      },
+      "durability": {
+        "base": 200,
+        "per": 4,
+        "round": 0
+      }
+    }
+  },
+  {
+    "id": "furn_hearth",
+    "name": "돌 화덕",
+    "kind": "equipment",
+    "stage": "furniture",
+    "tier": 2,
+    "value": 260,
+    "icon": "🔥",
+    "statConvert": {
+      "comfort": {
+        "base": 13,
+        "per": 0.5,
+        "round": 0
+      },
+      "durability": {
+        "base": 220,
+        "per": 4,
+        "round": 0
+      }
+    }
+  },
+  {
+    "id": "ring_copper_str",
+    "name": "구리 힘 반지",
+    "kind": "equipment",
+    "stage": "jewel",
+    "tier": 1,
+    "value": 360,
+    "icon": "💍",
+    "jewel": {
+      "slot": "ring",
+      "attr": "str"
+    },
+    "statConvert": {
+      "durability": {
+        "base": 280,
+        "per": 4,
+        "round": 0
+      },
+      "attr": {
+        "base": 2,
+        "per": 0.03,
+        "round": 0
+      }
+    },
+    "weight": 0.1
+  },
+  {
+    "id": "ring_copper_dex",
+    "name": "구리 민첩 반지",
+    "kind": "equipment",
+    "stage": "jewel",
+    "tier": 1,
+    "value": 360,
+    "icon": "💍",
+    "jewel": {
+      "slot": "ring",
+      "attr": "dex"
+    },
+    "statConvert": {
+      "durability": {
+        "base": 280,
+        "per": 4,
+        "round": 0
+      },
+      "attr": {
+        "base": 2,
+        "per": 0.03,
+        "round": 0
+      }
+    },
+    "weight": 0.1
+  },
+  {
+    "id": "ring_iron_foc",
+    "name": "철 집중 반지",
+    "kind": "equipment",
+    "stage": "jewel",
+    "tier": 2,
+    "value": 520,
+    "icon": "💍",
+    "jewel": {
+      "slot": "ring",
+      "attr": "foc"
+    },
+    "statConvert": {
+      "durability": {
+        "base": 360,
+        "per": 4,
+        "round": 0
+      },
+      "attr": {
+        "base": 3,
+        "per": 0.03,
+        "round": 0
+      }
+    },
+    "weight": 0.1
+  },
+  {
+    "id": "neck_iron_int",
+    "name": "철 지혜 목걸이",
+    "kind": "equipment",
+    "stage": "jewel",
+    "tier": 2,
+    "value": 520,
+    "icon": "📿",
+    "jewel": {
+      "slot": "neck",
+      "attr": "int"
+    },
+    "statConvert": {
+      "durability": {
+        "base": 360,
+        "per": 4,
+        "round": 0
+      },
+      "attr": {
+        "base": 3,
+        "per": 0.03,
+        "round": 0
+      }
+    },
+    "weight": 0.1
+  },
+  {
+    "id": "neck_iron_con",
+    "name": "철 체질 목걸이",
+    "kind": "equipment",
+    "stage": "jewel",
+    "tier": 2,
+    "value": 520,
+    "icon": "📿",
+    "jewel": {
+      "slot": "neck",
+      "attr": "con"
+    },
+    "statConvert": {
+      "durability": {
+        "base": 360,
+        "per": 4,
+        "round": 0
+      },
+      "attr": {
+        "base": 3,
+        "per": 0.03,
+        "round": 0
+      }
+    },
+    "weight": 0.1
+  },
+  {
+    "id": "neck_gather",
+    "name": "채집꾼 목걸이",
+    "kind": "equipment",
+    "stage": "jewel",
+    "tier": 2,
+    "value": 520,
+    "icon": "📿",
+    "jewel": {
+      "slot": "neck",
+      "gather": true
+    },
+    "statConvert": {
+      "durability": {
+        "base": 360,
+        "per": 4,
+        "round": 0
+      },
+      "gather": {
+        "base": 0.03,
+        "per": 0.0006,
+        "round": 3
+      }
+    },
+    "weight": 0.1
+  },
+  {
+    "id": "tool_rod_wood",
+    "name": "나무 낚싯대",
+    "kind": "equipment",
+    "stage": "tool",
+    "tier": 1,
+    "value": 40,
+    "icon": "🎣",
+    "tool": {
+      "skill": "fishing",
+      "tier": 1
+    },
+    "statConvert": {
+      "gatherSpeed": {
+        "base": 1,
+        "per": 0.0045,
+        "round": 2
+      },
+      "yield": {
+        "base": 0,
+        "per": 0.002,
+        "round": 3,
+        "max": 0.3
+      },
+      "durability": {
+        "base": 160,
+        "per": 5,
+        "round": 0
+      }
+    },
+    "weight": 0.8
+  },
+  {
+    "id": "tool_rod_copper",
+    "name": "구리 낚싯대",
+    "kind": "equipment",
+    "stage": "tool",
+    "tier": 2,
+    "value": 200,
+    "icon": "🎣",
+    "tool": {
+      "skill": "fishing",
+      "tier": 2
+    },
+    "statConvert": {
+      "gatherSpeed": {
+        "base": 1,
+        "per": 0.0045,
+        "round": 2
+      },
+      "yield": {
+        "base": 0,
+        "per": 0.002,
+        "round": 3,
+        "max": 0.3
+      },
+      "durability": {
+        "base": 200,
+        "per": 5,
+        "round": 0
+      }
+    },
+    "weight": 0.8
+  },
+  {
+    "id": "tool_rod_iron",
+    "name": "철 낚싯대",
+    "kind": "equipment",
+    "stage": "tool",
+    "tier": 3,
+    "value": 420,
+    "icon": "🎣",
+    "tool": {
+      "skill": "fishing",
+      "tier": 3
+    },
+    "statConvert": {
+      "gatherSpeed": {
+        "base": 1,
+        "per": 0.0045,
+        "round": 2
+      },
+      "yield": {
+        "base": 0,
+        "per": 0.002,
+        "round": 3,
+        "max": 0.3
+      },
+      "durability": {
+        "base": 240,
+        "per": 5,
+        "round": 0
+      }
+    },
+    "weight": 0.8
+  },
+  {
+    "id": "arrows_copper",
+    "name": "구리 화살",
+    "family": "wood",
+    "stage": "ammo",
+    "tier": 1,
+    "value": 2,
+    "icon": "➶",
+    "ammo": {
+      "dmg": 0.12
+    }
+  },
+  {
+    "id": "arrows_iron",
+    "name": "철 화살",
+    "family": "wood",
+    "stage": "ammo",
+    "tier": 2,
+    "value": 4,
+    "icon": "➶",
+    "ammo": {
+      "dmg": 0.22
+    }
   }
 ]

@@ -299,6 +299,12 @@ export function makeMaterials(tex, ctex) {
     clothBlue: plainMaterial(0x2f5f9e, { roughness: 0.95, side: THREE.DoubleSide }),
     spirit: plainMaterial(0x9fe6ff, { roughness: 0.3, emissive: 0x5fc8ff, emissiveIntensity: 1.4 }),
     spiritDim: plainMaterial(0x6f9aae, { roughness: 0.5, emissive: 0x3f8fb8, emissiveIntensity: 0.45 }),
+    // v2.4: 물고기 떼·달맞이풀
+    ripple: new THREE.MeshBasicMaterial({ color: 0xe6f2f4, transparent: true, opacity: 0.42, depthWrite: false }),
+    fishSilver: plainMaterial(0xb9c3c8, { roughness: 0.3, metalness: 0.55 }),
+    fishEel: plainMaterial(0x3b3a2a, { roughness: 0.32 }),
+    fishTrout: plainMaterial(0x8f8270, { roughness: 0.32, metalness: 0.3 }),
+    moonPetal: plainMaterial(0xf3e9b4, { roughness: 0.6, emissive: 0xefd77a, emissiveIntensity: 0.4, side: THREE.DoubleSide }),
     lens: new THREE.MeshPhysicalMaterial({ color: 0xfff1c8, roughness: 0.08, metalness: 0, transmission: 0, emissive: 0xffc56a, emissiveIntensity: 0.05 }),
   };
   m.plasterTint = m.plaster;

@@ -72,11 +72,38 @@ export function resetAttrs(ctx, a) {
 
 // 능력치·레벨이 주는 힘을 무기 숙련 보너스(P)와 같은 키로 돌려준다. combat.passivesNow가 더한다.
 // 무기 종류마다 주 능력치(피해 큰 몫)·부 능력치(작은 몫)가 다르다.
+// 장신구(v2.4): 반지·목걸이가 능력치를 더한다
+export const JEWEL_SLOTS = ['ring', 'neck'];
+export function jewelOf(ctx, a, slot) {
+  const uid = a?.equip?.[slot];
+  const e = uid && a.bag.find((x) => x.uid === uid);
+  return e && !e.broken ? e : null;
+}
+export function withJewels(ctx, a, attrs) {
+  let out = attrs;
+  for (const s of JEWEL_SLOTS) {
+    const e = jewelOf(ctx, a, s);
+    const j = e && ctx.data.items[e.item].jewel;
+    if (j?.attr && e.stats?.attr) {
+      if (out === attrs) out = { ...attrs };
+      out[j.attr] = (out[j.attr] || 0) + e.stats.attr;
+    }
+  }
+  return out;
+}
+export function jewelGather(ctx, a) {
+  let v = 0;
+  for (const s of JEWEL_SLOTS) {
+    const e = jewelOf(ctx, a, s);
+    if (e && ctx.data.items[e.item].jewel?.gather) v += e.stats?.gather || 0;
+  }
+  return v;
+}
 export function levelPassives(ctx, a, wtype) {
   if (!a?.clevel) return null;
   const C = a.clevel;
   const S = L(ctx);
-  const at = C.attrs;
+  const at = withJewels(ctx, a, C.attrs);
   const sc = S.scaling[wtype || 'fist'] || S.scaling.fist;
   const P = {};
   P.dmg = r2((at[sc[0]] || 0) * S.mainDmg + (sc[1] ? (at[sc[1]] || 0) * S.subDmg : 0));

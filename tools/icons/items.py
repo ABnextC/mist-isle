@@ -832,6 +832,152 @@ def bp_glyph(kind):
     return G_[kind]
 
 # ════════════════ 물건 → 그림 ════════════════
+# ════════════════ v2.4 생활 스킬 ════════════════
+def fish(s, body, belly, eel=False, glow=False, spots=None):
+    s.shadow(32, 54, 22, 3.2)
+    if glow:
+        s.add(C(32, 32, 26, s.glow('#9fe6ff', 0.6), 0))
+    if eel:
+        s.add(P('M8,40 Q16,26 28,32 Q38,38 46,28 Q52,22 58,26 Q54,32 48,34 Q40,44 28,40 Q18,36 12,44 Z', s.lin(body, 0.3, -0.4)))
+        s.add(L('M14,40 Q22,32 30,36 Q40,40 48,30', shade(belly, 0.2), 1.4, 0.7))
+        s.add(C(53, 27, 1.5, INK, 0) + C(53.4, 26.6, 0.5, '#fff', 0))
+        return
+    s.add(P('M10,32 L2,22 L4,32 L2,42 Z', s.lin(shade(body, -0.1)), 1.8))
+    s.add(P('M28,22 Q34,12 42,18 L40,22 Z', s.lin(shade(body, -0.15)), 1.6))
+    s.add(P('M10,32 Q22,18 40,20 Q54,22 60,32 Q54,42 40,44 Q22,46 10,32 Z', s.lin(body, 0.35, -0.35, 0.5, 0, 0.5, 1)))
+    s.add(P('M14,34 Q30,44 54,36 Q46,43 36,43 Q22,44 14,34 Z', shade(belly, 0.1), 0, extra=' opacity=".8"'))
+    s.add(L('M46,24 Q42,32 46,40', shade(body, -0.45), 1.4, 0.8))
+    if spots:
+        for (x, y) in [(24, 28), (30, 25), (34, 30), (20, 32)]:
+            s.add(C(x, y, 1.3, spots, 0))
+    s.add(C(52, 29, 2.2, '#f4f0e6', 1.2) + C(52.5, 29, 1.1, INK, 0))
+    s.add(HL('M20,26 Q30,21 40,22', 0.6, 1.4))
+
+def moonflower(s):
+    s.shadow(32, 56, 14, 3)
+    s.add(C(32, 22, 18, s.glow('#fff0a0', 0.55), 0))
+    s.add(L('M32,54 Q30,40 32,26', '#3f6a2a', 2.6))
+    s.add(P('M31,44 Q20,36 16,42 Q22,48 31,44 Z', s.lin('#6f9a45'), 1.6))
+    s.add(P('M33,38 Q44,30 48,36 Q42,42 33,38 Z', s.lin('#5e8a3a'), 1.6))
+    for i in range(5):
+        a = i * 72 - 90
+        s.add(G(E(32, 13, 5.5, 9, s.lin('#f6edb8', 0.35, -0.2)), f'rotate({a} 32 22)'))
+    s.add(C(32, 22, 4, s.rad('#e8c24a', 0.4, -0.3), 1.4))
+    for (x, y) in [(12, 14), (52, 12), (50, 44)]:
+        s.add(L(f'M{x},{y - 3} v6 M{x - 3},{y} h6', '#fff6c8', 1.2, 0.9))
+
+def potion(s, liquid, glow=None):
+    s.shadow(32, 57, 14, 3)
+    if glow:
+        s.add(C(32, 40, 22, s.glow(glow, 0.5), 0))
+    s.add(P('M27,10 L37,10 L37,24 Q50,30 50,42 Q50,56 32,56 Q14,56 14,42 Q14,30 27,24 Z', s.lin('#d8eef2', 0.2, -0.25), 2, extra=' fill-opacity=".55"'))
+    s.add(P('M16,40 Q24,36 32,38 Q40,40 48,36 Q49,40 48,44 Q46,54 32,54 Q18,54 16,44 Z', s.lin(liquid, 0.3, -0.35), 0))
+    s.add(L('M16,40 Q24,36 32,38 Q40,40 48,36', shade(liquid, 0.4), 1.4, 0.9))
+    s.add(R(26, 5, 12, 7, s.lin('#a8784a', 0.25, -0.3), 2, 2))
+    s.add(L('M27,24 Q14,30 14,42 Q14,56 32,56 Q50,56 50,42 Q50,30 37,24 L37,12 M27,12 L27,24', INK, 2))
+    s.add(HL('M20,32 Q17,38 18,46', 0.7, 2))
+    s.add(C(38, 46, 1.6, '#fff', 0, extra=' opacity=".7"') + C(28, 48, 1, '#fff', 0, extra=' opacity=".6"'))
+
+def cut_stone(s):
+    s.shadow(32, 54, 22, 3.4)
+    def block(x, y, k):
+        top = poly([(x, y), (x + 20, y), (x + 26, y + 6), (x + 6, y + 6)])
+        front = poly([(x + 6, y + 6), (x + 26, y + 6), (x + 26, y + 16), (x + 6, y + 16)])
+        side = poly([(x, y), (x + 6, y + 6), (x + 6, y + 16), (x, y + 10)])
+        return P(front, s.lin(shade('#a8a59a', k), 0.1, -0.3, 0, 0, 0, 1)) + P(top, s.lin(shade('#cfccc0', k))) + P(side, shade('#8a877e', k))
+    s.add(block(6, 34, -0.05) + block(30, 34, 0.0) + block(18, 20, 0.05))
+    s.add(L('M14,46 l5,-2 M40,44 l6,2', '#6a675e', 1, 0.6))
+
+def gem_cut(s):
+    s.shadow(32, 55, 15, 3)
+    s.add(C(32, 32, 24, s.glow('#8ff0e6', 0.4), 0))
+    s.add(P(poly([(16, 24), (24, 14), (40, 14), (48, 24), (32, 52)]), s.lin(GEM, 0.4, -0.35)))
+    s.add(P(poly([(16, 24), (48, 24), (32, 52)]), shade(GEM, -0.2), 1.2, extra=' fill-opacity=".6"'))
+    s.add(L('M24,14 L28,24 L32,14 L36,24 L40,14 M28,24 L32,52 L36,24', shade(GEM, -0.45), 1.1, 0.8))
+    s.add(L('M22,20 l3,-3', '#fff', 1.8, 0.9))
+
+def ring(s, metal, gem):
+    base, hi = METAL[metal]
+    s.shadow(32, 54, 17, 3)
+    s.add(E(32, 38, 17, 13, 'none', 7, INK))
+    s.add(E(32, 38, 17, 13, 'none', 4.6, base))
+    s.add(L('M17,34 Q22,26 32,25', hi, 1.6, 0.9))
+    s.add(P(poly([(26, 24), (29, 18), (35, 18), (38, 24), (32, 30)]), s.lin('#d0a84a' if metal == 'copper' else '#c9d4dc')))
+    s.add(P(poly([(28, 22), (32, 13), (36, 22), (32, 27)]), s.lin(gem, 0.4, -0.3), 1.6))
+    s.add(L('M30,19 l1.5,-3', '#fff', 1.2, 0.9))
+
+def amulet(s, metal, gem):
+    base, hi = METAL[metal]
+    s.shadow(32, 57, 12, 2.4)
+    s.add(L('M12,8 Q14,30 32,36 Q50,30 52,8', INK, 4))
+    s.add(L('M12,8 Q14,30 32,36 Q50,30 52,8', base, 2))
+    s.add(P(poly([(22, 36), (32, 30), (42, 36), (40, 48), (32, 56), (24, 48)]), s.lin(base, 0.3, -0.35)))
+    s.add(P(poly([(27, 38), (32, 34), (37, 38), (36, 46), (32, 50), (28, 46)]), s.lin(gem, 0.4, -0.3), 1.6))
+    s.add(L('M29,38 l2,-2', '#fff', 1.2, 0.9))
+
+def gather_amulet(s):
+    amulet(s, 'iron', '#7fbf4a')
+    s.add(P('M30,44 Q32,38 35,40 Q34,45 30,44 Z', '#e8f5c8', 0, extra=' opacity=".8"'))
+
+def rod(s, metal):
+    s.shadow(32, 56, 22, 3)
+    s.add(L('M10,54 Q30,30 56,6', INK, 4.4))
+    s.add(L('M10,54 Q30,30 56,6', '#c9a06a' if metal == 'wood' else '#8a5a33', 2.4))
+    s.add(L('M10,54 L18,45', INK, 6.5) + L('M10,54 L18,45', '#5a3a22', 4.2))
+    if metal != 'wood':
+        base, hi = METAL[metal]
+        s.add(C(20, 42, 5, s.rad(base, 0.4, -0.3), 1.8) + C(20, 42, 1.6, INK, 0))
+    s.add(L('M56,6 Q60,26 50,40', '#e8e2d0', 1, 0.9))
+    s.add(P('M48,40 Q50,36 52,40 Q52,44 50,46 Q48,44 48,40 Z', '#d04a3a', 1.4))
+    s.add(L('M48,41 h4', '#fff', 1, 0.9))
+
+def arrows(s, metal):
+    base, hi = METAL[metal]
+    s.shadow(32, 56, 20, 3)
+    for (dx, ang) in [(-7, -12), (0, 0), (7, 12)]:
+        a = L('M32,54 L32,14', INK, 3.6) + L('M32,54 L32,14', '#c9a06a', 1.8)
+        a += P(poly([(28, 16), (32, 5), (36, 16)]), s.lin(base, 0.35, -0.3), 1.6)
+        a += P('M32,46 L27,52 L27,57 L32,52 Z', '#e8e2d0', 1.2) + P('M32,46 L37,52 L37,57 L32,52 Z', '#c8c0b0', 1.2)
+        s.add(G(a, f'rotate({ang} 32 54) translate({dx} 0)'))
+
+def stone_lamp(s):
+    s.shadow(32, 57, 16, 3)
+    s.add(R(24, 46, 16, 9, s.lin('#a8a59a'), 1.5))
+    s.add(R(28, 34, 8, 12, s.lin('#b9b6aa'), 1))
+    s.add(P(poly([(16, 34), (48, 34), (44, 20), (20, 20)]), s.lin('#c4c1b4', 0.25, -0.3)))
+    s.add(C(32, 27, 8, s.glow('#ffd27a', 0.9), 0) + R(27, 23, 10, 8, '#ffcf6a', 1, 1.4))
+    s.add(P(poly([(12, 20), (52, 20), (32, 8)]), s.lin('#8f8c82', 0.3, -0.3)))
+    s.add(C(32, 7, 2.4, '#8f8c82', 1.4))
+
+def hearth(s):
+    s.shadow(32, 57, 22, 3.4)
+    s.add(P('M8,54 L8,30 Q8,14 32,14 Q56,14 56,30 L56,54 Z', s.lin('#9a978c', 0.25, -0.3)))
+    for (x, y) in [(14, 24), (26, 18), (40, 18), (50, 26), (12, 40), (52, 42)]:
+        s.add(L(f'M{x - 4},{y} h8', '#6a675e', 1, 0.6))
+    s.add(P('M18,54 L18,40 Q18,30 32,30 Q46,30 46,40 L46,54 Z', '#2a1a10', 1.8))
+    s.add(P('M22,54 Q24,44 30,48 Q30,38 36,42 Q40,46 42,54 Z', s.lin('#f08a2a', 0.4, -0.2), 0))
+    s.add(P('M28,54 Q30,48 33,50 Q36,48 36,54 Z', '#ffd36a', 0))
+
+def grilled_fish(s):
+    s.shadow(32, 56, 22, 3)
+    s.add(E(32, 48, 24, 6, s.lin('#d8cfb8'), 1.8))
+    s.add(G(P('M10,32 Q22,20 40,22 Q54,24 58,32 Q54,40 40,42 Q22,44 10,32 Z', s.lin('#b0783a', 0.3, -0.35)) + P('M10,32 L3,24 L5,32 L3,40 Z', s.lin('#8a5a2a'), 1.6) + L('M22,26 l4,10 M30,24 l4,12 M38,24 l4,12', '#4a2a12', 1.6, 0.8) + C(52, 30, 1.8, '#f0e6d0', 1), 'translate(0 8)'))
+    s.add(P('M44,36 q4,-3 8,0 q-4,3 -8,0 Z', '#3f8a4e', 1))
+
+def eel_skewer(s):
+    s.shadow(32, 57, 18, 3)
+    s.add(L('M8,58 L56,8', INK, 3.6) + L('M8,58 L56,8', '#c9a06a', 1.8))
+    for (x, y) in [(20, 44), (30, 34), (40, 24)]:
+        s.add(G(R(-9, -5, 18, 10, s.lin('#8a4a22', 0.35, -0.35), 3) + L('M-6,0 h12', '#e0a04a', 1.4, 0.8), f'translate({x} {y}) rotate(-45)'))
+
+def fish_stew(s):
+    s.shadow(32, 56, 21, 3.2)
+    for (x, y) in [(24, 10), (32, 6), (40, 10)]:
+        s.add(L(f'M{x},{y + 10} Q{x - 3},{y + 5} {x},{y} Q{x + 3},{y - 4} {x},{y - 6}', '#fff', 1.8, 0.55))
+    s.add(P('M6,30 L58,30 Q56,52 32,54 Q8,52 6,30 Z', s.lin('#3a4a5a', 0.3, -0.35)))
+    s.add(E(32, 30, 26, 6.6, s.rad('#c8442a', 0.35, -0.2), 1.8))
+    s.add(P('M20,30 Q28,25 36,29 Q30,33 20,30 Z', '#e8d8c0', 1) + C(42, 29, 2, '#7a5a3a', 1) + P('M44,31 q3,-2 6,0 q-3,2 -6,0 Z', '#3f8a4e', 1))
+
 ICONS = {
     'log_drift': lambda s: log(s, 'drift'), 'log_birch': lambda s: log(s, 'birch'), 'log_oak': lambda s: log(s, 'oak'),
     'lumber_drift': lambda s: lumber(s, 'drift'), 'lumber_birch': lambda s: lumber(s, 'birch'), 'lumber_oak': lambda s: lumber(s, 'oak'),
@@ -872,6 +1018,21 @@ ICONS = {
 }
 for _k, _g in [('sword_mist', 'sword'), ('battleaxe_mist', 'battleaxe'), ('spear_mist', 'spear'), ('hammer_mist', 'hammer'), ('bow_mist', 'bow'), ('staff_mist', 'staff'), ('mist_helm', 'helm'), ('mist_cuirass', 'cuirass'), ('mist_greaves', 'greaves')]:
     ICONS['bp_' + _k] = (lambda g: lambda s: blueprint(s, bp_glyph(g)))(_g)
+
+ICONS.update({
+    'fish_small': lambda s: fish(s, '#a8b8c0', '#eef2f0'), 'fish_eel': lambda s: fish(s, '#4a4a32', '#8a8a5a', eel=True),
+    'fish_trout': lambda s: fish(s, '#8f8a6a', '#f0c8b0', spots='#3a2a1a'), 'fish_glow': lambda s: fish(s, '#6fb8e0', '#dff4ff', glow=True),
+    'herb_moon': moonflower,
+    'food_fish_grill': grilled_fish, 'food_eel': eel_skewer, 'food_fish_stew': fish_stew,
+    'potion_heal': lambda s: potion(s, '#d0344a'), 'potion_stamina': lambda s: potion(s, '#e8b030'),
+    'potion_mana': lambda s: potion(s, '#3a7ad8', '#9fd0ff'), 'potion_guard': lambda s: potion(s, '#7a8a9a'),
+    'stone_cut': cut_stone, 'gem_cut': gem_cut, 'furn_stone_lamp': stone_lamp, 'furn_hearth': hearth,
+    'ring_copper_str': lambda s: ring(s, 'copper', '#d04a3a'), 'ring_copper_dex': lambda s: ring(s, 'copper', '#4aa04a'),
+    'ring_iron_foc': lambda s: ring(s, 'iron', '#9a6ad0'), 'neck_iron_int': lambda s: amulet(s, 'iron', '#4a8ad8'),
+    'neck_iron_con': lambda s: amulet(s, 'iron', '#d04a5a'), 'neck_gather': gather_amulet,
+    'tool_rod_wood': lambda s: rod(s, 'wood'), 'tool_rod_copper': lambda s: rod(s, 'copper'), 'tool_rod_iron': lambda s: rod(s, 'iron'),
+    'arrows_copper': lambda s: arrows(s, 'copper'), 'arrows_iron': lambda s: arrows(s, 'iron'),
+})
 
 def build():
     items = json.load(open(os.path.join(ROOT, 'data', 'items.json')))

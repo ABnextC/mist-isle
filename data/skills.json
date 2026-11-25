@@ -33,8 +33,7 @@
       "id": "fishing",
       "name": "낚시",
       "cat": "gather",
-      "icon": "🎣",
-      "opens": null
+      "icon": "🎣"
     },
     {
       "id": "sawing",
@@ -64,8 +63,7 @@
       "id": "masonry",
       "name": "석공",
       "cat": "refine",
-      "icon": "🧱",
-      "opens": null
+      "icon": "🧱"
     },
     {
       "id": "smithing",
@@ -95,22 +93,19 @@
       "id": "tinkering",
       "name": "공예",
       "cat": "craft",
-      "icon": "⚙️",
-      "opens": "v0.4"
+      "icon": "⚙️"
     },
     {
       "id": "jewelcraft",
       "name": "장신구",
       "cat": "craft",
-      "icon": "💍",
-      "opens": null
+      "icon": "💍"
     },
     {
       "id": "alchemy",
       "name": "약제",
       "cat": "craft",
-      "icon": "⚗️",
-      "opens": "v0.5"
+      "icon": "⚗️"
     }
   ]
 }

@@ -15,7 +15,7 @@ export function createNodesView(scene, game, hf, { mats, ctex }) {
     groups[type] = variants.map((parts) => parts.map((part) => {
       const mesh = new THREE.InstancedMesh(part.geo, mats[part.mat], CAP);
       mesh.count = 0;
-      mesh.castShadow = true;
+      mesh.castShadow = !part.float;
       mesh.receiveShadow = true;
       mesh.frustumCulled = false;
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -69,7 +69,7 @@ export function createNodesView(scene, game, hf, { mats, ctex }) {
   }
 
   // 도구가 닿으면 나무·덤불·갈대가 잠깐 떤다(v0.4.9). 바위·통나무는 그대로
-  const SWAY = { node_birch: 0.014, node_oak: 0.01, node_berry: 0.06, node_reed: 0.07, node_seaweed: 0.03, node_mushroom: 0.0 };
+  const SWAY = { node_birch: 0.014, node_oak: 0.01, node_berry: 0.06, node_reed: 0.07, node_seaweed: 0.03, node_mushroom: 0.0, node_moonherb: 0.08 };
   function shake(id) {
     const e = index.get(id);
     if (e && SWAY[e.type]) e.shakeAt = performance.now();
@@ -90,8 +90,14 @@ export function createNodesView(scene, game, hf, { mats, ctex }) {
       for (const { part, mesh } of groups[e.type][e.v]) {
         const show = part.when === 'both' || (part.when === 'live') !== empty;
         const s = show ? e.s * (empty ? part.shrink ?? 1 : 1) : 0;
-        dummy.position.set(n.x, e.y - 0.03, n.z);
-        dummy.rotation.set(e.tilt + sw, e.ry, e.tilt * 0.7 + sw * 0.6);
+        // 물고기 떼(v2.4)는 물 위에 뜬다: 바닥 대신 수면 높이에, 기울이지 않고 천천히 돈다
+        if (part.float) {
+          dummy.position.set(n.x, Math.max(e.y, 0) + 0.05, n.z);
+          dummy.rotation.set(0, e.ry + now * 0.00025, 0);
+        } else {
+          dummy.position.set(n.x, e.y - 0.03, n.z);
+          dummy.rotation.set(e.tilt + sw, e.ry, e.tilt * 0.7 + sw * 0.6);
+        }
         dummy.scale.set(s, s, s);
         dummy.updateMatrix();
         mesh.setMatrixAt(e.i, dummy.matrix);

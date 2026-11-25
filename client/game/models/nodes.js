@@ -264,6 +264,62 @@ function ironRock(seed) {
   return [{ geo: merge(parts), mat: 'ironOre', when: 'both', shrink: 0.6 }];
 }
 
+// 물고기 떼(v2.4): 물 위로 등지느러미가 비치고 잔물결이 번진다. float: 물 높이에 띄운다
+function fishSchool(seed, mat, { n = 4, len = 0.36, eel = false } = {}) {
+  const R = rng(seed);
+  const rings = [];
+  for (let i = 0; i < 3; i++) {
+    const r = 0.45 + i * 0.38 + R() * 0.1;
+    rings.push(P(new THREE.TorusGeometry(r, 0.018, 3, 28), 0xffffff, { rx: Math.PI / 2, x: (R() - 0.5) * 0.3, y: 0.03, z: (R() - 0.5) * 0.3 }));
+  }
+  const fish = [];
+  for (let i = 0; i < n; i++) {
+    const a = R() * Math.PI * 2;
+    const d = 0.25 + R() * 0.7;
+    const L = len * (0.8 + R() * 0.4);
+    const body = eel
+      ? taperTube(bentPath(V(0, 0, 0), V(1, 0, 0), L * 2.2, 6, V(0, 0, 0.5), R), [0.035, 0.04, 0.035, 0.03, 0.02, 0.01, 0.005], { radial: 5 })
+      : P(new THREE.SphereGeometry(1, 8, 6), 0xffffff, { sx: L / 2, sy: L * 0.13, sz: L * 0.16 });
+    const fin = P(new THREE.ConeGeometry(L * 0.09, L * 0.22, 3), 0xffffff, { y: L * 0.12, rz: -0.5 });
+    const tail = P(new THREE.ConeGeometry(L * 0.12, L * 0.2, 3), 0xffffff, { x: -L * 0.55, rz: Math.PI / 2, sz: 0.3 });
+    const g = merge(eel ? [body] : [body, fin, tail]);
+    xf(g, { ry: a + Math.PI / 2 + (R() - 0.5), x: Math.cos(a) * d, y: eel ? -0.01 : -0.02, z: Math.sin(a) * d });
+    fish.push(g);
+  }
+  return [
+    { geo: merge(rings), mat: 'ripple', when: 'live', float: true },
+    { geo: merge(fish), mat, when: 'live', float: true },
+  ];
+}
+
+// 달맞이풀(v2.4): 가는 줄기에 옅은 노란 꽃잎. 밤에 은은히 빛난다
+function moonherb(seed) {
+  const R = rng(seed);
+  const stems = [];
+  const petals = [];
+  for (let i = 0; i < 9; i++) {
+    const a = R() * Math.PI * 2;
+    const d = R() * 0.45;
+    const h = 0.55 + R() * 0.4;
+    const sp = bentPath(V(Math.cos(a) * d, 0, Math.sin(a) * d), V((R() - 0.5) * 0.3, 1, (R() - 0.5) * 0.3), h, 4, V(0, 0, 0), R);
+    stems.push(taperTube(sp, sp.map((_, k) => 0.012 * (1 - k / (sp.length - 1) * 0.5)), { radial: 4, vScale: 1, color: 0x4a6a2a }));
+    const top = sp[sp.length - 1];
+    for (let k = 0; k < 4; k++) {
+      const pa = (k / 4) * Math.PI * 2 + R();
+      petals.push(P(new THREE.CircleGeometry(0.1, 6), 0xffffff, { sx: 1, sy: 0.6, rx: -Math.PI / 2 + 0.6, ry: pa, x: top.x + Math.cos(pa) * 0.075, y: top.y + 0.01, z: top.z + Math.sin(pa) * 0.075 }));
+    }
+    petals.push(P(new THREE.SphereGeometry(0.028, 6, 4), 0xffffff, { x: top.x, y: top.y + 0.02, z: top.z }));
+  }
+  for (let i = 0; i < 10; i++) {
+    const a = R() * Math.PI * 2;
+    stems.push(bladeStrip(Math.cos(a) * 0.2, Math.sin(a) * 0.2, 0.25 + R() * 0.15, 0.04, 0.5, a, 0x3a5a22, 0x6f8f45));
+  }
+  return [
+    { geo: merge(stems), mat: 'reed', when: 'both', shrink: 0.5 },
+    { geo: merge(petals), mat: 'moonPetal', when: 'live' },
+  ];
+}
+
 // 종류 → 변형 목록(변형마다 조각 목록)
 export function buildNodeModels() {
   return {
@@ -277,6 +333,11 @@ export function buildNodeModels() {
     node_mushroom: [mushrooms(71), mushrooms(72)],
     node_oak: [oak(81), oak(82), oak(83)],
     node_iron: [ironRock(91), ironRock(92)],
+    node_fish: [fishSchool(111, 'fishSilver'), fishSchool(112, 'fishSilver', { n: 5, len: 0.3 })],
+    node_fish_eel: [fishSchool(121, 'fishEel', { n: 3, len: 0.4, eel: true })],
+    node_fish_trout: [fishSchool(131, 'fishTrout', { n: 3, len: 0.48 })],
+    node_fish_glow: [fishSchool(141, 'spirit', { n: 5, len: 0.32 })],
+    node_moonherb: [moonherb(151), moonherb(152)],
   };
 }
 
@@ -285,4 +346,5 @@ export const NODE_CHIP = {
   node_driftwood: 0xa59a88, node_birch: 0xe8e2d2, node_stone: 0x8c8780, node_copper: 0xc07a45,
   node_reed: 0x9aa860, node_berry: 0xb02838, node_seaweed: 0x4a5a22, node_mushroom: 0x9a7048,
   node_oak: 0x6a4a2c, node_iron: 0x6a4a3a,
+  node_fish: 0xdfeff5, node_fish_eel: 0xdfeff5, node_fish_trout: 0xdfeff5, node_fish_glow: 0x9fe6ff, node_moonherb: 0xf3e9b4,
 };

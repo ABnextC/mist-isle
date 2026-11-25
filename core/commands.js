@@ -17,7 +17,7 @@ import { placeAsk, placeBid, cancelOrder, npcSell, tradable, repairCost, findOrd
 import { contribute, projectOpen, needLeft, silverLeft, shipFee } from './settlements.js';
 import { deliver, countDeliverable } from './orders.js';
 import { addXp } from './systems/progress.js';
-import { startAttack, startDodge, interrupt, equipped, equipLoad, heavyCostOf, dodgeCostOf, weaponOf, startAbility } from './systems/combat.js';
+import { startAttack, startDodge, interrupt, equipped, equipLoad, heavyCostOf, dodgeCostOf, weaponOf, startAbility, addAura } from './systems/combat.js';
 import { learnError, learn, loadoutOf, abilityOf, mOf, resetCost } from './systems/mastery.js';
 import { corpseOpen, skinLoot, skinSeconds } from './systems/mobs.js';
 import { talkDue, talk, useDue, useObj, available, startQuest, nearNpc, questNote, TALK_RANGE, USE_RANGE, BOARD_RANGE, talkReady, npcShown } from './systems/quests.js';
@@ -142,6 +142,7 @@ const GATHER = {
     if (dist(a, node) > cfg.gather.rangeM) return 'too_far';
     const type = data.nodes[node.type];
     if (a.skills[type.skill].level < type.level) return 'level_low';
+    if (type.night && !ctx.clock.isNight(state.t)) return 'night_only'; // 달맞이풀(v2.4)
     let tool = null;
     if (c.tool) {
       tool = a.bag.find((e) => e.uid === c.tool);
@@ -314,13 +315,19 @@ const EAT = {
     const e = findEntry(a.bag, c.key);
     if (!e) return 'no_item';
     const def = ctx.data.items[e.item];
-    if (def.kind !== 'consumable' || (!def.buff && def.effect !== 'heal')) return 'not_food';
-    if (def.effect === 'heal' && a.cb && a.cb.downUntil > 0) return 'down';
+    if (def.kind !== 'consumable' || (!def.buff && def.effect !== 'heal' && !def.potion)) return 'not_food';
+    if ((def.effect === 'heal' || def.potion) && a.cb && a.cb.downUntil > 0) return 'down';
+    // 물약(v2.4): 마신 뒤 잠깐은 또 못 마신다
+    if (def.potion && (a.cb?.potionAt || 0) > ctx.state.t) return 'potion_cd';
     return { e, def };
   },
   execute(ctx, a, c, p) {
     const stats = p.e.stats;
     takeQty(a.bag, c.key, 1);
+    if (p.def.potion) {
+      drinkPotion(ctx, a, p.def, stats);
+      return;
+    }
     if (p.def.effect === 'heal') {
       const before = a.cb.hp;
       a.cb.hp = Math.min(a.cb.maxHp, Math.round((a.cb.hp + (stats.heal ?? 20)) * 100) / 100);
@@ -337,6 +344,27 @@ const EAT = {
     questNote(ctx, a, 'eat');
   },
 };
+
+// 물약(v2.4): 회복은 바로, 기력·강건은 잠깐 기운(aura), 마나는 바로 채운다
+function drinkPotion(ctx, a, def, stats) {
+  const cb = a.cb;
+  const t = ctx.state.t;
+  cb.potionAt = Math.round((t + (ctx.cfg.combat.potionCd ?? 15)) * 100) / 100;
+  const k = stats.power || 0;
+  let v = 0;
+  if (def.potion === 'heal') {
+    const before = cb.hp;
+    cb.hp = Math.round(Math.min(cb.maxHp, cb.hp + cb.maxHp * k) * 100) / 100;
+    v = Math.round(cb.hp - before);
+  } else if (def.potion === 'mana') {
+    const before = cb.mp ?? 0;
+    cb.mp = Math.round(Math.min(cb.maxMp ?? 100, before + (cb.maxMp ?? 100) * k) * 100) / 100;
+    v = Math.round(cb.mp - before);
+  } else if (def.potion === 'stamina') addAura(ctx, a, 'potion_stamina', { sec: stats.sec || 60, stRegen: k });
+  else if (def.potion === 'guard') addAura(ctx, a, 'potion_guard', { sec: stats.sec || 90, dr: k });
+  a.stats.potions = (a.stats.potions || 0) + 1;
+  ctx.emit('potion', { actor: a.id, item: def.id, kind: def.potion, value: v, power: k, sec: stats.sec || 0 });
+}
 
 // all: 재료와 가구를 모두 창고로. 도구와 음식은 가방에 남긴다.
 const STORE = {
@@ -568,8 +596,8 @@ const EQUIP = {
     const e = a.bag.find((x) => x.uid === c.uid);
     if (!e) return 'no_item';
     const def = ctx.data.items[e.item];
-    // c.alt(v1.1): 무기를 둘째 자리(등)에 낀다
-    const slot = def.weapon ? (c.alt ? 'weapon2' : 'weapon') : def.armor?.slot;
+    // c.alt(v1.1): 무기를 둘째 자리(등)에 낀다. 장신구(v2.4)는 반지·목걸이 자리
+    const slot = def.weapon ? (c.alt ? 'weapon2' : 'weapon') : def.armor?.slot || def.jewel?.slot;
     if (!slot) return 'not_equipment';
     if (def.weapon && a.cb?.act) return 'busy';
     return { e, slot };
@@ -586,7 +614,7 @@ const EQUIP = {
 
 const UNEQUIP = {
   validate(ctx, a, c) {
-    if (!['weapon', 'weapon2', 'head', 'chest', 'legs'].includes(c.slot)) return 'bad_args';
+    if (!['weapon', 'weapon2', 'head', 'chest', 'legs', 'ring', 'neck'].includes(c.slot)) return 'bad_args';
     return {};
   },
   execute(ctx, a, c) {

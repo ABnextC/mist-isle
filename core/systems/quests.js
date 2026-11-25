@@ -14,7 +14,7 @@ import { isDown } from './combat.js';
 import { unlockedSet } from './unlocks.js';
 import { factionDef, factionOf, gainInfluence } from './factions.js';
 import { projectProgress } from '../settlements.js';
-import { bondTier, questBond, dailyMult } from './bonds.js';
+import { bondTier, questBond, dailyMult, isBirthday } from './bonds.js';
 import { accompanying } from './allies.js';
 
 export const TALK_RANGE = 3.6;
@@ -49,6 +49,9 @@ export function available(ctx, a, q) {
   if (!Q || Q.active[q.id] || q.kind === 'main') return false;
   if (q.repeat === 'daily') {
     if (Q.daily[q.id] === ctx.clock.day(ctx.state.t)) return false;
+  } else if (q.repeat === 'birthday') {
+    // 생일 잔치(v1.8): 그 사람 생일에만, 그날 한 번
+    if (!isBirthday(ctx, q.giver) || Q.daily[q.id] === ctx.clock.day(ctx.state.t)) return false;
   } else if (Q.done[q.id] != null) return false;
   // 세력 의뢰(v1.5): 그 세력 사람만
   if (q.faction && a.faction?.id !== q.faction) return false;
@@ -84,7 +87,7 @@ function complete(ctx, a, id) {
   const before = unlockedSet(ctx, a);
   delete Q.active[id];
   Q.done[id] = ctx.state.t;
-  if (q.repeat === 'daily') Q.daily[id] = ctx.clock.day(ctx.state.t);
+  if (q.repeat === 'daily' || q.repeat === 'birthday') Q.daily[id] = ctx.clock.day(ctx.state.t);
   for (const it of q.takes || []) delete Q.items[it];
   const reward = giveReward(ctx, a, q);
   questBond(ctx, a, q);

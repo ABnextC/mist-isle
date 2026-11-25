@@ -2,6 +2,7 @@
 // 같은 조각은 언제 다시 만들어도 같은 풀이 난다(조각 좌표로 난수를 정한다).
 
 import * as THREE from 'three';
+import { SEASON_GLSL, seasonUniforms } from './materials.js';
 
 const CHUNK = 16;
 
@@ -48,6 +49,7 @@ export function createGrass(scene, { hf, ground, tier, avoid }) {
   const mat = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide, roughness: 0.92, metalness: 0, envMapIntensity: 0.45 });
   mat.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, U);
+    seasonUniforms(sh);
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>
         attribute vec4 iOff;
@@ -91,6 +93,7 @@ export function createGrass(scene, { hf, ground, tier, avoid }) {
         vec3 transformed = iOff.xyz + R * position.x * wid + vec3(0.0, y, 0.0) + off;`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
+        ${SEASON_GLSL}
         varying float vT;
         varying float vVar;
         varying vec3 vTint;`)
@@ -101,7 +104,7 @@ export function createGrass(scene, { hf, ground, tier, avoid }) {
       .replace('#include <color_fragment>', `#include <color_fragment>
         vec3 base = vec3(0.028, 0.055, 0.014);
         vec3 tip = mix(vec3(0.12, 0.25, 0.04), vec3(0.27, 0.27, 0.08), smoothstep(0.8, 0.98, vVar));
-        diffuseColor.rgb = mix(base, tip, smoothstep(0.0, 1.0, vT)) * (0.84 + 0.32 * fract(vVar * 7.31)) * vTint;`)
+        diffuseColor.rgb = seasonize(mix(base, tip, smoothstep(0.0, 1.0, vT)) * (0.84 + 0.32 * fract(vVar * 7.31)) * vTint, 1.0);`)
       .replace('#include <aomap_fragment>', `
         float bladeAo = mix(0.35, 1.0, vT);
         reflectedLight.indirectDiffuse *= bladeAo;

@@ -28,6 +28,7 @@ import { mobsTick } from './systems/mobs.js';
 import { combatTick, arrowsTick } from './systems/combat.js';
 import { fightersTick } from './ai/fighter.js';
 import { alliesTick } from './systems/allies.js';
+import { dayOfMonth, seasonOf, isMarketDay } from './systems/calendar.js';
 import { agentsTick } from './systems/agents.js';
 import { questsTick } from './systems/quests.js';
 
@@ -113,6 +114,9 @@ function wrap(ctx, bus) {
         dailyOrders(ctx);
         econDaily(ctx);
         ctx.emit('day.start', { day: d + 1 });
+        // 계절·장날(v1.8)
+        if (dayOfMonth(ctx) === 1) ctx.emit('season.start', { season: seasonOf(ctx).id });
+        if (isMarketDay(ctx)) ctx.emit('market.day', { day: d + 1 });
       }
     }
     if (state.tick % thinkEvery === 0) agentsTick(ctx);

@@ -3,6 +3,7 @@
 
 import * as THREE from 'three';
 import { NOISE } from './glsl.js';
+import { SEASON_GLSL, seasonUniforms } from './materials.js';
 
 export const AREA = { x0: -80, z0: -100, size: 560 };
 // 지역마다 그리는 땅(v0.6): 지역 경계 둘레로 바깥 80m(남쪽 바다 100m)까지
@@ -256,6 +257,7 @@ function terrainMaterial(tex, paths, canopy, tier, zone = [1e9, 10], zone2 = nul
   mat.userData.uniforms = U;
   mat.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, U);
+    seasonUniforms(sh);
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;\nvarying vec3 vWNor;')
       .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
@@ -263,6 +265,7 @@ function terrainMaterial(tex, paths, canopy, tier, zone = [1e9, 10], zone2 = nul
         vWNor = normalize(mat3(modelMatrix) * objectNormal);`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
+        ${SEASON_GLSL}
         varying vec3 vWPos;
         varying vec3 vWNor;
         uniform highp sampler2DArray tTerA;
@@ -385,6 +388,7 @@ function terrainMaterial(tex, paths, canopy, tier, zone = [1e9, 10], zone2 = nul
         // 늪: 탁한 풀빛, 물가는 젖어서 더 어둡다
         gcol *= mix(vec3(1.0), uTint2 * mix(0.78, 1.0, smoothstep(0.1, 1.2, hgt)), zoneF2);
         vec3 lcol = A1.rgb * mix(vec3(0.72, 0.74, 0.8), vec3(1.05, 1.0, 0.95), smoothstep(0.25, 0.75, m3));
+        gcol = seasonize(gcol, 1.0);
         vec3 alb = gcol * b0 + lcol * b1 + A2.rgb * b2 + A3.rgb * b3 + rA.rgb * b4 + A5.rgb * b5;
         // 물가는 젖어서 어둡고 매끈하다. 물속은 푸르게 가라앉는다.
         float wet = smoothstep(0.75, 0.15, hgt) * (b3 + b5 + b2 * 0.5);

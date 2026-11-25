@@ -5,6 +5,8 @@
 // 정을 쌓을 수 있는 사람은 gifts가 있는 마을 사람이다. 행위자마다 따로 쌓이므로 멀티플레이에서도 그대로 쓴다.
 
 import { giveReward } from './quests.js';
+import { dayOfMonth, isMarketDay } from './calendar.js';
+export { dayOfMonth };
 
 export const B = (ctx) => ctx.data.config.bond;
 export const bondable = (ctx, npc) => !!ctx.data.npcs[npc]?.gifts;
@@ -64,7 +66,6 @@ export function greet(ctx, a, npc) {
 }
 
 // ── 달력·생일(v1.7): 한 달은 monthDays일. 그날이 생일이면 선물 정이 곱절 ──
-export const dayOfMonth = (ctx, t = ctx.state.t) => (ctx.clock.day(t) % ctx.data.config.calendar.monthDays) + 1;
 export const isBirthday = (ctx, npc, t) => ctx.data.npcs[npc]?.birthday === dayOfMonth(ctx, t);
 export function daysToBirthday(ctx, npc) {
   const bd = ctx.data.npcs[npc]?.birthday;
@@ -130,7 +131,7 @@ export function knownLikes(ctx, a, npc) {
 export function questBond(ctx, a, q) {
   const C = B(ctx).quest;
   if (q.giver && q.giver !== 'board') {
-    const k = q.bond ? 'bond' : q.repeat === 'daily' ? 'daily' : q.faction ? 'faction' : q.chain ? 'chain' : q.kind === 'side' ? 'side' : null;
+    const k = q.repeat === 'birthday' ? 'party' : q.bond ? 'bond' : q.repeat === 'daily' ? 'daily' : q.faction ? 'faction' : q.chain ? 'chain' : q.kind === 'side' ? 'side' : null;
     if (k) gainBond(ctx, a, q.giver, C[k], 'quest');
   }
   const met = new Set(q.steps.filter((s) => s.type === 'talk' && s.npc !== '@leader' && s.npc !== q.giver).map((s) => s.npc));
@@ -138,7 +139,11 @@ export function questBond(ctx, a, q) {
 }
 
 // 오늘의 부탁 보상: 정의 단계만큼 은화가 는다(단계마다 10%)
-export const dailyMult = (ctx, a, q) => (q.repeat === 'daily' && q.giver && bondable(ctx, q.giver) ? 1 + B(ctx).dailyBonus * bondTier(ctx, a, q.giver) : 1);
+// 장날(v1.8)엔 1.5배 더
+export function dailyMult(ctx, a, q) {
+  if (q.repeat !== 'daily' || !q.giver || !bondable(ctx, q.giver)) return 1;
+  return (1 + B(ctx).dailyBonus * bondTier(ctx, a, q.giver)) * (ctx.clock && isMarketDay(ctx) ? ctx.data.config.calendar.marketDaily : 1);
+}
 
 // 정이 든 뒤의 말: 지금 단계 이하에서 가장 높은 단계의 말
 export function bondLines(ctx, a, npc) {

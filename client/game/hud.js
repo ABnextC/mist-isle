@@ -19,6 +19,7 @@ import { guildLevel, aiRoom, hireable } from '../../core/systems/guilds.js';
 import { npcPos } from '../../core/world.js';
 import { bondable, bondPts, bondTier, tierName, nextTier, giftDue, giftable, knownLikes, bondLines, B as bondCfg, isBirthday, daysToBirthday, perkOf, inviteDue } from '../../core/systems/bonds.js';
 import { allyOf } from '../../core/systems/allies.js';
+import { seasonOf, dayOfMonth, isMarketDay } from '../../core/systems/calendar.js';
 import { questCtx, lifeSteps } from './quest.js';
 import { isUnlocked, allowedProject, chapterReached } from '../../core/systems/unlocks.js';
 
@@ -303,7 +304,11 @@ export function createHud(root, game, { touch, onAct }) {
     fps = fps ? fps * 0.95 + (1 / Math.max(dt, 1e-3)) * 0.05 : 60;
     const a = game.state.actors[PID];
     const c = game.clock.describe(game.state.t);
-    set(el.clock, `${c.night ? '🌙' : '☀️'} ${c.day}일차 · ${c.night ? '밤' : '낮'} ${c.minutesLeft}분${settings.speed > 1 ? ` · ×${settings.speed}` : ''}`);
+    // 계절·장날(v1.8)
+    const qc = questCtx(game);
+    const sn = seasonOf(qc);
+    set(el.clock, `${sn.icon} ${sn.name} ${dayOfMonth(qc)}일${isMarketDay(qc) ? ' · 🏮장날' : ''} · ${c.night ? '🌙 밤' : '☀️ 낮'} ${c.minutesLeft}분${settings.speed > 1 ? ` · ×${settings.speed}` : ''}`);
+    if (el.clock.title !== `${c.day}일차`) el.clock.title = `${c.day}일차`;
     const max = data.config.focus.max;
     el.focusbar.style.width = `${(a.focus / max) * 100}%`;
     set(el.focus, `집중력 ${Math.floor(a.focus)}${settings.focus ? ' · 쓰는 중' : ''}`);
@@ -997,7 +1002,7 @@ export function createHud(root, game, { touch, onAct }) {
       const q = offers[0];
       const lines = chatLines(npc, a);
       panel.chat ??= Math.floor(Math.random() * lines.length);
-      const tag = q.bond ? `💗 마음의 부탁(${esc(tierName(ctx, q.bond))})` : q.repeat === 'daily' ? '오늘의 부탁' : q.faction ? `${data.factions.list.find((f) => f.id === q.faction).icon} 세력 의뢰` : q.chain ? `연작 · ${esc(q.chain)}` : '부가 의뢰';
+      const tag = q.repeat === 'birthday' ? '🎂 생일 잔치' : q.bond ? `💗 마음의 부탁(${esc(tierName(ctx, q.bond))})` : q.repeat === 'daily' ? '오늘의 부탁' : q.faction ? `${data.factions.list.find((f) => f.id === q.faction).icon} 세력 의뢰` : q.chain ? `연작 · ${esc(q.chain)}` : '부가 의뢰';
       return `${head}<p class="say">${esc(lines[panel.chat % lines.length])}</p><div class="qtag">${tag} · ${esc(q.name)}</div><p class="say">${esc(q.summary)}</p>
         <p class="muted">▶ ${q.steps.map((st) => esc(st.text)).join(' → ')}</p>${rewardHtml(q.reward)}
         <div class="btns"><button class="pri" data-act="quest-accept" data-v="${q.id}">맡겠습니다</button>${inviteBtn(a, panel.npc)}${giftBtn}<button data-act="close">다음에</button></div>`;
@@ -1135,7 +1140,7 @@ export function createHud(root, game, { touch, onAct }) {
       const offers = data.lists.quests.filter((q) => q.kind === 'side' && available(qctx, a, q) && npcShown(qctx, a, q.giver));
       if (offers.length) {
         const where = (npc) => { const n = data.npcs[npc]; return n.at ? data.settlements?.[n.at]?.name || game.state.settlements[n.at]?.name || '' : data.sites?.[n.site]?.name || ''; };
-        const kindOf = (q) => (q.bond ? '💗 ' : q.repeat === 'daily' ? '🔁 ' : q.faction ? `${data.factions.list.find((f) => f.id === q.faction).icon} ` : q.chain ? '🔗 ' : '');
+        const kindOf = (q) => (q.repeat === 'birthday' ? '🎂 ' : q.bond ? '💗 ' : q.repeat === 'daily' ? '🔁 ' : q.faction ? `${data.factions.list.find((f) => f.id === q.faction).icon} ` : q.chain ? '🔗 ' : '');
         body += `<h3>받을 수 있는 의뢰</h3><ul class="list">${offers.map((q) => `<li><div><b>${kindOf(q)}${esc(q.name)}</b><small>${esc(data.npcs[q.giver].name)} · ${esc(where(q.giver))}${q.chain ? ` · ${esc(q.chain)}` : ''} · 🪙 ${q.reward?.silver || 0}</small></div></li>`).join('')}</ul><p class="muted">🔁 날마다 · 🔗 이어지는 이야기 · 💗 정이 들어야 꺼내는 부탁 · 세력 표시는 그 세력 의뢰. 마을 사람은 하루 동안 일터 → 게시판 둘레 → 모닥불 → 집 앞으로 옮겨 다닌다.</p>`;
       }
       const doneN = data.lists.quests.filter((q) => q.kind === 'side' && !q.repeat && Q.done[q.id] != null).length;

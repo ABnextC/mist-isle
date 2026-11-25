@@ -19,7 +19,8 @@ import { settlementDaily } from '../core/settlements.js';
 import { isUnlocked, allowedProject, chapterReached } from '../core/systems/unlocks.js';
 import { stepNpc, npcMark, available, npcShown } from '../core/systems/quests.js';
 import { bondPts, knownLikes, isBirthday } from '../core/systems/bonds.js';
-import { repairCost } from '../core/market.js';
+import { seasonOf, dayOfMonth, seasonYield, isMarketDay } from '../core/systems/calendar.js';
+import { repairCost, listingFee } from '../core/market.js';
 import { rankOf, xpMult, extraChance, feeMult, recipeAllowed, tasksOf, factionOnEvent } from '../core/systems/factions.js';
 import { addXp } from '../core/systems/progress.js';
 import { plotPos, homeOf, comfortOf } from '../core/systems/housing.js';
@@ -1314,7 +1315,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '1.7.0');
+  eq(st.meta.engine, '1.8.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1506,7 +1507,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '1.7.0');
+  eq(st.meta.engine, '1.8.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -2157,6 +2158,59 @@ test('동행: 단짝 사냥꾼은 하루 한 번 같이 나서서 주인을 노�
   ok(npcShown(W, a, 'gombo'), '마을로 돌아왔다');
   Object.assign(a, { x: npcPos(W, 'gombo').x + 1, z: npcPos(W, 'gombo').z });
   eq(g.dispatch({ type: 'INVITE', actor: 'p1', npc: 'gombo' }).error, 'invited_today', '하루 한 번');
+});
+
+console.log('계절·장날·생일 잔치 (v1.8)');
+
+test('계절과 장날: 한 달이 한 계절, 가을엔 버섯이 많이 나고 겨울엔 산딸기가 덜 난다. 장날엔 수수료·판매세가 절반', () => {
+  const g = createGame({ data, seed: 9, actors: [{ id: 'p1', kind: 'player' }] });
+  const W = { state: g.state, data, cfg: data.config, statics: g.statics, terrain: g.terrain, clock: g.clock };
+  const day = data.config.time.secondsPerGameDay;
+  const M = data.config.calendar.monthDays;
+  const toDay = (n) => { g.state.t = n * day - data.config.time.startPhase * day + 10; };
+  toDay(0);
+  eq(seasonOf(W).id, 'spring');
+  eq(dayOfMonth(W), 1);
+  toDay(M * 2 + 3);
+  eq(seasonOf(W).id, 'autumn');
+  ok(seasonYield(W, 'mushroom') > 1.3, '가을 버섯');
+  toDay(M * 3);
+  ok(seasonYield(W, 'berry') < 1, '겨울 산딸기');
+  toDay(M * 4);
+  eq(seasonOf(W).id, 'spring', '한 해가 돈다');
+  toDay(5);
+  const a = g.state.actors.p1;
+  const normal = listingFee(W, 'actor', 'p1', 's_port', 10, 100);
+  toDay(6);
+  ok(isMarketDay(W), '7일은 장날');
+  eq(listingFee(W, 'actor', 'p1', 's_port', 10, 100), Math.round(normal / 2), '절반');
+  ok(a);
+});
+
+test('생일 잔치: 이웃 이상인 사람의 생일에만 열리고, 이웃 둘을 불러 좋아하는 걸 건네면 정이 크게 든다. 그날 한 번', () => {
+  const g = createGame({ data, seed: 9, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  const W = { state: g.state, data, cfg: data.config, statics: g.statics, terrain: g.terrain, clock: g.clock };
+  const q = data.quests.bd_seondeok;
+  eq(q.steps.length, 3, '둘을 부르고 건넨다');
+  a.bonds = { seondeok: { pts: 45, greet: null, gift: null, known: {} } };
+  ok(!available(W, a, q), '생일이 아니면 없다');
+  const day = data.config.time.secondsPerGameDay;
+  const M = data.config.calendar.monthDays;
+  g.state.t += (((data.npcs.seondeok.birthday - dayOfMonth(W)) + M) % M) * day;
+  ok(available(W, a, q), '생일');
+  a.bonds.seondeok.pts = 20;
+  ok(!available(W, a, q), '이웃이어야');
+  a.bonds.seondeok.pts = 45;
+  const goTo = (npc) => { const p = npcPos(W, npc); Object.assign(a, { x: p.x + 1, z: p.z }); };
+  goTo('seondeok');
+  ok(g.dispatch({ type: 'QUEST_ACCEPT', actor: 'p1', quest: q.id }).ok);
+  for (const st of q.steps.slice(0, 2)) { goTo(st.npc); ok(g.dispatch({ type: 'TALK', actor: 'p1', npc: st.npc }).ok, st.npc); }
+  a.bag.push({ item: q.steps[2].take ? Object.keys(q.steps[2].take)[0] : 'food_soup', lot: null, bonus: null, stats: { buff: 0.1, minutes: 30 }, qty: 1 });
+  goTo('seondeok');
+  ok(g.dispatch({ type: 'TALK', actor: 'p1', npc: 'seondeok' }).ok, '잔치');
+  eq(bondPts(a, 'seondeok'), 45 + data.config.bond.quest.party, '잔치 정');
+  ok(!available(W, a, q), '그날 한 번');
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

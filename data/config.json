@@ -1,5 +1,5 @@
 {
-  "dataVersion": 23,
+  "dataVersion": 24,
   "skillCap": 60,
   "time": {
     "secondsPerGameDay": 3600,
@@ -1575,7 +1575,8 @@
       "faction": 10,
       "daily": 4,
       "bond": 20,
-      "talk": 3
+      "talk": 3,
+      "party": 25
     },
     "dailyBonus": 0.1,
     "revealTier": 2,
@@ -1586,6 +1587,89 @@
     "birthdayMult": 2
   },
   "calendar": {
-    "monthDays": 28
+    "monthDays": 28,
+    "seasons": [
+      {
+        "id": "spring",
+        "name": "봄",
+        "icon": "🌸",
+        "yield": {
+          "sap_birch": 1.4,
+          "fiber_reed": 1.15,
+          "berry": 0.8,
+          "mushroom": 0.9
+        },
+        "say": "안개가 옅어지고 자작나무에 물이 오른다. 수액이 많이 난다.",
+        "tint": [
+          1.05,
+          1.1,
+          0.9,
+          0.35
+        ],
+        "frost": 0
+      },
+      {
+        "id": "summer",
+        "name": "여름",
+        "icon": "☀️",
+        "yield": {
+          "berry": 1.4,
+          "seaweed": 1.25,
+          "fiber_reed": 1.2,
+          "sap_birch": 0.85
+        },
+        "say": "산딸기가 익고 바다풀이 무성하다.",
+        "tint": [
+          0.92,
+          1.06,
+          0.78,
+          0.35
+        ],
+        "frost": 0
+      },
+      {
+        "id": "autumn",
+        "name": "가을",
+        "icon": "🍂",
+        "yield": {
+          "mushroom": 1.5,
+          "berry": 1.15,
+          "log_oak": 1.1,
+          "seaweed": 0.85
+        },
+        "say": "숲에 버섯이 돋고 참나무가 단단해진다.",
+        "tint": [
+          1.9,
+          0.88,
+          0.32,
+          0.95
+        ],
+        "frost": 0
+      },
+      {
+        "id": "winter",
+        "name": "겨울",
+        "icon": "❄️",
+        "yield": {
+          "ore_copper": 1.15,
+          "ore_iron": 1.15,
+          "stone": 1.1,
+          "berry": 0.6,
+          "mushroom": 0.7,
+          "sap_birch": 0.6
+        },
+        "say": "땅이 얼어 풀은 시들지만, 광맥은 캐기 좋다.",
+        "tint": [
+          1,
+          1,
+          1,
+          0
+        ],
+        "frost": 0.62
+      }
+    ],
+    "marketEvery": 7,
+    "marketFee": 0.5,
+    "marketDaily": 1.5
   }
 }

@@ -6,6 +6,7 @@
 // 행위자(플레이어·봇)와 AI 개척민(econ 에이전트), 마을(수요)이 같은 함수를 쓴다.
 
 import { feeMult } from './systems/factions.js';
+import { isMarketDay } from './systems/calendar.js';
 import { effectiveProps, avgProps, addEntry } from './inventory.js';
 import { starOf } from './formulas.js';
 import { agentMakerSold } from './systems/economy.js';
@@ -85,7 +86,7 @@ function party(ctx, kind, id, at) {
 function rates(ctx, kind, owner, at) {
   if (kind !== 'actor') return { fee: ctx.cfg.market.listingFee, tax: ctx.cfg.market.salesTax };
   const t = standingTier(ctx, ctx.state.actors[owner], at);
-  const m = feeMult(ctx, ctx.state.actors[owner], 'market'); // 자유 선단 혜택(v0.7)
+  const m = feeMult(ctx, ctx.state.actors[owner], 'market') * (ctx.clock && isMarketDay(ctx) ? ctx.cfg.calendar.marketFee : 1); // 자유 선단 혜택(v0.7)·장날(v1.8)
   return { fee: t.fee * m, tax: t.tax * m };
 }
 

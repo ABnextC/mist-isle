@@ -4888,6 +4888,1548 @@
           }
         ]
       }
+    },
+    {
+      "id": "bd_seondeok",
+      "kind": "side",
+      "giver": "seondeok",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "순덕의 생일 잔치",
+      "summary": "오늘은 순덕의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "makdong",
+          "text": "막동에게 순덕의 생일 잔치 알리기",
+          "say": [
+            "순덕 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "darae",
+          "text": "다래에게 순덕의 생일 잔치 알리기",
+          "say": [
+            "순덕 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "seondeok",
+          "text": "순덕에게 해초 버섯국 1 건네고 잔치 열기",
+          "take": {
+            "food_soup": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_makdong",
+      "kind": "side",
+      "giver": "makdong",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "막동의 생일 잔치",
+      "summary": "오늘은 막동의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "seondeok",
+          "text": "순덕에게 막동의 생일 잔치 알리기",
+          "say": [
+            "막동 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "darae",
+          "text": "다래에게 막동의 생일 잔치 알리기",
+          "say": [
+            "막동 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "makdong",
+          "text": "막동에게 뱃사람 육포 1 건네고 잔치 열기",
+          "take": {
+            "food_jerky": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_soli",
+      "kind": "side",
+      "giver": "soli",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "솔이의 생일 잔치",
+      "summary": "오늘은 솔이의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "gombo",
+          "text": "곰보 영감에게 솔이의 생일 잔치 알리기",
+          "say": [
+            "솔이 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "cheongun",
+          "text": "청운에게 솔이의 생일 잔치 알리기",
+          "say": [
+            "솔이 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "soli",
+          "text": "솔이에게 들버섯 1 건네고 잔치 열기",
+          "take": {
+            "mushroom": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_gombo",
+      "kind": "side",
+      "giver": "gombo",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "곰보 영감의 생일 잔치",
+      "summary": "오늘은 곰보 영감의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "soli",
+          "text": "솔이에게 곰보 영감의 생일 잔치 알리기",
+          "say": [
+            "곰보 영감 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "cheongun",
+          "text": "청운에게 곰보 영감의 생일 잔치 알리기",
+          "say": [
+            "곰보 영감 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "gombo",
+          "text": "곰보 영감에게 참나무 원목 1 건네고 잔치 열기",
+          "take": {
+            "log_oak": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_jogae",
+      "kind": "side",
+      "giver": "jogae",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "조개댁의 생일 잔치",
+      "summary": "오늘은 조개댁의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "baram",
+          "text": "바람에게 조개댁의 생일 잔치 알리기",
+          "say": [
+            "조개댁 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "noseon",
+          "text": "노 선장에게 조개댁의 생일 잔치 알리기",
+          "say": [
+            "조개댁 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "jogae",
+          "text": "조개댁에게 해초 1 건네고 잔치 열기",
+          "take": {
+            "seaweed": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_noseon",
+      "kind": "side",
+      "giver": "noseon",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "노 선장의 생일 잔치",
+      "summary": "오늘은 노 선장의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "baram",
+          "text": "바람에게 노 선장의 생일 잔치 알리기",
+          "say": [
+            "노 선장 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "jogae",
+          "text": "조개댁에게 노 선장의 생일 잔치 알리기",
+          "say": [
+            "노 선장 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "noseon",
+          "text": "노 선장에게 뱃사람 육포 1 건네고 잔치 열기",
+          "take": {
+            "food_jerky": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_baram",
+      "kind": "side",
+      "giver": "baram",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "바람의 생일 잔치",
+      "summary": "오늘은 바람의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "noseon",
+          "text": "노 선장에게 바람의 생일 잔치 알리기",
+          "say": [
+            "바람 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "jogae",
+          "text": "조개댁에게 바람의 생일 잔치 알리기",
+          "say": [
+            "바람 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "baram",
+          "text": "바람에게 갈대 섬유 1 건네고 잔치 열기",
+          "take": {
+            "fiber_reed": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_cheongun",
+      "kind": "side",
+      "giver": "cheongun",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "청운의 생일 잔치",
+      "summary": "오늘은 청운의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "soli",
+          "text": "솔이에게 청운의 생일 잔치 알리기",
+          "say": [
+            "청운 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "gombo",
+          "text": "곰보 영감에게 청운의 생일 잔치 알리기",
+          "say": [
+            "청운 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "cheongun",
+          "text": "청운에게 영맥 차 1 건네고 잔치 열기",
+          "take": {
+            "food_tea": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_darae",
+      "kind": "side",
+      "giver": "darae",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "다래의 생일 잔치",
+      "summary": "오늘은 다래의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "makdong",
+          "text": "막동에게 다래의 생일 잔치 알리기",
+          "say": [
+            "다래 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "seondeok",
+          "text": "순덕에게 다래의 생일 잔치 알리기",
+          "say": [
+            "다래 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "darae",
+          "text": "다래에게 해초 1 건네고 잔치 열기",
+          "take": {
+            "seaweed": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_doseon",
+      "kind": "side",
+      "giver": "doseon",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "도선의 생일 잔치",
+      "summary": "오늘은 도선의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "boatswain",
+          "text": "억쇠에게 도선의 생일 잔치 알리기",
+          "say": [
+            "도선 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "lamp_aide",
+          "text": "단아에게 도선의 생일 잔치 알리기",
+          "say": [
+            "도선 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "doseon",
+          "text": "도선에게 뱃사람 육포 1 건네고 잔치 열기",
+          "take": {
+            "food_jerky": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_pal",
+      "kind": "side",
+      "giver": "pal",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "팔복의 생일 잔치",
+      "summary": "오늘은 팔복의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "scribe",
+          "text": "글보에게 팔복의 생일 잔치 알리기",
+          "say": [
+            "팔복 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "lamp_aide",
+          "text": "단아에게 팔복의 생일 잔치 알리기",
+          "say": [
+            "팔복 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "pal",
+          "text": "팔복에게 거친 원석 1 건네고 잔치 열기",
+          "take": {
+            "gem_rough": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_okhwa",
+      "kind": "side",
+      "giver": "okhwa",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "옥화의 생일 잔치",
+      "summary": "오늘은 옥화의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "ggul",
+          "text": "꿀벌댁에게 옥화의 생일 잔치 알리기",
+          "say": [
+            "옥화 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "hansol",
+          "text": "한솔에게 옥화의 생일 잔치 알리기",
+          "say": [
+            "옥화 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "okhwa",
+          "text": "옥화에게 영맥 차 1 건네고 잔치 열기",
+          "take": {
+            "food_tea": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_hansol",
+      "kind": "side",
+      "giver": "hansol",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "한솔의 생일 잔치",
+      "summary": "오늘은 한솔의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "ggul",
+          "text": "꿀벌댁에게 한솔의 생일 잔치 알리기",
+          "say": [
+            "한솔 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "okhwa",
+          "text": "옥화에게 한솔의 생일 잔치 알리기",
+          "say": [
+            "한솔 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "hansol",
+          "text": "한솔에게 참나무 목재 1 건네고 잔치 열기",
+          "take": {
+            "lumber_oak": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_ggul",
+      "kind": "side",
+      "giver": "ggul",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "꿀벌댁의 생일 잔치",
+      "summary": "오늘은 꿀벌댁의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "okhwa",
+          "text": "옥화에게 꿀벌댁의 생일 잔치 알리기",
+          "say": [
+            "꿀벌댁 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "hansol",
+          "text": "한솔에게 꿀벌댁의 생일 잔치 알리기",
+          "say": [
+            "꿀벌댁 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "ggul",
+          "text": "꿀벌댁에게 자작나무 수액 1 건네고 잔치 열기",
+          "take": {
+            "sap_birch": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_beodeul",
+      "kind": "side",
+      "giver": "beodeul",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "버들 할매의 생일 잔치",
+      "summary": "오늘은 버들 할매의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "miru",
+          "text": "미루에게 버들 할매의 생일 잔치 알리기",
+          "say": [
+            "버들 할매 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "jaegan",
+          "text": "재간에게 버들 할매의 생일 잔치 알리기",
+          "say": [
+            "버들 할매 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "beodeul",
+          "text": "버들 할매에게 해초 버섯국 1 건네고 잔치 열기",
+          "take": {
+            "food_soup": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_jaegan",
+      "kind": "side",
+      "giver": "jaegan",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "재간의 생일 잔치",
+      "summary": "오늘은 재간의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "beodeul",
+          "text": "버들 할매에게 재간의 생일 잔치 알리기",
+          "say": [
+            "재간 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "miru",
+          "text": "미루에게 재간의 생일 잔치 알리기",
+          "say": [
+            "재간 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "jaegan",
+          "text": "재간에게 철주괴 1 건네고 잔치 열기",
+          "take": {
+            "ingot_iron": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_miru",
+      "kind": "side",
+      "giver": "miru",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "미루의 생일 잔치",
+      "summary": "오늘은 미루의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "beodeul",
+          "text": "버들 할매에게 미루의 생일 잔치 알리기",
+          "say": [
+            "미루 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "jaegan",
+          "text": "재간에게 미루의 생일 잔치 알리기",
+          "say": [
+            "미루 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "miru",
+          "text": "미루에게 산딸기 1 건네고 잔치 열기",
+          "take": {
+            "berry": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_jumo",
+      "kind": "side",
+      "giver": "jumo",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "금순의 생일 잔치",
+      "summary": "오늘은 금순의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "aksa",
+          "text": "소리에게 금순의 생일 잔치 알리기",
+          "say": [
+            "금순 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "okhwa",
+          "text": "옥화에게 금순의 생일 잔치 알리기",
+          "say": [
+            "금순 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "jumo",
+          "text": "금순에게 구운 고기 1 건네고 잔치 열기",
+          "take": {
+            "food_meat": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_aksa",
+      "kind": "side",
+      "giver": "aksa",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "소리의 생일 잔치",
+      "summary": "오늘은 소리의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "jumo",
+          "text": "금순에게 소리의 생일 잔치 알리기",
+          "say": [
+            "소리 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "okhwa",
+          "text": "옥화에게 소리의 생일 잔치 알리기",
+          "say": [
+            "소리 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "aksa",
+          "text": "소리에게 영맥 차 1 건네고 잔치 열기",
+          "take": {
+            "food_tea": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_beomdol",
+      "kind": "side",
+      "giver": "beomdol",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "범돌의 생일 잔치",
+      "summary": "오늘은 범돌의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "nallae",
+          "text": "날래에게 범돌의 생일 잔치 알리기",
+          "say": [
+            "범돌 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "hansol",
+          "text": "한솔에게 범돌의 생일 잔치 알리기",
+          "say": [
+            "범돌 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "beomdol",
+          "text": "범돌에게 생고기 1 건네고 잔치 열기",
+          "take": {
+            "meat_raw": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_nallae",
+      "kind": "side",
+      "giver": "nallae",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "날래의 생일 잔치",
+      "summary": "오늘은 날래의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "beomdol",
+          "text": "범돌에게 날래의 생일 잔치 알리기",
+          "say": [
+            "날래 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "hansol",
+          "text": "한솔에게 날래의 생일 잔치 알리기",
+          "say": [
+            "날래 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "nallae",
+          "text": "날래에게 생가죽 1 건네고 잔치 열기",
+          "take": {
+            "hide_raw": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_seoksu",
+      "kind": "side",
+      "giver": "seoksu",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "석수의 생일 잔치",
+      "summary": "오늘은 석수의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "musoe",
+          "text": "무쇠에게 석수의 생일 잔치 알리기",
+          "say": [
+            "석수 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "danbi",
+          "text": "단비에게 석수의 생일 잔치 알리기",
+          "say": [
+            "석수 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "seoksu",
+          "text": "석수에게 거친 원석 1 건네고 잔치 열기",
+          "take": {
+            "gem_rough": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_musoe",
+      "kind": "side",
+      "giver": "musoe",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "무쇠의 생일 잔치",
+      "summary": "오늘은 무쇠의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "danbi",
+          "text": "단비에게 무쇠의 생일 잔치 알리기",
+          "say": [
+            "무쇠 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "seoksu",
+          "text": "석수에게 무쇠의 생일 잔치 알리기",
+          "say": [
+            "무쇠 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "musoe",
+          "text": "무쇠에게 참나무 원목 1 건네고 잔치 열기",
+          "take": {
+            "log_oak": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_danbi",
+      "kind": "side",
+      "giver": "danbi",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "단비의 생일 잔치",
+      "summary": "오늘은 단비의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "musoe",
+          "text": "무쇠에게 단비의 생일 잔치 알리기",
+          "say": [
+            "단비 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "seoksu",
+          "text": "석수에게 단비의 생일 잔치 알리기",
+          "say": [
+            "단비 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "danbi",
+          "text": "단비에게 들버섯 1 건네고 잔치 열기",
+          "take": {
+            "mushroom": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_gangjang",
+      "kind": "side",
+      "giver": "gangjang",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "갱장의 생일 잔치",
+      "summary": "오늘은 갱장의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "seoksu",
+          "text": "석수에게 갱장의 생일 잔치 알리기",
+          "say": [
+            "갱장 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "musoe",
+          "text": "무쇠에게 갱장의 생일 잔치 알리기",
+          "say": [
+            "갱장 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "gangjang",
+          "text": "갱장에게 철주괴 1 건네고 잔치 열기",
+          "take": {
+            "ingot_iron": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_boreum",
+      "kind": "side",
+      "giver": "boreum",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "보름의 생일 잔치",
+      "summary": "오늘은 보름의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "suryeon",
+          "text": "수련에게 보름의 생일 잔치 알리기",
+          "say": [
+            "보름 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "boreum",
+          "text": "보름에게 구운 고기 1 건네고 잔치 열기",
+          "take": {
+            "food_meat": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_suryeon",
+      "kind": "side",
+      "giver": "suryeon",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "수련의 생일 잔치",
+      "summary": "오늘은 수련의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "boreum",
+          "text": "보름에게 수련의 생일 잔치 알리기",
+          "say": [
+            "수련 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "suryeon",
+          "text": "수련에게 영맥 차 1 건네고 잔치 열기",
+          "take": {
+            "food_tea": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_lamp_aide",
+      "kind": "side",
+      "giver": "lamp_aide",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "단아의 생일 잔치",
+      "summary": "오늘은 단아의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "scribe",
+          "text": "글보에게 단아의 생일 잔치 알리기",
+          "say": [
+            "단아 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "pal",
+          "text": "팔복에게 단아의 생일 잔치 알리기",
+          "say": [
+            "단아 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "lamp_aide",
+          "text": "단아에게 자작나무 수액 1 건네고 잔치 열기",
+          "take": {
+            "sap_birch": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_boatswain",
+      "kind": "side",
+      "giver": "boatswain",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "억쇠의 생일 잔치",
+      "summary": "오늘은 억쇠의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "doseon",
+          "text": "도선에게 억쇠의 생일 잔치 알리기",
+          "say": [
+            "억쇠 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "lamp_aide",
+          "text": "단아에게 억쇠의 생일 잔치 알리기",
+          "say": [
+            "억쇠 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "boatswain",
+          "text": "억쇠에게 뱃사람 육포 1 건네고 잔치 열기",
+          "take": {
+            "food_jerky": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bd_scribe",
+      "kind": "side",
+      "giver": "scribe",
+      "repeat": "birthday",
+      "bond": 2,
+      "requires": [],
+      "name": "글보의 생일 잔치",
+      "summary": "오늘은 글보의 생일이다. 이웃을 불러 모으고, 좋아하는 것을 선물하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "pal",
+          "text": "팔복에게 글보의 생일 잔치 알리기",
+          "say": [
+            "글보 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "lamp_aide",
+          "text": "단아에게 글보의 생일 잔치 알리기",
+          "say": [
+            "글보 생일이라고? 이런, 몰랐네. 꼭 갈게."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "scribe",
+          "text": "글보에게 거친 원석 1 건네고 잔치 열기",
+          "take": {
+            "gem_rough": 1
+          },
+          "say": [
+            "…이게 다 뭐예요? 다들 모여서.",
+            "내 생일을 기억해 준 사람은 오랜만이에요. 고마워요, 정말로."
+          ],
+          "reply": "생일 축하해요"
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
     }
   ]
 }

@@ -9,6 +9,7 @@ import { avgProps, keyOf } from '../../core/inventory.js';
 import { starOf } from '../../core/formulas.js';
 import { stars, ERR, josa } from '../../core/text.js';
 import { bondTier, isBirthday } from '../../core/systems/bonds.js';
+import { seasonOf } from '../../core/systems/calendar.js';
 import { createScene } from './scene.js';
 import { startTier, createAutoTuner, chosenTier, setChosenTier, TIERS } from './gfx/quality.js';
 import { bakeMaterials, makeCanvasTextures } from './gfx/texgen.js';
@@ -87,6 +88,7 @@ async function boot() {
   };
   const ctex = makeCanvasTextures();
   const view = createScene(canvas, { tier, textures: ctex });
+  const seasonNow = { tint: [1, 1, 1, 0], frost: 0 };
   // 섬이 여럿(v0.6): 내가 있는 섬만 그린다. 다른 섬으로 건너가면 저장하고 다시 불러온다
   const region = regionAt(data.lists.regions, game.state.actors[PID].x);
   setArea(region.bounds);
@@ -811,6 +813,15 @@ async function boot() {
     if (ev.actor !== PID) return;
     hud.toast(`🏹 ${josa(data.npcs[ev.npc].name, '은', '는')} ${LEAVE[ev.reason] || LEAVE.sent}`, 'info');
   });
+  // 계절·장날(v1.8)
+  game.on('season.start', (ev) => {
+    const s = data.config.calendar.seasons.find((x) => x.id === ev.season);
+    hud.banner(`${s.icon} ${s.name}이 왔다`);
+    setTimeout(() => hud.toast(`${s.icon} ${s.say}`, 'info', 7000), 1800);
+  });
+  game.on('market.day', () => {
+    setTimeout(() => hud.toast('🏮 장날이다. 오늘은 거래소 수수료·판매세가 절반이고, 오늘의 부탁 은화가 1.5배다', 'info', 7000), 1200);
+  });
   game.on('day.start', () => {
     const a = me();
     if (!a?.bonds) return;
@@ -1031,6 +1042,16 @@ async function boot() {
     G.uTime.value = sec;
     G.uWind.value = 0.75 + 0.35 * Math.sin(sec * 0.13) * Math.sin(sec * 0.051 + 1.3);
     const sky = view.setTime(game.clock.phase(t), game.clock.dayFrac, focusVec, sec, now);
+    // 계절 색(v1.8): 계절이 바뀌면 천천히 옮긴다
+    {
+      const sn = seasonOf(questCtx(game));
+      if (!seasonNow.id) Object.assign(seasonNow, { tint: [...sn.tint], frost: sn.frost });
+      seasonNow.id = sn.id;
+      seasonNow.tint = seasonNow.tint.map((v, i) => v + (sn.tint[i] - v) * Math.min(1, dt * 0.5));
+      seasonNow.frost += (sn.frost - seasonNow.frost) * Math.min(1, dt * 0.5);
+      G.uSeason.value.set(...seasonNow.tint);
+      G.uFrost.value = seasonNow.frost;
+    }
     const nightK = sky.night;
     G.uDay.value = sky.day;
     water.update(sec, view.camera);

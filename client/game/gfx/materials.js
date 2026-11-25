@@ -6,7 +6,22 @@
 import * as THREE from 'three';
 import { NOISE } from './glsl.js';
 
-export const G = { uTime: { value: 0 }, uWind: { value: 1 }, uDay: { value: 1 } };
+export const G = { uTime: { value: 0 }, uWind: { value: 1 }, uDay: { value: 1 }, uSeason: { value: new THREE.Vector4(1, 1, 1, 0) }, uFrost: { value: 0 } };
+// 계절 색(v1.8): 초록빛을 계절 색으로 옮긴다. green=1이면 초록 여부를 묻지 않고 다 옮긴다(땅 풀빛)
+export const SEASON_GLSL = `
+  uniform vec4 uSeason;
+  uniform float uFrost;
+  vec3 seasonize(vec3 c, float green) {
+    float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+    float gr = max(green, clamp((c.g - max(c.r, c.b)) / max(c.g, 1e-3) * 4.0, 0.0, 1.0));
+    c = mix(c, c * uSeason.rgb, gr * uSeason.a);
+    c = mix(c, mix(vec3(l * 1.6 + 0.05), vec3(0.8, 0.85, 0.95) * (l * 1.4 + 0.12), 0.45), gr * uFrost);
+    return c;
+  }`;
+export const seasonUniforms = (sh) => {
+  sh.uniforms.uSeason = G.uSeason;
+  sh.uniforms.uFrost = G.uFrost;
+};
 
 const PACKED_N = `
   vec4 pkN = texture2D( normalMap, vNormalMapUv );
@@ -158,7 +173,7 @@ export function rockMaterial(t, { moss = 0.6, copper = false, iron = false, wet 
 
 // 잎·갈대: 알파 테스트 카드, 바람에 흔들림, 뒷면이 어두워지지 않게 한쪽 노멀을 쓴다.
 // sway: 높이 1m당 흔들림(m). 키가 클수록 많이 흔들린다.
-export function foliageMaterial({ map = null, color = 0xffffff, sway = 0.08, alphaTest = 0.45, roughness = 0.75, translucency = 0.35, vertexColors = false } = {}) {
+export function foliageMaterial({ map = null, color = 0xffffff, sway = 0.08, alphaTest = 0.45, roughness = 0.75, translucency = 0.35, vertexColors = false, seasonal = true } = {}) {
   const m = new THREE.MeshStandardMaterial({
     map, color, alphaTest: map ? alphaTest : 0, side: THREE.DoubleSide, roughness, metalness: 0, vertexColors,
   });
@@ -166,6 +181,7 @@ export function foliageMaterial({ map = null, color = 0xffffff, sway = 0.08, alp
     sh.uniforms.uTime = G.uTime;
     sh.uniforms.uWind = G.uWind;
     sh.uniforms.uDay = G.uDay;
+    seasonUniforms(sh);
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>
         uniform float uTime;
@@ -190,7 +206,9 @@ export function foliageMaterial({ map = null, color = 0xffffff, sway = 0.08, alp
           transformed += normal * sin(uTime * 6.0 + ph * 3.0 + transformed.y * 4.0) * 0.012 * hgt * uWind;
         }`);
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float uDay;')
+      .replace('#include <common>', '#include <common>\nuniform float uDay;' + SEASON_GLSL)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+        ${seasonal ? 'diffuseColor.rgb = seasonize(diffuseColor.rgb, 0.0);' : ''}`)
       // 멀리서 밉맵이 알파를 깎아 잎이 듬성해지지 않게, 밉 단계만큼 알파를 키운다
       .replace('#include <alphatest_fragment>', `
         #ifdef USE_MAP
@@ -212,7 +230,7 @@ export function foliageMaterial({ map = null, color = 0xffffff, sway = 0.08, alp
         reflectedLight.indirectSpecular *= 0.15;
         reflectedLight.directSpecular *= 0.4;`);
   };
-  const key = `leaf|${sway}|${translucency}|${map ? 1 : 0}`;
+  const key = `leaf|${sway}|${translucency}|${map ? 1 : 0}|${seasonal ? 1 : 0}`;
   m.customProgramCacheKey = () => key;
   return m;
 }
@@ -243,7 +261,7 @@ export function makeMaterials(tex, ctex) {
     flowers: foliageMaterial({ map: ctex.flowers, sway: 0.3, translucency: 0.3, roughness: 0.7, alphaTest: 0.5 }),
     fern: foliageMaterial({ map: ctex.fern, sway: 0.25, translucency: 0.45, roughness: 0.7, alphaTest: 0.42 }),
     reed: foliageMaterial({ color: 0xffffff, sway: 0.25, translucency: 0.3, vertexColors: true, roughness: 0.7 }),
-    seaweed: foliageMaterial({ color: 0xffffff, sway: 0.35, translucency: 0.2, vertexColors: true, roughness: 0.55 }),
+    seaweed: foliageMaterial({ color: 0xffffff, sway: 0.35, translucency: 0.2, vertexColors: true, roughness: 0.55, seasonal: false }),
     plantSolid: foliageMaterial({ color: 0xffffff, sway: 0.06, translucency: 0.1, vertexColors: true, roughness: 0.6 }),
     metal: plainMaterial(0x8d9399, { roughness: 0.38, metalness: 0.9 }),
     iron: plainMaterial(0x3a3c40, { roughness: 0.55, metalness: 0.85 }),

@@ -1,5 +1,5 @@
 {
-  "dataVersion": 17,
+  "dataVersion": 18,
   "skillCap": 60,
   "time": {
     "secondsPerGameDay": 3600,
@@ -1218,8 +1218,46 @@
         "mult": 1.45,
         "targets": 2,
         "blockCut": 0.65
+      },
+      "bow": {
+        "range": 2.0,
+        "arc": 60,
+        "light": 0.75,
+        "heavy": 1.25,
+        "windup": 0.42,
+        "heavyWindup": 0.95,
+        "mult": 1.0,
+        "targets": 1,
+        "blockCut": 0.5,
+        "shot": {
+          "speed": 40,
+          "range": 26,
+          "r": 0.35,
+          "proj": "arrow",
+          "aim": 9
+        }
+      },
+      "staff": {
+        "range": 2.0,
+        "arc": 60,
+        "light": 0.7,
+        "heavy": 1.2,
+        "windup": 0.35,
+        "heavyWindup": 0.85,
+        "mult": 0.85,
+        "targets": 1,
+        "blockCut": 0.5,
+        "shot": {
+          "speed": 22,
+          "range": 20,
+          "r": 0.45,
+          "proj": "bolt",
+          "aim": 12
+        }
       }
-    }
+    },
+    "mana": 100,
+    "manaRegen": 6
   },
   "settle": {
     "prosper": {

@@ -93,6 +93,44 @@
      "desc": "땅을 울려 무리를 묶는다"
     }
    ]
+  },
+  "bow": {
+   "name": "활",
+   "icon": "🏹",
+   "desc": "멀리서 쏜다. 짧게 누르면 빠른 화살, 길게 당기면 센 화살. 막기는 약하다.",
+   "trees": [
+    {
+     "id": "marks",
+     "name": "사수",
+     "icon": "🎯",
+     "desc": "멀리서 정확하게"
+    },
+    {
+     "id": "ranger",
+     "name": "야영꾼",
+     "icon": "🏕️",
+     "desc": "묶고 빠지며 버틴다"
+    }
+   ]
+  },
+  "staff": {
+   "name": "지팡이",
+   "icon": "🪄",
+   "desc": "마력탄을 쏜다. 스킬은 기력 대신 마나를 쓴다(마나 100, 저절로 찬다). 막기는 약하다.",
+   "trees": [
+    {
+     "id": "fire",
+     "name": "화염",
+     "icon": "🔥",
+     "desc": "태우고 터뜨린다"
+    },
+    {
+     "id": "frost",
+     "name": "서리",
+     "icon": "❄️",
+     "desc": "얼리고 묶는다"
+    }
+   ]
   }
  },
  "nodes": [
@@ -116,7 +154,8 @@
     "mult": 1.6,
     "range": 2.6,
     "arc": 50,
-    "targets": 1
+    "targets": 1,
+    "clip": "sk_sword_blade1"
    }
   },
   {
@@ -155,7 +194,8 @@
     "mult": 1.3,
     "range": 2.4,
     "arc": 100,
-    "targets": 2
+    "targets": 2,
+    "clip": "sk_sword_blade2"
    }
   },
   {
@@ -256,7 +296,8 @@
     "bleed": {
      "mult": 0.15,
      "sec": 4
-    }
+    },
+    "clip": "sk_sword_blade3"
    }
   },
   {
@@ -347,7 +388,8 @@
     "arc": 100,
     "targets": 2,
     "knock": 3,
-    "stun": 0.8
+    "stun": 0.8,
+    "clip": "sk_sword_guard1"
    }
   },
   {
@@ -385,7 +427,8 @@
     "buff": {
      "sec": 6,
      "dr": 0.35
-    }
+    },
+    "clip": "sk_sword_guard2"
    }
   },
   {
@@ -485,7 +528,8 @@
     "buff": {
      "sec": 5,
      "dr": 0.15
-    }
+    },
+    "clip": "sk_sword_guard3"
    }
   },
   {
@@ -573,7 +617,8 @@
     "dur": 0.8,
     "mult": 1.4,
     "range": 3.2,
-    "targets": 5
+    "targets": 5,
+    "clip": "sk_axe_berserk1"
    }
   },
   {
@@ -612,7 +657,8 @@
      "sec": 8,
      "dmg": 0.25,
      "speed": 0.1
-    }
+    },
+    "clip": "sk_axe_berserk2"
    }
   },
   {
@@ -706,7 +752,8 @@
     "range": 2.6,
     "arc": 360,
     "targets": 4,
-    "stun": 0.5
+    "stun": 0.5,
+    "clip": "sk_axe_berserk3"
    }
   },
   {
@@ -797,7 +844,8 @@
     "range": 3.8,
     "arc": 40,
     "targets": 1,
-    "knock": -2.5
+    "knock": -2.5,
+    "clip": "sk_axe_butcher1"
    }
   },
   {
@@ -839,7 +887,8 @@
     "execute": {
      "below": 0.35,
      "mult": 3.0
-    }
+    },
+    "clip": "sk_axe_butcher2"
    }
   },
   {
@@ -938,7 +987,8 @@
     "bleed": {
      "mult": 0.2,
      "sec": 6
-    }
+    },
+    "clip": "sk_axe_butcher3"
    }
   },
   {
@@ -1031,7 +1081,8 @@
     "mult": 1.5,
     "range": 4.4,
     "arc": 24,
-    "targets": 3
+    "targets": 3,
+    "clip": "sk_spear_reach1"
    }
   },
   {
@@ -1074,7 +1125,8 @@
     "slow": {
      "k": 0.3,
      "sec": 3
-    }
+    },
+    "clip": "sk_spear_reach2"
    }
   },
   {
@@ -1170,7 +1222,8 @@
     "weak": {
      "k": 0.3,
      "sec": 6
-    }
+    },
+    "clip": "sk_spear_reach3"
    }
   },
   {
@@ -1260,7 +1313,8 @@
     "mult": 2.2,
     "range": 3.4,
     "arc": 40,
-    "targets": 1
+    "targets": 1,
+    "clip": "sk_spear_duel1"
    }
   },
   {
@@ -1299,7 +1353,8 @@
     "range": 3.3,
     "arc": 60,
     "targets": 2,
-    "hop": -4
+    "hop": -4,
+    "clip": "sk_spear_duel2"
    }
   },
   {
@@ -1395,7 +1450,8 @@
     "mult": 1.5,
     "range": 3.0,
     "arc": 60,
-    "targets": 2
+    "targets": 2,
+    "clip": "sk_spear_duel3"
    }
   },
   {
@@ -1486,7 +1542,8 @@
     "arc": 70,
     "targets": 1,
     "stun": 1.2,
-    "guardBreak": true
+    "guardBreak": true,
+    "clip": "sk_hammer_crush1"
    }
   },
   {
@@ -1528,7 +1585,8 @@
     "expose": {
      "k": 0.2,
      "sec": 8
-    }
+    },
+    "clip": "sk_hammer_crush2"
    }
   },
   {
@@ -1623,7 +1681,8 @@
     "arc": 120,
     "targets": 3,
     "knock": 3,
-    "stun": 0.6
+    "stun": 0.6,
+    "clip": "sk_hammer_crush3"
    }
   },
   {
@@ -1715,7 +1774,8 @@
     "slow": {
      "k": 0.4,
      "sec": 3
-    }
+    },
+    "clip": "sk_hammer_quake1"
    }
   },
   {
@@ -1754,7 +1814,8 @@
     "range": 6,
     "arc": 30,
     "targets": 4,
-    "knock": 1.5
+    "knock": 1.5,
+    "clip": "sk_hammer_quake2"
    }
   },
   {
@@ -1846,7 +1907,8 @@
     "mult": 2.0,
     "range": 3.0,
     "targets": 6,
-    "stun": 0.8
+    "stun": 0.8,
+    "clip": "sk_hammer_quake3"
    }
   },
   {
@@ -1910,6 +1972,940 @@
    "text": "스킬 피해 +20%p, 스킬 재사용 대기 −10%p.",
    "p": {
     "ability": 0.2,
+    "cdr": 0.1
+   }
+  },
+  {
+   "id": "bow_marks_a1",
+   "weapon": "bow",
+   "tree": 0,
+   "row": 0,
+   "col": 0,
+   "req": 0,
+   "kind": "active",
+   "name": "관통 사격",
+   "icon": "➹",
+   "text": "힘껏 당겨 셋까지 꿰뚫는 화살(피해 180%).",
+   "ab": {
+    "kind": "shot",
+    "cd": 10,
+    "cost": 12,
+    "windup": 0.55,
+    "dur": 0.9,
+    "mult": 1.8,
+    "speed": 46,
+    "range": 30,
+    "r": 0.4,
+    "pierce": 3,
+    "proj": "arrow",
+    "clip": "sk_bow_marks1"
+   }
+  },
+  {
+   "id": "bow_marks_p1",
+   "weapon": "bow",
+   "tree": 0,
+   "row": 0,
+   "col": 1,
+   "req": 0,
+   "kind": "passive",
+   "name": "날카로운 촉",
+   "icon": "💪",
+   "text": "강공(당겨 쏘기) 피해 +12%.",
+   "p": {
+    "heavy": 0.12
+   }
+  },
+  {
+   "id": "bow_marks_a2",
+   "weapon": "bow",
+   "tree": 0,
+   "row": 0,
+   "col": 2,
+   "req": 0,
+   "kind": "active",
+   "name": "속사",
+   "icon": "🏹",
+   "text": "세 발을 부채꼴로 빠르게 쏜다(한 발 75%).",
+   "ab": {
+    "kind": "shot",
+    "cd": 12,
+    "cost": 14,
+    "windup": 0.35,
+    "dur": 0.8,
+    "mult": 0.75,
+    "speed": 40,
+    "range": 24,
+    "r": 0.35,
+    "shots": 3,
+    "spread": 7,
+    "proj": "arrow",
+    "clip": "sk_bow_marks2"
+   }
+  },
+  {
+   "id": "bow_marks_u1",
+   "weapon": "bow",
+   "tree": 0,
+   "row": 1,
+   "col": 0,
+   "req": 2,
+   "kind": "up",
+   "name": "갈고리 촉",
+   "icon": "⬆️",
+   "text": "관통 사격에 맞은 적은 4초 출혈.",
+   "needs": "bow_marks_a1",
+   "mod": {
+    "set": {
+     "bleed": {
+      "mult": 0.15,
+      "sec": 4
+     }
+    }
+   }
+  },
+  {
+   "id": "bow_marks_p2",
+   "weapon": "bow",
+   "tree": 0,
+   "row": 1,
+   "col": 1,
+   "req": 2,
+   "kind": "passive",
+   "name": "먼 표적",
+   "icon": "📏",
+   "text": "12m 넘게 떨어진 적에게 피해 +15%.",
+   "p": {
+    "far": 0.15
+   }
+  },
+  {
+   "id": "bow_marks_u2",
+   "weapon": "bow",
+   "tree": 0,
+   "row": 1,
+   "col": 2,
+   "req": 2,
+   "kind": "up",
+   "name": "다섯 발",
+   "icon": "⬆️",
+   "text": "속사가 다섯 발로 늘어난다.",
+   "needs": "bow_marks_a2",
+   "mod": {
+    "add": {
+     "shots": 2
+    }
+   }
+  },
+  {
+   "id": "bow_marks_p3",
+   "weapon": "bow",
+   "tree": 0,
+   "row": 2,
+   "col": 0,
+   "req": 4,
+   "kind": "passive",
+   "name": "급소 노리기",
+   "icon": "🎯",
+   "text": "치명타 확률 +8%.",
+   "p": {
+    "crit": 0.08
+   }
+  },
+  {
+   "id": "bow_marks_a3",
+   "weapon": "bow",
+   "tree": 0,
+   "row": 2,
+   "col": 1,
+   "req": 4,
+   "kind": "active",
+   "name": "저격",
+   "icon": "🔭",
+   "text": "오래 겨눠 한 발에 싣는다(피해 300%).",
+   "ab": {
+    "kind": "shot",
+    "cd": 18,
+    "cost": 18,
+    "windup": 1.1,
+    "dur": 1.45,
+    "mult": 3.0,
+    "speed": 60,
+    "range": 38,
+    "r": 0.35,
+    "proj": "arrow",
+    "expose": {
+     "k": 0.15,
+     "sec": 6
+    },
+    "clip": "sk_bow_marks3"
+   }
+  },
+  {
+   "id": "bow_marks_p4",
+   "weapon": "bow",
+   "tree": 0,
+   "row": 2,
+   "col": 2,
+   "req": 4,
+   "kind": "passive",
+   "name": "침착",
+   "icon": "⏱️",
+   "text": "스킬 재사용 대기 −10%.",
+   "p": {
+    "cdr": 0.1
+   }
+  },
+  {
+   "id": "bow_marks_p5",
+   "weapon": "bow",
+   "tree": 0,
+   "row": 3,
+   "col": 0,
+   "req": 6,
+   "kind": "passive",
+   "name": "첫 화살",
+   "icon": "🌅",
+   "text": "체력 80% 이상인 적에게 피해 +20%.",
+   "p": {
+    "fresh": 0.2
+   }
+  },
+  {
+   "id": "bow_marks_u3",
+   "weapon": "bow",
+   "tree": 0,
+   "row": 3,
+   "col": 1,
+   "req": 6,
+   "kind": "up",
+   "name": "무릎 쏘기",
+   "icon": "⬆️",
+   "text": "저격에 맞은 적은 0.8초 기절.",
+   "needs": "bow_marks_a3",
+   "mod": {
+    "set": {
+     "stun": 0.8
+    }
+   }
+  },
+  {
+   "id": "bow_marks_ult",
+   "weapon": "bow",
+   "tree": 0,
+   "row": 4,
+   "col": 1,
+   "req": 10,
+   "kind": "ult",
+   "name": "명사수",
+   "icon": "🌟",
+   "text": "치명타 확률 +5%p, 치명타 피해 +40%p.",
+   "p": {
+    "crit": 0.05,
+    "critDmg": 0.4
+   }
+  },
+  {
+   "id": "bow_ranger_a1",
+   "weapon": "bow",
+   "tree": 1,
+   "row": 0,
+   "col": 0,
+   "req": 0,
+   "kind": "active",
+   "name": "화살비",
+   "icon": "🌧️",
+   "text": "9m 앞에 화살을 퍼부어 2초 동안 네 번 때린다(한 번 50%, 느려짐).",
+   "ab": {
+    "kind": "zone",
+    "cd": 16,
+    "cost": 16,
+    "windup": 0.6,
+    "dur": 1.0,
+    "mult": 0.5,
+    "at": 9,
+    "range": 3.5,
+    "targets": 8,
+    "ticks": 4,
+    "every": 0.5,
+    "slow": {
+     "k": 0.25,
+     "sec": 2
+    },
+    "proj": "rain",
+    "clip": "sk_bow_ranger1"
+   }
+  },
+  {
+   "id": "bow_ranger_p1",
+   "weapon": "bow",
+   "tree": 1,
+   "row": 0,
+   "col": 1,
+   "req": 0,
+   "kind": "passive",
+   "name": "가벼운 발",
+   "icon": "🪶",
+   "text": "구르기 기력 −25%.",
+   "p": {
+    "dodgeCost": 0.25
+   }
+  },
+  {
+   "id": "bow_ranger_a2",
+   "weapon": "bow",
+   "tree": 1,
+   "row": 0,
+   "col": 2,
+   "req": 0,
+   "kind": "active",
+   "name": "물러서며 쏘기",
+   "icon": "↩️",
+   "text": "뒤로 5m 뛰며 쏜다(피해 120%).",
+   "ab": {
+    "kind": "shot",
+    "cd": 11,
+    "cost": 12,
+    "windup": 0.2,
+    "dur": 0.6,
+    "mult": 1.2,
+    "speed": 40,
+    "range": 24,
+    "r": 0.35,
+    "hop": -5,
+    "proj": "arrow",
+    "clip": "sk_bow_ranger2"
+   }
+  },
+  {
+   "id": "bow_ranger_u1",
+   "weapon": "bow",
+   "tree": 1,
+   "row": 1,
+   "col": 0,
+   "req": 2,
+   "kind": "up",
+   "name": "넓은 비",
+   "icon": "⬆️",
+   "text": "화살비 범위 +1m, 두 번 더 때린다.",
+   "needs": "bow_ranger_a1",
+   "mod": {
+    "add": {
+     "range": 1,
+     "ticks": 2
+    }
+   }
+  },
+  {
+   "id": "bow_ranger_p2",
+   "weapon": "bow",
+   "tree": 1,
+   "row": 1,
+   "col": 1,
+   "req": 2,
+   "kind": "passive",
+   "name": "숲의 숨",
+   "icon": "🌬️",
+   "text": "기력 회복 +20%.",
+   "p": {
+    "stRegen": 0.2
+   }
+  },
+  {
+   "id": "bow_ranger_u2",
+   "weapon": "bow",
+   "tree": 1,
+   "row": 1,
+   "col": 2,
+   "req": 2,
+   "kind": "up",
+   "name": "바람 발",
+   "icon": "⬆️",
+   "text": "물러서며 쏘기 뒤 3초간 이동 +30%.",
+   "needs": "bow_ranger_a2",
+   "mod": {
+    "set": {
+     "buff": {
+      "sec": 3,
+      "speed": 0.3
+     }
+    }
+   }
+  },
+  {
+   "id": "bow_ranger_p3",
+   "weapon": "bow",
+   "tree": 1,
+   "row": 2,
+   "col": 0,
+   "req": 4,
+   "kind": "passive",
+   "name": "발 묶인 먹이",
+   "icon": "🐌",
+   "text": "느려진 적에게 피해 +15%.",
+   "p": {
+    "vsSlow": 0.15
+   }
+  },
+  {
+   "id": "bow_ranger_a3",
+   "weapon": "bow",
+   "tree": 1,
+   "row": 2,
+   "col": 1,
+   "req": 4,
+   "kind": "active",
+   "name": "그물 화살",
+   "icon": "🕸️",
+   "text": "맞은 적을 3초간 60% 느리게 묶는다(피해 60%).",
+   "ab": {
+    "kind": "shot",
+    "cd": 13,
+    "cost": 10,
+    "windup": 0.35,
+    "dur": 0.7,
+    "mult": 0.6,
+    "speed": 32,
+    "range": 22,
+    "r": 0.6,
+    "slow": {
+     "k": 0.6,
+     "sec": 3
+    },
+    "proj": "net",
+    "clip": "sk_bow_ranger3"
+   }
+  },
+  {
+   "id": "bow_ranger_p4",
+   "weapon": "bow",
+   "tree": 1,
+   "row": 2,
+   "col": 2,
+   "req": 4,
+   "kind": "passive",
+   "name": "질긴 몸",
+   "icon": "❤️",
+   "text": "최대 체력 +15.",
+   "p": {
+    "maxHp": 15
+   }
+  },
+  {
+   "id": "bow_ranger_p5",
+   "weapon": "bow",
+   "tree": 1,
+   "row": 3,
+   "col": 0,
+   "req": 6,
+   "kind": "passive",
+   "name": "사냥 숨",
+   "icon": "🍖",
+   "text": "적을 쓰러뜨리면 기력 10 회복.",
+   "p": {
+    "killSt": 10
+   }
+  },
+  {
+   "id": "bow_ranger_u3",
+   "weapon": "bow",
+   "tree": 1,
+   "row": 3,
+   "col": 1,
+   "req": 6,
+   "kind": "up",
+   "name": "조이는 그물",
+   "icon": "⬆️",
+   "text": "그물에 걸린 적은 0.8초 기절.",
+   "needs": "bow_ranger_a3",
+   "mod": {
+    "set": {
+     "stun": 0.8
+    }
+   }
+  },
+  {
+   "id": "bow_ranger_ult",
+   "weapon": "bow",
+   "tree": 1,
+   "row": 4,
+   "col": 1,
+   "req": 10,
+   "kind": "ult",
+   "name": "바람걸음",
+   "icon": "🌟",
+   "text": "구른 뒤 3초간 피해 +30%, 이동 +20%.",
+   "p": {
+    "dodgeBuff": {
+     "sec": 3,
+     "dmg": 0.3,
+     "speed": 0.2
+    }
+   }
+  },
+  {
+   "id": "staff_fire_a1",
+   "weapon": "staff",
+   "tree": 0,
+   "row": 0,
+   "col": 0,
+   "req": 0,
+   "kind": "active",
+   "name": "화염구",
+   "icon": "☄️",
+   "text": "날아가 터지는 불덩이(피해 160%, 둘레 2.5m에 80%).",
+   "ab": {
+    "kind": "shot",
+    "cd": 6,
+    "mana": 20,
+    "windup": 0.45,
+    "dur": 0.8,
+    "mult": 1.6,
+    "speed": 24,
+    "range": 22,
+    "r": 0.5,
+    "explode": {
+     "r": 2.5,
+     "mult": 0.8
+    },
+    "bleed": {
+     "mult": 0.12,
+     "sec": 3
+    },
+    "proj": "fire",
+    "clip": "sk_staff_fire1"
+   }
+  },
+  {
+   "id": "staff_fire_p1",
+   "weapon": "staff",
+   "tree": 0,
+   "row": 0,
+   "col": 1,
+   "req": 0,
+   "kind": "passive",
+   "name": "불의 손",
+   "icon": "✨",
+   "text": "스킬 피해 +10%.",
+   "p": {
+    "ability": 0.1
+   }
+  },
+  {
+   "id": "staff_fire_a2",
+   "weapon": "staff",
+   "tree": 0,
+   "row": 0,
+   "col": 2,
+   "req": 0,
+   "kind": "active",
+   "name": "불기둥",
+   "icon": "🔥",
+   "text": "7m 앞에서 불기둥이 솟는다(피해 140%, 4초 화상).",
+   "ab": {
+    "kind": "zone",
+    "cd": 12,
+    "mana": 25,
+    "windup": 0.7,
+    "dur": 1.1,
+    "mult": 1.4,
+    "at": 7,
+    "range": 2.5,
+    "targets": 6,
+    "ticks": 1,
+    "every": 0.6,
+    "bleed": {
+     "mult": 0.25,
+     "sec": 4
+    },
+    "proj": "pillar",
+    "clip": "sk_staff_fire2"
+   }
+  },
+  {
+   "id": "staff_fire_u1",
+   "weapon": "staff",
+   "tree": 0,
+   "row": 1,
+   "col": 0,
+   "req": 2,
+   "kind": "up",
+   "name": "큰 불덩이",
+   "icon": "⬆️",
+   "text": "화염구 폭발 범위 +1m.",
+   "needs": "staff_fire_a1",
+   "mod": {
+    "add": {
+     "explode.r": 1
+    }
+   }
+  },
+  {
+   "id": "staff_fire_p2",
+   "weapon": "staff",
+   "tree": 0,
+   "row": 1,
+   "col": 1,
+   "req": 2,
+   "kind": "passive",
+   "name": "타는 냄새",
+   "icon": "🔥",
+   "text": "불타는(출혈) 적에게 피해 +15%.",
+   "p": {
+    "vsBleed": 0.15
+   }
+  },
+  {
+   "id": "staff_fire_u2",
+   "weapon": "staff",
+   "tree": 0,
+   "row": 1,
+   "col": 2,
+   "req": 2,
+   "kind": "up",
+   "name": "타오르는 땅",
+   "icon": "⬆️",
+   "text": "불기둥이 세 번 솟는다.",
+   "needs": "staff_fire_a2",
+   "mod": {
+    "add": {
+     "ticks": 2
+    }
+   }
+  },
+  {
+   "id": "staff_fire_p3",
+   "weapon": "staff",
+   "tree": 0,
+   "row": 2,
+   "col": 0,
+   "req": 4,
+   "kind": "passive",
+   "name": "마력 샘",
+   "icon": "💧",
+   "text": "마나 회복 +25%.",
+   "p": {
+    "mpRegen": 0.25
+   }
+  },
+  {
+   "id": "staff_fire_a3",
+   "weapon": "staff",
+   "tree": 0,
+   "row": 2,
+   "col": 1,
+   "req": 4,
+   "kind": "active",
+   "name": "화염 분출",
+   "icon": "🌋",
+   "text": "앞으로 5m 불길을 뿜는다(피해 120%, 3초 화상).",
+   "ab": {
+    "kind": "strike",
+    "cd": 10,
+    "mana": 22,
+    "windup": 0.35,
+    "dur": 0.9,
+    "mult": 1.2,
+    "range": 5,
+    "arc": 70,
+    "targets": 5,
+    "bleed": {
+     "mult": 0.2,
+     "sec": 3
+    },
+    "proj": "breath",
+    "clip": "sk_staff_fire3"
+   }
+  },
+  {
+   "id": "staff_fire_p4",
+   "weapon": "staff",
+   "tree": 0,
+   "row": 2,
+   "col": 2,
+   "req": 4,
+   "kind": "passive",
+   "name": "불꽃 튐",
+   "icon": "🎯",
+   "text": "치명타 확률 +6%.",
+   "p": {
+    "crit": 0.06
+   }
+  },
+  {
+   "id": "staff_fire_p5",
+   "weapon": "staff",
+   "tree": 0,
+   "row": 3,
+   "col": 0,
+   "req": 6,
+   "kind": "passive",
+   "name": "빠른 주문",
+   "icon": "⏱️",
+   "text": "스킬 재사용 대기 −10%.",
+   "p": {
+    "cdr": 0.1
+   }
+  },
+  {
+   "id": "staff_fire_u3",
+   "weapon": "staff",
+   "tree": 0,
+   "row": 3,
+   "col": 1,
+   "req": 6,
+   "kind": "up",
+   "name": "불바람",
+   "icon": "⬆️",
+   "text": "화염 분출이 2m 밀어낸다.",
+   "needs": "staff_fire_a3",
+   "mod": {
+    "set": {
+     "knock": 2
+    }
+   }
+  },
+  {
+   "id": "staff_fire_ult",
+   "weapon": "staff",
+   "tree": 0,
+   "row": 4,
+   "col": 1,
+   "req": 10,
+   "kind": "ult",
+   "name": "잿불",
+   "icon": "🌟",
+   "text": "화상(출혈) 피해 +50%.",
+   "p": {
+    "bleedDmg": 0.5
+   }
+  },
+  {
+   "id": "staff_frost_a1",
+   "weapon": "staff",
+   "tree": 1,
+   "row": 0,
+   "col": 0,
+   "req": 0,
+   "kind": "active",
+   "name": "얼음 창",
+   "icon": "🧊",
+   "text": "둘을 꿰뚫는 얼음 창(피해 130%, 3초간 35% 느리게).",
+   "ab": {
+    "kind": "shot",
+    "cd": 7,
+    "mana": 18,
+    "windup": 0.4,
+    "dur": 0.75,
+    "mult": 1.3,
+    "speed": 34,
+    "range": 24,
+    "r": 0.45,
+    "pierce": 2,
+    "slow": {
+     "k": 0.35,
+     "sec": 3
+    },
+    "proj": "ice",
+    "clip": "sk_staff_frost1"
+   }
+  },
+  {
+   "id": "staff_frost_p1",
+   "weapon": "staff",
+   "tree": 1,
+   "row": 0,
+   "col": 1,
+   "req": 0,
+   "kind": "passive",
+   "name": "시린 발",
+   "icon": "🐌",
+   "text": "느려진 적에게 피해 +20%.",
+   "p": {
+    "vsSlow": 0.2
+   }
+  },
+  {
+   "id": "staff_frost_a2",
+   "weapon": "staff",
+   "tree": 1,
+   "row": 0,
+   "col": 2,
+   "req": 0,
+   "kind": "active",
+   "name": "서리 고리",
+   "icon": "❄️",
+   "text": "둘레 4.5m를 얼린다(피해 90%, 3초간 50% 느리게).",
+   "ab": {
+    "kind": "aoe",
+    "cd": 14,
+    "mana": 24,
+    "windup": 0.45,
+    "dur": 0.9,
+    "mult": 0.9,
+    "range": 4.5,
+    "targets": 8,
+    "slow": {
+     "k": 0.5,
+     "sec": 3
+    },
+    "proj": "nova",
+    "clip": "sk_staff_frost2"
+   }
+  },
+  {
+   "id": "staff_frost_u1",
+   "weapon": "staff",
+   "tree": 1,
+   "row": 1,
+   "col": 0,
+   "req": 2,
+   "kind": "up",
+   "name": "얼려 박기",
+   "icon": "⬆️",
+   "text": "얼음 창에 맞은 적은 0.5초 기절.",
+   "needs": "staff_frost_a1",
+   "mod": {
+    "set": {
+     "stun": 0.5
+    }
+   }
+  },
+  {
+   "id": "staff_frost_p2",
+   "weapon": "staff",
+   "tree": 1,
+   "row": 1,
+   "col": 1,
+   "req": 2,
+   "kind": "passive",
+   "name": "깊은 우물",
+   "icon": "🔮",
+   "text": "최대 마나 +25.",
+   "p": {
+    "maxMp": 25
+   }
+  },
+  {
+   "id": "staff_frost_u2",
+   "weapon": "staff",
+   "tree": 1,
+   "row": 1,
+   "col": 2,
+   "req": 2,
+   "kind": "up",
+   "name": "깊은 서리",
+   "icon": "⬆️",
+   "text": "서리 고리에 걸린 적은 0.6초 기절.",
+   "needs": "staff_frost_a2",
+   "mod": {
+    "set": {
+     "stun": 0.6
+    }
+   }
+  },
+  {
+   "id": "staff_frost_p3",
+   "weapon": "staff",
+   "tree": 1,
+   "row": 2,
+   "col": 0,
+   "req": 4,
+   "kind": "passive",
+   "name": "얼음 살갗",
+   "icon": "🦺",
+   "text": "방어 +6.",
+   "p": {
+    "armor": 6
+   }
+  },
+  {
+   "id": "staff_frost_a3",
+   "weapon": "staff",
+   "tree": 1,
+   "row": 2,
+   "col": 1,
+   "req": 4,
+   "kind": "active",
+   "name": "빙결 갑옷",
+   "icon": "🛡️",
+   "text": "8초간 받는 피해 −25%, 마나 회복 +50%.",
+   "ab": {
+    "kind": "buff",
+    "cd": 22,
+    "mana": 20,
+    "windup": 0.3,
+    "dur": 0.7,
+    "buff": {
+     "sec": 8,
+     "dr": 0.25,
+     "mpRegen": 0.5
+    },
+    "proj": "frostarmor",
+    "clip": "sk_staff_frost3"
+   }
+  },
+  {
+   "id": "staff_frost_p4",
+   "weapon": "staff",
+   "tree": 1,
+   "row": 2,
+   "col": 2,
+   "req": 4,
+   "kind": "passive",
+   "name": "맑은 정신",
+   "icon": "💧",
+   "text": "마나 회복 +25%.",
+   "p": {
+    "mpRegen": 0.25
+   }
+  },
+  {
+   "id": "staff_frost_p5",
+   "weapon": "staff",
+   "tree": 1,
+   "row": 3,
+   "col": 0,
+   "req": 6,
+   "kind": "passive",
+   "name": "서리 탄",
+   "icon": "🔹",
+   "text": "마력탄(약공) 피해 +10%.",
+   "p": {
+    "light": 0.1
+   }
+  },
+  {
+   "id": "staff_frost_u3",
+   "weapon": "staff",
+   "tree": 1,
+   "row": 3,
+   "col": 1,
+   "req": 6,
+   "kind": "up",
+   "name": "녹는 얼음",
+   "icon": "⬆️",
+   "text": "빙결 갑옷을 입을 때 체력 15% 회복.",
+   "needs": "staff_frost_a3",
+   "mod": {
+    "set": {
+     "heal": 0.15
+    }
+   }
+  },
+  {
+   "id": "staff_frost_ult",
+   "weapon": "staff",
+   "tree": 1,
+   "row": 4,
+   "col": 1,
+   "req": 10,
+   "kind": "ult",
+   "name": "동장군",
+   "icon": "🌟",
+   "text": "느려진 적에게 피해 +20%p 더, 스킬 재사용 대기 −10%.",
+   "p": {
+    "vsSlow": 0.2,
     "cdr": 0.1
    }
   }

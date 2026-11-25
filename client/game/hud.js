@@ -62,7 +62,7 @@ export function createHud(root, game, { touch, onAct }) {
     <div class="bottom">
       <div class="progress" data-k="progress"><span></span></div>
       <div class="prompt" data-k="prompt"></div>
-      <div class="vitals" data-k="vitals"><div class="hp"><span data-k="hpbar"></span><em data-k="hp"></em></div><div class="st"><span data-k="stbar"></span></div></div>
+      <div class="vitals" data-k="vitals"><div class="hp"><span data-k="hpbar"></span><em data-k="hp"></em></div><div class="st"><span data-k="stbar"></span></div><div class="mp" data-k="mp"><span data-k="mpbar"></span></div></div>
       <div class="skillbar" data-k="skillbar"></div>
       ${touch ? '' : '<div class="keys">E 상호작용 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기 · 1·2·3 스킬 · X 무기 바꾸기 · <b>Esc 메뉴</b></div>'}
     </div>
@@ -76,7 +76,7 @@ export function createHud(root, game, { touch, onAct }) {
   const $ = (k) => root.querySelector(`[data-k="${k}"]`);
   const el = {
     clock: $('clock'), silver: $('silver'), focus: $('focus'),
-    vitals: $('vitals'), hp: $('hp'), hpbar: $('hpbar'), stbar: $('stbar'), downed: $('downed'), hurtfx: $('hurtfx'), focusbar: $('focusbar'), buffs: $('buffs'), quest: $('quest'),
+    vitals: $('vitals'), hp: $('hp'), hpbar: $('hpbar'), stbar: $('stbar'), mp: $('mp'), mpbar: $('mpbar'), downed: $('downed'), hurtfx: $('hurtfx'), focusbar: $('focusbar'), buffs: $('buffs'), quest: $('quest'),
     where: $('where'), feed: $('feed'), banner: $('banner'), progress: $('progress'), prompt: $('prompt'),
     actbtn: $('actbtn'), ptitle: $('ptitle'), pbody: $('pbody'), toast: $('toast'), skillbar: $('skillbar'),
     boss: $('boss'), bossname: $('bossname'), bossfill: $('bossfill'),
@@ -310,6 +310,11 @@ export function createHud(root, game, { touch, onAct }) {
       const C = data.config.combat;
       el.hpbar.style.width = `${(a.cb.hp / a.cb.maxHp) * 100}%`;
       el.stbar.style.width = `${(a.cb.st / C.stamina) * 100}%`;
+      // 마나(v1.2): 지팡이를 들었거나 덜 찼을 때만
+      const staffIn = a.equip?.weapon && data.items[a.bag.find((x) => x.uid === a.equip.weapon)?.item]?.weapon?.type === 'staff';
+      const mpShow = staffIn || (a.cb.mp ?? 100) < (a.cb.maxMp ?? 100) - 0.5;
+      el.mp.style.display = mpShow ? '' : 'none';
+      if (mpShow) el.mpbar.style.width = `${((a.cb.mp ?? 0) / (a.cb.maxMp || 100)) * 100}%`;
       set(el.hp, `${Math.ceil(a.cb.hp)}`);
       const busy = a.cb.hp < a.cb.maxHp || a.cb.st < C.stamina || Object.values(game.state.mobs).some((m) => m.target === PID && m.mode !== 'dead');
       el.vitals.classList.toggle('dim', !busy);
@@ -444,7 +449,7 @@ export function createHud(root, game, { touch, onAct }) {
       const left = Math.max(0, (a.cb?.cds?.[id] || 0) - t);
       const full = ab.cd || 1;
       const pct = left > 0 ? Math.round((left / full) * 20) * 5 : 0;
-      const low = (a.cb?.st ?? 0) < (ab.cost || 0);
+      const low = (a.cb?.st ?? 0) < (ab.cost || 0) || (a.cb?.mp ?? 0) < (ab.mana || 0);
       return `<button class="sk${left > 0 ? ' cd' : ''}${low ? ' low' : ''}" data-act="skill${i}" title="${esc(n.name)} — ${esc(n.text)}">${kb(i + 1)}<span>${n.icon}</span>${left > 0 ? `<i style="--p:${pct}%"></i><em>${Math.ceil(left)}</em>` : ''}</button>`;
     }).join('');
     const lv = m ? `<small class="mlv" title="${esc(data.weapons.types[W].name)} 숙련">${data.weapons.types[W].icon} ${m.lvl}</small>` : '';
@@ -518,7 +523,7 @@ export function createHud(root, game, { touch, onAct }) {
       let extra = '';
       if (sel.kind === 'active') {
         const ab = abilityOf(ctx, a, sel.id);
-        extra = `<small class="muted">재사용 ${ab.cd}초 · 기력 ${ab.cost || 0}</small>`;
+        extra = `<small class="muted">재사용 ${ab.cd}초 · ${ab.mana ? `마나 ${ab.mana}` : `기력 ${ab.cost || 0}`}</small>`;
         if (has) extra += `<div class="row">${[0, 1, 2].map((i) => `<button class="mini ${lo[i] === sel.id ? 'on' : ''}" data-act="lo-set" data-v="${W}:${i}:${sel.id}">${i + 1}${touch ? '칸' : '키'}에 걸기</button>`).join('')}</div>`;
       }
       const why = { no_points: '점수가 없다', locked: sel.needs && !m.nodes.includes(sel.needs) ? `먼저 「${esc(data.weaponNodes[sel.needs].name)}」` : `이 갈래에 ${sel.req}점 필요` }[err] || '';

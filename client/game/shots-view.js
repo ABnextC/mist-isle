@@ -26,6 +26,64 @@ export function createShotsView(scene, game, hf) {
     scene.add(g);
     return { g, spin };
   }
+  // 내 화살·마력탄(v1.2): 종류마다 모양·빛
+  const arrows = new Map();
+  const glowM = (c, k = 1.6) => new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: k, roughness: 0.4 });
+  const PJ = {
+    arrow: () => {
+      const g = new THREE.Group();
+      const s = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.8, 4), wood);
+      s.rotation.x = Math.PI / 2;
+      const tip = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.07, 4), metal);
+      tip.rotation.x = Math.PI / 2;
+      tip.position.z = 0.43;
+      const fl = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.004, 0.1), glowM(0xe8e0d0, 0.2));
+      fl.position.z = -0.35;
+      g.add(s, tip, fl);
+      return g;
+    },
+    bolt: () => new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), glowM(0x9ad8ff, 2.2)),
+    fire: () => new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 10), glowM(0xff7a2a, 3)),
+    ice: () => {
+      const m = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.7, 6), glowM(0xbfe8ff, 1.6));
+      m.rotation.x = Math.PI / 2;
+      return m;
+    },
+    net: () => {
+      const m = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.02, 4, 12), glowM(0xd8d0b0, 0.3));
+      return m;
+    },
+  };
+  function makeArrow(kind) {
+    const base = kind.replace('_heavy', '');
+    const g = new THREE.Group();
+    const o = (PJ[base] || PJ.arrow)();
+    g.add(o);
+    if (kind.endsWith('_heavy')) g.scale.setScalar(1.5);
+    scene.add(g);
+    return { g, o, spin: base === 'net' || base === 'bolt' };
+  }
+  function updateArrows(lag) {
+    const seen = new Set();
+    for (const s of game.state.arrows || []) {
+      seen.add(s.id);
+      let v = arrows.get(s.id);
+      if (!v) {
+        v = makeArrow(s.proj || 'arrow');
+        arrows.set(s.id, v);
+      }
+      const x = s.x + s.vx * lag;
+      const z = s.z + s.vz * lag;
+      v.g.position.set(x, hf.height(x, z) + 1.3, z);
+      v.g.rotation.y = Math.atan2(s.vx, s.vz);
+      if (v.spin) v.o.rotation.z += 0.3;
+    }
+    for (const [id, v] of arrows) {
+      if (seen.has(id)) continue;
+      scene.remove(v.g);
+      arrows.delete(id);
+    }
+  }
   function update() {
     const HZ = game.data.config.time.hz;
     const lag = ((game.alpha ?? 1) - 1) / HZ;
@@ -52,6 +110,7 @@ export function createShotsView(scene, game, hf) {
       scene.remove(v.g);
       views.delete(id);
     }
+    updateArrows(lag);
   }
   return { update };
 }

@@ -424,6 +424,18 @@ const MIGRATIONS = [
       }
     },
   },
+  {
+    // v1.1 → v1.2: 활·지팡이. 마나, 날아가는 화살·마력탄, 땅을 겨눈 범위
+    from: 17,
+    to: 18,
+    run(st, data) {
+      st.meta.engine = '1.2.0';
+      st.arrows ??= [];
+      st.zones ??= [];
+      const mana = data.config.combat.mana ?? 100;
+      for (const a of Object.values(st.actors)) if (a.cb) Object.assign(a.cb, { mp: a.cb.mp ?? mana, maxMp: a.cb.maxMp ?? mana });
+    },
+  },
 ];
 
 // v0.5.2: 1~2장 퀘스트에 생활 단계가 끼었다. 하던 단계 번호를 새 번호로(앞에 낀 단계는 건너뛴다)

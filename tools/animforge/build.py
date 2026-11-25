@@ -501,6 +501,10 @@ if __name__ == '__main__':
     from actions import build_actions
     for k, c in build_actions(ROOT, clips['idle']).items():
         clips[k] = c
+    # 무기 스킬 동작(v1.2): 스킬마다 따로 그린 합성 클립
+    from skills import skill_clips
+    for k, c in skill_clips(clips['idle']).items():
+        clips[k] = c
     # 다리 비틀림·무릎 방향 바로잡기(v0.4.10): 모든 동작 마지막에
     for k in list(clips):
         clips[k] = fix_arms(fix_legs(clips[k]))

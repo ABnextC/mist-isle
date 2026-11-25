@@ -342,6 +342,7 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
   }
   // 무기(v0.3): 돌 몽둥이, 한손검·전투 도끼·창(구리·철)
   const weapons = {};
+  const gemMat = new THREE.MeshStandardMaterial({ color: 0x7fd6ff, emissive: 0x2a7aa8, emissiveIntensity: 0.9, roughness: 0.2, metalness: 0.1 });
   const w = (key, list) => {
     const g = new THREE.Group();
     for (const [geo, m] of list) g.add(mesh(merge(geo), m));
@@ -369,6 +370,12 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
       [[P(new THREE.CylinderGeometry(0.024, 0.028, 0.92, 8), 0xffffff, { y: 0.34 })], M.wood],
       [[P(new THREE.BoxGeometry(0.13, 0.15, 0.26), 0xffffff, { y: 0.76 }), P(new THREE.BoxGeometry(0.15, 0.03, 0.28), 0xffffff, { y: 0.69 })], metal],
     ]);
+    // 지팡이(v1.2): 긴 나무 자루 끝에 보석(구리 띠·철 띠)
+    w(`staff_${tier}`, [
+      [[P(new THREE.CylinderGeometry(0.02, 0.026, 1.55, 8), 0xffffff, { y: 0.42 }), P(new THREE.TorusGeometry(0.06, 0.014, 5, 10), 0xffffff, { y: 1.22, rx: Math.PI / 2 })], M.wood],
+      [[P(new THREE.CylinderGeometry(0.03, 0.03, 0.05, 8), 0xffffff, { y: 1.16 })], metal],
+      [[P(new THREE.OctahedronGeometry(0.055, 0), 0xffffff, { y: 1.27, sy: 1.5 })], gemMat],
+    ]);
     w(`spear_${tier}`, [
       [[P(new THREE.CylinderGeometry(0.018, 0.022, 1.6, 8), 0xffffff, { y: 0.45 })], M.wood],
       [[P(new THREE.ConeGeometry(0.045, 0.26, 4), 0xffffff, { y: 1.37, sz: 0.3 }), P(new THREE.CylinderGeometry(0.026, 0.026, 0.06, 8), 0xffffff, { y: 1.23 })], metal],
@@ -385,6 +392,33 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
     g.rotation.y = Math.PI / 2;
     armL.hand.add(g);
     shields[`sword_${tier}`] = g;
+  }
+  // 활(v1.2): 왼손에 쥐는 굽은 활대와 시위
+  // 활의 틀: y = 활대 세로, +z = 과녁 쪽(가운데 손잡이가 원점). 손 방향과 상관없이 몸 방향에 맞춰 세운다(upright)
+  for (const [tier, limb] of [[1, M.wood], [2, M.leather]]) {
+    const g = new THREE.Group();
+    const curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(0, -0.62, -0.16), new THREE.Vector3(0, 0, 0.16), new THREE.Vector3(0, 0.62, -0.16));
+    const limbGeo = new THREE.TubeGeometry(curve, 16, 0.016, 5, false);
+    g.add(mesh(merge([P(limbGeo, 0xffffff, {}), P(new THREE.CylinderGeometry(0.024, 0.024, 0.13, 6), 0xffffff, {})]), limb));
+    g.add(mesh(merge([P(new THREE.CylinderGeometry(0.003, 0.003, 1.24, 3), 0xffffff, { z: -0.16 })]), M.leather));
+    g.visible = false;
+    g.userData.upright = true;
+    armL.hand.add(g);
+    shields[`bow_${tier}`] = g;
+  }
+  // 몸 방향으로 세우는 왼손 물건(활): 위치는 왼손, 방향은 몸(살짝 앞으로 기울임)
+  const _bq = new THREE.Quaternion();
+  const _bh = new THREE.Quaternion();
+  const _tilt = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.12, 0, 0.12));
+  function aimOff() {
+    for (const g of Object.values(shields)) {
+      if (!g.visible || !g.userData.upright) continue;
+      root.updateMatrixWorld(true);
+      root.getWorldQuaternion(_bq).multiply(_tilt);
+      armL.hand.getWorldQuaternion(_bh).invert();
+      g.quaternion.copy(_bh.multiply(_bq));
+      g.position.copy(gripL);
+    }
   }
   // 손에 드는 소품(v0.4.9): 가죽 칼·망치·톱·국자, 먹을 것(고기·산딸기 말랭이·국그릇)
   const props = {};
@@ -444,6 +478,7 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
     axe_1: { mode: 'radial' }, axe_2: { mode: 'radial' }, club_0: { mode: 'radial' },
     sword_1: { mode: 'radial', far: 0.3 }, sword_2: { mode: 'radial', far: 0.3 },
     hammer_1: { mode: 'radial' }, hammer_2: { mode: 'radial' },
+    staff_1: { mode: 'line', far: 0.25 }, staff_2: { mode: 'line', far: 0.25 },
     spear_1: { mode: 'line', far: 0.9 }, spear_2: { mode: 'line', far: 0.9 },
     // 한 손 소품: 오른어깨 → 오른손 쪽으로(톱날·국자가 앞·아래를 본다)
     saw: { mode: 'arm' }, ladle: { mode: 'arm' }, knife: { mode: 'arm', tilt: 0.5 },
@@ -565,7 +600,7 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
 
   return {
     root, hips: by.hips, spine: by.spine, chest: by.chest, neck: by.neck, head: by.head,
-    armL, armR, legL, legR, tools, weapons, shields, props, showProp, materials: M, eyes, setMorph, kind, lod, setOutfit, aimHeld, setTints,
+    armL, armR, legL, legR, tools, weapons, shields, props, aimOff, showProp, materials: M, eyes, setMorph, kind, lod, setOutfit, aimHeld, setTints,
     get outfit() { return { ...want }; },
     hipsY: by.hips.position.y, hipsRest: by.hips.position.clone(), bones: by, buildMs: BASE.ms,
     tris: Object.fromEntries(Object.entries(pk.meshes).map(([k, m]) => [k, m.geometry.index.count / 3])),

@@ -153,13 +153,30 @@ async function boot() {
   // 무기 스킬(v1.1): 휘두른 자리에 파문, 기절하면 머리 위 표시
   game.on('combat.abilityHit', (ev) => {
     const kind = ev.kind;
-    const col = kind === 'buff' ? 0x9ff0d8 : kind === 'aoe' ? 0xffb050 : 0xffe0a0;
+    if (kind === 'shot' || kind === 'zone') return;
+    const col = PJC[ev.proj] || (kind === 'buff' ? 0x9ff0d8 : kind === 'aoe' ? 0xffb050 : 0xffe0a0);
     const r = kind === 'aoe' ? ev.range : kind === 'buff' ? 1.6 : Math.min(3, ev.range * 0.7);
     const fx0 = kind === 'aoe' || kind === 'buff' ? 0 : r * 0.6;
     const x = ev.x + Math.sin(ev.yaw) * fx0;
     const z = ev.z + Math.cos(ev.yaw) * fx0;
     fx.wave(x, ground.hf.height(x, z), z, r, col, kind === 'aoe' ? 0.55 : 0.4);
     if (ev.hits && kind !== 'buff') fx.burst(x, ground.hf.height(x, z) + 0.2, z, 0x9a8a70, 6, { lift: 0, spread: r * 0.6, speed: 0.5, dust: true });
+  });
+  // 날아가는 것·땅 범위(v1.2): 터짐·불기둥·화살비·서리
+  const PJC = { fire: 0xff7a2a, pillar: 0xff8a30, breath: 0xff9a40, ice: 0xbfe8ff, nova: 0xbfe8ff, frostarmor: 0xbfe8ff, rain: 0xe8dcc0, bolt: 0x9ad8ff, net: 0xd8d0b0 };
+  game.on('arrow.hit', (ev) => {
+    const c = PJC[(ev.proj || '').replace('_heavy', '')];
+    if (c) fx.burst(ev.x, ground.hf.height(ev.x, ev.z) + 1.2, ev.z, c, 6, { lift: 0, spread: 0.3, speed: 0.6, dust: false });
+  });
+  game.on('arrow.explode', (ev) => {
+    fx.wave(ev.x, ground.hf.height(ev.x, ev.z), ev.z, ev.r, PJC[ev.proj] || 0xff9a40, 0.5);
+    fx.burst(ev.x, ground.hf.height(ev.x, ev.z) + 0.6, ev.z, PJC[ev.proj] || 0xff9a40, 14, { lift: 0.2, spread: ev.r * 0.6, speed: 0.9, dust: false });
+  });
+  game.on('zone.tick', (ev) => {
+    const y = ground.hf.height(ev.x, ev.z);
+    const c = PJC[ev.proj] || 0xffd08a;
+    fx.wave(ev.x, y, ev.z, ev.r, c, 0.45);
+    fx.burst(ev.x, y + (ev.proj === 'rain' ? 2.5 : 0.3), ev.z, c, ev.proj === 'pillar' ? 18 : 10, { lift: ev.proj === 'pillar' ? 1.2 : 0, spread: ev.r * 0.9, speed: ev.proj === 'pillar' ? 1.4 : 0.5, dust: ev.proj !== 'pillar' });
   });
   game.on('mob.fx', (ev) => {
     if (ev.actor !== PID || !ev.fx.includes('stun')) return;

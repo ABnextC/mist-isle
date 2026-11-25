@@ -25,7 +25,7 @@ import { expireOrders } from './market.js';
 import { settlementsDaily } from './settlements.js';
 import { dailyOrders } from './orders.js';
 import { mobsTick } from './systems/mobs.js';
-import { combatTick } from './systems/combat.js';
+import { combatTick, arrowsTick } from './systems/combat.js';
 import { fightersTick } from './ai/fighter.js';
 import { agentsTick } from './systems/agents.js';
 import { questsTick } from './systems/quests.js';
@@ -87,6 +87,7 @@ function wrap(ctx, bus) {
     movementTick(ctx, 1 / HZ);
     mobsTick(ctx, 1 / HZ);
     combatTick(ctx, 1 / HZ);
+    arrowsTick(ctx, 1 / HZ);
     fightersTick(ctx);
     actionsTick(ctx);
     craftingTick(ctx);

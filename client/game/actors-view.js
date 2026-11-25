@@ -341,13 +341,16 @@ export function createActorsView(scene, game, hf, camera = null) {
     const type = wDef?.type || 'fists';
     if (type === 'fists') return kind === 'heavy' ? 'punch_heavy' : 'punch';
     if (type === 'spear') return kind === 'heavy' ? 'spear_heavy' : 'spear';
+    // 활·지팡이(v1.2): 당겨 쏘기·마력탄
+    if (type === 'bow') return kind === 'heavy' ? 'bow_heavy' : 'bow_shot';
+    if (type === 'staff') return kind === 'heavy' ? 'staff_heavy' : 'staff_cast';
     return kind === 'heavy' ? 'atk_heavy' : 'atk_light';
   }
   const GATHER_CLIP = { logging: 'chop', mining: 'mine', harvesting: 'harvest' };
   // v0.4.9 적절성 검토: 작업대마다 하는 일, 손에 드는 소품, 먹을 것마다 동작·소품
   const CRAFT_ANIM = { forge: 'hammer', armorbench: 'hammer', workbench: 'hammer', sawbench: 'saw', kitchen: 'stir', smelter: 'stir', loom: 'weave', tannery: 'scrape', hand: 'handwork' };
   const CRAFT_PROP = { hammer: 'hammer', saw: 'saw', stir: 'ladle', scrape: 'knife' };
-  const GUARD = { spear: 'guard_spear', sword: 'guard_sword', club: 'guard_sword', axe: 'guard_axe', hammer: 'guard_axe' };
+  const GUARD = { spear: 'guard_spear', sword: 'guard_sword', club: 'guard_sword', axe: 'guard_axe', hammer: 'guard_axe', bow: 'guard_sword', staff: 'guard_spear' };
   const FOOD = { food_soup: ['drink', 'bowl'], food_berry: ['eat', 'berry'], food_meat: ['eat', 'meat'] };
   const strikes = []; // 도구가 닿은 순간들(main.js가 가져가 조각을 튀긴다)
   // 장비 무게 단계(가벼움·보통·무거움·과적) — 무거우면 구르지 않고 짧게 뛰어 비킨다
@@ -356,7 +359,7 @@ export function createActorsView(scene, game, hf, camera = null) {
     const data = game.data;
     let kg = 0;
     // core/systems/combat.js equipLoad와 같은 칸(무기+갑옷)만 센다
-    for (const slot of ['weapon', 'head', 'chest', 'legs']) {
+    for (const slot of ['weapon', 'weapon2', 'head', 'chest', 'legs']) {
       const uid = a.equip?.[slot];
       const e = uid && a.bag.find((x) => x.uid === uid);
       if (e) kg += data.items[e.item].weight || 0;
@@ -420,7 +423,9 @@ export function createActorsView(scene, game, hf, camera = null) {
     // 휘두르기: 동작의 '맞는 순간'이 코어의 hitAt에 오게 시간을 나눠 맞춘다
     const act = cb?.act;
     if (act && stI < act.endAt + 0.05) {
-      const name = act.clip || attackClip(wDef, act.kind);
+      // 무기 스킬(v1.2): 스킬마다 따로 그린 동작
+      const skClip = act.kind === 'ability' ? game.data.weaponNodes?.[act.node]?.ab?.clip : null;
+      const name = act.clip || (skClip && hasClip(skClip) ? skClip : attackClip(wDef, act.kind));
       if (hasClip(name)) {
         const hp = animClips().clips[name].ev?.hit ?? 0.5;
         const t = stI < act.hitAt
@@ -822,6 +827,9 @@ export function createActorsView(scene, game, hf, camera = null) {
         const stI = state.t + ((game.alpha ?? 1) - 1) / HZ;
         v.struck = false;
         const act = actionOf(v, a, wDef, work, casting, stI, dt);
+        // 도는 스킬(회오리·휘몰아치기): 동작이 정한 구간 동안 몸 전체를 한 바퀴
+        const spin = act?.once ? animClips()?.clips[act.name]?.ev?.spin : null;
+        if (spin) v.m.root.rotation.y = v.yaw + smoothstep(spin[0], spin[1], act.t) * Math.PI * 2;
         if (act) {
           applyAction(v, act);
           v.actW = 0; // 손으로 짠 덮기는 끈다(바뀌는 순간은 crossfade가 잇는다)
@@ -833,6 +841,7 @@ export function createActorsView(scene, game, hf, camera = null) {
           const over = act && sampleTool(act.name, act.t, act.once, v.tov) ? v.tov : null;
           v.m.aimHeld(over);
         }
+        if (wDef?.type === 'bow' && v.m.aimOff) v.m.aimOff();
         // 도구가 닿은 순간: 도구 머리(없으면 오른손) 자리를 남긴다
         if (v.struck && work) {
           const tool = skill ? v.m.tools[skill] : act?.prop ? v.m.props[act.prop] : null;

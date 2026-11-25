@@ -667,6 +667,7 @@ const ABILITY = {
     if ((a.cb.cds?.[node] || 0) > t) return 'cooldown';
     const ab = abilityOf(ctx, a, node);
     if (a.cb.st < (ab.cost || 0)) return 'no_stamina';
+    if ((a.cb.mp ?? 0) < (ab.mana || 0)) return 'no_mana';
     return { node, ab };
   },
   execute(ctx, a, c, p) {

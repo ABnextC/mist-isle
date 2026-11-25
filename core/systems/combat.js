@@ -14,6 +14,7 @@ export function initCombat(cfg) {
     hp: cfg.combat.hp, maxHp: cfg.combat.hp, st: cfg.combat.stamina,
     lastHitAt: -99, staminaAt: -99, act: null, dodge: null, block: false, stunUntil: 0, downUntil: 0,
     cds: {}, aura: [], lunge: null, counterUntil: 0,
+    mp: cfg.combat.mana ?? 100, maxMp: cfg.combat.mana ?? 100,
   };
 }
 
@@ -63,7 +64,7 @@ export function auraSum(a, t, key) {
 export function addAura(ctx, a, src, b) {
   const t = ctx.state.t;
   a.cb.aura = (a.cb.aura || []).filter((x) => x.until > t && x.src !== src);
-  a.cb.aura.push({ src, until: r2(t + b.sec), dmg: b.dmg || 0, dr: b.dr || 0, speed: b.speed || 0, stRegen: b.stRegen || 0, lifesteal: b.lifesteal || 0 });
+  a.cb.aura.push({ src, until: r2(t + b.sec), dmg: b.dmg || 0, dr: b.dr || 0, speed: b.speed || 0, stRegen: b.stRegen || 0, lifesteal: b.lifesteal || 0, mpRegen: b.mpRegen || 0 });
   ctx.emit('combat.aura', { actor: a.id, src, sec: b.sec });
 }
 
@@ -206,6 +207,7 @@ export function dealHit(ctx, a, m, raw, o) {
   if (fxOn(m, 'bleed', t)) k += P.vsBleed || 0;
   if (m.hp >= type.hp * 0.8) k += P.fresh || 0;
   if (m.hp < type.hp * 0.3) k += P.lowTarget || 0;
+  if (P.far && Math.hypot(m.x - a.x, m.z - a.z) > 12) k += P.far;
   if (cb.hp < cb.maxHp * 0.5) k += P.lowHp || 0;
   if (cb.counterUntil > t) {
     k += P.counter || 0;
@@ -226,7 +228,7 @@ export function dealHit(ctx, a, m, raw, o) {
   if (isAlive(m)) {
     const fx = { ...(o.fx || {}) };
     if (o.heavy && P.heavyStun) fx.stun = Math.max(fx.stun || 0, P.heavyStun);
-    if (Object.keys(fx).length) applyMobFx(ctx, m, a, fx, w.attack);
+    if (Object.keys(fx).length) applyMobFx(ctx, m, a, fx, w.attack * (1 + (P.bleedDmg || 0)));
   }
   return done;
 }
@@ -237,8 +239,18 @@ function swing(ctx, a) {
   const act = a.cb.act;
   const w = weaponOf(ctx, a);
   const P = passivesOf(ctx, a, w.mastery);
-  const hits = targetsIn(ctx, a, act.yaw, w.spec.range + (P.range || 0), w.spec.arc, w.spec.targets + (P.targets || 0));
   const heavy = act.kind === 'heavy';
+  // 활·지팡이(v1.2): 휘두르지 않고 쏜다. 당겨 쏘면 더 세고 더 빠르다
+  if (w.spec.shot) {
+    const sh = w.spec.shot;
+    fire(ctx, a, w, aimAt(ctx, a, act.yaw, sh.range, sh.aim), {
+      speed: sh.speed * (heavy ? 1.3 : 1), range: sh.range * (heavy ? 1.2 : 1), r: sh.r, proj: heavy ? `${sh.proj}_heavy` : sh.proj,
+      mult: w.spec.mult * (heavy ? C.heavyMult : 1), heavy,
+    });
+    wear(ctx, a, w.entry, 1);
+    return;
+  }
+  const hits = targetsIn(ctx, a, act.yaw, w.spec.range + (P.range || 0), w.spec.arc, w.spec.targets + (P.targets || 0));
   for (const { m } of hits) dealHit(ctx, a, m, w.attack * w.spec.mult * (heavy ? C.heavyMult : 1), { w, P, heavy });
   if (hits.length) wear(ctx, a, w.entry, 1);
   else ctx.emit('combat.miss', { actor: a.id, kind: act.kind });
@@ -252,6 +264,7 @@ export function startAbility(ctx, a, node, ab, yaw) {
   const cb = a.cb;
   cb.st = r2(cb.st - (ab.cost || 0));
   if (ab.cost) cb.staminaAt = t;
+  if (ab.mana) cb.mp = r2(cb.mp - ab.mana);
   cb.cds[node] = r2(t + ab.cd * (1 - Math.min(0.5, P.cdr || 0)));
   a.yaw = Math.round(yaw * 1000) / 1000;
   cb.block = false;
@@ -271,12 +284,38 @@ function resolveAbility(ctx, a) {
   const P = passivesOf(ctx, a, w.mastery);
   const cb = a.cb;
   let hits = [];
-  if (ab.kind !== 'buff') {
+  const fxOf = () => {
+    const fx = {};
+    for (const k of ['stun', 'slow', 'bleed', 'weak', 'expose', 'knock', 'taunt']) if (ab[k]) fx[k] = ab[k];
+    return fx;
+  };
+  if (ab.kind === 'shot') {
+    const yaw = aimAt(ctx, a, act.yaw, ab.range, w.spec.shot?.aim ?? 10);
+    const n = ab.shots || 1;
+    for (let i = 0; i < n; i++) {
+      const off = ((i - (n - 1) / 2) * (ab.spread || 0) * DEG);
+      fire(ctx, a, w, yaw + off, { speed: ab.speed, range: ab.range, r: ab.r || 0.4, proj: ab.proj || 'arrow', mult: w.spec.mult * ab.mult, ability: act.node, pierce: ab.pierce || 1, fx: fxOf(), explode: ab.explode || null, guardBreak: !!ab.guardBreak });
+    }
+    wear(ctx, a, w.entry, 1);
+  } else if (ab.kind === 'zone') {
+    // 땅을 겨눈 범위(화살비·불기둥): 겨눈 적이 사거리 안이면 그 자리, 아니면 정해진 거리
+    const yaw = aimAt(ctx, a, act.yaw, ab.at * 1.6, 14);
+    let d = ab.at;
+    const tg = targetsIn(ctx, a, yaw, ab.at * 1.6, 28, 1)[0];
+    if (tg) d = Math.min(ab.at * 1.6, tg.d);
+    const z = {
+      id: ctx.newId('z'), by: a.id, node: act.node, w: w.mastery, attack: w.attack, mult: w.spec.mult * ab.mult, fx: fxOf(),
+      x: Math.round((a.x + Math.sin(yaw) * d) * 1000) / 1000, z: Math.round((a.z + Math.cos(yaw) * d) * 1000) / 1000,
+      r: ab.range, targets: ab.targets || 6, left: ab.ticks || 1, every: ab.every || 0.5, next: ctx.state.t, proj: ab.proj || null,
+    };
+    (ctx.state.zones ??= []).push(z);
+    ctx.emit('zone.start', { zone: z.id, actor: a.id, x: z.x, z: z.z, r: z.r, proj: z.proj, sec: r2(z.left * z.every) });
+    wear(ctx, a, w.entry, 1);
+  } else if (ab.kind !== 'buff') {
     const arc = ab.kind === 'aoe' ? 360 : ab.arc ?? w.spec.arc;
     const range = ab.range + (ab.kind === 'aoe' ? 0 : P.range || 0);
     hits = targetsIn(ctx, a, act.yaw, range, arc, (ab.targets || 1) + (P.targets || 0));
-    const fx = {};
-    for (const k of ['stun', 'slow', 'bleed', 'weak', 'expose', 'knock', 'taunt']) if (ab[k]) fx[k] = ab[k];
+    const fx = fxOf();
     for (const { m, type } of hits) {
       if (!(ab.mult > 0)) {
         applyMobFx(ctx, m, a, fx, w.attack);
@@ -295,7 +334,117 @@ function resolveAbility(ctx, a) {
     const sp = ab.hop / 0.25;
     cb.lunge = { vx: Math.round(Math.sin(act.yaw) * sp * 1000) / 1000, vz: Math.round(Math.cos(act.yaw) * sp * 1000) / 1000, endAt: r2(ctx.state.t + 0.25) };
   }
-  ctx.emit('combat.abilityHit', { actor: a.id, node: act.node, kind: ab.kind, hits: hits.length, x: a.x, z: a.z, yaw: act.yaw, range: ab.range || 0 });
+  ctx.emit('combat.abilityHit', { actor: a.id, node: act.node, kind: ab.kind, hits: hits.length, x: a.x, z: a.z, yaw: act.yaw, range: ab.range || 0, proj: ab.proj || null });
+}
+
+// ── 날아가는 것(v1.2): 화살·마력탄·불덩이·얼음 창 ──
+// 겨눈 방향 가까이(±aim도)에 있는 적이 있으면 그쪽으로 살짝 고쳐 쏜다
+export function aimAt(ctx, a, yaw, range, aimDeg) {
+  let best = null;
+  for (const m of Object.values(ctx.state.mobs)) {
+    if (!isAlive(m)) continue;
+    const d = Math.hypot(m.x - a.x, m.z - a.z);
+    if (d > range || d < 0.3) continue;
+    const diff = angDiff(yawTo(a, m), yaw);
+    if (diff > aimDeg * DEG) continue;
+    const score = diff + d * 0.004;
+    if (!best || score < best.s || (score === best.s && m.id < best.m.id)) best = { m, s: score };
+  }
+  return best ? Math.round(yawTo(a, best.m) * 1000) / 1000 : yaw;
+}
+
+export function fire(ctx, a, w, yaw, o) {
+  const t = ctx.state.t;
+  const sx = Math.sin(yaw);
+  const sz = Math.cos(yaw);
+  const id = ctx.newId('p');
+  (ctx.state.arrows ??= []).push({
+    id, by: a.id, w: w.mastery, attack: w.attack, mult: r2(o.mult), heavy: !!o.heavy, ability: o.ability || null,
+    x: Math.round((a.x + sx * 0.7) * 1000) / 1000, z: Math.round((a.z + sz * 0.7) * 1000) / 1000,
+    vx: Math.round(sx * o.speed * 1000) / 1000, vz: cos3(sz * o.speed), r: o.r, t0: r2(t), until: r2(t + o.range / o.speed),
+    pierce: o.pierce || 1, hit: [], fx: o.fx || null, explode: o.explode || null, guardBreak: !!o.guardBreak, proj: o.proj,
+  });
+  ctx.emit('arrow.fire', { arrow: id, actor: a.id, proj: o.proj });
+}
+const cos3 = (v) => Math.round(v * 1000) / 1000;
+
+function arrowHit(ctx, a, s, m) {
+  const P = passivesOf(ctx, a, s.w);
+  const w = { mastery: s.w, attack: s.attack };
+  dealHit(ctx, a, m, s.attack * s.mult, { w, P, heavy: s.heavy, ability: s.ability, fx: s.fx, guardBreak: s.guardBreak });
+}
+
+function explode(ctx, a, s, x, z) {
+  const P = passivesOf(ctx, a, s.w);
+  const w = { mastery: s.w, attack: s.attack };
+  for (const m of Object.values(ctx.state.mobs)) {
+    if (!isAlive(m) || s.hit.includes(m.id)) continue;
+    if (Math.hypot(m.x - x, m.z - z) > s.explode.r + ctx.data.creatures[m.type].r) continue;
+    dealHit(ctx, a, m, s.attack * s.mult * s.explode.mult, { w, P, ability: s.ability, fx: s.fx });
+  }
+  ctx.emit('arrow.explode', { arrow: s.id, x, z, r: s.explode.r, proj: s.proj });
+}
+
+export function arrowsTick(ctx, dt) {
+  const { state } = ctx;
+  const t = state.t;
+  if (state.arrows?.length) {
+    const keep = [];
+    for (const s of state.arrows) {
+      const a = state.actors[s.by];
+      s.x = Math.round((s.x + s.vx * dt) * 1000) / 1000;
+      s.z = Math.round((s.z + s.vz * dt) * 1000) / 1000;
+      let done = !a || t >= s.until;
+      if (!done) {
+        for (const m of Object.values(state.mobs)) {
+          if (!isAlive(m) || s.hit.includes(m.id)) continue;
+          if (Math.hypot(m.x - s.x, m.z - s.z) > s.r + ctx.data.creatures[m.type].r) continue;
+          s.hit.push(m.id);
+          arrowHit(ctx, a, s, m);
+          ctx.emit('arrow.hit', { arrow: s.id, mob: m.id, x: s.x, z: s.z, proj: s.proj });
+          if (s.hit.length >= s.pierce) {
+            done = true;
+            break;
+          }
+        }
+      }
+      if (!done && ctx.obstacles) {
+        for (const o of ctx.obstacles.near(s.x, s.z)) {
+          if (Math.hypot(o.x - s.x, o.z - s.z) < o.r) {
+            done = true;
+            break;
+          }
+        }
+      }
+      if (done) {
+        if (a && s.explode) explode(ctx, a, s, s.x, s.z);
+        ctx.emit('arrow.end', { arrow: s.id, x: s.x, z: s.z, proj: s.proj });
+        continue;
+      }
+      keep.push(s);
+    }
+    state.arrows = keep;
+  }
+  // 땅을 겨눈 범위: 정해진 간격마다 안의 적을 때린다
+  if (state.zones?.length) {
+    const keep = [];
+    for (const z of state.zones) {
+      const a = state.actors[z.by];
+      if (a && t >= z.next - 1e-6) {
+        const P = passivesOf(ctx, a, z.w);
+        const w = { mastery: z.w, attack: z.attack };
+        const hits = Object.values(state.mobs).filter((m) => isAlive(m) && Math.hypot(m.x - z.x, m.z - z.z) <= z.r + ctx.data.creatures[m.type].r)
+          .sort((p, q) => (p.id < q.id ? -1 : 1)).slice(0, z.targets);
+        for (const m of hits) dealHit(ctx, a, m, z.attack * z.mult, { w, P, ability: z.node, fx: z.fx });
+        ctx.emit('zone.tick', { zone: z.id, x: z.x, z: z.z, r: z.r, hits: hits.length, proj: z.proj });
+        z.left--;
+        z.next = r2(z.next + z.every);
+      }
+      if (a && z.left > 0) keep.push(z);
+      else ctx.emit('zone.end', { zone: z.id });
+    }
+    state.zones = keep;
+  }
 }
 
 // 적을 쓰러뜨렸을 때(mobs.kill에서 부른다): 숙련 경험치·처치 패시브
@@ -423,6 +572,13 @@ export function combatTick(ctx, dt) {
       cb.hpBonus = bonus;
       if (cb.hp > cb.maxHp) cb.hp = cb.maxHp;
     }
+    // 마나(v1.2): 최대 마나는 숙련 패시브를 따르고, 늘 저절로 찬다
+    const mm = (C.mana ?? 100) + (P.maxMp || 0);
+    if (cb.maxMp !== mm) {
+      cb.maxMp = mm;
+      if (cb.mp > mm) cb.mp = mm;
+    }
+    if (cb.mp < cb.maxMp) cb.mp = r2(Math.min(cb.maxMp, cb.mp + (C.manaRegen ?? 6) * (1 + (P.mpRegen || 0) + auraSum(a, t, 'mpRegen')) * dt));
     if (cb.hp < cb.maxHp && t - cb.lastHitAt >= C.hpRegenDelay) cb.hp = r2(Math.min(cb.maxHp, cb.hp + C.hpRegen * dt));
     if (!cb.block && cb.st < C.stamina && t - cb.staminaAt >= C.staminaDelay) {
       const k = equipLoad(ctx, a).tier.stRegen * (1 + (P.stRegen || 0) + auraSum(a, t, 'stRegen'));

@@ -9,6 +9,7 @@ export const ERR = {
   bad_args: '잘못된 값',
   out_of_bounds: '지도 밖',
   busy: '다른 일을 하는 중',
+  no_mana: '마나가 모자람',
   no_points: '숙련 점수가 없음(무기를 더 써서 레벨을 올리자)',
   no_skill: '이 칸에 건 스킬이 없음(N 무기 숙련에서 배우고 걸자)',
   cooldown: '아직 다시 쓸 수 없음',

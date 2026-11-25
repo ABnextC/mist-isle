@@ -14,6 +14,7 @@ import { allOrders, bookOf } from '../core/market.js';
 import { storeOf, nearestSettlement, npcPos, sitePos, objPos, stationFor } from '../core/world.js';
 import { yawTo } from '../core/systems/combat.js';
 import { mOf, needXp, loadoutOf, abilityOf, passivesOf } from '../core/systems/mastery.js';
+import { spawnTemp } from '../core/systems/mobs.js';
 import { settlementDaily } from '../core/settlements.js';
 import { isUnlocked, allowedProject, chapterReached } from '../core/systems/unlocks.js';
 import { stepNpc } from '../core/systems/quests.js';
@@ -1309,7 +1310,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '1.1.0');
+  eq(st.meta.engine, '1.2.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1501,7 +1502,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '1.1.0');
+  eq(st.meta.engine, '1.2.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -1834,6 +1835,82 @@ test('숙련 경험치: 그 무기로 준 피해만큼, 쓰러뜨리면 짐승 �
   while (xp >= needXp(W, lvl)) { xp -= needXp(W, lvl); lvl++; }
   eq(mOf(a, 'spear').lvl, lvl, '레벨');
   near(mOf(a, 'spear').xp, xp, 0.5, '남은 경험치');
+});
+
+console.log('활과 지팡이 (v1.2)');
+const tctx = (g) => ({ data, state: g.state, newId: (p) => `${p}_${g.state.nextId++}`, emit: () => {} });
+
+test('활: 화살이 날아가 맞히고(당겨 쏘면 더 세다), 관통 사격은 셋까지 꿰뚫고, 화살비는 정해진 간격으로 여러 번 때린다', () => {
+  const { g, a, m, grp } = lone('boar');
+  a.bag.push(kit('wpn_bow_oak', 50, 'b1'));
+  g.dispatch({ type: 'EQUIP', actor: 'p1', uid: 'b1' });
+  m.mode = 'idle';
+  const hits = [];
+  g.on('combat.hit', (e) => hits.push(e));
+  a.x = m.x - 12;
+  a.z = m.z;
+  ok(g.dispatch({ type: 'ATTACK', actor: 'p1', kind: 'light', yaw: yawTo(a, m) + 0.08 }).ok, '살짝 빗겨 쏴도 겨눔이 고친다');
+  g.advance(1);
+  eq(hits.length, 1, '맞혔다');
+  ok(mOf(a, 'bow').xp > 0 || mOf(a, 'bow').lvl > 1, '활 숙련');
+  const light = hits[0].dmg;
+  m.hp = data.creatures.boar.hp;
+  a.x = m.x - 12;
+  a.z = m.z;
+  a.cb.st = 100;
+  g.advance(1);
+  ok(g.dispatch({ type: 'ATTACK', actor: 'p1', kind: 'heavy', yaw: yawTo(a, m) }).ok);
+  g.advance(1.6);
+  ok(hits[hits.length - 1].dmg > light * 1.5, `당겨 쏘기 ${hits[hits.length - 1].dmg} > 짧게 ${light}`);
+  eq(g.state.arrows.length, 0, '화살은 사라진다');
+  // 관통: 셋을 줄 세운다
+  const more = [0, 1].map((i) => spawnTemp(tctx(g), grp, 'boar', m.x + 1.5 + i * 1.5, m.z));
+  for (const x of [m, ...more]) { x.hp = data.creatures.boar.hp; x.mode = 'idle'; x.z = m.z; }
+  a.mastery.bow = { xp: 0, lvl: 5, nodes: [] };
+  ok(g.dispatch({ type: 'MASTERY_LEARN', actor: 'p1', node: 'bow_marks_a1' }).ok);
+  ok(g.dispatch({ type: 'MASTERY_LEARN', actor: 'p1', node: 'bow_ranger_a1' }).ok);
+  a.x = m.x - 10;
+  a.z = m.z;
+  a.cb.st = 100;
+  hits.length = 0;
+  ok(g.dispatch({ type: 'ABILITY', actor: 'p1', slot: 0, yaw: yawTo(a, m) }).ok, '관통 사격');
+  g.advance(1.4);
+  eq(new Set(hits.map((h) => h.mob)).size, 3, '셋을 꿰뚫었다');
+  hits.length = 0;
+  a.cb.st = 100;
+  const ticks = [];
+  g.on('zone.tick', (e) => ticks.push(e));
+  ok(g.dispatch({ type: 'ABILITY', actor: 'p1', slot: 1, yaw: yawTo(a, m) }).ok, '화살비');
+  g.advance(3);
+  eq(ticks.length, 4, '네 번');
+  ok(hits.length >= 4, '범위 안을 때린다');
+  ok(m.fx?.slow || hits.some((h) => h.mob === m.id), '느려짐');
+  eq(g.state.zones.length, 0, '끝나면 사라진다');
+});
+
+test('지팡이: 스킬은 마나를 쓰고(모자라면 못 쓴다), 화염구는 맞은 자리에서 터지며, 마나는 저절로 찬다', () => {
+  const { g, a, m, grp } = lone('boar');
+  a.bag.push(kit('wpn_staff_oak', 50, 's1'));
+  g.dispatch({ type: 'EQUIP', actor: 'p1', uid: 's1' });
+  const other = spawnTemp(tctx(g), grp, 'boar', m.x + 1.2, m.z + 0.6);
+  for (const x of [m, other]) x.mode = 'idle';
+  a.mastery.staff = { xp: 0, lvl: 3, nodes: [] };
+  ok(g.dispatch({ type: 'MASTERY_LEARN', actor: 'p1', node: 'staff_fire_a1' }).ok);
+  a.x = m.x - 9;
+  a.z = m.z;
+  eq(a.cb.mp, cfg.combat.mana);
+  const hits = [];
+  g.on('combat.hit', (e) => hits.push(e));
+  ok(g.dispatch({ type: 'ABILITY', actor: 'p1', slot: 0, yaw: yawTo(a, m) }).ok, '화염구');
+  eq(a.cb.mp, cfg.combat.mana - 20, '마나 20');
+  g.advance(1.2);
+  ok(hits.some((h) => h.mob === m.id) && hits.some((h) => h.mob === other.id), '터져서 옆 짐승도');
+  ok(m.fx?.bleed, '불이 붙는다(출혈)');
+  a.cb.mp = 5;
+  a.cb.cds = {};
+  eq(g.dispatch({ type: 'ABILITY', actor: 'p1', slot: 0 }).error, 'no_mana');
+  g.advance(2);
+  ok(a.cb.mp > 5 + cfg.combat.manaRegen * 1.5, '마나가 찬다');
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

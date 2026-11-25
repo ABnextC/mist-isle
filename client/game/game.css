@@ -539,3 +539,13 @@ ul.life li.done { color: var(--muted); }
 .vitals .mp span { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #2f6fd0, #8fd0ff); }
 /* 부가 의뢰 표시(v1.4) */
 .npctag b.side { color: #7ff08a; text-shadow: 0 0 6px rgba(80, 220, 110, .7), 0 1px 2px #000; }
+
+/* v1.6 호감도 */
+.bond { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: -2px 0 8px; font-size: 12px; }
+.bond .hearts, .hearts { color: #ff7a9a; letter-spacing: 1px; }
+.bond i { flex: 1 1 80px; min-width: 80px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
+.bond i em { display: block; height: 100%; background: linear-gradient(90deg, #ff8fb0, #ff5f86); }
+.bond small { color: var(--muted); font-size: 11px; }
+ul.likes { list-style: none; margin: 0 0 6px; padding: 0; font-size: 12px; }
+ul.likes li { margin: 2px 0; }
+ul.people li small { display: block; }

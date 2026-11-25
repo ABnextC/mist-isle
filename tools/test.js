@@ -18,6 +18,7 @@ import { spawnTemp } from '../core/systems/mobs.js';
 import { settlementDaily } from '../core/settlements.js';
 import { isUnlocked, allowedProject, chapterReached } from '../core/systems/unlocks.js';
 import { stepNpc, npcMark, available } from '../core/systems/quests.js';
+import { bondPts, knownLikes } from '../core/systems/bonds.js';
 import { rankOf, xpMult, extraChance, feeMult, recipeAllowed, tasksOf, factionOnEvent } from '../core/systems/factions.js';
 import { addXp } from '../core/systems/progress.js';
 import { plotPos, homeOf, comfortOf } from '../core/systems/housing.js';
@@ -1312,7 +1313,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '1.5.0');
+  eq(st.meta.engine, '1.6.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1504,7 +1505,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '1.5.0');
+  eq(st.meta.engine, '1.6.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -2014,6 +2015,73 @@ test('연작·세력·오늘의 부탁: 앞 의뢰를 끝내야 다음이 열리
   ok(!available(W, a, Q.dq_seondeok), '오늘은 끝');
   g.state.t += data.config.time.secondsPerGameDay;
   ok(available(W, a, Q.dq_seondeok), '내일 다시');
+});
+
+console.log('정 (v1.6)');
+
+test('호감도: 인사·선물은 하루 한 번, 좋아하는 걸 주면 정이 많이 들고 단계가 오르면 알린다. 이웃부터 좋아하는 걸 알려 준다', () => {
+  const g = createGame({ data, seed: 9, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  const W = { state: g.state, data, statics: g.statics, terrain: g.terrain, clock: g.clock };
+  const evs = [];
+  g.on('bond.tier', (e) => evs.push(e));
+  const p = npcPos(W, 'seondeok');
+  Object.assign(a, { x: p.x + 1, z: p.z });
+  eq(g.dispatch({ type: 'GREET', actor: 'p1', npc: 'gangdu' }).error, 'no_bond', '이야기 사람은 정을 쌓지 않는다');
+  ok(g.dispatch({ type: 'GREET', actor: 'p1', npc: 'seondeok' }).ok, '인사');
+  eq(g.dispatch({ type: 'GREET', actor: 'p1', npc: 'seondeok' }).error, 'already', '하루 한 번');
+  eq(bondPts(a, 'seondeok'), 1);
+  a.bag.push({ item: 'food_soup', lot: null, bonus: null, stats: { buff: 0.1 }, qty: 2 });
+  a.bag.push({ item: 'hide_raw', lot: null, bonus: null, qty: 2 });
+  ok(!knownLikes(W, a, 'seondeok').love.length, '아직 모른다');
+  const soup = a.bag.find((e) => e.item === 'food_soup');
+  ok(g.dispatch({ type: 'GIFT', actor: 'p1', npc: 'seondeok', key: keyOf(soup) }).ok, '선물');
+  eq(bondPts(a, 'seondeok'), 13, '💖 +12');
+  eq(countItem([a.bag], 'food_soup'), 1, '하나만');
+  eq(evs.length, 1, '아는 사이');
+  eq(evs[0].tier, 1);
+  const hide = a.bag.find((e) => e.item === 'hide_raw');
+  eq(g.dispatch({ type: 'GIFT', actor: 'p1', npc: 'seondeok', key: keyOf(hide) }).error, 'gifted_today', '선물도 하루 한 번');
+  g.state.t += data.config.time.secondsPerGameDay;
+  ok(g.dispatch({ type: 'GIFT', actor: 'p1', npc: 'seondeok', key: keyOf(hide) }).ok, '다음 날');
+  eq(bondPts(a, 'seondeok'), 9, '😣 -4');
+  eq(knownLikes(W, a, 'seondeok').hate.join(), 'hide_raw', '준 것은 안다');
+  a.bonds.seondeok.pts = 40;
+  ok(knownLikes(W, a, 'seondeok').told, '이웃은 알려 준다');
+  eq(knownLikes(W, a, 'seondeok').love.length, 2);
+  const sword = { uid: 'x1', item: 'wpn_club', stats: {}, scores: {} };
+  a.bag.push(sword);
+  g.state.t += data.config.time.secondsPerGameDay;
+  eq(g.dispatch({ type: 'GIFT', actor: 'p1', npc: 'seondeok', key: 'x1' }).error, 'not_giftable', '장비는 못 준다');
+});
+
+test('마음의 부탁: 정이 들어야 열리고, 의뢰를 끝내면 정이 들며, 오늘의 부탁 은화는 정의 단계만큼 는다. 정표는 아늑함이 높은 가구', () => {
+  const g = createGame({ data, seed: 9, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  const W = { state: g.state, data, statics: g.statics, terrain: g.terrain, clock: g.clock };
+  a.quests.done.q1_ashore = 1;
+  a.quests.done.q2_chest = 1;
+  a.quests.done.sq_lh_fish = 1;
+  ok(!available(W, a, data.quests.bq_seondeok), '낯선 사이엔 없다');
+  a.bonds = { seondeok: { pts: 40, greet: null, gift: null, known: {} } };
+  ok(available(W, a, data.quests.bq_seondeok), '이웃이 되면');
+  // 오늘의 부탁: 이웃(2단계)이면 은화 20% 더
+  const p = npcPos(W, 'seondeok');
+  Object.assign(a, { x: p.x + 1, z: p.z });
+  ok(g.dispatch({ type: 'QUEST_ACCEPT', actor: 'p1', quest: 'dq_seondeok' }).ok);
+  a.bag.push({ item: 'seaweed', lot: null, bonus: null, qty: 3 });
+  const s0 = a.silver;
+  ok(g.dispatch({ type: 'TALK', actor: 'p1', npc: 'seondeok' }).ok);
+  eq(a.silver - s0, 30, '25 × 1.2');
+  eq(bondPts(a, 'seondeok'), 44, '오늘의 부탁 +4');
+  // 마음의 부탁 → 정표
+  ok(g.dispatch({ type: 'QUEST_ACCEPT', actor: 'p1', quest: 'bq_seondeok' }).ok);
+  a.bag.push({ item: 'ingot_copper', lot: null, bonus: null, qty: 2 }, { item: 'stone', lot: null, bonus: null, qty: 6 });
+  ok(g.dispatch({ type: 'TALK', actor: 'p1', npc: 'seondeok' }).ok);
+  eq(bondPts(a, 'seondeok'), 64, '마음의 부탁 +20');
+  const k = [...a.bag, ...storeOf(a, a.home)].find((e) => e.item === 'keep_pot');
+  ok(k && k.stats.comfort > 30, '정표 가구');
+  ok(data.lists.quests.filter((q) => q.bond).every((q) => data.npcs[q.giver].gifts), '마음의 부탁은 정을 쌓는 사람이 준다');
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

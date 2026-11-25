@@ -7,7 +7,7 @@ import { createGame, loadGame } from '../../core/game.js';
 import { dist, settlementAt, storeOf, workSpots } from '../../core/world.js';
 import { avgProps, keyOf } from '../../core/inventory.js';
 import { starOf } from '../../core/formulas.js';
-import { stars } from '../../core/text.js';
+import { stars, ERR, josa } from '../../core/text.js';
 import { createScene } from './scene.js';
 import { startTier, createAutoTuner, chosenTier, setChosenTier, TIERS } from './gfx/quality.js';
 import { bakeMaterials, makeCanvasTextures } from './gfx/texgen.js';
@@ -347,6 +347,8 @@ async function boot() {
       else hud.open('craft', { station: t.id });
     } else if (t.kind === 'npc') {
       game.dispatch({ type: 'MOVE_INPUT', actor: PID, dx: 0, dz: 0 });
+      // 호감도(v1.6): 말을 걸면 하루 한 번 인사로 정이 든다(못 하면 그냥 넘어간다)
+      game.dispatch({ type: 'GREET', actor: PID, npc: t.id });
       hud.open('talk', { npc: t.id });
     } else if (t.kind === 'obj') {
       // 배에 오르기(v0.6): 돌아올 수 없으니 먼저 묻는다
@@ -484,6 +486,14 @@ async function boot() {
       case 'quest-accept':
         if (game.dispatch({ type: 'QUEST_ACCEPT', actor: PID, quest: v }).ok) hud.toast(`📜 「${data.quests[v].name}」을(를) 받았다`, 'good');
         break;
+      case 'gift-open': hud.open('talk', { npc: hud.panel.npc, gift: true }); break;
+      case 'gift-back': hud.open('talk', { npc: hud.panel.npc }); break;
+      case 'gift': {
+        const npc = hud.panel.npc;
+        const r = game.dispatch({ type: 'GIFT', actor: PID, npc, key: v });
+        if (!r.ok) hud.toast(ERR[r.error] || r.error, 'bad');
+        break;
+      }
       case 'quest-track': game.dispatch({ type: 'QUEST_TRACK', actor: PID, quest: v }); break;
       case 'menu': hud.toggle('menu'); break;
       case 'close': hud.close(); break;
@@ -774,6 +784,16 @@ async function boot() {
     doneBuf.push(ev);
     const q = data.quests[ev.quest];
     hud.banner(`✅ 퀘스트 완료 · ${q.name}`);
+  });
+  // 호감도(v1.6)
+  game.on('bond.gift', (ev) => {
+    if (ev.actor !== PID || hud.panel?.kind !== 'talk') return;
+    hud.open('talk', { npc: ev.npc, gift: true, react: ev });
+  });
+  game.on('bond.tier', (ev) => {
+    if (ev.actor !== PID) return;
+    const n = data.npcs[ev.npc];
+    hud.banner(`${'♥'.repeat(ev.tier)} ${josa(n.name, '과', '와')} ${josa(ev.name, '이', '가')} 되었다`);
   });
   game.on('quest.start', (ev) => {
     if (ev.actor !== PID || game.state.t < 2) return;

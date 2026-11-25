@@ -457,7 +457,29 @@
           "바다가 잔잔하니 장사할 맛이 나."
         ]
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "food_soup",
+        "mushroom"
+      ],
+      "like": [
+        "seaweed",
+        "berry",
+        "food_berry"
+      ],
+      "hate": [
+        "hide_raw"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "요즘은 자네 오는 소리가 들리면 국을 한 국자 더 떠 놔."
+      ],
+      "4": [
+        "자네는 이제 우리 식구야. 솥 바닥 긁는 것도 자네 몫이지."
+      ]
+    }
   },
   {
     "id": "makdong",
@@ -525,7 +547,29 @@
           "언젠가 이걸로 바다 끝까지 가 볼 거예요."
         ]
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "food_jerky",
+        "lumber_birch"
+      ],
+      "like": [
+        "food_meat",
+        "nails_copper",
+        "log_drift"
+      ],
+      "hate": [
+        "seaweed"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "개척자님! 오늘도 바다 얘기 해 주세요!"
+      ],
+      "4": [
+        "나중에 배 지으면 첫 손님은 무조건 개척자님이에요. 약속!"
+      ]
+    }
   },
   {
     "id": "soli",
@@ -586,7 +630,29 @@
         "yaw": -1.91,
         "what": "집 앞에서 하루를 마무리하는 중"
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "mushroom",
+        "sap_birch"
+      ],
+      "like": [
+        "berry",
+        "seed_berry",
+        "fiber_reed"
+      ],
+      "hate": [
+        "meat_raw"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "이 버섯은 독이 있어요. …그쪽은 이제 다 알죠?"
+      ],
+      "4": [
+        "숲에서 길 잃으면 제 이름 불러요. 어디서든 찾아갈게요."
+      ]
+    }
   },
   {
     "id": "gombo",
@@ -654,7 +720,29 @@
           "밤이 조용하니 나무가 잘 마르는구먼."
         ]
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "log_oak",
+        "food_meat"
+      ],
+      "like": [
+        "log_birch",
+        "lumber_birch",
+        "food_jerky"
+      ],
+      "hate": [
+        "sand_fine"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "허허, 자네 도끼질 소리는 멀리서도 알아듣겠어."
+      ],
+      "4": [
+        "내 도끼 자루, 자네한테 물려줄까 생각 중이야. 농담 아니야."
+      ]
+    }
   },
   {
     "id": "jogae",
@@ -721,7 +809,28 @@
           "그물이 성하니 갈매기도 덜 시끄러워."
         ]
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "seaweed",
+        "fiber_reed"
+      ],
+      "like": [
+        "food_soup",
+        "cloth_reed"
+      ],
+      "hate": [
+        "stone"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "그물 보러 오는 사람은 자네뿐이야. 고마워."
+      ],
+      "4": [
+        "우리 갈매기들도 자네는 안 쪼아. 식구인 줄 알아."
+      ]
+    }
   },
   {
     "id": "noseon",
@@ -795,7 +904,29 @@
           "바다는 기다릴 줄 아는 녀석한테 길을 내주지."
         ]
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "food_jerky",
+        "food_tea"
+      ],
+      "like": [
+        "seaweed",
+        "lumber_birch",
+        "nails_copper"
+      ],
+      "hate": [
+        "berry"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "바다 얘기 들으러 왔나? 앉게, 오늘은 긴 얘기를 하지."
+      ],
+      "4": [
+        "물수리 선원 명부에 자네 이름을 적어 뒀네. 마지막 줄에."
+      ]
+    }
   },
   {
     "id": "baram",
@@ -854,7 +985,28 @@
         "yaw": 0.0,
         "what": "집 앞에서 하루를 마무리하는 중"
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "fiber_reed",
+        "cloth_reed"
+      ],
+      "like": [
+        "seaweed",
+        "sap_birch"
+      ],
+      "hate": [
+        "ore_copper"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "이 매듭 봐 봐. 자네한테만 알려 주는 거야."
+      ],
+      "4": [
+        "자네 그물은 내가 평생 공짜로 짜 줄게."
+      ]
+    }
   },
   {
     "id": "cheongun",
@@ -907,7 +1059,29 @@
         "yaw": 0.0,
         "what": "집 앞에서 하루를 마무리하는 중"
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "food_tea",
+        "mushroom"
+      ],
+      "like": [
+        "sap_birch",
+        "berry",
+        "gem_rough"
+      ],
+      "hate": [
+        "food_meat"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "바람이 자네 이름을 자주 부르는구려."
+      ],
+      "4": [
+        "숲이 자네를 받아들였소. 이제 길을 잃을 일은 없을 거요."
+      ]
+    }
   },
   {
     "id": "darae",
@@ -958,7 +1132,28 @@
         "yaw": -0.79,
         "what": "집 앞에서 하루를 마무리하는 중"
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "seaweed",
+        "food_berry"
+      ],
+      "like": [
+        "food_soup",
+        "fiber_reed"
+      ],
+      "hate": [
+        "ore_iron"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "오늘은 물이 좋아. 자네 오니 고기도 잘 물고."
+      ],
+      "4": [
+        "내 낚시 자리, 자네한테만 알려 준 거 비밀이야."
+      ]
+    }
   },
   {
     "id": "doseon",
@@ -1017,7 +1212,29 @@
         "yaw": -1.75,
         "what": "집 앞에서 하루를 마무리하는 중"
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "food_jerky",
+        "lumber_oak"
+      ],
+      "like": [
+        "cloth_reed",
+        "nails_copper",
+        "food_meat"
+      ],
+      "hate": [
+        "mushroom"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "노 젓는 법 가르쳐 줄까? 자네라면 금방 배우겠어."
+      ],
+      "4": [
+        "나룻배 삯은 이제 안 받아. 자네한테는 영영."
+      ]
+    }
   },
   {
     "id": "pal",
@@ -1076,7 +1293,29 @@
         "yaw": 1.66,
         "what": "집 앞에서 하루를 마무리하는 중"
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "gem_rough",
+        "ingot_copper"
+      ],
+      "like": [
+        "leather",
+        "cloth_reed",
+        "food_tea"
+      ],
+      "hate": [
+        "log_drift"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "단골한테는 좋은 물건부터 보여 주는 법이지."
+      ],
+      "4": [
+        "장사 삼십 년에 이런 손님은 처음이야. 아니, 이제 손님이 아니지."
+      ]
+    }
   },
   {
     "id": "okhwa",
@@ -1143,7 +1382,29 @@
           "다리 덕에 장 보러 가는 길이 반으로 줄었네."
         ]
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "food_tea",
+        "berry"
+      ],
+      "like": [
+        "food_soup",
+        "cloth_reed",
+        "lumber_oak"
+      ],
+      "hate": [
+        "meat_raw"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "느티골 사람들이 자네 얘기를 자주 해."
+      ],
+      "4": [
+        "느티나무 아래 자네 자리를 하나 비워 뒀네. 언제든 와서 앉게."
+      ]
+    }
   },
   {
     "id": "hansol",
@@ -1210,7 +1471,29 @@
           "다리 첫 손님이 당신이었죠. 기억해요."
         ]
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "lumber_oak",
+        "nails_copper"
+      ],
+      "like": [
+        "lumber_birch",
+        "stake_wood",
+        "ingot_iron"
+      ],
+      "hate": [
+        "seaweed"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "대패질 좀 봐 줄래요? 당신 눈은 정확하니까."
+      ],
+      "4": [
+        "다음에 짓는 집 대들보엔 당신 이름을 새길 거예요."
+      ]
+    }
   },
   {
     "id": "ggul",
@@ -1269,7 +1552,29 @@
         "yaw": -0.97,
         "what": "집 앞에서 하루를 마무리하는 중"
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "sap_birch",
+        "berry"
+      ],
+      "like": [
+        "food_berry",
+        "lumber_oak",
+        "seed_berry"
+      ],
+      "hate": [
+        "food_meat"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "벌들이 당신 냄새를 기억해요. 이제 안 쏠 거예요."
+      ],
+      "4": [
+        "올해 첫 꿀은 당신 거예요. 벌들도 찬성했어요."
+      ]
+    }
   },
   {
     "id": "beodeul",
@@ -1338,7 +1643,29 @@
           "여울과 늪이 한자리에 앉은 건 내 평생 처음이었구먼."
         ]
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "food_soup",
+        "food_tea"
+      ],
+      "like": [
+        "cloth_reed",
+        "berry",
+        "fiber_reed"
+      ],
+      "hate": [
+        "ore_iron"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "이리 와 앉게. 여울 옛날 얘기 하나 해 주지."
+      ],
+      "4": [
+        "내 손주가 하나 더 생긴 것 같구먼."
+      ]
+    }
   },
   {
     "id": "jaegan",
@@ -1397,7 +1724,29 @@
         "yaw": 2.32,
         "what": "집 앞에서 하루를 마무리하는 중"
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "ingot_iron",
+        "ingot_copper"
+      ],
+      "like": [
+        "ore_iron",
+        "log_oak",
+        "leather"
+      ],
+      "hate": [
+        "berry"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "풀무질 좀 거들어. 자네 손이면 불이 고르게 붙어."
+      ],
+      "4": [
+        "내 망치 쥐는 법은 자네한테만 가르쳐 줬다. 다른 데 가서 말하지 마."
+      ]
+    }
   },
   {
     "id": "miru",
@@ -1464,7 +1813,29 @@
           "잔치 때 입은 붉은 천, 늪 사람들도 한 벌씩 가져갔어요."
         ]
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "berry",
+        "cloth_reed"
+      ],
+      "like": [
+        "food_berry",
+        "fiber_reed",
+        "sap_birch"
+      ],
+      "hate": [
+        "ore_copper"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "이 빛깔 봐요. 당신 생각하면서 물들였어요."
+      ],
+      "4": [
+        "당신 옷은 평생 제가 물들일래요. 다른 사람한텐 맡기지 마요."
+      ]
+    }
   },
   {
     "id": "jumo",
@@ -1523,7 +1894,29 @@
           "그 잔치 뒤로 손님이 배로 늘었어. 다 자네 덕이야."
         ]
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "food_meat",
+        "mushroom"
+      ],
+      "like": [
+        "food_soup",
+        "log_birch",
+        "seaweed"
+      ],
+      "hate": [
+        "sand_fine"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "자리 비워 놨어. 자네는 늘 창가 자리지."
+      ],
+      "4": [
+        "자네는 이제 손님이 아니라 주막 식구야. 밥값은 넣어 둬."
+      ]
+    }
   },
   {
     "id": "aksa",
@@ -1583,7 +1976,29 @@
           "다음 노래는 심장 이야기로 지을까 하오."
         ]
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "food_tea",
+        "log_oak"
+      ],
+      "like": [
+        "sap_birch",
+        "food_berry",
+        "cloth_reed"
+      ],
+      "hate": [
+        "hide_raw"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "그대 발소리에 장단을 맞춰 보았소. 들어 보시오."
+      ],
+      "4": [
+        "내 노래 끝 소절은 이제 그대 이야기라오."
+      ]
+    }
   },
   {
     "id": "beomdol",
@@ -1635,7 +2050,29 @@
         "yaw": 0.0,
         "what": "집 앞에서 하루를 마무리하는 중"
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "meat_raw",
+        "leather"
+      ],
+      "like": [
+        "hide_raw",
+        "food_jerky",
+        "food_meat"
+      ],
+      "hate": [
+        "berry"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "자네 발자국은 사슴도 못 알아채더군. 제법이야."
+      ],
+      "4": [
+        "내 활은 자네가 가져. 난 이제 쉴 때가 됐어."
+      ]
+    }
   },
   {
     "id": "nallae",
@@ -1695,7 +2132,29 @@
           "다음 사냥도 같이 가요. 범돌 어른 몰래요."
         ]
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "hide_raw",
+        "food_jerky"
+      ],
+      "like": [
+        "meat_raw",
+        "leather",
+        "log_birch"
+      ],
+      "hate": [
+        "food_tea"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "오늘도 사냥 가요? 저도 데려가요!"
+      ],
+      "4": [
+        "범돌 어른보다 당신이랑 사냥하는 게 더 좋아요. 비밀이에요."
+      ]
+    }
   },
   {
     "id": "seoksu",
@@ -1746,7 +2205,29 @@
         "yaw": -1.91,
         "what": "집 앞에서 하루를 마무리하는 중"
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "gem_rough",
+        "food_meat"
+      ],
+      "like": [
+        "ore_iron",
+        "ore_copper",
+        "food_soup"
+      ],
+      "hate": [
+        "seaweed"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "굴 속에서도 자네 목소리는 알아듣겠어."
+      ],
+      "4": [
+        "내가 찾은 제일 큰 원석, 자네 이름 붙여 놨어."
+      ]
+    }
   },
   {
     "id": "musoe",
@@ -1805,7 +2286,29 @@
         "yaw": -2.27,
         "what": "집 앞에서 하루를 마무리하는 중"
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "log_oak",
+        "food_meat"
+      ],
+      "like": [
+        "log_birch",
+        "ingot_iron",
+        "food_soup"
+      ],
+      "hate": [
+        "fiber_reed"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "숯불 쬐러 왔나? 자네 자리는 늘 따뜻해."
+      ],
+      "4": [
+        "이 가마 불씨, 자네가 꺼뜨리지 않게 지켜 줬잖아. 가마 반은 자네 거야."
+      ]
+    }
   },
   {
     "id": "danbi",
@@ -1872,7 +2375,29 @@
           "기침 소리가 줄었어요. 숯가마 사람들이 다시 웃어요."
         ]
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "mushroom",
+        "food_tea"
+      ],
+      "like": [
+        "berry",
+        "sap_birch",
+        "seed_berry"
+      ],
+      "hate": [
+        "meat_raw"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "안색이 좋네요. 제 약 덕분인가요?"
+      ],
+      "4": [
+        "당신이 아프면 제가 제일 먼저 달려갈 거예요."
+      ]
+    }
   },
   {
     "id": "gangjang",
@@ -1932,7 +2457,29 @@
           "굴에서 쇠 캐는 소리가 다시 나. 듣기 좋지?"
         ]
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "ingot_iron",
+        "food_meat"
+      ],
+      "like": [
+        "ore_iron",
+        "food_jerky",
+        "stone"
+      ],
+      "hate": [
+        "berry"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "굴 사람들이 자네를 식구라 부르더군."
+      ],
+      "4": [
+        "자네 이름을 굴 입구 바위에 새겼어. 굴막 사람이라는 뜻이야."
+      ]
+    }
   },
   {
     "id": "boreum",
@@ -1983,7 +2530,29 @@
         "yaw": -1.91,
         "what": "집 앞에서 하루를 마무리하는 중"
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "food_meat",
+        "food_soup"
+      ],
+      "like": [
+        "meat_raw",
+        "mushroom",
+        "seaweed"
+      ],
+      "hate": [
+        "stone"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "오늘은 뭐 먹고 싶어요? 당신 거 먼저 해 줄게요."
+      ],
+      "4": [
+        "당신 숟가락은 따로 깎아 놨어요. 여기 올 때마다 쓰세요."
+      ]
+    }
   },
   {
     "id": "suryeon",
@@ -2044,7 +2613,29 @@
           "돌무지에 당신 몫의 돌을 하나 얹었어요."
         ]
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "food_tea",
+        "gem_rough"
+      ],
+      "like": [
+        "sap_birch",
+        "berry",
+        "stone"
+      ],
+      "hate": [
+        "meat_raw"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "돌무지에 바람이 불 때마다 당신 이름을 불러요."
+      ],
+      "4": [
+        "순례가 끝나면 당신 마을에 머물고 싶어요."
+      ]
+    }
   },
   {
     "id": "lamp_aide",
@@ -2104,7 +2695,28 @@
         "yaw": 0.9,
         "what": "집 앞에서 하루를 마무리하는 중"
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "sap_birch",
+        "food_lantern"
+      ],
+      "like": [
+        "food_tea",
+        "cloth_reed"
+      ],
+      "hate": [
+        "hide_raw"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "등불 심지 가는 법, 이제 같이 해요."
+      ],
+      "4": [
+        "해림 어른께 말씀드렸어요. 당신은 제 등불 동무라고요."
+      ]
+    }
   },
   {
     "id": "boatswain",
@@ -2165,7 +2777,29 @@
         "yaw": -0.9,
         "what": "집 앞에서 하루를 마무리하는 중"
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "food_jerky",
+        "cloth_reed"
+      ],
+      "like": [
+        "leather",
+        "nails_copper",
+        "food_meat"
+      ],
+      "hate": [
+        "berry"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "어이, 오늘 돛대 꼭대기 올라가 볼 텐가?"
+      ],
+      "4": [
+        "선단 배 어디든 자네 자리는 있다. 내가 보증하지."
+      ]
+    }
   },
   {
     "id": "scribe",
@@ -2225,6 +2859,28 @@
         "yaw": 1.66,
         "what": "집 앞에서 하루를 마무리하는 중"
       }
-    ]
+    ],
+    "gifts": {
+      "love": [
+        "gem_rough",
+        "food_tea"
+      ],
+      "like": [
+        "sand_fine",
+        "stone",
+        "sap_birch"
+      ],
+      "hate": [
+        "meat_raw"
+      ]
+    },
+    "chatBond": {
+      "2": [
+        "오늘 기록에 당신 이름이 세 번 나와요."
+      ],
+      "4": [
+        "제 기록장 첫 장에 당신을 적었어요. 학회 명부보다 먼저요."
+      ]
+    }
   }
 ]

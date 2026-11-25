@@ -240,12 +240,16 @@ export function buildData(raw) {
 
   // 하루 동선·말 바뀌기(v1.5)
   for (const n of raw.npcs) {
+    // 호감도(v1.6): 선물 물건과 정이 든 뒤의 말
+    for (const k of ['love', 'like', 'hate']) for (const it of n.gifts?.[k] || []) if (!items[it]) problems.push(`NPC ${n.id}: 선물 ${it} 없음`);
+    for (const t of Object.keys(n.chatBond || {})) if (!(+t >= 1 && +t < raw.config.bond.tiers.length)) problems.push(`NPC ${n.id}: 정 단계 ${t}`);
     for (const sp of n.routine || []) {
       if (sp.at ? !settlements[sp.at] : !raw.regions.some((r) => r.sites.some((s) => s.id === sp.site))) problems.push(`NPC ${n.id}: 동선 자리 ${sp.at || sp.site} 없음`);
       if (!(sp.h >= 0 && sp.h < 24)) problems.push(`NPC ${n.id}: 동선 시각 ${sp.h}`);
     }
     for (const c of n.chatAfter || []) if (!raw.quests.quests.some((q) => q.id === c.quest)) problems.push(`NPC ${n.id}: 말 바뀌기 퀘스트 ${c.quest} 없음`);
   }
+  for (const q of raw.quests.quests) if (q.bond && !(raw.npcs.find((n) => n.id === q.giver)?.gifts && q.bond < raw.config.bond.tiers.length)) problems.push(`퀘스트 ${q.id}: 마음의 부탁은 정을 쌓을 수 있는 사람이 준다`);
   for (const q of raw.quests.quests) if (q.faction && !factions.list.some((f) => f.id === q.faction)) problems.push(`퀘스트 ${q.id}: 세력 ${q.faction} 없음`);
   // 무기 숙련(v1.1)
   const weapons = raw.weapons || { cap: 20, xp: { base: 25, exp: 1.5, perDmg: 1, perKill: 0.25 }, reset: { perPoint: 15 }, mastery: {}, types: {}, nodes: [] };

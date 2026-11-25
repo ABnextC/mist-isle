@@ -1,5 +1,5 @@
 {
-  "dataVersion": 21,
+  "dataVersion": 22,
   "skillCap": 60,
   "time": {
     "secondsPerGameDay": 3600,
@@ -1537,5 +1537,47 @@
         "guardBreak": 0.5
       }
     ]
+  },
+  "bond": {
+    "tiers": [
+      {
+        "min": 0,
+        "name": "낯선 사이"
+      },
+      {
+        "min": 10,
+        "name": "아는 사이"
+      },
+      {
+        "min": 40,
+        "name": "이웃"
+      },
+      {
+        "min": 90,
+        "name": "친한 사이"
+      },
+      {
+        "min": 160,
+        "name": "단짝"
+      }
+    ],
+    "max": 200,
+    "greet": 1,
+    "gift": {
+      "love": 12,
+      "like": 6,
+      "plain": 2,
+      "hate": -4
+    },
+    "quest": {
+      "side": 12,
+      "chain": 15,
+      "faction": 10,
+      "daily": 4,
+      "bond": 20,
+      "talk": 3
+    },
+    "dailyBonus": 0.1,
+    "revealTier": 2
   }
 }

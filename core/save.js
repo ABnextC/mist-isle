@@ -478,6 +478,15 @@ const MIGRATIONS = [
       st.meta.engine = '1.5.0';
     },
   },
+  {
+    // v1.5 → v1.6: 호감도. 개척자마다 bonds를 붙인다(정은 0부터)
+    from: 21,
+    to: 22,
+    run(st) {
+      for (const a of Object.values(st.actors)) a.bonds = a.bonds || {};
+      st.meta.engine = '1.6.0';
+    },
+  },
 ];
 
 // v0.5.2: 1~2장 퀘스트에 생활 단계가 끼었다. 하던 단계 번호를 새 번호로(앞에 낀 단계는 건너뛴다)

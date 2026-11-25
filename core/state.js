@@ -10,7 +10,7 @@ import { initMobs } from './systems/mobs.js';
 import { newSettlement, initProjects, settlementsDaily } from './settlements.js';
 import { emptyQuests, startQuest, firstQuest } from './systems/quests.js';
 
-export const ENGINE_VERSION = '1.5.0';
+export const ENGINE_VERSION = '1.6.0';
 
 export function spawnPoint(region, terrain) {
   const [x, inland] = region.spawn;
@@ -40,6 +40,7 @@ export function newActor(data, spec, at) {
     house: null,
     guild: null,
     mastery: {},
+    bonds: {},
     loadout: {},
     quests: emptyQuests(),
   };

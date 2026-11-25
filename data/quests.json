@@ -4371,6 +4371,523 @@
         "silver": 80
       },
       "repeat": "daily"
+    },
+    {
+      "id": "bq_seondeok",
+      "kind": "side",
+      "giver": "seondeok",
+      "bond": 2,
+      "requires": [
+        "sq_lh_fish"
+      ],
+      "name": "순덕의 국솥",
+      "summary": "순덕의 국솥 바닥이 갈라졌다. 시집올 때 가져온 솥이라 버리지 못한다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "seondeok",
+          "text": "순덕에게 구리주괴 2·돌 6 건네기",
+          "take": {
+            "ingot_copper": 2,
+            "stone": 6
+          },
+          "say": [
+            "구리로 때우고 돌로 화덕을 새로 쌓으면 되겠네.",
+            "…됐다! 이 솥, 자네가 가져가. 새 솥은 또 사면 돼.",
+            "아니, 사양 마. 이 솥 국맛을 아는 사람한테 줘야지."
+          ],
+          "reply": "고마워요"
+        }
+      ],
+      "reward": {
+        "silver": 80,
+        "items": [
+          {
+            "item": "keep_pot",
+            "qty": 1,
+            "score": 60
+          },
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bq_gombo",
+      "kind": "side",
+      "giver": "gombo",
+      "bond": 2,
+      "requires": [
+        "sq_fo_wolves"
+      ],
+      "name": "옛 친구의 안부",
+      "summary": "곰보 영감이 숲의 은자 청운과 젊어서 동무였다고 한다. 안부를 물어 달란다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "cheongun",
+          "text": "솔바람 오두막 청운에게 곰보의 안부 전하기",
+          "say": [
+            "곰보가? …그 고집쟁이가 아직 도끼를 드는구려.",
+            "이걸 전해 주시오. 우리가 젊을 때 같이 깎던 부엉이요. 반쪽은 내가, 반쪽은 그가 깎았지."
+          ],
+          "reply": "전할게요"
+        },
+        {
+          "type": "talk",
+          "npc": "gombo",
+          "text": "곰보 영감에게 부엉이 전하기",
+          "say": [
+            "허, 이걸 아직 갖고 있었어? 마흔 해 전에 깎은 걸.",
+            "…자네가 가져. 둘 다 늙은이 방에 있느니 자네 집에서 보는 게 낫지."
+          ],
+          "reply": "소중히 할게요"
+        }
+      ],
+      "reward": {
+        "silver": 70,
+        "items": [
+          {
+            "item": "keep_owl",
+            "qty": 1,
+            "score": 60
+          }
+        ]
+      }
+    },
+    {
+      "id": "bq_noseon",
+      "kind": "side",
+      "giver": "noseon",
+      "bond": 2,
+      "requires": [
+        "sq_gu_log3"
+      ],
+      "name": "물수리 둘째",
+      "summary": "노 선장이 막동에게 줄 배를 어떻게 지을지 모형부터 만들자고 한다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "noseon",
+          "text": "노 선장에게 자작나무 목재 6·구리 못 8 건네기",
+          "take": {
+            "lumber_birch": 6,
+            "nails_copper": 8
+          },
+          "say": [
+            "용골은 이렇게, 늑골은 이렇게…",
+            "자, 막동이 녀석한테 보여 주고 오게."
+          ],
+          "reply": "다녀올게요"
+        },
+        {
+          "type": "talk",
+          "npc": "makdong",
+          "text": "막동에게 배 모형 보여 주기",
+          "say": [
+            "이게 물수리 둘째예요? …돛까지 달렸네!",
+            "선장님이 이건 개척자님 가지라고 하셨대요. 저는 진짜 배를 지을 거니까요!"
+          ],
+          "reply": "꼭 지어"
+        }
+      ],
+      "reward": {
+        "silver": 90,
+        "items": [
+          {
+            "item": "keep_ship",
+            "qty": 1,
+            "score": 60
+          }
+        ]
+      }
+    },
+    {
+      "id": "bq_ggul",
+      "kind": "side",
+      "giver": "ggul",
+      "bond": 2,
+      "requires": [
+        "sq_va_boar"
+      ],
+      "name": "새 벌통",
+      "summary": "꿀벌댁이 벌통 하나를 늘리고 싶어 한다. 참나무 목재가 필요하다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "ggul",
+          "text": "꿀벌댁에게 참나무 목재 4·자작나무 수액 4 건네기",
+          "take": {
+            "lumber_oak": 4,
+            "sap_birch": 4
+          },
+          "say": [
+            "수액을 발라 두면 벌들이 금방 자리 잡아요.",
+            "첫 꿀 뜨면 한 단지 드릴게요. 아니, 지금 드릴게요. 작년 거지만 맛은 좋아요."
+          ],
+          "reply": "고마워요"
+        }
+      ],
+      "reward": {
+        "silver": 90,
+        "items": [
+          {
+            "item": "keep_honey",
+            "qty": 1,
+            "score": 60
+          },
+          {
+            "item": "food_berry",
+            "qty": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "bq_jaegan",
+      "kind": "side",
+      "giver": "jaegan",
+      "bond": 2,
+      "requires": [
+        "sq_wi_copper"
+      ],
+      "name": "스승의 모루",
+      "summary": "재간이 스승에게 물려받은 작은 모루를 다시 벼리려 한다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "jaegan",
+          "text": "재간에게 철주괴 4·참나무 원목 2 건네기",
+          "take": {
+            "ingot_iron": 4,
+            "log_oak": 2
+          },
+          "say": [
+            "참나무 숯이라야 쇠가 고르게 달아.",
+            "…다 됐다. 이 작은 놈은 자네가 가져가. 큰 놈은 내가 쓰면 돼."
+          ],
+          "reply": "잘 쓸게요"
+        }
+      ],
+      "reward": {
+        "silver": 100,
+        "items": [
+          {
+            "item": "keep_anvil",
+            "qty": 1,
+            "score": 60
+          }
+        ]
+      }
+    },
+    {
+      "id": "bq_nallae",
+      "kind": "side",
+      "giver": "nallae",
+      "bond": 2,
+      "requires": [
+        "sq_hu_mistwolf"
+      ],
+      "name": "첫 사냥의 뿔",
+      "summary": "날래가 혼자 첫 안개 늑대 사냥을 해 보고 싶어 한다. 곁에서 지켜봐 달란다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "mist_wolf"
+          ],
+          "count": 3,
+          "text": "날래와 안개 늑대 3마리 잡기"
+        },
+        {
+          "type": "talk",
+          "npc": "nallae",
+          "text": "날래에게 돌아가기",
+          "say": [
+            "해냈어요! 범돌 어른한테 자랑해야지.",
+            "이 뿔피리, 첫 사냥 기념이에요. 같이 사냥한 사람한테 주는 거래요."
+          ],
+          "reply": "축하해"
+        }
+      ],
+      "reward": {
+        "silver": 90,
+        "items": [
+          {
+            "item": "keep_horn",
+            "qty": 1,
+            "score": 60
+          },
+          {
+            "item": "food_jerky",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bq_seoksu",
+      "kind": "side",
+      "giver": "seoksu",
+      "bond": 2,
+      "requires": [
+        "sq_as_wolves"
+      ],
+      "name": "굴 속의 등잔",
+      "summary": "석수가 굴 속을 밝힐 원석 등잔을 만들고 싶어 한다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "seoksu",
+          "text": "석수에게 거친 원석 3·구리주괴 2 건네기",
+          "take": {
+            "gem_rough": 3,
+            "ingot_copper": 2
+          },
+          "say": [
+            "원석에 영맥 빛이 남아 있어. 불 없이도 은은하게 빛나지.",
+            "두 개 만들었어. 하나는 굴에, 하나는 자네 집에."
+          ],
+          "reply": "고마워요"
+        }
+      ],
+      "reward": {
+        "silver": 100,
+        "items": [
+          {
+            "item": "keep_crystal",
+            "qty": 1,
+            "score": 60
+          }
+        ]
+      }
+    },
+    {
+      "id": "bq_aksa",
+      "kind": "side",
+      "giver": "aksa",
+      "bond": 3,
+      "requires": [
+        "sq_in_song3"
+      ],
+      "name": "새 피리",
+      "summary": "소리가 부러진 피리 대신 새 피리를 깎으려 한다. 그대만 믿는다 한다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "aksa",
+          "text": "소리에게 참나무 원목 2·자작나무 수액 4 건네기",
+          "take": {
+            "log_oak": 2,
+            "sap_birch": 4
+          },
+          "say": [
+            "참나무 결에 수액을 먹이면 소리가 둥글어지오.",
+            "…들어 보시오. 이 소리.",
+            "이 피리는 그대 것이오. 나는 옛 피리 반쪽으로 충분하오."
+          ],
+          "reply": "아껴 불게요"
+        }
+      ],
+      "reward": {
+        "silver": 140,
+        "items": [
+          {
+            "item": "keep_flute",
+            "qty": 1,
+            "score": 60
+          }
+        ]
+      }
+    },
+    {
+      "id": "bq_danbi",
+      "kind": "side",
+      "giver": "danbi",
+      "bond": 3,
+      "requires": [
+        "sq_ki_round"
+      ],
+      "name": "단비의 약초밭",
+      "summary": "단비가 숯가마 뒤에 작은 약초밭을 일구려 한다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "danbi",
+          "text": "단비에게 산딸기 씨앗 4·들버섯 6 건네기",
+          "take": {
+            "seed_berry": 4,
+            "mushroom": 6
+          },
+          "say": [
+            "씨앗은 여기, 버섯 포자는 그늘에…",
+            "첫 약초는 말려서 다발로 묶었어요. 집에 걸어 두면 잠이 잘 와요."
+          ],
+          "reply": "고마워요"
+        }
+      ],
+      "reward": {
+        "silver": 140,
+        "items": [
+          {
+            "item": "keep_herbs",
+            "qty": 1,
+            "score": 60
+          },
+          {
+            "item": "food_tea",
+            "qty": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "bq_miru",
+      "kind": "side",
+      "giver": "miru",
+      "bond": 3,
+      "requires": [
+        "sq_wi_feast"
+      ],
+      "name": "노을 이불",
+      "summary": "미루가 잔치 뒤 남은 천으로 이불을 짓겠다며 재료를 부탁한다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "miru",
+          "text": "미루에게 갈대 천 6·산딸기 10 건네기",
+          "take": {
+            "cloth_reed": 6,
+            "berry": 10
+          },
+          "say": [
+            "천은 여섯 폭, 물은 진하게…",
+            "다 됐어요. 노을 이불이에요. 누구 줄지 처음부터 정해 놨어요."
+          ],
+          "reply": "나한테?"
+        }
+      ],
+      "reward": {
+        "silver": 150,
+        "items": [
+          {
+            "item": "keep_quilt",
+            "qty": 1,
+            "score": 60
+          }
+        ]
+      }
+    },
+    {
+      "id": "bq_jumo",
+      "kind": "side",
+      "giver": "jumo",
+      "bond": 4,
+      "requires": [
+        "sq_in_song3"
+      ],
+      "name": "주막 단골",
+      "summary": "금순이 단골에게만 거는 처마 등롱을 걸어 주겠다며, 오랜 손님들을 불러 달란다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "aksa",
+          "text": "소리에게 오늘 밤 단골 자리 알리기",
+          "say": [
+            "단골 자리? 그대가? 하하, 오늘은 그대 노래를 부르겠소."
+          ],
+          "reply": "기대할게요"
+        },
+        {
+          "type": "talk",
+          "npc": "beomdol",
+          "text": "범돌에게 오늘 밤 단골 자리 알리기",
+          "say": [
+            "허허, 금순이 등롱을 내주다니. 자네 대단하구먼."
+          ],
+          "reply": "꼭 오세요"
+        },
+        {
+          "type": "talk",
+          "npc": "jumo",
+          "text": "금순에게 구운 고기 4·들버섯 6 건네기",
+          "take": {
+            "food_meat": 4,
+            "mushroom": 6
+          },
+          "say": [
+            "자, 다들 왔네. 오늘은 자네가 주인공이야.",
+            "이 등롱 자네 집 처마에 걸어. 어디서 봐도 자네 집인 줄 알게."
+          ],
+          "reply": "고마워요"
+        }
+      ],
+      "reward": {
+        "silver": 220,
+        "items": [
+          {
+            "item": "keep_lantern",
+            "qty": 1,
+            "score": 60
+          }
+        ]
+      }
+    },
+    {
+      "id": "bq_boreum",
+      "kind": "side",
+      "giver": "boreum",
+      "bond": 4,
+      "requires": [
+        "sq_ga_food"
+      ],
+      "name": "심장 앞의 밥상",
+      "summary": "보름이 야영지 사람 모두에게 한 상 차리고 싶어 한다. 당신 자리도 있다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "boreum",
+          "text": "보름에게 날고기 6·해초 버섯국 4 건네기",
+          "take": {
+            "meat_raw": 6,
+            "food_soup": 4
+          },
+          "say": [
+            "오늘은 다 같이 먹어요. 강두 대장님도, 윤서 선생님도."
+          ],
+          "reply": "좋아요"
+        },
+        {
+          "type": "talk",
+          "npc": "yunseo_heart",
+          "text": "윤서 선생님을 밥상에 모시기",
+          "say": [
+            "밥상? 하하, 기록을 잠깐 덮어야겠군."
+          ],
+          "reply": "어서 오세요"
+        },
+        {
+          "type": "talk",
+          "npc": "boreum",
+          "text": "보름과 밥상 앞에 앉기",
+          "say": [
+            "이 사발, 당신 거예요. 다음에 오면 꼭 여기에 퍼 줄게요."
+          ],
+          "reply": "잘 먹을게요"
+        }
+      ],
+      "reward": {
+        "silver": 220,
+        "items": [
+          {
+            "item": "keep_bowl",
+            "qty": 1,
+            "score": 60
+          }
+        ]
+      }
     }
   ]
 }

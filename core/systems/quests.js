@@ -14,6 +14,7 @@ import { isDown } from './combat.js';
 import { unlockedSet } from './unlocks.js';
 import { factionDef, factionOf, gainInfluence } from './factions.js';
 import { projectProgress } from '../settlements.js';
+import { bondTier, questBond, dailyMult } from './bonds.js';
 
 export const TALK_RANGE = 3.6;
 export const USE_RANGE = 2.6;
@@ -50,6 +51,8 @@ export function available(ctx, a, q) {
   } else if (Q.done[q.id] != null) return false;
   // 세력 의뢰(v1.5): 그 세력 사람만
   if (q.faction && a.faction?.id !== q.faction) return false;
+  // 마음의 부탁(v1.6): 그 사람과 정이 그만큼 들어야
+  if (q.bond && bondTier(ctx, a, q.giver) < q.bond) return false;
   return (q.requires || []).every((r) => Q.done[r] != null);
 }
 
@@ -83,6 +86,7 @@ function complete(ctx, a, id) {
   if (q.repeat === 'daily') Q.daily[id] = ctx.clock.day(ctx.state.t);
   for (const it of q.takes || []) delete Q.items[it];
   const reward = giveReward(ctx, a, q);
+  questBond(ctx, a, q);
   // 표식(v0.5.1): 등불의 각인처럼 이야기로 얻는 능력
   for (const g of q.grants || []) {
     a.marks = a.marks || {};
@@ -174,8 +178,10 @@ function giveReward(ctx, a, q) {
   const by = q.rewardBy?.[factionOf(a)];
   const r = by ? { silver: (q.reward?.silver || 0) + (by.silver || 0), items: [...(q.reward?.items || []), ...(by.items || [])] } : q.reward || {};
   if (by?.inf) gainInfluence(ctx, a, by.inf, 'story');
-  const out = { silver: r.silver || 0, items: [], stored: [] };
-  if (r.silver) a.silver += r.silver;
+  // 오늘의 부탁(v1.6): 정이 든 만큼 은화가 는다
+  const silver = Math.round((r.silver || 0) * dailyMult(ctx, a, q));
+  const out = { silver, items: [], stored: [] };
+  if (silver) a.silver += silver;
   for (const it of r.items || []) {
     const entry = rewardEntry(ctx, q, it);
     const qty = entry.qty ?? 1;

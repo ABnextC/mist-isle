@@ -23,6 +23,7 @@ import { corpseOpen, skinLoot, skinSeconds } from './systems/mobs.js';
 import { talkDue, talk, useDue, useObj, available, startQuest, nearNpc, questNote, TALK_RANGE, USE_RANGE, BOARD_RANGE, talkReady, npcShown } from './systems/quests.js';
 import { isUnlocked, allowedProject } from './systems/unlocks.js';
 import { objPos } from './world.js';
+import { bondable, greetDue, greet, giftDue, giftable, gift } from './systems/bonds.js';
 
 // ── 도우미 ─────────────────────────────────────────────
 function matchSlot(data, e, slot) {
@@ -1317,8 +1318,39 @@ const QUEST_TRACK = {
   },
 };
 
+// 호감도(v1.6): 인사(하루 한 번, 말 걸 때 저절로)와 선물(하루 한 번, 가방에서 하나)
+const GREET = {
+  validate(ctx, a, c) {
+    if (!bondable(ctx, c.npc)) return 'no_bond';
+    if (!nearNpc(ctx, a, c.npc, TALK_RANGE) || !npcShown(ctx, a, c.npc)) return 'too_far';
+    if (!greetDue(ctx, a, c.npc)) return 'already';
+    return {};
+  },
+  execute(ctx, a, c) {
+    greet(ctx, a, c.npc);
+  },
+};
+const GIFT = {
+  validate(ctx, a, c) {
+    if (!bondable(ctx, c.npc)) return 'no_bond';
+    const bad = alive(ctx, a);
+    if (bad) return bad;
+    if (!nearNpc(ctx, a, c.npc, TALK_RANGE) || !npcShown(ctx, a, c.npc)) return 'too_far';
+    if (!giftDue(ctx, a, c.npc)) return 'gifted_today';
+    const e = a.bag.find((x) => keyOf(x) === c.key);
+    if (!e) return 'no_item';
+    if (!giftable(ctx, e)) return 'not_giftable';
+    return { e };
+  },
+  execute(ctx, a, c, p) {
+    const item = p.e.item;
+    takeQty(a.bag, c.key, 1);
+    gift(ctx, a, c.npc, item);
+  },
+};
+
 const HANDLERS = {
-  TALK, QUEST_ACCEPT, QUEST_USE, QUEST_TRACK, FACTION_JOIN, FACTION_TASK,
+  GREET, GIFT, TALK, QUEST_ACCEPT, QUEST_USE, QUEST_TRACK, FACTION_JOIN, FACTION_TASK,
   HOUSE_BUY, HOUSE_UPGRADE, HOUSE_PLACE, HOUSE_TAKE, REST, GARDEN_PLANT, GARDEN_HARVEST,
   FERRY, GUILD_CREATE, GUILD_JOIN, GUILD_LEAVE, GUILD_HIRE, GUILD_DISMISS, GUILD_GIVE, GUILD_PUT, GUILD_TAKE,
   MOVE, MOVE_INPUT, GATHER, CRAFT, EAT, STORE, TAKE, SET_AUTOPILOT, RECALL,

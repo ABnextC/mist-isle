@@ -87,6 +87,10 @@ export const ERR = {
   ai_full: 'AI 조합원 자리가 없다(사람이 넷보다 적을 때만 채운다)',
   guild_store_full: '조합 창고가 꽉 찼다(명성이 오르면 넓어진다)',
   need_items: '건넬 물건이 모자라다(추적 줄에 센 것을 보자)',
+  no_bond: '정을 나눌 수 없는 사람이다',
+  already: '오늘은 이미 인사했다',
+  gifted_today: '오늘은 이미 선물했다',
+  not_giftable: '선물할 수 없는 물건이다',
   // 퀘스트(v0.5)
   no_npc: '그런 사람은 없음',
   no_quest: '없는 퀘스트',

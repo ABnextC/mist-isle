@@ -17,6 +17,7 @@ import { factionOf, rankOf, tasksOf, taskDone } from '../../core/systems/faction
 import { comfortOf, restValue } from '../../core/systems/housing.js';
 import { guildLevel, aiRoom, hireable } from '../../core/systems/guilds.js';
 import { npcPos } from '../../core/world.js';
+import { bondable, bondPts, bondTier, tierName, nextTier, giftDue, giftable, knownLikes, bondLines, B as bondCfg } from '../../core/systems/bonds.js';
 import { questCtx, lifeSteps } from './quest.js';
 import { isUnlocked, allowedProject, chapterReached } from '../../core/systems/unlocks.js';
 
@@ -897,12 +898,51 @@ export function createHud(root, game, { touch, onAct }) {
   function chatLines(npc, a) {
     let lines = npc.chat;
     for (const c of npc.chatAfter || []) if (a.quests?.done?.[c.quest] != null) lines = c.lines;
-    return lines;
+    // 정이 든 뒤의 말(v1.6)이 있으면 그 말을 먼저
+    const bl = bondLines(questCtx(game), a, npc.id);
+    return bl ? [...bl, ...bl, ...lines] : lines;
+  }
+  // 호감도(v1.6)
+  const hearts = (t) => '♥'.repeat(t) + '♡'.repeat(Math.max(0, 4 - t));
+  function bondStrip(a, npcId) {
+    const ctx = questCtx(game);
+    if (!bondable(ctx, npcId)) return '';
+    const t = bondTier(ctx, a, npcId);
+    const pts = bondPts(a, npcId);
+    const nx = nextTier(ctx, a, npcId);
+    const pct = nx ? Math.round(((pts - nx.from) / (nx.min - nx.from)) * 100) : 100;
+    return `<div class="bond"><span class="hearts">${hearts(t)}</span> <b>${esc(tierName(ctx, t))}</b><i><em style="width:${pct}%"></em></i><small>${nx ? `${pts}/${nx.min} → ${esc(nx.name)}` : '정이 가득하다'}</small></div>`;
+  }
+  const REACT = { love: ['💖', '눈을 반짝인다. 무척 좋아하는 것이다.'], like: ['😊', '반갑게 받는다.'], plain: ['🙂', '고맙다며 받는다.'], hate: ['😣', '난처한 얼굴로 받는다. 좋아하지 않는 것 같다.'] };
+  function likesHtml(a, npcId) {
+    const ctx = questCtx(game);
+    const k = knownLikes(ctx, a, npcId);
+    const nm = (ids) => ids.map((it) => `${data.items[it].icon || ''}${esc(data.items[it].name)}`).join(' · ');
+    if (!k.love.length && !k.like.length && !k.hate.length) return `<p class="muted">좋아하는 걸 아직 모른다. 선물해 보거나 ${esc(tierName(ctx, bondCfg(ctx).revealTier))}이 되면 알려 준다.</p>`;
+    return `<ul class="likes">${k.love.length ? `<li>💖 ${nm(k.love)}</li>` : ''}${k.like.length ? `<li>😊 ${nm(k.like)}</li>` : ''}${k.hate.length ? `<li>😣 ${nm(k.hate)}</li>` : ''}</ul>`;
+  }
+  function giftHtml(a, npc) {
+    const ctx = questCtx(game);
+    const head = `<div class="npchead"><b>${esc(npc.name)}</b> <small>${esc(npc.title)}</small></div>${bondStrip(a, npc.id)}`;
+    if (panel.react) {
+      const r = panel.react;
+      const [ic, line] = REACT[r.react];
+      return `${head}<p class="say">${ic} ${esc(npc.name)}에게 ${esc(josa(data.items[r.item].name, '을', '를'))} 건넸다. ${line}</p><p class="muted">정 ${r.amt >= 0 ? '+' : ''}${r.amt}</p><div class="btns"><button data-act="gift-back">돌아가기</button><button data-act="close">잘 있어요</button></div>`;
+    }
+    if (!giftDue(ctx, a, npc.id)) return `${head}<p class="muted">오늘은 이미 선물했다. 내일 또 주자.</p><div class="btns"><button data-act="gift-back">돌아가기</button></div>`;
+    const known = a.bonds?.[npc.id]?.known || {};
+    const told = knownLikes(ctx, a, npc.id);
+    const tag = (it) => (told.love.includes(it) ? '💖' : told.like.includes(it) ? '😊' : told.hate.includes(it) ? '😣' : known[it] ? REACT[known[it]][0] : '');
+    const seen = new Set();
+    const rows = a.bag.filter((e) => giftable(ctx, e)).filter((e) => (seen.has(e.item) ? false : seen.add(e.item))).map((e) => `<li><span>${data.items[e.item].icon || ''} ${esc(data.items[e.item].name)} <small>×${countItem([a.bag], e.item)}</small> ${tag(e.item)}</span><button data-act="gift" data-v="${esc(keyOf(e))}">주기</button></li>`).join('');
+    return `${head}${likesHtml(a, npc.id)}<p class="muted">가방에서 하나를 준다. 하루 한 번.</p><ul class="list">${rows || '<li class="muted">줄 만한 게 없다(장비는 못 준다)</li>'}</ul><div class="btns"><button data-act="gift-back">돌아가기</button></div>`;
   }
   function talkHtml(a) {
     const ctx = questCtx(game);
     const npc = data.npcs[panel.npc];
-    const head = `<div class="npchead"><b>${esc(npc.name)}</b> <small>${esc(npc.title)}</small></div>`;
+    if (panel.gift) return giftHtml(a, npc);
+    const head = `<div class="npchead"><b>${esc(npc.name)}</b> <small>${esc(npc.title)}</small></div>${bondStrip(a, panel.npc)}`;
+    const giftBtn = bondable(ctx, panel.npc) ? `<button data-act="gift-open">🎁 선물${giftDue(ctx, a, panel.npc) ? '' : ' ✓'}</button>` : '';
     const after = panel.after;
     if (after) {
       // 뒷장: 끝낸 퀘스트와 보상, 이어진 퀘스트의 안내
@@ -946,17 +986,17 @@ export function createHud(root, game, { touch, onAct }) {
       const q = offers[0];
       const lines = chatLines(npc, a);
       panel.chat ??= Math.floor(Math.random() * lines.length);
-      const tag = q.repeat === 'daily' ? '오늘의 부탁' : q.faction ? `${data.factions.list.find((f) => f.id === q.faction).icon} 세력 의뢰` : q.chain ? `연작 · ${esc(q.chain)}` : '부가 의뢰';
+      const tag = q.bond ? `💗 마음의 부탁(${esc(tierName(ctx, q.bond))})` : q.repeat === 'daily' ? '오늘의 부탁' : q.faction ? `${data.factions.list.find((f) => f.id === q.faction).icon} 세력 의뢰` : q.chain ? `연작 · ${esc(q.chain)}` : '부가 의뢰';
       return `${head}<p class="say">${esc(lines[panel.chat % lines.length])}</p><div class="qtag">${tag} · ${esc(q.name)}</div><p class="say">${esc(q.summary)}</p>
         <p class="muted">▶ ${q.steps.map((st) => esc(st.text)).join(' → ')}</p>${rewardHtml(q.reward)}
-        <div class="btns"><button class="pri" data-act="quest-accept" data-v="${q.id}">맡겠습니다</button><button data-act="close">다음에</button></div>`;
+        <div class="btns"><button class="pri" data-act="quest-accept" data-v="${q.id}">맡겠습니다</button>${giftBtn}<button data-act="close">다음에</button></div>`;
     }
     // 세력 지도자(v0.7): 세력이 열렸으면 세력 창을 보인다
     const fdef = data.factions.list.find((f) => f.leader === panel.npc);
     if (fdef && isUnlocked(ctx, a, 'faction')) return `${head}${factionHtml(a, fdef, ctx)}`;
     const lines = chatLines(npc, a);
     panel.chat ??= Math.floor(Math.random() * lines.length);
-    return `${head}<p class="say">${esc(lines[panel.chat % lines.length])}</p><div class="btns"><button data-act="close">잘 있어요</button></div>`;
+    return `${head}<p class="say">${esc(lines[panel.chat % lines.length])}</p><div class="btns">${giftBtn}<button data-act="close">잘 있어요</button></div>`;
   }
   // 내 집(v0.8)
   function houseHtml(a, plotId) {
@@ -1032,6 +1072,24 @@ export function createHud(root, game, { touch, onAct }) {
     html += `<h3>오늘의 세력 의뢰</h3><ul class="list">${tasks}</ul><h3>등급 혜택</h3><ul class="list">${perks}</ul>`;
     return `${html}<div class="btns"><button data-act="close">잘 있어요</button></div>`;
   }
+  // 사람들(v1.6): 정을 나눈 사람과 단계, 좋아하는 것, 다음 마음의 부탁
+  function peopleHtml(a) {
+    const ctx = questCtx(game);
+    const met = data.lists.npcs.filter((n) => n.gifts && a.bonds?.[n.id]).sort((x, y) => bondPts(a, y.id) - bondPts(a, x.id));
+    const where = (n) => (n.at ? data.settlements?.[n.at]?.name || '' : data.sites?.[n.site]?.name || '');
+    if (!met.length) return '<p class="muted">아직 정을 나눈 사람이 없다. 마을 사람에게 말을 걸면 인사(하루 한 번)만으로도 정이 조금 든다. 선물과 의뢰로 더 깊어진다.</p>';
+    const rows = met.map((n) => {
+      const t = bondTier(ctx, a, n.id);
+      const nx = nextTier(ctx, a, n.id);
+      const bq = data.lists.quests.find((q) => q.bond && q.giver === n.id && a.quests?.done?.[q.id] == null);
+      const hint = bq ? (t >= bq.bond ? `💗 「${esc(bq.name)}」 부탁이 있다` : `💗 ${esc(tierName(ctx, bq.bond))}이 되면 부탁할 게 있다고 한다`) : '';
+      const k = knownLikes(ctx, a, n.id);
+      const likes = [...k.love.map((it) => `💖${esc(data.items[it].name)}`), ...k.like.map((it) => `😊${esc(data.items[it].name)}`)].join(' ');
+      return `<li><div><b>${esc(n.name)}</b> <span class="hearts">${hearts(t)}</span> <small>${esc(tierName(ctx, t))}${nx ? ` · ${bondPts(a, n.id)}/${nx.min}` : ''} · ${esc(n.title)} · ${esc(where(n))}</small>${likes ? `<small>${likes}</small>` : ''}${hint ? `<small>${hint}</small>` : ''}</div></li>`;
+    }).join('');
+    const total = data.lists.npcs.filter((n) => n.gifts).length;
+    return `<p class="muted">인사 하루 한 번 +${bondCfg(ctx).greet} · 선물 하루 한 번(💖 +${bondCfg(ctx).gift.love}, 😊 +${bondCfg(ctx).gift.like}) · 그 사람 의뢰. 정이 들수록 오늘의 부탁 은화가 늘고, 말이 바뀌고, 정표 가구를 주는 부탁이 열린다.</p><ul class="list people">${rows}</ul><p class="muted">정을 나눈 사람 ${met.length}/${total}</p>`;
+  }
   function journalHtml(a) {
     const tab = panel.tab || 'main';
     const Q = a.quests || { active: {}, done: {}, items: {} };
@@ -1060,12 +1118,14 @@ export function createHud(root, game, { touch, onAct }) {
       const offers = data.lists.quests.filter((q) => q.kind === 'side' && available(qctx, a, q) && npcShown(qctx, a, q.giver));
       if (offers.length) {
         const where = (npc) => { const n = data.npcs[npc]; return n.at ? data.settlements?.[n.at]?.name || game.state.settlements[n.at]?.name || '' : data.sites?.[n.site]?.name || ''; };
-        const kindOf = (q) => (q.repeat === 'daily' ? '🔁 ' : q.faction ? `${data.factions.list.find((f) => f.id === q.faction).icon} ` : q.chain ? '🔗 ' : '');
-        body += `<h3>받을 수 있는 의뢰</h3><ul class="list">${offers.map((q) => `<li><div><b>${kindOf(q)}${esc(q.name)}</b><small>${esc(data.npcs[q.giver].name)} · ${esc(where(q.giver))}${q.chain ? ` · ${esc(q.chain)}` : ''} · 🪙 ${q.reward?.silver || 0}</small></div></li>`).join('')}</ul><p class="muted">🔁 날마다 · 🔗 이어지는 이야기 · 세력 표시는 그 세력 의뢰. 마을 사람은 하루 동안 일터 → 게시판 둘레 → 모닥불 → 집 앞으로 옮겨 다닌다.</p>`;
+        const kindOf = (q) => (q.bond ? '💗 ' : q.repeat === 'daily' ? '🔁 ' : q.faction ? `${data.factions.list.find((f) => f.id === q.faction).icon} ` : q.chain ? '🔗 ' : '');
+        body += `<h3>받을 수 있는 의뢰</h3><ul class="list">${offers.map((q) => `<li><div><b>${kindOf(q)}${esc(q.name)}</b><small>${esc(data.npcs[q.giver].name)} · ${esc(where(q.giver))}${q.chain ? ` · ${esc(q.chain)}` : ''} · 🪙 ${q.reward?.silver || 0}</small></div></li>`).join('')}</ul><p class="muted">🔁 날마다 · 🔗 이어지는 이야기 · 💗 정이 들어야 꺼내는 부탁 · 세력 표시는 그 세력 의뢰. 마을 사람은 하루 동안 일터 → 게시판 둘레 → 모닥불 → 집 앞으로 옮겨 다닌다.</p>`;
       }
       const doneN = data.lists.quests.filter((q) => q.kind === 'side' && !q.repeat && Q.done[q.id] != null).length;
       const all = data.lists.quests.filter((q) => q.kind === 'side' && !q.repeat).length;
       body += `<p class="muted">끝낸 부가 의뢰 ${doneN}/${all}</p>`;
+    } else if (tab === 'people') {
+      body = peopleHtml(a);
     } else if (tab === 'bounty') {
       body = bountyHtml(a).replace(/<button data-act="quest-accept"[^>]*>받기<\/button>/g, '<small class="muted">게시판에서</small>');
     } else {
@@ -1079,7 +1139,7 @@ export function createHud(root, game, { touch, onAct }) {
         ${factionOf(a) ? (() => { const f = data.factions.list.find((x) => x.id === factionOf(a)); const r = rankOf(questCtx(game), a); return `<h3>${f.icon} ${esc(f.name)}</h3><p>${esc(data.factions.ranks[r - 1].name)} · 영향력 ${Math.round(a.faction.inf)} — 지도자에게 말을 걸면 의뢰와 혜택을 본다</p>`; })() : ''}
         <h3>열리는 것</h3><p class="muted">등대섬(1~2장)에서는 기본 생활과 전투를 익힌다. 3장에서 본섬으로 건너가면 경제가, 4장에서 세력과 큰 콘텐츠가 열린다.</p><ul class="life">${unl}</ul>`;
     }
-    return tabsHtml([['main', '메인'], ['side', '부가'], ['bounty', '현상금'], ['life', '생활 안내']], tab) + body;
+    return tabsHtml([['main', '메인'], ['side', '부가'], ['people', '사람들'], ['bounty', '현상금'], ['life', '생활 안내']], tab) + body;
   }
 
   // ── 거래소 ─────────────────────────────────────────

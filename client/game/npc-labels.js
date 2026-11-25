@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { npcMark } from '../../core/systems/quests.js';
 import { npcRoutine } from '../../core/world.js';
 import { questCtx } from './quest.js';
+import { bondTier } from '../../core/systems/bonds.js';
 
 export function createNpcLabels(overlay, game, positionOf) {
   const els = new Map();
@@ -51,7 +52,10 @@ export function createNpcLabels(overlay, game, positionOf) {
         b._t = mark || '';
         b.className = mark === '!' ? 'new' : mark === '?' ? 'due' : mark === 'side' ? 'side' : '';
       }
-      if (span._t !== n.name) span.textContent = span._t = n.name;
+      // 호감도(v1.6): 정이 든 만큼 하트
+      const t = n.gifts && me ? bondTier(ctx, me, n.id) : 0;
+      const nm = t ? `${n.name} ${'♥'.repeat(t)}` : n.name;
+      if (span._t !== nm) span.textContent = span._t = nm;
       // 하루 동선(v1.5): 일터가 아닌 곳에 있으면 무엇을 하는지 덧붙인다
       const rp = n.routine ? npcRoutine(ctx, n) : null;
       const sub = rp?.what && rp.what !== '일하는 중' ? `${n.title} · ${rp.what}` : n.title;

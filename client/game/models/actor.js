@@ -364,10 +364,27 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
       [[P(new THREE.CylinderGeometry(0.022, 0.026, 0.86, 8), 0xffffff, { y: 0.32 })], M.wood],
       [[P(new THREE.BoxGeometry(0.03, 0.12, 0.1), 0xffffff, { y: 0.68, z: 0.05 }), P(new THREE.CylinderGeometry(0.15, 0.15, 0.022, 14, 1, false, 0, Math.PI), 0xffffff, { y: 0.68, z: 0.1, rz: Math.PI / 2, ry: Math.PI / 2 })], metal],
     ]);
+    // 전투 망치(v1.1): 굵은 자루에 네모 쇠머리
+    w(`hammer_${tier}`, [
+      [[P(new THREE.CylinderGeometry(0.024, 0.028, 0.92, 8), 0xffffff, { y: 0.34 })], M.wood],
+      [[P(new THREE.BoxGeometry(0.13, 0.15, 0.26), 0xffffff, { y: 0.76 }), P(new THREE.BoxGeometry(0.15, 0.03, 0.28), 0xffffff, { y: 0.69 })], metal],
+    ]);
     w(`spear_${tier}`, [
       [[P(new THREE.CylinderGeometry(0.018, 0.022, 1.6, 8), 0xffffff, { y: 0.45 })], M.wood],
       [[P(new THREE.ConeGeometry(0.045, 0.26, 4), 0xffffff, { y: 1.37, sz: 0.3 }), P(new THREE.CylinderGeometry(0.026, 0.026, 0.06, 8), 0xffffff, { y: 1.23 })], metal],
     ]);
+  }
+  // 방패(v1.1): 검과 방패를 들면 왼팔에 둥근 나무 방패
+  const shields = {};
+  for (const [tier, metal] of [[1, M.copper], [2, M.metal]]) {
+    const g = new THREE.Group();
+    g.add(mesh(merge([P(new THREE.CylinderGeometry(0.25, 0.25, 0.035, 18), 0xffffff, { rx: Math.PI / 2 })]), M.wood));
+    g.add(mesh(merge([P(new THREE.TorusGeometry(0.25, 0.018, 5, 22), 0xffffff, {}), P(new THREE.SphereGeometry(0.06, 10, 6), 0xffffff, { z: -0.03, sz: 0.6 })]), metal));
+    g.visible = false;
+    g.position.set(-0.02, 0.02, 0.09);
+    g.rotation.y = Math.PI / 2;
+    armL.hand.add(g);
+    shields[`sword_${tier}`] = g;
   }
   // 손에 드는 소품(v0.4.9): 가죽 칼·망치·톱·국자, 먹을 것(고기·산딸기 말랭이·국그릇)
   const props = {};
@@ -426,6 +443,7 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
     logging: { mode: 'radial' }, mining: { mode: 'radial' },
     axe_1: { mode: 'radial' }, axe_2: { mode: 'radial' }, club_0: { mode: 'radial' },
     sword_1: { mode: 'radial', far: 0.3 }, sword_2: { mode: 'radial', far: 0.3 },
+    hammer_1: { mode: 'radial' }, hammer_2: { mode: 'radial' },
     spear_1: { mode: 'line', far: 0.9 }, spear_2: { mode: 'line', far: 0.9 },
     // 한 손 소품: 오른어깨 → 오른손 쪽으로(톱날·국자가 앞·아래를 본다)
     saw: { mode: 'arm' }, ladle: { mode: 'arm' }, knife: { mode: 'arm', tilt: 0.5 },
@@ -547,7 +565,7 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
 
   return {
     root, hips: by.hips, spine: by.spine, chest: by.chest, neck: by.neck, head: by.head,
-    armL, armR, legL, legR, tools, weapons, props, showProp, materials: M, eyes, setMorph, kind, lod, setOutfit, aimHeld, setTints,
+    armL, armR, legL, legR, tools, weapons, shields, props, showProp, materials: M, eyes, setMorph, kind, lod, setOutfit, aimHeld, setTints,
     get outfit() { return { ...want }; },
     hipsY: by.hips.position.y, hipsRest: by.hips.position.clone(), bones: by, buildMs: BASE.ms,
     tris: Object.fromEntries(Object.entries(pk.meshes).map(([k, m]) => [k, m.geometry.index.count / 3])),

@@ -8,7 +8,7 @@ import { rollProps, rollQty, round3 } from '../formulas.js';
 import { fitsHabitat, regionAt } from '../terrain.js';
 import { addEntry, slotsNeeded } from '../inventory.js';
 import { addXp } from './progress.js';
-import { hurtActor, yawTo, isDown, angDiff } from './combat.js';
+import { hurtActor, yawTo, isDown, angDiff, onKill } from './combat.js';
 import { resolve } from './actions.js';
 import { siteXZ } from '../world.js';
 import { questKill } from './quests.js';
@@ -18,6 +18,55 @@ const DEG = Math.PI / 180;
 
 // 살아서 세상에 나와 있는가(쓰러짐·밤 짐승의 낮 숨음 제외)
 export const isAlive = (m) => !!m && m.mode !== 'dead' && m.mode !== 'away';
+
+// ── 상태 이상(v1.1 무기 스킬): 기절·느려짐·출혈·약화(주는 피해↓)·노출(받는 피해↑) ──
+export const fxOn = (m, k, t) => !!m.fx?.[k] && m.fx[k].until > t;
+const slowK = (ctx, m) => (fxOn(m, 'slow', ctx.state.t) ? 1 - m.fx.slow.k : 1);
+export const weakK = (ctx, m) => (fxOn(m, 'weak', ctx.state.t) ? 1 - m.fx.weak.k : 1);
+// 큰 놈(두목·파수꾼)은 기절이 반만 먹는다
+const tenacity = (type) => (type.phases || type.hp >= 600 ? 0.5 : 1);
+
+export function applyMobFx(ctx, m, a, fx, attack) {
+  const t = ctx.state.t;
+  const type = ctx.data.creatures[m.type];
+  m.fx ??= {};
+  if (fx.stun) {
+    const sec = r2(fx.stun * tenacity(type));
+    m.fx.stun = { until: r2(Math.max(m.fx.stun?.until || 0, t + sec)) };
+    if (m.mode === 'windup' || m.mode === 'charge') setMode(ctx, m, 'recover', m.fx.stun.until);
+    m.cd = r2(Math.max(m.cd || 0, m.fx.stun.until + 0.3));
+  }
+  if (fx.slow) m.fx.slow = { k: fx.slow.k, until: r2(t + fx.slow.sec) };
+  if (fx.weak) m.fx.weak = { k: fx.weak.k, until: r2(t + fx.weak.sec) };
+  if (fx.expose) m.fx.expose = { k: fx.expose.k, until: r2(t + fx.expose.sec) };
+  if (fx.bleed) m.fx.bleed = { dps: r2(attack * fx.bleed.mult), until: r2(t + fx.bleed.sec), by: a.id, next: r2(t + 1) };
+  if (fx.knock && !type.statue) {
+    const d = Math.hypot(m.x - a.x, m.z - a.z) || 1;
+    const push = fx.knock < 0 ? -Math.min(-fx.knock, Math.max(0, d - 1.3)) : fx.knock * (type.hp >= 600 ? 0.3 : 1);
+    const [nx, nz] = resolve(ctx, m, m.x + ((m.x - a.x) / d) * push, m.z + ((m.z - a.z) / d) * push);
+    m.x = round3(nx);
+    m.z = round3(nz);
+  }
+  if (fx.taunt && isAlive(m)) {
+    m.target = a.id;
+    if (m.mode === 'idle' || m.mode === 'wander' || m.mode === 'return') aggro(ctx, m, a);
+  }
+  ctx.emit('mob.fx', { mob: m.id, actor: a.id, fx: Object.keys(fx) });
+}
+
+// 출혈은 1초마다 갑옷을 무시하고 깎는다. 끝난 상태는 지운다
+function fxTick(ctx, m) {
+  const t = ctx.state.t;
+  const b = m.fx.bleed;
+  if (b && t >= b.next && b.until >= t - 1e-6) {
+    b.next = r2(b.next + 1);
+    const a = ctx.state.actors[b.by];
+    if (a) hurtMob(ctx, m, a, Math.max(0.5, b.dps), false, { dot: true });
+  }
+  if (!isAlive(m)) return;
+  for (const k of Object.keys(m.fx)) if (m.fx[k].until < t) delete m.fx[k];
+  if (!Object.keys(m.fx).length) m.fx = null;
+}
 
 function siteNear(ctx, region, x, z, pad) {
   for (const s of region.sites || []) {
@@ -181,7 +230,8 @@ export function freeSpot(ctx, x, z, r) {
 }
 
 // ── 움직임 ─────────────────────────────────────────
-function moveToward(ctx, m, tx, tz, speed, dt) {
+function moveToward(ctx, m, tx, tz, speed0, dt) {
+  const speed = speed0 * slowK(ctx, m);
   const dx = tx - m.x;
   const dz = tz - m.z;
   const d = Math.hypot(dx, dz);
@@ -200,7 +250,8 @@ function moveToward(ctx, m, tx, tz, speed, dt) {
 }
 
 // 뒷걸음(창잡이·투척꾼이 거리를 벌린다): 상대를 본 채 물러난다
-function backOff(ctx, m, tgt, speed, dt) {
+function backOff(ctx, m, tgt, speed0, dt) {
+  const speed = speed0 * slowK(ctx, m);
   const dx = m.x - tgt.x;
   const dz = m.z - tgt.z;
   const d = Math.hypot(dx, dz) || 1;
@@ -285,13 +336,14 @@ function hasteOf(m, type) {
 
 const attackOf = (m, type) => type.attacks[m.atk?.i ?? 0] || type.attacks[0];
 
-export function hurtMob(ctx, m, a, dmg0, heavy) {
+// 준 피해를 돌려준다(석상처럼 안 먹히면 0). opts: crit·ability·dot(출혈) 표시
+export function hurtMob(ctx, m, a, dmg0, heavy, opts = null) {
   const type = ctx.data.creatures[m.type];
   const t = ctx.state.t;
   // 잠든 석상은 그냥 돌이다(이야기를 받기 전엔 칼날이 튕겨 나온다)
   if (asleep(type, m) && !canWake(type, a)) {
     ctx.emit('mob.immune', { mob: m.id, species: m.type, actor: a.id });
-    return;
+    return 0;
   }
   let dmg = dmg0;
   let blocked = false;
@@ -308,10 +360,10 @@ export function hurtMob(ctx, m, a, dmg0, heavy) {
   }
   m.hp = r2(Math.max(0, m.hp - dmg));
   a.stats.dmgDealt = r2((a.stats.dmgDealt || 0) + dmg);
-  ctx.emit('combat.hit', { actor: a.id, mob: m.id, species: m.type, dmg, heavy, hp: m.hp, blocked });
+  ctx.emit('combat.hit', { actor: a.id, mob: m.id, species: m.type, dmg, heavy, hp: m.hp, blocked, crit: !!opts?.crit, ability: opts?.ability || null, dot: !!opts?.dot });
   if (m.hp <= 0) {
     kill(ctx, m, a);
-    return;
+    return dmg;
   }
   // 두목 단계: 체력이 정해진 비율 아래로 내려가면 부하를 부르고 빨라진다
   if (type.phases) {
@@ -327,8 +379,9 @@ export function hurtMob(ctx, m, a, dmg0, heavy) {
     m.cd = r2(t + 0.8);
     ctx.emit('mob.stagger', { mob: m.id });
   }
-  if (m.mode === 'return' && type.temper !== 'skittish') return;
+  if (m.mode === 'return' && type.temper !== 'skittish') return dmg;
   packAggro(ctx, m, a);
+  return dmg;
 }
 
 function summon(ctx, boss, members, a) {
@@ -393,11 +446,13 @@ function kill(ctx, m, a) {
   m.skinned = !type.hunt; // 손질할 게 없는 적은 처음부터 '손질 끝'
   m.skinning = null;
   m.killer = a.id;
+  m.fx = null;
   a.stats.kills = a.stats.kills || {};
   a.stats.kills[m.type] = (a.stats.kills[m.type] || 0) + 1;
   ctx.emit('mob.die', { mob: m.id, species: m.type, actor: a.id, x: m.x, z: m.z, temp: !!m.temp });
   if (type.drops) autoLoot(ctx, m, a, type);
   questKill(ctx, a, m);
+  onKill(ctx, a, m);
 }
 
 function strike(ctx, m, type, at) {
@@ -407,7 +462,7 @@ function strike(ctx, m, type, at) {
   const half = ((at.arc || 90) * DEG) / 2;
   let diff = Math.abs(yawTo(m, a) - m.yaw);
   if (diff > Math.PI) diff = 2 * Math.PI - diff;
-  if (d <= at.range + 0.35 && (d < 0.6 || diff <= half)) hurtActor(ctx, a, m, type.dmg * (at.mult ?? 1), at);
+  if (d <= at.range + 0.35 && (d < 0.6 || diff <= half)) hurtActor(ctx, a, m, type.dmg * (at.mult ?? 1) * weakK(ctx, m), at);
   else ctx.emit('mob.miss', { mob: m.id, actor: a.id });
 }
 
@@ -423,7 +478,7 @@ function fireShot(ctx, m, type, at, tgt) {
   const sz = Math.cos(yaw);
   ctx.state.shots.push({
     id, mob: m.id, kind: type.id, x: round3(m.x + sx * 0.6), z: round3(m.z + sz * 0.6), vx: round3(sx * s.speed), vz: round3(sz * s.speed),
-    r: s.r, dmg: r2(type.dmg * (at.mult ?? 1)), t0: r2(t), until: r2(t + (at.range + 3) / s.speed),
+    r: s.r, dmg: r2(type.dmg * (at.mult ?? 1) * weakK(ctx, m)), t0: r2(t), until: r2(t + (at.range + 3) / s.speed),
   });
   ctx.emit('shot.fire', { shot: id, mob: m.id, species: m.type });
 }
@@ -565,7 +620,7 @@ export function mobsTick(ctx, dt0) {
       if (m.mode === 'away') {
         if (night) {
           const [x, z] = spotNear(ctx, regionOf(g), type, g, type.radius);
-          Object.assign(m, { x, z, hp: type.hp, target: null, cd: 0, dest: null });
+          Object.assign(m, { x, z, hp: type.hp, target: null, cd: 0, dest: null, fx: null });
           setMode(ctx, m, 'idle', t + ctx.rng.range(1, 4));
           ctx.emit('mob.spawn', { mob: m.id, species: m.type });
         }
@@ -579,6 +634,12 @@ export function mobsTick(ctx, dt0) {
       }
     }
     if (m.mode === 'away') continue;
+    // 상태 이상(v1.1): 출혈은 깎고, 기절했으면 이번 틱은 아무것도 못 한다
+    if (m.fx) {
+      fxTick(ctx, m);
+      if (!isAlive(m)) continue;
+      if (fxOn(m, 'stun', t)) continue;
+    }
     const home = Math.hypot(m.x - home0.x, m.z - home0.z);
     const tgt = m.target ? state.actors[m.target] : null;
     // 둥지에서 너무 멀리 끌려가면 돌아간다
@@ -685,7 +746,8 @@ export function mobsTick(ctx, dt0) {
       case 'charge': {
         const at = attackOf(m, type);
         const c = at.charge;
-        const [nx, nz] = resolve(ctx, m, m.x + Math.sin(m.yaw) * c.speed * dt, m.z + Math.cos(m.yaw) * c.speed * dt);
+        const cs = c.speed * slowK(ctx, m);
+        const [nx, nz] = resolve(ctx, m, m.x + Math.sin(m.yaw) * cs * dt, m.z + Math.cos(m.yaw) * cs * dt);
         m.x = round3(nx);
         m.z = round3(nz);
         if (tgt && !m.hitOnce && Math.hypot(tgt.x - m.x, tgt.z - m.z) <= c.hitR) {

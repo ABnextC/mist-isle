@@ -140,6 +140,26 @@ export function createFx(scene, { textures, hf, town, terrain, region }) {
   ring.renderOrder = 4;
   scene.add(ring);
 
+  // 스킬 파문(v1.1): 땅 위로 퍼지며 옅어지는 고리
+  const waves = [];
+  for (let i = 0; i < 6; i++) {
+    const w = new THREE.Mesh(new THREE.RingGeometry(0.82, 1.0, 48), new THREE.MeshBasicMaterial({ color: 0xffd08a, transparent: true, opacity: 0, depthWrite: false, fog: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
+    w.rotation.x = -Math.PI / 2;
+    w.visible = false;
+    w.renderOrder = 5;
+    scene.add(w);
+    waves.push({ m: w, age: 0, life: 0, r: 1 });
+  }
+  let waveNext = 0;
+  function wave(x, y, z, r, color = 0xffd08a, life = 0.45) {
+    const w = waves[waveNext];
+    waveNext = (waveNext + 1) % waves.length;
+    Object.assign(w, { age: 0, life, r });
+    w.m.position.set(x, y + 0.08, z);
+    w.m.material.color.set(color);
+    w.m.visible = true;
+  }
+
   // 채집 조각
   const N = 90;
   const chips = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(0.06, 0), new THREE.MeshStandardMaterial({ roughness: 0.85 }), N);
@@ -213,6 +233,17 @@ export function createFx(scene, { textures, hf, town, terrain, region }) {
     const sm = town?.smokes || [];
     for (let i = emit.length; i < sm.length; i++) emit.push({ p: sm[i], acc: i * 0.37, rate: 1.6 });
     ring.material.opacity = 0.5 + 0.25 * Math.sin(t * 5);
+    for (const w of waves) {
+      if (!w.m.visible) continue;
+      w.age += dt;
+      const k = w.age / w.life;
+      if (k >= 1) {
+        w.m.visible = false;
+        continue;
+      }
+      w.m.scale.setScalar(Math.max(0.2, w.r * (0.35 + 0.65 * Math.sqrt(k))));
+      w.m.material.opacity = 0.85 * (1 - k);
+    }
     for (let i = 0; i < N; i++) {
       const p = parts[i];
       if (p.life > 0) {
@@ -344,5 +375,5 @@ export function createFx(scene, { textures, hf, town, terrain, region }) {
     }
   }
 
-  return { burst, setTarget, update };
+  return { burst, wave, setTarget, update };
 }

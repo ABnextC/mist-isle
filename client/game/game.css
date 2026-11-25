@@ -455,3 +455,82 @@ ul.life li.done { color: var(--muted); }
 @keyframes lanternGlow { 50% { filter: drop-shadow(0 0 24px rgba(240, 189, 106, .9)); transform: translateY(-2px); } }
 .list.skills li { padding: 6px 10px 7px; }
 .list.skills .bar { margin-top: 4px; }
+
+/* ───────────────────────────────────────────────
+   v1.1 무기 숙련: 스킬 바 · 메뉴 단추 · 전체 메뉴 · 숙련 창
+   ─────────────────────────────────────────────── */
+.float.dot { font-size: 13px; color: #ff9a8a; }
+.skillbar { display: flex; align-items: flex-end; gap: 6px; padding: 6px; border-radius: 16px; background: var(--glass-soft); border: 1px solid var(--edge); box-shadow: 0 8px 22px rgba(0,0,0,.35); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); pointer-events: auto; }
+.skillbar button { position: relative; border: 1px solid var(--edge); color: var(--ink); cursor: pointer; padding: 0; font: inherit; }
+.skillbar kbd { position: absolute; top: 3px; left: 5px; font: 700 10px/1 ui-monospace, Menlo, monospace; color: rgba(255,255,255,.55); }
+.skillbar .wsl { width: 62px; height: 56px; border-radius: 12px; background: linear-gradient(180deg, rgba(240,189,106,.16), rgba(240,189,106,.04)); border-color: rgba(240,189,106,.4); }
+.skillbar .wsl b { font-size: 26px; position: absolute; left: 8px; top: 12px; }
+.skillbar .wsl i { font-style: normal; font-size: 15px; position: absolute; right: 6px; bottom: 5px; opacity: .65; filter: grayscale(.3); }
+.skillbar .sk { width: 56px; height: 56px; border-radius: 12px; background: radial-gradient(circle at 50% 35%, rgba(255,255,255,.13), rgba(255,255,255,.03) 70%), rgba(8,14,18,.55); overflow: hidden; transition: transform .08s, border-color .12s; }
+.skillbar .sk span { font-size: 26px; line-height: 56px; }
+.skillbar .sk:hover { border-color: var(--edge-hi); }
+.skillbar .sk:active { transform: translateY(1px) scale(.97); }
+.skillbar .sk.empty span { font-size: 20px; color: rgba(255,255,255,.3); }
+.skillbar .sk.low span { filter: grayscale(.7) brightness(.7); }
+.skillbar .sk.cd span { filter: grayscale(.9) brightness(.55); }
+.skillbar .sk i { position: absolute; inset: 0; background: conic-gradient(rgba(6, 10, 14, .62) var(--p), transparent 0); pointer-events: none; }
+.skillbar .sk em { position: absolute; inset: 0; display: grid; place-items: center; font-style: normal; font-weight: 800; font-size: 18px; color: #fff; text-shadow: 0 1px 3px #000; pointer-events: none; }
+.skillbar .mlv { align-self: center; padding: 0 4px 0 2px; font-size: 12px; font-weight: 700; color: #ffe3a4; white-space: nowrap; }
+.menubtn { position: absolute; top: calc(12px + env(safe-area-inset-top)); right: calc(208px + env(safe-area-inset-right)); width: 42px; height: 42px; border-radius: 12px; font-size: 20px; color: var(--ink); background: var(--glass-soft); border: 1px solid var(--edge); box-shadow: 0 6px 16px rgba(0,0,0,.3); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); cursor: pointer; pointer-events: auto; z-index: 3; }
+.menubtn:hover, .menubtn.open { border-color: rgba(240,189,106,.55); background: rgba(240,189,106,.16); }
+.panel-open .menubtn { opacity: 0; pointer-events: none; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; margin: 6px 0 8px; }
+.tiles .tile { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 12px 10px; min-height: 84px; border-radius: 14px; background: var(--tile); border: 1px solid rgba(255,255,255,.06); text-align: left; }
+.tiles .tile span { font-size: 26px; line-height: 1; margin-bottom: 4px; }
+.tiles .tile b { font-size: 14px; }
+.tiles .tile small { font-size: 11px; color: #ffd893; }
+.tiles .tile kbd { position: absolute; top: 8px; right: 9px; font: 700 10px/1 ui-monospace, Menlo, monospace; color: rgba(255,255,255,.4); padding: 3px 5px; border-radius: 5px; background: rgba(0,0,0,.25); }
+.tiles .tile:hover:not([disabled]) { background: var(--tile-hi); border-color: var(--edge-hi); }
+.keyhelp { line-height: 1.7; }
+.dot { display: inline-grid; place-items: center; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--amber); color: #2a1a04; font-size: 10px; font-style: normal; font-weight: 800; }
+/* 숙련 창 */
+.mhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 4px 0 6px; }
+.mhead > div:first-child { display: flex; flex-direction: column; gap: 2px; }
+.mhead b { font-size: 15px; }
+.mpts { text-align: center; padding: 6px 10px; border-radius: 12px; background: rgba(240,189,106,.12); border: 1px solid rgba(240,189,106,.35); }
+.mpts b { display: block; font-size: 22px; color: #ffd893; line-height: 1; }
+.mpts small { font-size: 10px; color: var(--muted); }
+.bar.xp { height: 7px; margin: 2px 0 3px; }
+.bar.xp span { background: linear-gradient(90deg, #c8963e, #f5d48e); }
+.lrow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.lslot { padding: 7px 8px; border-radius: 10px; background: var(--tile); border: 1px dashed rgba(255,255,255,.14); cursor: pointer; min-height: 44px; }
+.lslot small { display: block; font-size: 10px; color: var(--muted); }
+.lslot b { font-size: 12.5px; }
+.lslot.pick { border-style: solid; border-color: var(--amber); background: rgba(240,189,106,.12); }
+.trees { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.tree { padding: 8px; border-radius: 12px; background: rgba(0,0,0,.18); border: 1px solid rgba(255,255,255,.05); }
+.tree h4 { margin: 0 0 2px; font-size: 13.5px; display: flex; justify-content: space-between; }
+.tree h4 small { color: #ffd893; font-weight: 600; }
+.tree p.muted { font-size: 11px; margin: 0 0 6px; }
+.ngrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px 6px; justify-items: center; }
+.nd { position: relative; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; border: 1.5px solid rgba(255,255,255,.12); background: rgba(255,255,255,.04); padding: 0; cursor: pointer; }
+.nd span { font-size: 20px; }
+.nd.none { border: 0; background: none; cursor: default; }
+.nd.active { border-radius: 50%; }
+.nd.ult { width: 50px; height: 50px; border-radius: 14px; transform: rotate(45deg); }
+.nd.ult span { transform: rotate(-45deg); }
+.nd.lock span { filter: grayscale(1) brightness(.5); }
+.nd.lock { opacity: .55; }
+.nd.wait { border-color: rgba(255,255,255,.28); }
+.nd.can { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(240,189,106,.16), 0 0 12px rgba(240,189,106,.3); animation: ndPulse 1.6s ease-in-out infinite; }
+.nd.have { border-color: #57c4ab; background: radial-gradient(circle, rgba(87,196,171,.35), rgba(87,196,171,.08)); }
+.nd.sel { outline: 2px solid #fff; outline-offset: 2px; }
+@keyframes ndPulse { 50% { box-shadow: 0 0 0 5px rgba(240,189,106,.08), 0 0 18px rgba(240,189,106,.45); } }
+.ndetail { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: var(--tile); border-left: 3px solid var(--amber); }
+.ndetail p { margin: 4px 0 6px; }
+@media (max-width: 720px) {
+  .skillbar { gap: 4px; padding: 4px; border-radius: 14px; }
+  .skillbar .wsl { width: 50px; height: 48px; }
+  .skillbar .wsl b { font-size: 22px; left: 6px; top: 9px; }
+  .skillbar .sk { width: 48px; height: 48px; }
+  .skillbar .sk span { font-size: 22px; line-height: 48px; }
+  .menubtn { top: calc(166px + env(safe-area-inset-top)); right: calc(12px + env(safe-area-inset-right)); width: 40px; height: 40px; }
+  .trees { grid-template-columns: 1fr; }
+  .ngrid { gap: 8px 10px; }
+}
+@media (min-width: 1500px) { .menubtn { right: calc(232px + env(safe-area-inset-right)); } }

@@ -17,7 +17,8 @@ import { placeAsk, placeBid, cancelOrder, npcSell, tradable, repairCost, findOrd
 import { contribute, projectOpen, needLeft, silverLeft, shipFee } from './settlements.js';
 import { deliver, countDeliverable } from './orders.js';
 import { addXp } from './systems/progress.js';
-import { startAttack, startDodge, interrupt, equipped, equipLoad } from './systems/combat.js';
+import { startAttack, startDodge, interrupt, equipped, equipLoad, heavyCostOf, dodgeCostOf, weaponOf, startAbility } from './systems/combat.js';
+import { learnError, learn, loadoutOf, abilityOf, mOf, resetCost } from './systems/mastery.js';
 import { corpseOpen, skinLoot, skinSeconds } from './systems/mobs.js';
 import { talkDue, talk, useDue, useObj, available, startQuest, nearNpc, questNote, TALK_RANGE, USE_RANGE, BOARD_RANGE, talkReady, npcShown } from './systems/quests.js';
 import { isUnlocked, allowedProject } from './systems/unlocks.js';
@@ -562,12 +563,17 @@ const EQUIP = {
     const e = a.bag.find((x) => x.uid === c.uid);
     if (!e) return 'no_item';
     const def = ctx.data.items[e.item];
-    const slot = def.weapon ? 'weapon' : def.armor?.slot;
+    // c.alt(v1.1): 무기를 둘째 자리(등)에 낀다
+    const slot = def.weapon ? (c.alt ? 'weapon2' : 'weapon') : def.armor?.slot;
     if (!slot) return 'not_equipment';
+    if (def.weapon && a.cb?.act) return 'busy';
     return { e, slot };
   },
   execute(ctx, a, c, p) {
-    a.equip = a.equip || { weapon: null, head: null, chest: null, legs: null };
+    a.equip = a.equip || { weapon: null, weapon2: null, head: null, chest: null, legs: null };
+    // 같은 무기를 두 자리에 끼지 않는다
+    const other = p.slot === 'weapon' ? 'weapon2' : p.slot === 'weapon2' ? 'weapon' : null;
+    if (other && a.equip[other] === p.e.uid) a.equip[other] = null;
     a.equip[p.slot] = a.equip[p.slot] === p.e.uid && !c.keep ? null : p.e.uid;
     ctx.emit('equip', { actor: a.id, slot: p.slot, uid: a.equip[p.slot], item: p.e.item });
   },
@@ -575,7 +581,7 @@ const EQUIP = {
 
 const UNEQUIP = {
   validate(ctx, a, c) {
-    if (!['weapon', 'head', 'chest', 'legs'].includes(c.slot)) return 'bad_args';
+    if (!['weapon', 'weapon2', 'head', 'chest', 'legs'].includes(c.slot)) return 'bad_args';
     return {};
   },
   execute(ctx, a, c) {
@@ -593,7 +599,7 @@ const ATTACK = {
     if (a.cb.dodge) return 'busy';
     if (a.cb.act && t < a.cb.act.endAt) return 'busy';
     const kind = c.kind === 'heavy' ? 'heavy' : 'light';
-    if (kind === 'heavy' && a.cb.st < ctx.cfg.combat.heavyCost) return 'no_stamina';
+    if (kind === 'heavy' && a.cb.st < heavyCostOf(ctx, a)) return 'no_stamina';
     if (c.yaw != null && !Number.isFinite(c.yaw)) return 'bad_args';
     return { kind };
   },
@@ -612,7 +618,7 @@ const DODGE = {
     if (a.cb.dodge) return 'busy';
     const ld = equipLoad(ctx, a).tier;
     if (!(ld.dodgeDist > 0)) return 'overloaded';
-    if (a.cb.st < ctx.cfg.combat.dodgeCost * ld.dodgeCost) return 'no_stamina';
+    if (a.cb.st < dodgeCostOf(ctx, a)) return 'no_stamina';
     if (c.yaw != null && !Number.isFinite(c.yaw)) return 'bad_args';
     return {};
   },
@@ -640,6 +646,102 @@ const BLOCK = {
     if (on) cancelGather(ctx, a, 'block');
     a.cb.block = on;
     ctx.emit('combat.block', { actor: a.id, on });
+  },
+};
+
+// ── 무기 숙련(v1.1) ────────────────────────────────
+// 스킬 쓰기: slot 0~2 (1·2·3키). 지금 든 무기의 줄에 건 스킬을 쓴다
+const ABILITY = {
+  validate(ctx, a, c) {
+    const bad = alive(ctx, a);
+    if (bad) return bad;
+    if (![0, 1, 2].includes(c.slot)) return 'bad_args';
+    if (c.yaw != null && !Number.isFinite(c.yaw)) return 'bad_args';
+    const t = ctx.state.t;
+    if (a.cb.dodge) return 'busy';
+    if (a.cb.act && t < a.cb.act.endAt) return 'busy';
+    const w = weaponOf(ctx, a).mastery;
+    if (!w) return 'no_weapon';
+    const node = loadoutOf(a, w)[c.slot];
+    if (!node || !mOf(a, w).nodes.includes(node)) return 'no_skill';
+    if ((a.cb.cds?.[node] || 0) > t) return 'cooldown';
+    const ab = abilityOf(ctx, a, node);
+    if (a.cb.st < (ab.cost || 0)) return 'no_stamina';
+    return { node, ab };
+  },
+  execute(ctx, a, c, p) {
+    cancelGather(ctx, a, 'attack');
+    a.dest = null;
+    a.nav = null;
+    a.cb.cds ??= {};
+    startAbility(ctx, a, p.node, p.ab, c.yaw ?? a.yaw);
+  },
+};
+
+// 무기 바꾸기: 손에 든 것과 등에 멘 것을 맞바꾼다
+const SWAP_WEAPON = {
+  validate(ctx, a) {
+    const bad = alive(ctx, a);
+    if (bad) return bad;
+    if (a.cb.dodge || a.cb.act) return 'busy';
+    if (!a.equip?.weapon2 && !a.equip?.weapon) return 'no_weapon';
+    return {};
+  },
+  execute(ctx, a) {
+    const e = a.equip;
+    [e.weapon, e.weapon2] = [e.weapon2 ?? null, e.weapon ?? null];
+    a.cb.block = false;
+    const w = equipped(ctx, a, 'weapon');
+    ctx.emit('combat.swap', { actor: a.id, item: w?.item ?? null });
+  },
+};
+
+const MASTERY_LEARN = {
+  validate(ctx, a, c) {
+    return learnError(ctx, a, c.node) || {};
+  },
+  execute(ctx, a, c) {
+    learn(ctx, a, c.node);
+  },
+};
+
+// 스킬 줄 바꾸기: weapon의 slot 칸에 node(배운 액티브)를 건다. 다른 칸에 있으면 자리를 바꾼다
+const LOADOUT_SET = {
+  validate(ctx, a, c) {
+    const W = ctx.data.weapons;
+    if (!W.types[c.weapon] || ![0, 1, 2].includes(c.slot)) return 'bad_args';
+    if (c.node != null) {
+      const n = ctx.data.weaponNodes[c.node];
+      if (!n || n.kind !== 'active' || n.weapon !== c.weapon) return 'bad_args';
+      if (!mOf(a, c.weapon).nodes.includes(c.node)) return 'locked';
+    }
+    return {};
+  },
+  execute(ctx, a, c) {
+    const lo = loadoutOf(a, c.weapon);
+    const was = lo.indexOf(c.node ?? '__none');
+    if (was >= 0) lo[was] = lo[c.slot];
+    lo[c.slot] = c.node ?? null;
+    a.loadout[c.weapon] = lo;
+    ctx.emit('mastery.loadout', { actor: a.id, weapon: c.weapon, loadout: lo });
+  },
+};
+
+// 다시 찍기: 찍은 점수당 은화를 내고 그 무기 트리를 비운다
+const MASTERY_RESET = {
+  validate(ctx, a, c) {
+    if (!ctx.data.weapons.types[c.weapon]) return 'bad_args';
+    if (!mOf(a, c.weapon).nodes.length) return 'nothing';
+    const cost = resetCost(ctx, a, c.weapon);
+    if (a.silver < cost) return 'no_silver';
+    return { cost };
+  },
+  execute(ctx, a, c, p) {
+    a.silver -= p.cost;
+    a.mastery[c.weapon].nodes = [];
+    a.loadout ??= {};
+    a.loadout[c.weapon] = [null, null, null];
+    ctx.emit('mastery.reset', { actor: a.id, weapon: c.weapon, cost: p.cost });
   },
 };
 
@@ -1220,7 +1322,7 @@ const HANDLERS = {
   FERRY, GUILD_CREATE, GUILD_JOIN, GUILD_LEAVE, GUILD_HIRE, GUILD_DISMISS, GUILD_GIVE, GUILD_PUT, GUILD_TAKE,
   MOVE, MOVE_INPUT, GATHER, CRAFT, EAT, STORE, TAKE, SET_AUTOPILOT, RECALL,
   MARKET_SELL, MARKET_BUY, MARKET_CANCEL, MARKET_DUMP, ORDER_DELIVER, REPAIR,
-  EQUIP, UNEQUIP, ATTACK, DODGE, BLOCK, SKIN, SET_HOME, SHIP, CONTRIBUTE,
+  EQUIP, UNEQUIP, ATTACK, DODGE, BLOCK, ABILITY, SWAP_WEAPON, MASTERY_LEARN, LOADOUT_SET, MASTERY_RESET, SKIN, SET_HOME, SHIP, CONTRIBUTE,
 };
 
 export function makeCommands(ctx) {

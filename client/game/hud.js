@@ -3,6 +3,7 @@
 
 import { ERR, fmtProps, fmtStats, stars, itemName, entryStar, describeEvent, ARMOR_CLASS, loadEffects, josa } from '../../core/text.js';
 import { equipLoad } from '../../core/systems/combat.js';
+import { masteryOf, mOf, loadoutOf, abilityOf, needXp, spentIn, learnError, resetCost } from '../../core/systems/mastery.js';
 import { tradable, refPrice, npcPrice, bestBid, repairCost, entryStar as marketStar, bookOf, ordersOf, baseValue } from '../../core/market.js';
 import { countDeliverable } from '../../core/orders.js';
 import { xpProgress, starOf } from '../../core/formulas.js';
@@ -55,22 +56,15 @@ export function createHud(root, game, { touch, onAct }) {
     </div>
     <div class="bossbar" data-k="boss"><b data-k="bossname"></b><i><span data-k="bossfill"></span></i></div>
     <div class="tr"><canvas class="minimap"></canvas><div class="where" data-k="where"></div></div>
+    <button class="menubtn" data-act="hub" title="메뉴 (Esc)" aria-label="메뉴">☰</button>
     <div class="feed" data-k="feed"></div>
     <div class="banner" data-k="banner"></div>
     <div class="bottom">
       <div class="progress" data-k="progress"><span></span></div>
       <div class="prompt" data-k="prompt"></div>
       <div class="vitals" data-k="vitals"><div class="hp"><span data-k="hpbar"></span><em data-k="hp"></em></div><div class="st"><span data-k="stbar"></span></div></div>
-      <div class="dock">
-        <button data-act="recall" data-k="recall" title="귀환 지점으로 귀환 (H)">🏠<small>귀환</small><kbd>H</kbd></button>
-        <button data-act="bag" title="가방 (I)">🎒<small>가방</small><kbd>I</kbd></button>
-        <button data-act="craft" title="제작 (C)">🔨<small>제작</small><kbd>C</kbd></button>
-        <button data-act="skills" title="스킬 (K)">📈<small>스킬</small><kbd>K</kbd></button>
-        <button data-act="journal" title="일지 (J)">📖<small>일지</small><kbd>J</kbd></button>
-        <button data-act="log" title="기록 (L)">📜<small>기록</small><kbd>L</kbd></button>
-        <button data-act="menu" title="설정">⚙️<small>설정</small></button>
-      </div>
-      ${touch ? '' : '<div class="keys">WASD 이동 · 드래그 시점 · 휠 거리 · E 상호작용·대화 · J 일지 · H 귀환 · I 가방 · C 제작 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기</div>'}
+      <div class="skillbar" data-k="skillbar"></div>
+      ${touch ? '' : '<div class="keys">E 상호작용 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기 · 1·2·3 스킬 · X 무기 바꾸기 · <b>Esc 메뉴</b></div>'}
     </div>
     ${touch ? '<button class="act-btn" data-act="interact" data-k="actbtn">✋</button><div class="cbtns"><button data-hold="attack" title="공격(길게 강공)">⚔️</button><button data-hold="block" title="막기">🛡️</button><button data-tap="dodge" title="구르기">🌀</button></div>' : ''}
     <div class="downed" data-k="downed"></div>
@@ -84,7 +78,7 @@ export function createHud(root, game, { touch, onAct }) {
     clock: $('clock'), silver: $('silver'), focus: $('focus'),
     vitals: $('vitals'), hp: $('hp'), hpbar: $('hpbar'), stbar: $('stbar'), downed: $('downed'), hurtfx: $('hurtfx'), focusbar: $('focusbar'), buffs: $('buffs'), quest: $('quest'),
     where: $('where'), feed: $('feed'), banner: $('banner'), progress: $('progress'), prompt: $('prompt'),
-    actbtn: $('actbtn'), ptitle: $('ptitle'), pbody: $('pbody'), toast: $('toast'), recall: $('recall'),
+    actbtn: $('actbtn'), ptitle: $('ptitle'), pbody: $('pbody'), toast: $('toast'), skillbar: $('skillbar'),
     boss: $('boss'), bossname: $('bossname'), bossfill: $('bossfill'),
   };
   const panelEl = root.querySelector('.panel');
@@ -145,6 +139,18 @@ export function createHud(root, game, { touch, onAct }) {
     e.stopPropagation();
     if (b.dataset.act === 'ui-tab') {
       if (panel) panel.tab = b.dataset.v;
+    } else if (b.dataset.act === 'nd-sel') {
+      // 숙련 칸 고르기: 스킬 줄 칸을 먼저 골랐으면 배운 액티브를 그 칸에 바로 건다
+      const n = data.weaponNodes[b.dataset.v];
+      if (panel) {
+        if (panel.slotPick != null && n?.kind === 'active' && mOf(game.state.actors[PID], n.weapon).nodes.includes(n.id)) {
+          onAct('lo-set', `${n.weapon}:${panel.slotPick}:${n.id}`);
+          panel.slotPick = null;
+        }
+        panel.sel = b.dataset.v;
+      }
+    } else if (b.dataset.act === 'lo-pick') {
+      if (panel) panel.slotPick = panel.slotPick === +b.dataset.v ? null : +b.dataset.v;
     } else if (b.dataset.act === 'ui-talk-next') {
       if (panel) panel.after = null;
     } else if (b.dataset.act === 'ui-price') {
@@ -190,6 +196,13 @@ export function createHud(root, game, { touch, onAct }) {
         : `${itemName(data, ev.item)} ×${ev.qty}${ev.to === 'storage' ? ' → 창고' : ''}`);
     } else if (ev.type === 'skill.up') {
       banner(`${data.skills[ev.skill].icon} ${data.skills[ev.skill].name} ${ev.level}레벨`);
+    } else if (ev.type === 'mastery.level') {
+      const T = data.weapons.types[ev.weapon];
+      banner(`${T.icon} ${T.name} 숙련 ${ev.level}레벨 — 점수 +1 (N)`, 2600);
+    } else if (ev.type === 'mastery.reset') {
+      toast(`↺ ${data.weapons.types[ev.weapon].name} 트리를 비웠다(−${ev.cost}은화)`, 'info');
+    } else if (ev.type === 'combat.swap') {
+      pushFeed(`⇄ ${ev.item ? data.items[ev.item].name : '맨손'}(으)로 바꿔 들었다`);
     } else if (ev.type === 'world.veinShift') {
       // 떨리는 섬(v0.9): 산지가 한꺼번에 옮겨 간다. 소문 알림은 하나로 묶는다
       quietAt = game.state.t;
@@ -337,10 +350,8 @@ export function createHud(root, game, { touch, onAct }) {
       el.progress.classList.remove('on');
     }
 
-    // 귀환 단추
-    const cd = Math.max(0, (a.recallReadyAt || 0) - game.state.t);
-    el.recall.disabled = cd > 0 || a.action?.type === 'recall';
-    setHtml(el.recall, `🏠<small>${cd > 0 ? `${Math.ceil(cd / 60)}분` : '귀환'}</small>`);
+    // 스킬 바(v1.1): 든 무기 · 등에 멘 무기 · 1·2·3 스킬과 남은 대기
+    setHtml(el.skillbar, skillbarHtml(a));
 
     // 상호작용 안내
     let prompt = '';
@@ -373,7 +384,7 @@ export function createHud(root, game, { touch, onAct }) {
     panelEl.hidden = false;
     root.classList.add('panel-open');
     root.dataset.panel = kind;
-    for (const b of root.querySelectorAll('.dock button')) b.classList.toggle('open', b.dataset.act === kind);
+    root.querySelector('.menubtn')?.classList.toggle('open', kind === 'hub');
     renderPanel(true);
   }
   function close() {
@@ -381,7 +392,7 @@ export function createHud(root, game, { touch, onAct }) {
     panelEl.hidden = true;
     root.classList.remove('panel-open');
     delete root.dataset.panel;
-    for (const b of root.querySelectorAll('.dock button.open')) b.classList.remove('open');
+    root.querySelector('.menubtn')?.classList.remove('open');
   }
   function toggle(kind, opts) {
     if (panel && panel.kind === kind && panel.station === opts?.station) close();
@@ -416,13 +427,124 @@ export function createHud(root, game, { touch, onAct }) {
     return [...list].sort((x, y) => order(x) - order(y));
   }
 
-  const SLOT_NAME = { weapon: '무기', head: '머리', chest: '몸통', legs: '다리' };
+  function skillbarHtml(a) {
+    const t = game.state.t;
+    const wE = a.equip?.weapon ? a.bag.find((x) => x.uid === a.equip.weapon) : null;
+    const bE = a.equip?.weapon2 ? a.bag.find((x) => x.uid === a.equip.weapon2) : null;
+    const wDef = wE ? data.items[wE.item] : null;
+    const W = wDef ? masteryOf({ data }, wDef.weapon.type) : null;
+    const m = W ? mOf(a, W) : null;
+    const kb = (k) => (touch ? '' : `<kbd>${k}</kbd>`);
+    const swap = `<button class="wsl" data-act="swap" title="무기 바꾸기 (X)"><b>${wDef?.icon || '✊'}</b><i>${bE ? data.items[bE.item].icon : '·'}</i>${kb('X')}</button>`;
+    const lo = W ? loadoutOf({ ...a }, W) : [null, null, null];
+    const cells = lo.map((id, i) => {
+      const n = id ? data.weaponNodes[id] : null;
+      if (!n) return `<button class="sk empty" data-act="mastery" title="N 무기 숙련에서 스킬을 걸자">${kb(i + 1)}<span>＋</span></button>`;
+      const ab = abilityOf({ data }, a, id);
+      const left = Math.max(0, (a.cb?.cds?.[id] || 0) - t);
+      const full = ab.cd || 1;
+      const pct = left > 0 ? Math.round((left / full) * 20) * 5 : 0;
+      const low = (a.cb?.st ?? 0) < (ab.cost || 0);
+      return `<button class="sk${left > 0 ? ' cd' : ''}${low ? ' low' : ''}" data-act="skill${i}" title="${esc(n.name)} — ${esc(n.text)}">${kb(i + 1)}<span>${n.icon}</span>${left > 0 ? `<i style="--p:${pct}%"></i><em>${Math.ceil(left)}</em>` : ''}</button>`;
+    }).join('');
+    const lv = m ? `<small class="mlv" title="${esc(data.weapons.types[W].name)} 숙련">${data.weapons.types[W].icon} ${m.lvl}</small>` : '';
+    return `${swap}${cells}${lv}`;
+  }
+
+  // ── 전체 메뉴(v1.1, Esc·☰) ──
+  function hubHtml(a) {
+    const cd = Math.max(0, (a.recallReadyAt || 0) - game.state.t);
+    const pts = Object.keys(data.weapons.types).reduce((s, w) => s + Math.max(0, mOf(a, w).lvl - mOf(a, w).nodes.length), 0);
+    const tile = (act, icon, name, key, note = '', dis = false) => `<button class="tile" data-act="${act}" ${dis ? 'disabled' : ''}><span>${icon}</span><b>${name}</b>${note ? `<small>${note}</small>` : ''}${!touch && key ? `<kbd>${key}</kbd>` : ''}</button>`;
+    return `<div class="tiles">
+      ${tile('bag', '🎒', '가방', 'I')}
+      ${tile('craft', '🔨', '제작', 'C')}
+      ${tile('mastery', '⚔️', '무기 숙련', 'N', pts ? `점수 ${pts}` : '')}
+      ${tile('skills', '📈', '생활 스킬', 'K')}
+      ${tile('journal', '📖', '일지', 'J')}
+      ${tile('log', '📜', '기록', 'L')}
+      ${tile('recall', '🏠', '귀환', 'H', cd > 0 ? `${Math.ceil(cd / 60)}분 뒤` : esc(townName(a.home)), cd > 0 || a.action?.type === 'recall')}
+      ${tile('menu', '⚙️', '설정', '')}
+    </div>
+    ${touch ? '' : `<h3>조작</h3><p class="muted keyhelp">WASD 이동 · 마우스 끌기 시점 · 휠 거리 · E 상호작용 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기 · 1·2·3 무기 스킬 · X 무기 바꾸기 · Esc 창 닫기/메뉴</p>`}
+    <div class="row"><a href="patchnotes.html">패치노트</a><span class="muted">v${ENGINE_VERSION}</span></div>`;
+  }
+
+  // ── 무기 숙련 창(v1.1) ──
+  function masteryHtml(a) {
+    const types = Object.keys(data.weapons.types);
+    const wE = a.equip?.weapon ? a.bag.find((x) => x.uid === a.equip.weapon) : null;
+    const cur = wE ? masteryOf({ data }, data.items[wE.item].weapon.type) : null;
+    const W = panel.tab && types.includes(panel.tab) ? panel.tab : cur || types[0];
+    const T = data.weapons.types[W];
+    const m = mOf(a, W);
+    const need = m.lvl >= data.weapons.cap ? 0 : needXp(data.weapons, m.lvl);
+    const left = m.lvl - m.nodes.length;
+    const tabs = types.map((w) => {
+      const mm = mOf(a, w);
+      const p = mm.lvl - mm.nodes.length;
+      return `<button data-act="ui-tab" data-v="${w}" class="${w === W ? 'on' : ''}">${data.weapons.types[w].icon} ${data.weapons.types[w].name} ${mm.lvl}${p ? ` <em class="dot">${p}</em>` : ''}</button>`;
+    }).join('');
+    const ctx = { data };
+    const lo = loadoutOf({ ...a }, W);
+    const slots = lo.map((id, i) => {
+      const n = id ? data.weaponNodes[id] : null;
+      return `<div class="lslot ${panel.slotPick === i ? 'pick' : ''}" data-act="lo-pick" data-v="${i}"><small>${touch ? `${i + 1}칸` : `${i + 1}키`}</small><b>${n ? `${n.icon} ${esc(n.name)}` : '비어 있음'}</b></div>`;
+    }).join('');
+    const trees = T.trees.map((tr, ti) => {
+      const spent = spentIn(ctx, a, W, ti);
+      const cells = [];
+      for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < 3; col++) {
+          const n = data.weapons.nodes.find((x) => x.weapon === W && x.tree === ti && x.row === row && x.col === col);
+          if (!n) {
+            cells.push('<i class="nd none"></i>');
+            continue;
+          }
+          const has = m.nodes.includes(n.id);
+          const err = has ? null : learnError(ctx, a, n.id);
+          const cls = has ? 'have' : !err ? 'can' : err === 'no_points' && spent >= n.req && (!n.needs || m.nodes.includes(n.needs)) ? 'wait' : 'lock';
+          cells.push(`<button class="nd ${n.kind} ${cls} ${panel.sel === n.id ? 'sel' : ''}" data-act="nd-sel" data-v="${n.id}" title="${esc(n.name)}"><span>${n.icon}</span></button>`);
+        }
+      }
+      return `<div class="tree"><h4>${tr.icon} ${esc(tr.name)} <small>${spent}점</small></h4><p class="muted">${esc(tr.desc)}</p><div class="ngrid">${cells.join('')}</div></div>`;
+    }).join('');
+    let detail = '<p class="muted">칸을 누르면 설명이 나온다. 줄마다 그 갈래에 0·2·4·6·10점을 찍어야 열린다. ⬆️ 강화는 위쪽 스킬을 배워야 열린다.</p>';
+    const sel = panel.sel && data.weaponNodes[panel.sel]?.weapon === W ? data.weaponNodes[panel.sel] : null;
+    if (sel) {
+      const has = m.nodes.includes(sel.id);
+      const err = has ? null : learnError(ctx, a, sel.id);
+      const KIND = { active: '액티브 스킬', up: '스킬 강화', passive: '패시브', ult: '궁극 패시브' };
+      let extra = '';
+      if (sel.kind === 'active') {
+        const ab = abilityOf(ctx, a, sel.id);
+        extra = `<small class="muted">재사용 ${ab.cd}초 · 기력 ${ab.cost || 0}</small>`;
+        if (has) extra += `<div class="row">${[0, 1, 2].map((i) => `<button class="mini ${lo[i] === sel.id ? 'on' : ''}" data-act="lo-set" data-v="${W}:${i}:${sel.id}">${i + 1}${touch ? '칸' : '키'}에 걸기</button>`).join('')}</div>`;
+      }
+      const why = { no_points: '점수가 없다', locked: sel.needs && !m.nodes.includes(sel.needs) ? `먼저 「${esc(data.weaponNodes[sel.needs].name)}」` : `이 갈래에 ${sel.req}점 필요` }[err] || '';
+      detail = `<div class="ndetail"><b>${sel.icon} ${esc(sel.name)}</b> <small class="muted">${KIND[sel.kind]}</small><p>${esc(sel.text)}</p>${extra}
+        ${has ? '<p class="ok">✔ 배움</p>' : `<button class="pri" data-act="learn" data-v="${sel.id}" ${err ? 'disabled' : ''}>배우기 (1점)</button> <small class="muted">${why}</small>`}</div>`;
+    }
+    const cost = resetCost(ctx, a, W);
+    return `<div class="row tabs">${tabs}</div>
+      <div class="mhead"><div><b>${T.icon} ${esc(T.name)} ${m.lvl}레벨</b>${W === cur ? ' <small class="ok">손에 든 무기</small>' : ''}<small class="muted">${esc(T.desc)}</small></div>
+        <div class="mpts"><b>${left}</b><small>남은 점수</small></div></div>
+      <div class="bar xp"><span style="width:${need ? Math.min(100, (m.xp / need) * 100) : 100}%"></span></div>
+      <small class="muted">${need ? `다음 레벨까지 ${Math.ceil(need - m.xp)} · 이 무기로 피해를 주고 적을 쓰러뜨리면 오른다` : '최고 레벨'}</small>
+      <h3>스킬 줄 <small class="muted">${touch ? '전투 단추 옆 1·2·3' : '1·2·3키'} — 배운 스킬을 누르고 칸을 고른다</small></h3>
+      <div class="lrow">${slots}</div>
+      <div class="trees">${trees}</div>
+      ${detail}
+      <div class="row"><button class="mini" data-act="m-reset" data-v="${W}" ${m.nodes.length && a.silver >= cost ? '' : 'disabled'}>↺ 다시 찍기 (${cost}은화)</button></div>`;
+  }
+
+  const SLOT_NAME = { weapon: '손에 든 무기', weapon2: '등에 멘 무기', head: '머리', chest: '몸통', legs: '다리' };
   function equipHtml(a) {
     const cells = Object.entries(SLOT_NAME).map(([slot, name]) => {
       const e = a.equip?.[slot] ? a.bag.find((x) => x.uid === a.equip[slot]) : null;
       if (!e) return `<div class="eq"><small>${name}</small><b class="muted">비어 있음</b></div>`;
       const def = data.items[e.item];
-      const v = slot === 'weapon' ? `공격력 ${e.stats.attack}` : `${ARMOR_CLASS[def.armor?.class] || ''} · 방어 ${e.stats.armor}`;
+      const v = def.weapon ? `공격력 ${e.stats.attack}` : `${ARMOR_CLASS[def.armor?.class] || ''} · 방어 ${e.stats.armor}`;
       return `<div class="eq ${e.broken ? 'broken' : ''}"><small>${name} · ${def.weight || 0}kg</small><b>${def.icon || ''} ${def.name}</b><small>${stars(e.star ?? 0)} · ${v} · 내구 ${e.dur}/${e.maxDur}</small></div>`;
     }).join('');
     const armor = ['head', 'chest', 'legs'].reduce((s, k) => { const e = a.equip?.[k] ? a.bag.find((x) => x.uid === a.equip[k]) : null; return s + (e && !e.broken ? e.stats.armor : 0); }, 0);
@@ -443,9 +565,15 @@ export function createHud(root, game, { touch, onAct }) {
     const rows = sortEntries(a.bag).map((e) => {
       const def = data.items[e.item];
       let act = def.kind === 'consumable' ? `<button data-act="eat" data-v="${esc(keyOf(e))}">먹기</button>` : '';
-      if (def.weapon || def.armor) {
+      if (def.armor) {
         const on = Object.values(a.equip || {}).includes(e.uid);
         act = `<button data-act="equip" data-v="${e.uid}" class="${on ? 'on' : ''}">${on ? '벗기' : '끼기'}</button>`;
+      } else if (def.weapon) {
+        // 무기 둘(v1.1): 손에 들기 / 등에 메기
+        const inHand = a.equip?.weapon === e.uid;
+        const onBack = a.equip?.weapon2 === e.uid;
+        act = `<div class="btns"><button data-act="equip" data-v="${e.uid}" class="${inHand ? 'on' : ''}">${inHand ? '내려놓기' : '손에 들기'}</button>`
+          + `<button class="mini ${onBack ? 'on' : ''}" data-act="${onBack ? 'unequip2' : 'equip-alt'}" data-v="${e.uid}">${onBack ? '등에서 풀기' : '등에 메기'}</button></div>`;
       }
       return entryRow(e, act);
     }).join('') || '<li><small>비어 있다</small></li>';
@@ -1051,7 +1179,7 @@ export function createHud(root, game, { touch, onAct }) {
       <div class="row"><a href="patchnotes.html">패치노트</a><a href="debug.html">엔진 점검판</a><span class="muted">v${ENGINE_VERSION}</span></div>`;
   }
 
-  const TITLES = { bag: '🎒 가방', skills: '📈 생활 스킬', log: '📜 기록', board: '📋 마을 게시판', market: '⚖️ 등대 마을 거래소', menu: '⚙️ 설정', journal: '📖 일지' };
+  const TITLES = { hub: '☰ 메뉴', mastery: '⚔️ 무기 숙련', bag: '🎒 가방', skills: '📈 생활 스킬', log: '📜 기록', board: '📋 마을 게시판', market: '⚖️ 등대 마을 거래소', menu: '⚙️ 설정', journal: '📖 일지' };
 
   function renderPanel(force) {
     if (!panel) return;
@@ -1061,6 +1189,8 @@ export function createHud(root, game, { touch, onAct }) {
     let title = TITLES[panel.kind] || '';
     let html = '';
     if (panel.kind === 'bag') html = bagHtml(a);
+    else if (panel.kind === 'hub') html = hubHtml(a);
+    else if (panel.kind === 'mastery') html = masteryHtml(a);
     else if (panel.kind === 'craft') {
       const st = data.stations[panel.station];
       title = `${st.icon} ${panel.station === 'hand' ? '맨손 제작' : st.name}`;
@@ -1117,6 +1247,7 @@ export function createHud(root, game, { touch, onAct }) {
     open,
     close,
     toggle,
+    isOpen: () => !!panel,
     toast,
     banner,
     feed: pushFeed,

@@ -1,5 +1,5 @@
 {
-  "dataVersion": 16,
+  "dataVersion": 17,
   "skillCap": 60,
   "time": {
     "secondsPerGameDay": 3600,
@@ -1173,7 +1173,8 @@
         "windup": 0.2,
         "heavyWindup": 0.55,
         "mult": 1.0,
-        "targets": 1
+        "targets": 1,
+        "blockCut": 0.7
       },
       "sword": {
         "range": 2.2,
@@ -1183,7 +1184,8 @@
         "windup": 0.16,
         "heavyWindup": 0.5,
         "mult": 1.0,
-        "targets": 1
+        "targets": 1,
+        "blockCut": 0.9
       },
       "axe": {
         "range": 2.4,
@@ -1193,7 +1195,8 @@
         "windup": 0.26,
         "heavyWindup": 0.65,
         "mult": 1.25,
-        "targets": 2
+        "targets": 2,
+        "blockCut": 0.65
       },
       "spear": {
         "range": 3.3,
@@ -1204,6 +1207,17 @@
         "heavyWindup": 0.6,
         "mult": 0.95,
         "targets": 2
+      },
+      "hammer": {
+        "range": 2.3,
+        "arc": 110,
+        "light": 0.75,
+        "heavy": 1.3,
+        "windup": 0.3,
+        "heavyWindup": 0.8,
+        "mult": 1.45,
+        "targets": 2,
+        "blockCut": 0.65
       }
     }
   },

@@ -13,6 +13,7 @@ import { fitsHabitat, regionAt } from '../core/terrain.js';
 import { allOrders, bookOf } from '../core/market.js';
 import { storeOf, nearestSettlement, npcPos, sitePos, objPos, stationFor } from '../core/world.js';
 import { yawTo } from '../core/systems/combat.js';
+import { mOf, needXp, loadoutOf, abilityOf, passivesOf } from '../core/systems/mastery.js';
 import { settlementDaily } from '../core/settlements.js';
 import { isUnlocked, allowedProject, chapterReached } from '../core/systems/unlocks.js';
 import { stepNpc } from '../core/systems/quests.js';
@@ -30,7 +31,10 @@ const home = (a) => storeOf(a, LH);
 
 let pass = 0;
 let fail = 0;
+// ONLY=문구 로 이름에 그 문구가 든 테스트만 돌린다
+const ONLY = process.env.ONLY || '';
 function test(name, fn) {
+  if (ONLY && !name.includes(ONLY)) return;
   try {
     fn();
     pass++;
@@ -1305,7 +1309,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '0.9.0');
+  eq(st.meta.engine, '1.1.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1497,7 +1501,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '0.9.0');
+  eq(st.meta.engine, '1.1.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -1716,6 +1720,120 @@ test('오가는 배: 「불의 능선」을 받은 뒤엔 갈대 나루 ↔ 잿�
   ok(go('o_ship_back').ok, '나루로');
   eq(regionAt(data.lists.regions, a.x).id, 'swamp_shore', '본섬 남쪽');
   ok(Object.values(g.state.mobGroups).some((x) => x.type === 'frost_wolf' && x.z >= 300), '설원의 서리 늑대');
+});
+
+console.log('무기 숙련 (v1.1)');
+
+test('숙련 트리: 레벨만큼 점수, 줄마다 갈래 점수가 차야 열리고, 강화는 앞 스킬이 있어야 한다. 배운 액티브는 빈 칸에 걸린다', () => {
+  const g = createGame({ data, seed: 5, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  const learn = (node) => g.dispatch({ type: 'MASTERY_LEARN', actor: 'p1', node });
+  ok(learn('sword_blade_a1').ok, '1레벨 첫 점수');
+  eq(learn('sword_blade_a2').error, 'no_points', '점수 없음');
+  a.mastery.sword.lvl = 6;
+  eq(learn('sword_guard_u1').error, 'locked', '방패 밀치기 없이 강화 못 함');
+  eq(learn('sword_blade_p3').error, 'locked', '셋째 줄은 갈래에 4점');
+  for (const n of ['sword_blade_a2', 'sword_blade_p1', 'sword_blade_u1']) ok(learn(n).ok, n);
+  ok(learn('sword_blade_p3').ok, '4점 찍은 뒤 셋째 줄');
+  eq(learn('sword_blade_a1').error, 'already');
+  eq(loadoutOf(a, 'sword').join(), 'sword_blade_a1,sword_blade_a2,', '배운 순서대로 1·2칸');
+  near(abilityOf({ data }, a, 'sword_blade_a1').mult, 2.2, 0.001, '강화가 꿰찌르기 피해를 올린다');
+  ok(abilityOf({ data }, a, 'sword_blade_a1').weak.k === 0.2, '강화: 약화');
+  ok(g.dispatch({ type: 'LOADOUT_SET', actor: 'p1', weapon: 'sword', slot: 2, node: 'sword_blade_a1' }).ok);
+  eq(loadoutOf(a, 'sword').join(), ',sword_blade_a2,sword_blade_a1', '칸을 옮기면 원래 칸은 비고(맞바꿈)');
+  a.silver = 1000;
+  const r = g.dispatch({ type: 'MASTERY_RESET', actor: 'p1', weapon: 'sword' });
+  ok(r.ok, '다시 찍기');
+  eq(a.silver, 1000 - 5 * data.weapons.reset.perPoint, '점수당 은화');
+  eq(mOf(a, 'sword').nodes.length, 0);
+});
+
+test('무기 스킬: 지금 든 무기의 줄에서 쓰고, 대기·기력이 들며, 기절·느려짐·출혈이 짐승에게 걸린다. 무기 둘을 바꿔 든다', () => {
+  const { g, a, m } = lone('boar');
+  m.mode = 'idle';
+  a.bag.push(kit('wpn_hammer_iron', 50, 'h1'), kit('wpn_spear_iron', 50, 's1'));
+  ok(g.dispatch({ type: 'EQUIP', actor: 'p1', uid: 'h1' }).ok);
+  ok(g.dispatch({ type: 'EQUIP', actor: 'p1', uid: 's1', alt: true }).ok, '창은 등에');
+  eq(g.dispatch({ type: 'ABILITY', actor: 'p1', slot: 0 }).error, 'no_skill', '배운 게 없다');
+  a.mastery = { hammer: { xp: 0, lvl: 5, nodes: [] }, spear: { xp: 0, lvl: 5, nodes: [] } };
+  ok(g.dispatch({ type: 'MASTERY_LEARN', actor: 'p1', node: 'hammer_crush_a1' }).ok);
+  ok(g.dispatch({ type: 'MASTERY_LEARN', actor: 'p1', node: 'spear_reach_a2' }).ok);
+  place(g, a, m, 1.8);
+  const hp0 = m.hp;
+  const st0 = a.cb.st;
+  ok(g.dispatch({ type: 'ABILITY', actor: 'p1', slot: 0, yaw: a.yaw }).ok, '골통 깨기');
+  eq(a.cb.st, st0 - abilityOf({ data }, a, 'hammer_crush_a1').cost, '기력');
+  eq(g.dispatch({ type: 'ABILITY', actor: 'p1', slot: 0 }).error, 'busy');
+  g.advance(0.5);
+  ok(m.hp < hp0, '맞았다');
+  ok(m.fx?.stun?.until > g.state.t, '기절');
+  const pos = [m.x, m.z];
+  g.advance(0.4);
+  eq([m.x, m.z].join(), pos.join(), '기절한 동안 꼼짝 못 한다');
+  eq(g.dispatch({ type: 'ABILITY', actor: 'p1', slot: 0 }).error, 'cooldown', '재사용 대기');
+  ok(mOf(a, 'hammer').xp > 0 || mOf(a, 'hammer').lvl > 5, '망치 숙련이 오른다');
+  ok(g.dispatch({ type: 'SWAP_WEAPON', actor: 'p1' }).ok, '바꿔 든다');
+  eq(a.equip.weapon, 's1');
+  eq(a.equip.weapon2, 'h1');
+  g.advance(1);
+  place(g, a, m, 2.2);
+  ok(g.dispatch({ type: 'ABILITY', actor: 'p1', slot: 0, yaw: a.yaw }).ok, '창 줄의 첫 스킬(쓸어 넘기기)');
+  g.advance(0.4);
+  ok(m.fx?.slow?.k === 0.3, '느려짐');
+});
+
+test('숙련 패시브: 검과 방패는 더 많이 막고, 반격은 막은 뒤 한 대를 세게, 체력 패시브는 무기를 바꾸면 따라 바뀐다', () => {
+  const { g, a, m } = lone('wolf');
+  a.bag.push(kit('wpn_sword_iron', 50, 'w1'), kit('wpn_battleaxe_iron', 50, 'w2'));
+  g.dispatch({ type: 'EQUIP', actor: 'p1', uid: 'w1' });
+  g.dispatch({ type: 'EQUIP', actor: 'p1', uid: 'w2', alt: true });
+  a.mastery = { sword: { xp: 0, lvl: 20, nodes: ['sword_guard_a1', 'sword_guard_p1', 'sword_guard_a2', 'sword_guard_p2', 'sword_guard_p3', 'sword_guard_p4', 'sword_guard_u1', 'sword_guard_u2', 'sword_guard_a3', 'sword_guard_p5', 'sword_guard_ult'] } };
+  const P = passivesOf({ data }, a, 'sword');
+  eq(P.maxHp, 20);
+  eq(P.counter, 0.6);
+  g.advance(0.1);
+  eq(a.cb.maxHp, cfg.combat.hp + 20, '튼튼한 몸');
+  ok(g.dispatch({ type: 'SWAP_WEAPON', actor: 'p1' }).ok);
+  g.advance(0.1);
+  eq(a.cb.maxHp, cfg.combat.hp, '도끼로 바꾸면 체력 보너스가 없다');
+  ok(g.dispatch({ type: 'SWAP_WEAPON', actor: 'p1' }).ok);
+  g.advance(0.1);
+  place(g, a, m, 1.4);
+  a.cb.hp = a.cb.maxHp;
+  ok(g.dispatch({ type: 'BLOCK', actor: 'p1', on: true }).ok);
+  const T = data.creatures.wolf;
+  const hp0 = a.cb.hp;
+  m.target = 'p1';
+  m.yaw = yawTo(m, a);
+  m.atk = { i: 0, t0: g.state.t };
+  m.mode = 'windup';
+  m.until = g.state.t + 0.05;
+  g.advance(0.1);
+  const got = hp0 - a.cb.hp;
+  const raw = T.dmg * (T.attacks[0].mult ?? 1) * (1 - 0.95);
+  ok(got <= raw + 0.11, `방패+단단한 방패로 95% 막는다 (${got})`);
+  ok(a.cb.counterUntil > g.state.t, '반격 준비');
+});
+
+test('숙련 경험치: 그 무기로 준 피해만큼, 쓰러뜨리면 짐승 체력의 일부만큼 오른다', () => {
+  const { g, a, m } = lone('wolf');
+  a.bag.push(kit('wpn_spear_copper', 50, 'w1'));
+  g.dispatch({ type: 'EQUIP', actor: 'p1', uid: 'w1' });
+  let total = 0;
+  g.on('combat.hit', (e) => { if (e.actor === 'p1') total += e.dmg; });
+  for (let i = 0; i < 300 && m.mode !== 'dead'; i++) {
+    place(g, a, m, 1.8);
+    a.cb.hp = a.cb.maxHp;
+    g.dispatch({ type: 'ATTACK', actor: 'p1', kind: 'light', yaw: a.yaw });
+    g.advance(0.6);
+  }
+  eq(m.mode, 'dead');
+  const W = data.weapons;
+  let xp = total * W.xp.perDmg + data.creatures.wolf.hp * W.xp.perKill;
+  let lvl = 1;
+  while (xp >= needXp(W, lvl)) { xp -= needXp(W, lvl); lvl++; }
+  eq(mOf(a, 'spear').lvl, lvl, '레벨');
+  near(mOf(a, 'spear').xp, xp, 0.5, '남은 경험치');
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

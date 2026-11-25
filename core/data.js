@@ -3,7 +3,7 @@
 
 // 퀘스트 단계 종류(v0.5.2에 생활 단계를 더했다)
 export const STEP_TYPES = ['talk', 'go', 'kill', 'use', 'defend', 'have', 'eat', 'store', 'repair', 'sell', 'project', 'faction'];
-export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects', 'npcs', 'quests', 'unlocks', 'factions', 'housing', 'guilds'];
+export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects', 'npcs', 'quests', 'unlocks', 'factions', 'housing', 'guilds', 'weapons'];
 
 export function buildData(raw) {
   const problems = [];
@@ -238,7 +238,23 @@ export function buildData(raw) {
   for (const j of guilds.jobs) if (!items[j.item]) problems.push(`조합 일감 ${j.item} 없음`);
   if (problems.length) throw new Error('데이터 오류\n- ' + problems.join('\n- '));
 
+  // 무기 숙련(v1.1)
+  const weapons = raw.weapons || { cap: 20, xp: { base: 25, exp: 1.5, perDmg: 1, perKill: 0.25 }, reset: { perPoint: 15 }, mastery: {}, types: {}, nodes: [] };
+  const weaponNodes = {};
+  for (const n of weapons.nodes) {
+    if (weaponNodes[n.id]) problems.push(`숙련 칸 ${n.id} 겹침`);
+    weaponNodes[n.id] = n;
+    if (!weapons.types[n.weapon]) problems.push(`숙련 칸 ${n.id}: 무기 ${n.weapon} 없음`);
+    if (n.kind === 'active' && !n.ab) problems.push(`숙련 칸 ${n.id}: 스킬 값 없음`);
+  }
+  for (const n of weapons.nodes) if (n.needs && weaponNodes[n.needs]?.kind !== 'active') problems.push(`숙련 칸 ${n.id}: 앞 칸 ${n.needs}가 액티브가 아님`);
+  for (const [t, m] of Object.entries(weapons.mastery)) if (!weapons.types[m] || !config.combat.weapons[t]) problems.push(`숙련 연결 ${t}→${m} 이상`);
+  for (const t of Object.keys(weapons.types)) if (!config.combat.weapons[t]) problems.push(`무기 ${t}: 전투 값 없음`);
+  if (problems.length) throw new Error('데이터 오류\n- ' + problems.join('\n- '));
+
   return {
+    weapons,
+    weaponNodes,
     guilds,
     housing,
     factions,

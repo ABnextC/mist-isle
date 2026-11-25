@@ -410,6 +410,20 @@ const MIGRATIONS = [
       initMobs(ctx);
     },
   },
+  {
+    // v1.0 → v1.1: 무기 숙련. 숙련·스킬 줄·둘째 무기 자리·스킬 대기·몸 기운
+    from: 16,
+    to: 17,
+    run(st) {
+      st.meta.engine = '1.1.0';
+      for (const a of Object.values(st.actors)) {
+        a.mastery ??= {};
+        a.loadout ??= {};
+        if (a.equip) a.equip.weapon2 ??= null;
+        if (a.cb) Object.assign(a.cb, { cds: a.cb.cds || {}, aura: a.cb.aura || [], lunge: null, counterUntil: a.cb.counterUntil || 0 });
+      }
+    },
+  },
 ];
 
 // v0.5.2: 1~2장 퀘스트에 생활 단계가 끼었다. 하던 단계 번호를 새 번호로(앞에 낀 단계는 건너뛴다)

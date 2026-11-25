@@ -148,7 +148,23 @@ async function boot() {
     actorsView.onEvent(ev);
     const m = game.state.mobs[ev.mob];
     const tall = m && data.creatures[m.type].body ? 2.0 : 1.4;
-    if (m && ev.actor === PID) floatText(m.x, ground.hf.height(m.x, m.z) + tall, m.z, ev.blocked ? `${Math.round(ev.dmg * 10) / 10} 막음` : String(Math.round(ev.dmg)), ev.blocked ? 'evade' : ev.heavy ? 'big' : '');
+    if (m && ev.actor === PID) floatText(m.x, ground.hf.height(m.x, m.z) + tall, m.z, ev.blocked ? `${Math.round(ev.dmg * 10) / 10} 막음` : `${Math.round(ev.dmg)}${ev.crit ? '!' : ''}`, ev.blocked ? 'evade' : ev.dot ? 'dot' : ev.heavy || ev.crit || ev.ability ? 'big' : '');
+  });
+  // 무기 스킬(v1.1): 휘두른 자리에 파문, 기절하면 머리 위 표시
+  game.on('combat.abilityHit', (ev) => {
+    const kind = ev.kind;
+    const col = kind === 'buff' ? 0x9ff0d8 : kind === 'aoe' ? 0xffb050 : 0xffe0a0;
+    const r = kind === 'aoe' ? ev.range : kind === 'buff' ? 1.6 : Math.min(3, ev.range * 0.7);
+    const fx0 = kind === 'aoe' || kind === 'buff' ? 0 : r * 0.6;
+    const x = ev.x + Math.sin(ev.yaw) * fx0;
+    const z = ev.z + Math.cos(ev.yaw) * fx0;
+    fx.wave(x, ground.hf.height(x, z), z, r, col, kind === 'aoe' ? 0.55 : 0.4);
+    if (ev.hits && kind !== 'buff') fx.burst(x, ground.hf.height(x, z) + 0.2, z, 0x9a8a70, 6, { lift: 0, spread: r * 0.6, speed: 0.5, dust: true });
+  });
+  game.on('mob.fx', (ev) => {
+    if (ev.actor !== PID || !ev.fx.includes('stun')) return;
+    const m = game.state.mobs[ev.mob];
+    if (m) floatText(m.x, ground.hf.height(m.x, m.z) + 2.4, m.z, '💫 기절', 'big');
   });
   game.on('mob.guardbreak', (ev) => {
     const m = game.state.mobs[ev.mob];
@@ -454,6 +470,24 @@ async function boot() {
       case 'quest-track': game.dispatch({ type: 'QUEST_TRACK', actor: PID, quest: v }); break;
       case 'menu': hud.toggle('menu'); break;
       case 'close': hud.close(); break;
+      // v1.1: Esc는 창이 열려 있으면 닫고, 없으면 전체 메뉴를 연다
+      case 'esc': if (hud.isOpen()) hud.close(); else hud.toggle('hub'); break;
+      case 'hub': hud.toggle('hub'); break;
+      case 'mastery': hud.toggle('mastery'); break;
+      case 'skill0':
+      case 'skill1':
+      case 'skill2': {
+        stopBot();
+        ui.gather = null;
+        game.dispatch({ type: 'ABILITY', actor: PID, slot: +act.slice(5), yaw: aimYaw() });
+        break;
+      }
+      case 'swap': game.dispatch({ type: 'SWAP_WEAPON', actor: PID }); break;
+      case 'learn': game.dispatch({ type: 'MASTERY_LEARN', actor: PID, node: v }); break;
+      case 'lo-set': { const [w, slot, node] = String(v).split(':'); game.dispatch({ type: 'LOADOUT_SET', actor: PID, weapon: w, slot: +slot, node: node || null }); break; }
+      case 'm-reset': game.dispatch({ type: 'MASTERY_RESET', actor: PID, weapon: v }); break;
+      case 'equip-alt': game.dispatch({ type: 'EQUIP', actor: PID, uid: v, alt: true }); break;
+      case 'unequip2': game.dispatch({ type: 'UNEQUIP', actor: PID, slot: 'weapon2' }); break;
       case 'craft-do':
         for (let i = 0; i < Number(n || 1); i++) {
           if (!game.dispatch({ type: 'CRAFT', actor: PID, recipe: v, auto: 'best', catalyst: 'auto' }).ok) break;

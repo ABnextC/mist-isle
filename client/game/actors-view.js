@@ -220,7 +220,7 @@ export function createActorsView(scene, game, hf, camera = null) {
       if (type === 'spear') {
         const ext = k < h ? into * into : 1 - out;
         Object.assign(p, { shRx: -1.45, shRy: 0.15, elR: -1.8 + 1.75 * ext, shLx: -1.2, shLz: 0.3, elL: -0.9, spX: 0.1 + 0.25 * ext, spY: -0.3 * ext, thL: -0.35 * ext, knL: 0.3 * ext });
-      } else if (act.kind === 'heavy') {
+      } else if (act.kind === 'heavy' || act.kind === 'ability') {
         const up = k < h ? into : 1 - out;
         Object.assign(p, { shRx: -2.9 * up - 0.4 * (1 - up), shRz: 0.1, elR: -0.5 * up, shLx: -2.4 * up - 0.5 * (1 - up), elL: -0.6 * up, spX: 0.05 + 0.4 * (k >= h ? 1 - out : 0), thL: -0.3, knL: 0.35, nk: 0.1 });
       } else {
@@ -336,7 +336,8 @@ export function createActorsView(scene, game, hf, camera = null) {
 
   // ── 손 동작(v0.4.8): 채집·전투·시전을 모션 캡처 동작으로 ──
   // 무기 종류·세기에 따라 동작을 고른다
-  function attackClip(wDef, kind) {
+  function attackClip(wDef, kind0) {
+    const kind = kind0 === 'ability' ? 'heavy' : kind0;
     const type = wDef?.type || 'fists';
     if (type === 'fists') return kind === 'heavy' ? 'punch_heavy' : 'punch';
     if (type === 'spear') return kind === 'heavy' ? 'spear_heavy' : 'spear';
@@ -346,7 +347,7 @@ export function createActorsView(scene, game, hf, camera = null) {
   // v0.4.9 적절성 검토: 작업대마다 하는 일, 손에 드는 소품, 먹을 것마다 동작·소품
   const CRAFT_ANIM = { forge: 'hammer', armorbench: 'hammer', workbench: 'hammer', sawbench: 'saw', kitchen: 'stir', smelter: 'stir', loom: 'weave', tannery: 'scrape', hand: 'handwork' };
   const CRAFT_PROP = { hammer: 'hammer', saw: 'saw', stir: 'ladle', scrape: 'knife' };
-  const GUARD = { spear: 'guard_spear', sword: 'guard_sword', club: 'guard_sword', axe: 'guard_axe' };
+  const GUARD = { spear: 'guard_spear', sword: 'guard_sword', club: 'guard_sword', axe: 'guard_axe', hammer: 'guard_axe' };
   const FOOD = { food_soup: ['drink', 'bowl'], food_berry: ['eat', 'berry'], food_meat: ['eat', 'meat'] };
   const strikes = []; // 도구가 닿은 순간들(main.js가 가져가 조각을 튀긴다)
   // 장비 무게 단계(가벼움·보통·무거움·과적) — 무거우면 구르지 않고 짧게 뛰어 비킨다
@@ -794,6 +795,7 @@ export function createActorsView(scene, game, hf, camera = null) {
       // 오른손이 다른 걸 쥐면(채집·가죽·제작·먹기) 무기는 넣어 둔다
       const handBusy = !!work || !!v.eatQ;
       for (const [kname, g] of Object.entries(v.m.weapons)) g.visible = !handBusy && kname === wKey;
+      if (v.m.shields) for (const [kname, g] of Object.entries(v.m.shields)) g.visible = !handBusy && kname === wKey;
 
       const A = animClips();
       // 손으로 짠 동작(예전 방식): 동작 묶음이 아직 없으면 걷기도 이걸로 한다

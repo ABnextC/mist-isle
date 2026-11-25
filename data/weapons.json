@@ -1,0 +1,1917 @@
+{
+ "cap": 20,
+ "xp": {
+  "base": 25,
+  "exp": 1.5,
+  "perDmg": 1,
+  "perKill": 0.25
+ },
+ "reset": {
+  "perPoint": 15
+ },
+ "keys": [
+  "1",
+  "2",
+  "3"
+ ],
+ "mastery": {
+  "club": "hammer"
+ },
+ "types": {
+  "sword": {
+   "name": "검과 방패",
+   "icon": "🗡️",
+   "desc": "빠른 칼질과 단단한 방패. 막기가 강하다(막기 피해 90% 줄임).",
+   "trees": [
+    {
+     "id": "blade",
+     "name": "검객",
+     "icon": "⚔️",
+     "desc": "빠르게 베고 찌른다"
+    },
+    {
+     "id": "guard",
+     "name": "수호자",
+     "icon": "🛡️",
+     "desc": "막고 버티며 적을 붙잡는다"
+    }
+   ]
+  },
+  "axe": {
+   "name": "대도끼",
+   "icon": "🪓",
+   "desc": "느리지만 넓게 휘두른다. 두 적까지 한꺼번에 벤다.",
+   "trees": [
+    {
+     "id": "berserk",
+     "name": "광전사",
+     "icon": "😤",
+     "desc": "피를 볼수록 강해진다"
+    },
+    {
+     "id": "butcher",
+     "name": "도살자",
+     "icon": "🔪",
+     "desc": "상처를 내고 끝을 본다"
+    }
+   ]
+  },
+  "spear": {
+   "name": "창",
+   "icon": "🔱",
+   "desc": "길게 찌른다. 사거리가 가장 길고 두 적을 꿰뚫는다.",
+   "trees": [
+    {
+     "id": "reach",
+     "name": "창벽",
+     "icon": "🧱",
+     "desc": "거리를 지배한다"
+    },
+    {
+     "id": "duel",
+     "name": "결투가",
+     "icon": "🤺",
+     "desc": "구르고 찌르고 빠진다"
+    }
+   ]
+  },
+  "hammer": {
+   "name": "망치",
+   "icon": "🔨",
+   "desc": "가장 느리고 가장 무겁다. 강공이 적을 비틀거리게 한다. 돌 몽둥이도 망치 숙련으로 친다.",
+   "trees": [
+    {
+     "id": "crush",
+     "name": "파쇄자",
+     "icon": "💥",
+     "desc": "부수고 기절시킨다"
+    },
+    {
+     "id": "quake",
+     "name": "지진",
+     "icon": "🌋",
+     "desc": "땅을 울려 무리를 묶는다"
+    }
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "id": "sword_blade_a1",
+   "weapon": "sword",
+   "tree": 0,
+   "row": 0,
+   "col": 0,
+   "req": 0,
+   "kind": "active",
+   "name": "꿰찌르기",
+   "icon": "🗡️",
+   "text": "앞을 깊게 찌른다(피해 160%).",
+   "ab": {
+    "kind": "strike",
+    "cd": 7,
+    "cost": 10,
+    "windup": 0.18,
+    "dur": 0.5,
+    "mult": 1.6,
+    "range": 2.6,
+    "arc": 50,
+    "targets": 1
+   }
+  },
+  {
+   "id": "sword_blade_p1",
+   "weapon": "sword",
+   "tree": 0,
+   "row": 0,
+   "col": 1,
+   "req": 0,
+   "kind": "passive",
+   "name": "날 선 검",
+   "icon": "🔪",
+   "text": "약공 피해 +10%.",
+   "p": {
+    "light": 0.1
+   }
+  },
+  {
+   "id": "sword_blade_a2",
+   "weapon": "sword",
+   "tree": 0,
+   "row": 0,
+   "col": 2,
+   "req": 0,
+   "kind": "active",
+   "name": "돌진 베기",
+   "icon": "💨",
+   "text": "5m를 내달려 앞을 벤다(피해 130%).",
+   "ab": {
+    "kind": "dash",
+    "cd": 12,
+    "cost": 15,
+    "windup": 0.32,
+    "dur": 0.6,
+    "dash": 5,
+    "mult": 1.3,
+    "range": 2.4,
+    "arc": 100,
+    "targets": 2
+   }
+  },
+  {
+   "id": "sword_blade_u1",
+   "weapon": "sword",
+   "tree": 0,
+   "row": 1,
+   "col": 0,
+   "req": 2,
+   "kind": "up",
+   "name": "약점 찌르기",
+   "icon": "⬆️",
+   "text": "꿰찌르기 피해 +60%, 맞은 적은 6초간 공격이 20% 약해진다.",
+   "needs": "sword_blade_a1",
+   "mod": {
+    "add": {
+     "mult": 0.6
+    },
+    "set": {
+     "weak": {
+      "k": 0.2,
+      "sec": 6
+     }
+    }
+   }
+  },
+  {
+   "id": "sword_blade_p2",
+   "weapon": "sword",
+   "tree": 0,
+   "row": 1,
+   "col": 1,
+   "req": 2,
+   "kind": "passive",
+   "name": "빈틈 노리기",
+   "icon": "👁️",
+   "text": "기절한 적에게 피해 +15%.",
+   "p": {
+    "vsStun": 0.15
+   }
+  },
+  {
+   "id": "sword_blade_u2",
+   "weapon": "sword",
+   "tree": 0,
+   "row": 1,
+   "col": 2,
+   "req": 2,
+   "kind": "up",
+   "name": "발을 거는 돌진",
+   "icon": "⬆️",
+   "text": "돌진 베기 재사용 −3초, 맞은 적은 0.6초 기절.",
+   "needs": "sword_blade_a2",
+   "mod": {
+    "add": {
+     "cd": -3
+    },
+    "set": {
+     "stun": 0.6
+    }
+   }
+  },
+  {
+   "id": "sword_blade_p3",
+   "weapon": "sword",
+   "tree": 0,
+   "row": 2,
+   "col": 0,
+   "req": 4,
+   "kind": "passive",
+   "name": "검의 흐름",
+   "icon": "⏱️",
+   "text": "스킬 재사용 대기 −10%.",
+   "p": {
+    "cdr": 0.1
+   }
+  },
+  {
+   "id": "sword_blade_a3",
+   "weapon": "sword",
+   "tree": 0,
+   "row": 2,
+   "col": 1,
+   "req": 4,
+   "kind": "active",
+   "name": "회오리 베기",
+   "icon": "🌀",
+   "text": "빙 돌며 둘레를 벤다(피해 120%, 4초 출혈).",
+   "ab": {
+    "kind": "aoe",
+    "cd": 14,
+    "cost": 18,
+    "windup": 0.3,
+    "dur": 0.7,
+    "mult": 1.2,
+    "range": 2.8,
+    "targets": 5,
+    "bleed": {
+     "mult": 0.15,
+     "sec": 4
+    }
+   }
+  },
+  {
+   "id": "sword_blade_p4",
+   "weapon": "sword",
+   "tree": 0,
+   "row": 2,
+   "col": 2,
+   "req": 4,
+   "kind": "passive",
+   "name": "급소",
+   "icon": "🎯",
+   "text": "치명타 확률 +8%(치명타는 피해 150%).",
+   "p": {
+    "crit": 0.08
+   }
+  },
+  {
+   "id": "sword_blade_p5",
+   "weapon": "sword",
+   "tree": 0,
+   "row": 3,
+   "col": 0,
+   "req": 6,
+   "kind": "passive",
+   "name": "마무리",
+   "icon": "🩸",
+   "text": "체력 30% 아래인 적에게 피해 +20%.",
+   "p": {
+    "lowTarget": 0.2
+   }
+  },
+  {
+   "id": "sword_blade_u3",
+   "weapon": "sword",
+   "tree": 0,
+   "row": 3,
+   "col": 1,
+   "req": 6,
+   "kind": "up",
+   "name": "깊은 상처",
+   "icon": "⬆️",
+   "text": "회오리 베기 출혈이 두 배.",
+   "needs": "sword_blade_a3",
+   "mod": {
+    "add": {
+     "bleed.mult": 0.15
+    }
+   }
+  },
+  {
+   "id": "sword_blade_ult",
+   "weapon": "sword",
+   "tree": 0,
+   "row": 4,
+   "col": 1,
+   "req": 10,
+   "kind": "ult",
+   "name": "연격의 달인",
+   "icon": "🌟",
+   "text": "스킬을 쓰면 4초간 모든 피해 +30%.",
+   "p": {
+    "abilityBuff": {
+     "sec": 4,
+     "dmg": 0.3
+    }
+   }
+  },
+  {
+   "id": "sword_guard_a1",
+   "weapon": "sword",
+   "tree": 1,
+   "row": 0,
+   "col": 0,
+   "req": 0,
+   "kind": "active",
+   "name": "방패 밀치기",
+   "icon": "🛡️",
+   "text": "방패로 밀쳐 3m 밀어내고 0.8초 기절.",
+   "ab": {
+    "kind": "strike",
+    "cd": 10,
+    "cost": 10,
+    "windup": 0.15,
+    "dur": 0.45,
+    "mult": 0.8,
+    "range": 2.2,
+    "arc": 100,
+    "targets": 2,
+    "knock": 3,
+    "stun": 0.8
+   }
+  },
+  {
+   "id": "sword_guard_p1",
+   "weapon": "sword",
+   "tree": 1,
+   "row": 0,
+   "col": 1,
+   "req": 0,
+   "kind": "passive",
+   "name": "단단한 방패",
+   "icon": "🛡️",
+   "text": "막기로 줄이는 피해 +5%p.",
+   "p": {
+    "blockCut": 0.05
+   }
+  },
+  {
+   "id": "sword_guard_a2",
+   "weapon": "sword",
+   "tree": 1,
+   "row": 0,
+   "col": 2,
+   "req": 0,
+   "kind": "active",
+   "name": "방어 태세",
+   "icon": "🏰",
+   "text": "6초간 받는 피해 −35%.",
+   "ab": {
+    "kind": "buff",
+    "cd": 18,
+    "cost": 0,
+    "windup": 0.1,
+    "dur": 0.3,
+    "buff": {
+     "sec": 6,
+     "dr": 0.35
+    }
+   }
+  },
+  {
+   "id": "sword_guard_u1",
+   "weapon": "sword",
+   "tree": 1,
+   "row": 1,
+   "col": 0,
+   "req": 2,
+   "kind": "up",
+   "name": "방패 깨기",
+   "icon": "⬆️",
+   "text": "방패 밀치기가 적의 막기를 깨고, 5초간 적 공격 25% 약화.",
+   "needs": "sword_guard_a1",
+   "mod": {
+    "set": {
+     "guardBreak": true,
+     "weak": {
+      "k": 0.25,
+      "sec": 5
+     }
+    }
+   }
+  },
+  {
+   "id": "sword_guard_p2",
+   "weapon": "sword",
+   "tree": 1,
+   "row": 1,
+   "col": 1,
+   "req": 2,
+   "kind": "passive",
+   "name": "버티기",
+   "icon": "🧱",
+   "text": "막을 때 드는 기력 −25%.",
+   "p": {
+    "blockCost": 0.25
+   }
+  },
+  {
+   "id": "sword_guard_u2",
+   "weapon": "sword",
+   "tree": 1,
+   "row": 1,
+   "col": 2,
+   "req": 2,
+   "kind": "up",
+   "name": "숨 돌리기",
+   "icon": "⬆️",
+   "text": "방어 태세 중 기력 회복 +50%, 쓸 때 체력 10% 회복.",
+   "needs": "sword_guard_a2",
+   "mod": {
+    "set": {
+     "heal": 0.1
+    },
+    "add": {
+     "buff.stRegen": 0.5
+    }
+   }
+  },
+  {
+   "id": "sword_guard_p3",
+   "weapon": "sword",
+   "tree": 1,
+   "row": 2,
+   "col": 0,
+   "req": 4,
+   "kind": "passive",
+   "name": "갑옷 숙달",
+   "icon": "🦺",
+   "text": "방어 +8.",
+   "p": {
+    "armor": 8
+   }
+  },
+  {
+   "id": "sword_guard_a3",
+   "weapon": "sword",
+   "tree": 1,
+   "row": 2,
+   "col": 1,
+   "req": 4,
+   "kind": "active",
+   "name": "도발의 외침",
+   "icon": "📣",
+   "text": "8m 안의 적을 내게 끌어오고, 5초간 받는 피해 −15%.",
+   "ab": {
+    "kind": "aoe",
+    "cd": 16,
+    "cost": 8,
+    "windup": 0.2,
+    "dur": 0.5,
+    "mult": 0,
+    "range": 8,
+    "targets": 8,
+    "taunt": true,
+    "buff": {
+     "sec": 5,
+     "dr": 0.15
+    }
+   }
+  },
+  {
+   "id": "sword_guard_p4",
+   "weapon": "sword",
+   "tree": 1,
+   "row": 2,
+   "col": 2,
+   "req": 4,
+   "kind": "passive",
+   "name": "튼튼한 몸",
+   "icon": "❤️",
+   "text": "최대 체력 +20.",
+   "p": {
+    "maxHp": 20
+   }
+  },
+  {
+   "id": "sword_guard_p5",
+   "weapon": "sword",
+   "tree": 1,
+   "row": 3,
+   "col": 0,
+   "req": 6,
+   "kind": "passive",
+   "name": "숨 고르기",
+   "icon": "🌬️",
+   "text": "기력 회복 +15%.",
+   "p": {
+    "stRegen": 0.15
+   }
+  },
+  {
+   "id": "sword_guard_u3",
+   "weapon": "sword",
+   "tree": 1,
+   "row": 3,
+   "col": 1,
+   "req": 6,
+   "kind": "up",
+   "name": "발목 잡기",
+   "icon": "⬆️",
+   "text": "도발의 외침에 걸린 적은 4초간 30% 느려진다.",
+   "needs": "sword_guard_a3",
+   "mod": {
+    "set": {
+     "slow": {
+      "k": 0.3,
+      "sec": 4
+     }
+    }
+   }
+  },
+  {
+   "id": "sword_guard_ult",
+   "weapon": "sword",
+   "tree": 1,
+   "row": 4,
+   "col": 1,
+   "req": 10,
+   "kind": "ult",
+   "name": "반격",
+   "icon": "🌟",
+   "text": "막은 뒤 3초 안의 다음 공격 피해 +60%.",
+   "p": {
+    "counter": 0.6
+   }
+  },
+  {
+   "id": "axe_berserk_a1",
+   "weapon": "axe",
+   "tree": 0,
+   "row": 0,
+   "col": 0,
+   "req": 0,
+   "kind": "active",
+   "name": "휘몰아치기",
+   "icon": "🌪️",
+   "text": "둘레를 크게 휘두른다(피해 140%).",
+   "ab": {
+    "kind": "aoe",
+    "cd": 12,
+    "cost": 16,
+    "windup": 0.35,
+    "dur": 0.8,
+    "mult": 1.4,
+    "range": 3.2,
+    "targets": 5
+   }
+  },
+  {
+   "id": "axe_berserk_p1",
+   "weapon": "axe",
+   "tree": 0,
+   "row": 0,
+   "col": 1,
+   "req": 0,
+   "kind": "passive",
+   "name": "무거운 날",
+   "icon": "💪",
+   "text": "강공 피해 +12%.",
+   "p": {
+    "heavy": 0.12
+   }
+  },
+  {
+   "id": "axe_berserk_a2",
+   "weapon": "axe",
+   "tree": 0,
+   "row": 0,
+   "col": 2,
+   "req": 0,
+   "kind": "active",
+   "name": "분노",
+   "icon": "😡",
+   "text": "8초간 피해 +25%, 이동 +10%.",
+   "ab": {
+    "kind": "buff",
+    "cd": 20,
+    "cost": 0,
+    "windup": 0.1,
+    "dur": 0.3,
+    "buff": {
+     "sec": 8,
+     "dmg": 0.25,
+     "speed": 0.1
+    }
+   }
+  },
+  {
+   "id": "axe_berserk_u1",
+   "weapon": "axe",
+   "tree": 0,
+   "row": 1,
+   "col": 0,
+   "req": 2,
+   "kind": "up",
+   "name": "피의 회오리",
+   "icon": "⬆️",
+   "text": "휘몰아치기 피해의 15%만큼 체력 회복.",
+   "needs": "axe_berserk_a1",
+   "mod": {
+    "set": {
+     "lifesteal": 0.15
+    }
+   }
+  },
+  {
+   "id": "axe_berserk_p2",
+   "weapon": "axe",
+   "tree": 0,
+   "row": 1,
+   "col": 1,
+   "req": 2,
+   "kind": "passive",
+   "name": "궁지의 짐승",
+   "icon": "🐗",
+   "text": "내 체력이 절반 아래면 피해 +20%.",
+   "p": {
+    "lowHp": 0.2
+   }
+  },
+  {
+   "id": "axe_berserk_u2",
+   "weapon": "axe",
+   "tree": 0,
+   "row": 1,
+   "col": 2,
+   "req": 2,
+   "kind": "up",
+   "name": "끓는 피",
+   "icon": "⬆️",
+   "text": "분노 피해 +10%p, 분노 중 준 피해의 10%만큼 체력 회복.",
+   "needs": "axe_berserk_a2",
+   "mod": {
+    "add": {
+     "buff.dmg": 0.1
+    },
+    "set": {
+     "buff.lifesteal": 0.1
+    }
+   }
+  },
+  {
+   "id": "axe_berserk_p3",
+   "weapon": "axe",
+   "tree": 0,
+   "row": 2,
+   "col": 0,
+   "req": 4,
+   "kind": "passive",
+   "name": "피 맛",
+   "icon": "🩸",
+   "text": "준 피해의 4%만큼 체력 회복.",
+   "p": {
+    "lifesteal": 0.04
+   }
+  },
+  {
+   "id": "axe_berserk_a3",
+   "weapon": "axe",
+   "tree": 0,
+   "row": 2,
+   "col": 1,
+   "req": 4,
+   "kind": "active",
+   "name": "도약 내려찍기",
+   "icon": "⛰️",
+   "text": "6m 뛰어들어 내려찍는다(피해 180%, 0.5초 기절).",
+   "ab": {
+    "kind": "dash",
+    "cd": 16,
+    "cost": 20,
+    "windup": 0.45,
+    "dur": 0.9,
+    "dash": 6,
+    "mult": 1.8,
+    "range": 2.6,
+    "arc": 360,
+    "targets": 4,
+    "stun": 0.5
+   }
+  },
+  {
+   "id": "axe_berserk_p4",
+   "weapon": "axe",
+   "tree": 0,
+   "row": 2,
+   "col": 2,
+   "req": 4,
+   "kind": "passive",
+   "name": "사냥꾼의 숨",
+   "icon": "🍖",
+   "text": "적을 쓰러뜨리면 체력 8 회복.",
+   "p": {
+    "killHeal": 8
+   }
+  },
+  {
+   "id": "axe_berserk_p5",
+   "weapon": "axe",
+   "tree": 0,
+   "row": 3,
+   "col": 0,
+   "req": 6,
+   "kind": "passive",
+   "name": "두꺼운 가죽",
+   "icon": "❤️",
+   "text": "최대 체력 +15.",
+   "p": {
+    "maxHp": 15
+   }
+  },
+  {
+   "id": "axe_berserk_u3",
+   "weapon": "axe",
+   "tree": 0,
+   "row": 3,
+   "col": 1,
+   "req": 6,
+   "kind": "up",
+   "name": "땅 가르기",
+   "icon": "⬆️",
+   "text": "도약 내려찍기에 맞은 적은 3초간 40% 느려진다.",
+   "needs": "axe_berserk_a3",
+   "mod": {
+    "set": {
+     "slow": {
+      "k": 0.4,
+      "sec": 3
+     }
+    }
+   }
+  },
+  {
+   "id": "axe_berserk_ult",
+   "weapon": "axe",
+   "tree": 0,
+   "row": 4,
+   "col": 1,
+   "req": 10,
+   "kind": "ult",
+   "name": "피의 광기",
+   "icon": "🌟",
+   "text": "내 체력이 절반 아래면 피해 +20%p 더, 받는 피해 −15%.",
+   "p": {
+    "lowHp": 0.2,
+    "lowHpDr": 0.15
+   }
+  },
+  {
+   "id": "axe_butcher_a1",
+   "weapon": "axe",
+   "tree": 1,
+   "row": 0,
+   "col": 0,
+   "req": 0,
+   "kind": "active",
+   "name": "끌어당기기",
+   "icon": "🪝",
+   "text": "도끼 날로 걸어 3.5m 앞 적을 끌어온다.",
+   "ab": {
+    "kind": "strike",
+    "cd": 10,
+    "cost": 10,
+    "windup": 0.25,
+    "dur": 0.55,
+    "mult": 1.0,
+    "range": 3.8,
+    "arc": 40,
+    "targets": 1,
+    "knock": -2.5
+   }
+  },
+  {
+   "id": "axe_butcher_p1",
+   "weapon": "axe",
+   "tree": 1,
+   "row": 0,
+   "col": 1,
+   "req": 0,
+   "kind": "passive",
+   "name": "피 냄새",
+   "icon": "👃",
+   "text": "출혈 중인 적에게 피해 +15%.",
+   "p": {
+    "vsBleed": 0.15
+   }
+  },
+  {
+   "id": "axe_butcher_a2",
+   "weapon": "axe",
+   "tree": 1,
+   "row": 0,
+   "col": 2,
+   "req": 0,
+   "kind": "active",
+   "name": "처형",
+   "icon": "⚰️",
+   "text": "내려친다(피해 150%). 체력 35% 아래 적에겐 피해 300%.",
+   "ab": {
+    "kind": "strike",
+    "cd": 14,
+    "cost": 14,
+    "windup": 0.4,
+    "dur": 0.8,
+    "mult": 1.5,
+    "range": 2.6,
+    "arc": 80,
+    "targets": 1,
+    "execute": {
+     "below": 0.35,
+     "mult": 3.0
+    }
+   }
+  },
+  {
+   "id": "axe_butcher_u1",
+   "weapon": "axe",
+   "tree": 1,
+   "row": 1,
+   "col": 0,
+   "req": 2,
+   "kind": "up",
+   "name": "놓아주지 않기",
+   "icon": "⬆️",
+   "text": "끌어당긴 적은 3초간 40% 느려진다.",
+   "needs": "axe_butcher_a1",
+   "mod": {
+    "set": {
+     "slow": {
+      "k": 0.4,
+      "sec": 3
+     }
+    }
+   }
+  },
+  {
+   "id": "axe_butcher_p2",
+   "weapon": "axe",
+   "tree": 1,
+   "row": 1,
+   "col": 1,
+   "req": 2,
+   "kind": "passive",
+   "name": "힘 아끼기",
+   "icon": "🫁",
+   "text": "강공 기력 −20%.",
+   "p": {
+    "heavyCost": 0.2
+   }
+  },
+  {
+   "id": "axe_butcher_u2",
+   "weapon": "axe",
+   "tree": 1,
+   "row": 1,
+   "col": 2,
+   "req": 2,
+   "kind": "up",
+   "name": "단칼",
+   "icon": "⬆️",
+   "text": "처형에 맞은 적은 0.6초 기절, 재사용 −2초.",
+   "needs": "axe_butcher_a2",
+   "mod": {
+    "set": {
+     "stun": 0.6
+    },
+    "add": {
+     "cd": -2
+    }
+   }
+  },
+  {
+   "id": "axe_butcher_p3",
+   "weapon": "axe",
+   "tree": 1,
+   "row": 2,
+   "col": 0,
+   "req": 4,
+   "kind": "passive",
+   "name": "넓은 휘두름",
+   "icon": "↔️",
+   "text": "한 번에 벨 수 있는 적 +1.",
+   "p": {
+    "targets": 1
+   }
+  },
+  {
+   "id": "axe_butcher_a3",
+   "weapon": "axe",
+   "tree": 1,
+   "row": 2,
+   "col": 1,
+   "req": 4,
+   "kind": "active",
+   "name": "상처 내기",
+   "icon": "🩸",
+   "text": "넓게 긋는다(피해 100%, 6초 출혈).",
+   "ab": {
+    "kind": "strike",
+    "cd": 10,
+    "cost": 12,
+    "windup": 0.28,
+    "dur": 0.6,
+    "mult": 1.0,
+    "range": 2.6,
+    "arc": 130,
+    "targets": 3,
+    "bleed": {
+     "mult": 0.2,
+     "sec": 6
+    }
+   }
+  },
+  {
+   "id": "axe_butcher_p4",
+   "weapon": "axe",
+   "tree": 1,
+   "row": 2,
+   "col": 2,
+   "req": 4,
+   "kind": "passive",
+   "name": "살 가르기",
+   "icon": "🎯",
+   "text": "치명타 확률 +6%.",
+   "p": {
+    "crit": 0.06
+   }
+  },
+  {
+   "id": "axe_butcher_p5",
+   "weapon": "axe",
+   "tree": 1,
+   "row": 3,
+   "col": 0,
+   "req": 6,
+   "kind": "passive",
+   "name": "긴 자루",
+   "icon": "📏",
+   "text": "사거리 +0.3m.",
+   "p": {
+    "range": 0.3
+   }
+  },
+  {
+   "id": "axe_butcher_u3",
+   "weapon": "axe",
+   "tree": 1,
+   "row": 3,
+   "col": 1,
+   "req": 6,
+   "kind": "up",
+   "name": "벌어진 상처",
+   "icon": "⬆️",
+   "text": "상처 내기 출혈 +100%, 맞은 적 공격 20% 약화(6초).",
+   "needs": "axe_butcher_a3",
+   "mod": {
+    "add": {
+     "bleed.mult": 0.2
+    },
+    "set": {
+     "weak": {
+      "k": 0.2,
+      "sec": 6
+     }
+    }
+   }
+  },
+  {
+   "id": "axe_butcher_ult",
+   "weapon": "axe",
+   "tree": 1,
+   "row": 4,
+   "col": 1,
+   "req": 10,
+   "kind": "ult",
+   "name": "도살",
+   "icon": "🌟",
+   "text": "적을 쓰러뜨리면 기력 25 회복, 모든 스킬 재사용 −3초.",
+   "p": {
+    "killSt": 25,
+    "killCd": 3
+   }
+  },
+  {
+   "id": "spear_reach_a1",
+   "weapon": "spear",
+   "tree": 0,
+   "row": 0,
+   "col": 0,
+   "req": 0,
+   "kind": "active",
+   "name": "꿰뚫기",
+   "icon": "➶",
+   "text": "앞으로 길게 찔러 셋까지 꿰뚫는다(피해 150%).",
+   "ab": {
+    "kind": "strike",
+    "cd": 10,
+    "cost": 12,
+    "windup": 0.25,
+    "dur": 0.55,
+    "mult": 1.5,
+    "range": 4.4,
+    "arc": 24,
+    "targets": 3
+   }
+  },
+  {
+   "id": "spear_reach_p1",
+   "weapon": "spear",
+   "tree": 0,
+   "row": 0,
+   "col": 1,
+   "req": 0,
+   "kind": "passive",
+   "name": "긴 창",
+   "icon": "📏",
+   "text": "사거리 +0.4m.",
+   "p": {
+    "range": 0.4
+   }
+  },
+  {
+   "id": "spear_reach_a2",
+   "weapon": "spear",
+   "tree": 0,
+   "row": 0,
+   "col": 2,
+   "req": 0,
+   "kind": "active",
+   "name": "쓸어 넘기기",
+   "icon": "🧹",
+   "text": "자루로 쓸어 2.5m 밀어내고 3초간 30% 느리게.",
+   "ab": {
+    "kind": "strike",
+    "cd": 12,
+    "cost": 12,
+    "windup": 0.22,
+    "dur": 0.55,
+    "mult": 0.9,
+    "range": 3.4,
+    "arc": 200,
+    "targets": 4,
+    "knock": 2.5,
+    "slow": {
+     "k": 0.3,
+     "sec": 3
+    }
+   }
+  },
+  {
+   "id": "spear_reach_u1",
+   "weapon": "spear",
+   "tree": 0,
+   "row": 1,
+   "col": 0,
+   "req": 2,
+   "kind": "up",
+   "name": "피 내는 창끝",
+   "icon": "⬆️",
+   "text": "꿰뚫린 적은 5초 출혈.",
+   "needs": "spear_reach_a1",
+   "mod": {
+    "set": {
+     "bleed": {
+      "mult": 0.18,
+      "sec": 5
+     }
+    }
+   }
+  },
+  {
+   "id": "spear_reach_p2",
+   "weapon": "spear",
+   "tree": 0,
+   "row": 1,
+   "col": 1,
+   "req": 2,
+   "kind": "passive",
+   "name": "발 묶인 먹이",
+   "icon": "🐌",
+   "text": "느려진 적에게 피해 +15%.",
+   "p": {
+    "vsSlow": 0.15
+   }
+  },
+  {
+   "id": "spear_reach_u2",
+   "weapon": "spear",
+   "tree": 0,
+   "row": 1,
+   "col": 2,
+   "req": 2,
+   "kind": "up",
+   "name": "발 걸기",
+   "icon": "⬆️",
+   "text": "쓸어 넘기기에 맞은 적은 0.6초 기절.",
+   "needs": "spear_reach_a2",
+   "mod": {
+    "set": {
+     "stun": 0.6
+    }
+   }
+  },
+  {
+   "id": "spear_reach_p3",
+   "weapon": "spear",
+   "tree": 0,
+   "row": 2,
+   "col": 0,
+   "req": 4,
+   "kind": "passive",
+   "name": "가벼운 찌르기",
+   "icon": "🔪",
+   "text": "약공 피해 +8%.",
+   "p": {
+    "light": 0.08
+   }
+  },
+  {
+   "id": "spear_reach_a3",
+   "weapon": "spear",
+   "tree": 0,
+   "row": 2,
+   "col": 1,
+   "req": 4,
+   "kind": "active",
+   "name": "견제",
+   "icon": "✋",
+   "text": "창끝으로 견제해 6초간 적 공격 30% 약화(피해 100%).",
+   "ab": {
+    "kind": "strike",
+    "cd": 9,
+    "cost": 8,
+    "windup": 0.18,
+    "dur": 0.45,
+    "mult": 1.0,
+    "range": 3.8,
+    "arc": 60,
+    "targets": 2,
+    "weak": {
+     "k": 0.3,
+     "sec": 6
+    }
+   }
+  },
+  {
+   "id": "spear_reach_p4",
+   "weapon": "spear",
+   "tree": 0,
+   "row": 2,
+   "col": 2,
+   "req": 4,
+   "kind": "passive",
+   "name": "첫 찌름",
+   "icon": "🎯",
+   "text": "체력 80% 이상인 적에게 피해 +20%.",
+   "p": {
+    "fresh": 0.2
+   }
+  },
+  {
+   "id": "spear_reach_p5",
+   "weapon": "spear",
+   "tree": 0,
+   "row": 3,
+   "col": 0,
+   "req": 6,
+   "kind": "passive",
+   "name": "창술 흐름",
+   "icon": "⏱️",
+   "text": "스킬 재사용 대기 −10%.",
+   "p": {
+    "cdr": 0.1
+   }
+  },
+  {
+   "id": "spear_reach_u3",
+   "weapon": "spear",
+   "tree": 0,
+   "row": 3,
+   "col": 1,
+   "req": 6,
+   "kind": "up",
+   "name": "묶어 두기",
+   "icon": "⬆️",
+   "text": "견제에 맞은 적은 4초간 35% 느려진다.",
+   "needs": "spear_reach_a3",
+   "mod": {
+    "set": {
+     "slow": {
+      "k": 0.35,
+      "sec": 4
+     }
+    }
+   }
+  },
+  {
+   "id": "spear_reach_ult",
+   "weapon": "spear",
+   "tree": 0,
+   "row": 4,
+   "col": 1,
+   "req": 10,
+   "kind": "ult",
+   "name": "긴 손",
+   "icon": "🌟",
+   "text": "한 번에 꿰뚫는 적 +1, 사거리 +0.3m.",
+   "p": {
+    "targets": 1,
+    "range": 0.3
+   }
+  },
+  {
+   "id": "spear_duel_a1",
+   "weapon": "spear",
+   "tree": 1,
+   "row": 0,
+   "col": 0,
+   "req": 0,
+   "kind": "active",
+   "name": "연속 찌르기",
+   "icon": "⚡",
+   "text": "세 번 빠르게 찌른다(합쳐 피해 220%).",
+   "ab": {
+    "kind": "strike",
+    "cd": 10,
+    "cost": 14,
+    "windup": 0.3,
+    "dur": 0.7,
+    "mult": 2.2,
+    "range": 3.4,
+    "arc": 40,
+    "targets": 1
+   }
+  },
+  {
+   "id": "spear_duel_p1",
+   "weapon": "spear",
+   "tree": 1,
+   "row": 0,
+   "col": 1,
+   "req": 0,
+   "kind": "passive",
+   "name": "가벼운 발",
+   "icon": "🪶",
+   "text": "구르기 기력 −25%.",
+   "p": {
+    "dodgeCost": 0.25
+   }
+  },
+  {
+   "id": "spear_duel_a2",
+   "weapon": "spear",
+   "tree": 1,
+   "row": 0,
+   "col": 2,
+   "req": 0,
+   "kind": "active",
+   "name": "물러서며 찌르기",
+   "icon": "↩️",
+   "text": "찌르고(피해 120%) 4m 뒤로 뛴다.",
+   "ab": {
+    "kind": "strike",
+    "cd": 11,
+    "cost": 12,
+    "windup": 0.15,
+    "dur": 0.55,
+    "mult": 1.2,
+    "range": 3.3,
+    "arc": 60,
+    "targets": 2,
+    "hop": -4
+   }
+  },
+  {
+   "id": "spear_duel_u1",
+   "weapon": "spear",
+   "tree": 1,
+   "row": 1,
+   "col": 0,
+   "req": 2,
+   "kind": "up",
+   "name": "급소 셋",
+   "icon": "⬆️",
+   "text": "연속 찌르기에 맞은 적 공격 20% 약화(6초).",
+   "needs": "spear_duel_a1",
+   "mod": {
+    "set": {
+     "weak": {
+      "k": 0.2,
+      "sec": 6
+     }
+    }
+   }
+  },
+  {
+   "id": "spear_duel_p2",
+   "weapon": "spear",
+   "tree": 1,
+   "row": 1,
+   "col": 1,
+   "req": 2,
+   "kind": "passive",
+   "name": "노리는 눈",
+   "icon": "🎯",
+   "text": "치명타 확률 +8%.",
+   "p": {
+    "crit": 0.08
+   }
+  },
+  {
+   "id": "spear_duel_u2",
+   "weapon": "spear",
+   "tree": 1,
+   "row": 1,
+   "col": 2,
+   "req": 2,
+   "kind": "up",
+   "name": "바람 발",
+   "icon": "⬆️",
+   "text": "물러서며 찌르기 뒤 3초간 이동 +30%.",
+   "needs": "spear_duel_a2",
+   "mod": {
+    "set": {
+     "buff": {
+      "sec": 3,
+      "speed": 0.3
+     }
+    }
+   }
+  },
+  {
+   "id": "spear_duel_p3",
+   "weapon": "spear",
+   "tree": 1,
+   "row": 2,
+   "col": 0,
+   "req": 4,
+   "kind": "passive",
+   "name": "깊이 찌르기",
+   "icon": "💥",
+   "text": "치명타 피해 +30%p.",
+   "p": {
+    "critDmg": 0.3
+   }
+  },
+  {
+   "id": "spear_duel_a3",
+   "weapon": "spear",
+   "tree": 1,
+   "row": 2,
+   "col": 1,
+   "req": 4,
+   "kind": "active",
+   "name": "도약 찌르기",
+   "icon": "🦘",
+   "text": "7m 뛰어들며 찌른다(피해 150%).",
+   "ab": {
+    "kind": "dash",
+    "cd": 14,
+    "cost": 16,
+    "windup": 0.4,
+    "dur": 0.75,
+    "dash": 7,
+    "mult": 1.5,
+    "range": 3.0,
+    "arc": 60,
+    "targets": 2
+   }
+  },
+  {
+   "id": "spear_duel_p4",
+   "weapon": "spear",
+   "tree": 1,
+   "row": 2,
+   "col": 2,
+   "req": 4,
+   "kind": "passive",
+   "name": "결투의 숨",
+   "icon": "🌬️",
+   "text": "기력 회복 +20%.",
+   "p": {
+    "stRegen": 0.2
+   }
+  },
+  {
+   "id": "spear_duel_p5",
+   "weapon": "spear",
+   "tree": 1,
+   "row": 3,
+   "col": 0,
+   "req": 6,
+   "kind": "passive",
+   "name": "창날 춤",
+   "icon": "🔪",
+   "text": "약공 피해 +10%.",
+   "p": {
+    "light": 0.1
+   }
+  },
+  {
+   "id": "spear_duel_u3",
+   "weapon": "spear",
+   "tree": 1,
+   "row": 3,
+   "col": 1,
+   "req": 6,
+   "kind": "up",
+   "name": "꽂히는 창",
+   "icon": "⬆️",
+   "text": "도약 찌르기에 맞은 적은 0.5초 기절.",
+   "needs": "spear_duel_a3",
+   "mod": {
+    "set": {
+     "stun": 0.5
+    }
+   }
+  },
+  {
+   "id": "spear_duel_ult",
+   "weapon": "spear",
+   "tree": 1,
+   "row": 4,
+   "col": 1,
+   "req": 10,
+   "kind": "ult",
+   "name": "춤추는 창",
+   "icon": "🌟",
+   "text": "구른 뒤 2초간 피해 +40%.",
+   "p": {
+    "dodgeBuff": {
+     "sec": 2,
+     "dmg": 0.4
+    }
+   }
+  },
+  {
+   "id": "hammer_crush_a1",
+   "weapon": "hammer",
+   "tree": 0,
+   "row": 0,
+   "col": 0,
+   "req": 0,
+   "kind": "active",
+   "name": "골통 깨기",
+   "icon": "💀",
+   "text": "내려쳐 1.2초 기절, 막기를 깬다(피해 180%).",
+   "ab": {
+    "kind": "strike",
+    "cd": 12,
+    "cost": 14,
+    "windup": 0.45,
+    "dur": 0.85,
+    "mult": 1.8,
+    "range": 2.4,
+    "arc": 70,
+    "targets": 1,
+    "stun": 1.2,
+    "guardBreak": true
+   }
+  },
+  {
+   "id": "hammer_crush_p1",
+   "weapon": "hammer",
+   "tree": 0,
+   "row": 0,
+   "col": 1,
+   "req": 0,
+   "kind": "passive",
+   "name": "무게 싣기",
+   "icon": "💪",
+   "text": "강공 피해 +12%.",
+   "p": {
+    "heavy": 0.12
+   }
+  },
+  {
+   "id": "hammer_crush_a2",
+   "weapon": "hammer",
+   "tree": 0,
+   "row": 0,
+   "col": 2,
+   "req": 0,
+   "kind": "active",
+   "name": "갑옷 부수기",
+   "icon": "🪨",
+   "text": "때려서 8초간 받는 피해 +20%(피해 120%).",
+   "ab": {
+    "kind": "strike",
+    "cd": 12,
+    "cost": 12,
+    "windup": 0.35,
+    "dur": 0.7,
+    "mult": 1.2,
+    "range": 2.4,
+    "arc": 90,
+    "targets": 2,
+    "expose": {
+     "k": 0.2,
+     "sec": 8
+    }
+   }
+  },
+  {
+   "id": "hammer_crush_u1",
+   "weapon": "hammer",
+   "tree": 0,
+   "row": 1,
+   "col": 0,
+   "req": 2,
+   "kind": "up",
+   "name": "금 간 뼈",
+   "icon": "⬆️",
+   "text": "골통 깨기에 맞은 적은 8초간 받는 피해 +15%.",
+   "needs": "hammer_crush_a1",
+   "mod": {
+    "set": {
+     "expose": {
+      "k": 0.15,
+      "sec": 8
+     }
+    }
+   }
+  },
+  {
+   "id": "hammer_crush_p2",
+   "weapon": "hammer",
+   "tree": 0,
+   "row": 1,
+   "col": 1,
+   "req": 2,
+   "kind": "passive",
+   "name": "쓰러진 적",
+   "icon": "😵",
+   "text": "기절한 적에게 피해 +20%.",
+   "p": {
+    "vsStun": 0.2
+   }
+  },
+  {
+   "id": "hammer_crush_u2",
+   "weapon": "hammer",
+   "tree": 0,
+   "row": 1,
+   "col": 2,
+   "req": 2,
+   "kind": "up",
+   "name": "빠른 손",
+   "icon": "⬆️",
+   "text": "갑옷 부수기 재사용 −3초.",
+   "needs": "hammer_crush_a2",
+   "mod": {
+    "add": {
+     "cd": -3
+    }
+   }
+  },
+  {
+   "id": "hammer_crush_p3",
+   "weapon": "hammer",
+   "tree": 0,
+   "row": 2,
+   "col": 0,
+   "req": 4,
+   "kind": "passive",
+   "name": "힘 아끼기",
+   "icon": "🫁",
+   "text": "강공 기력 −20%.",
+   "p": {
+    "heavyCost": 0.2
+   }
+  },
+  {
+   "id": "hammer_crush_a3",
+   "weapon": "hammer",
+   "tree": 0,
+   "row": 2,
+   "col": 1,
+   "req": 4,
+   "kind": "active",
+   "name": "어깨 밀치기",
+   "icon": "🐂",
+   "text": "4m 들이받아 3m 밀어내고 0.6초 기절.",
+   "ab": {
+    "kind": "dash",
+    "cd": 12,
+    "cost": 14,
+    "windup": 0.25,
+    "dur": 0.6,
+    "dash": 4,
+    "mult": 0.9,
+    "range": 2.2,
+    "arc": 120,
+    "targets": 3,
+    "knock": 3,
+    "stun": 0.6
+   }
+  },
+  {
+   "id": "hammer_crush_p4",
+   "weapon": "hammer",
+   "tree": 0,
+   "row": 2,
+   "col": 2,
+   "req": 4,
+   "kind": "passive",
+   "name": "쇠 갑옷",
+   "icon": "🦺",
+   "text": "방어 +6.",
+   "p": {
+    "armor": 6
+   }
+  },
+  {
+   "id": "hammer_crush_p5",
+   "weapon": "hammer",
+   "tree": 0,
+   "row": 3,
+   "col": 0,
+   "req": 6,
+   "kind": "passive",
+   "name": "황소 몸",
+   "icon": "❤️",
+   "text": "최대 체력 +15.",
+   "p": {
+    "maxHp": 15
+   }
+  },
+  {
+   "id": "hammer_crush_u3",
+   "weapon": "hammer",
+   "tree": 0,
+   "row": 3,
+   "col": 1,
+   "req": 6,
+   "kind": "up",
+   "name": "비틀거림",
+   "icon": "⬆️",
+   "text": "어깨 밀치기에 맞은 적은 3초간 30% 느려진다.",
+   "needs": "hammer_crush_a3",
+   "mod": {
+    "set": {
+     "slow": {
+      "k": 0.3,
+      "sec": 3
+     }
+    }
+   }
+  },
+  {
+   "id": "hammer_crush_ult",
+   "weapon": "hammer",
+   "tree": 0,
+   "row": 4,
+   "col": 1,
+   "req": 10,
+   "kind": "ult",
+   "name": "쇳덩이",
+   "icon": "🌟",
+   "text": "강공에 맞은 적은 0.5초 기절.",
+   "p": {
+    "heavyStun": 0.5
+   }
+  },
+  {
+   "id": "hammer_quake_a1",
+   "weapon": "hammer",
+   "tree": 1,
+   "row": 0,
+   "col": 0,
+   "req": 0,
+   "kind": "active",
+   "name": "땅 울리기",
+   "icon": "〰️",
+   "text": "발밑을 내리쳐 둘레 적을 3초간 40% 느리게(피해 100%).",
+   "ab": {
+    "kind": "aoe",
+    "cd": 12,
+    "cost": 14,
+    "windup": 0.35,
+    "dur": 0.75,
+    "mult": 1.0,
+    "range": 4.0,
+    "targets": 6,
+    "slow": {
+     "k": 0.4,
+     "sec": 3
+    }
+   }
+  },
+  {
+   "id": "hammer_quake_p1",
+   "weapon": "hammer",
+   "tree": 1,
+   "row": 0,
+   "col": 1,
+   "req": 0,
+   "kind": "passive",
+   "name": "스킬 숙달",
+   "icon": "✨",
+   "text": "스킬 피해 +15%.",
+   "p": {
+    "ability": 0.15
+   }
+  },
+  {
+   "id": "hammer_quake_a2",
+   "weapon": "hammer",
+   "tree": 1,
+   "row": 0,
+   "col": 2,
+   "req": 0,
+   "kind": "active",
+   "name": "충격파",
+   "icon": "🌊",
+   "text": "앞으로 6m 땅을 갈라 넷까지 밀어낸다(피해 130%).",
+   "ab": {
+    "kind": "strike",
+    "cd": 14,
+    "cost": 14,
+    "windup": 0.4,
+    "dur": 0.8,
+    "mult": 1.3,
+    "range": 6,
+    "arc": 30,
+    "targets": 4,
+    "knock": 1.5
+   }
+  },
+  {
+   "id": "hammer_quake_u1",
+   "weapon": "hammer",
+   "tree": 1,
+   "row": 1,
+   "col": 0,
+   "req": 2,
+   "kind": "up",
+   "name": "떨리는 땅",
+   "icon": "⬆️",
+   "text": "땅 울리기에 맞은 적은 0.4초 기절.",
+   "needs": "hammer_quake_a1",
+   "mod": {
+    "set": {
+     "stun": 0.4
+    }
+   }
+  },
+  {
+   "id": "hammer_quake_p2",
+   "weapon": "hammer",
+   "tree": 1,
+   "row": 1,
+   "col": 1,
+   "req": 2,
+   "kind": "passive",
+   "name": "리듬",
+   "icon": "⏱️",
+   "text": "스킬 재사용 대기 −10%.",
+   "p": {
+    "cdr": 0.1
+   }
+  },
+  {
+   "id": "hammer_quake_u2",
+   "weapon": "hammer",
+   "tree": 1,
+   "row": 1,
+   "col": 2,
+   "req": 2,
+   "kind": "up",
+   "name": "갈라진 땅",
+   "icon": "⬆️",
+   "text": "충격파에 맞은 적은 6초간 받는 피해 +15%.",
+   "needs": "hammer_quake_a2",
+   "mod": {
+    "set": {
+     "expose": {
+      "k": 0.15,
+      "sec": 6
+     }
+    }
+   }
+  },
+  {
+   "id": "hammer_quake_p3",
+   "weapon": "hammer",
+   "tree": 1,
+   "row": 2,
+   "col": 0,
+   "req": 4,
+   "kind": "passive",
+   "name": "발 묶인 먹이",
+   "icon": "🐌",
+   "text": "느려진 적에게 피해 +15%.",
+   "p": {
+    "vsSlow": 0.15
+   }
+  },
+  {
+   "id": "hammer_quake_a3",
+   "weapon": "hammer",
+   "tree": 1,
+   "row": 2,
+   "col": 1,
+   "req": 4,
+   "kind": "active",
+   "name": "대지 강타",
+   "icon": "🌋",
+   "text": "온 힘으로 내리찍어 둘레를 기절시킨다(피해 200%, 0.8초).",
+   "ab": {
+    "kind": "aoe",
+    "cd": 20,
+    "cost": 22,
+    "windup": 0.8,
+    "dur": 1.2,
+    "mult": 2.0,
+    "range": 3.0,
+    "targets": 6,
+    "stun": 0.8
+   }
+  },
+  {
+   "id": "hammer_quake_p4",
+   "weapon": "hammer",
+   "tree": 1,
+   "row": 2,
+   "col": 2,
+   "req": 4,
+   "kind": "passive",
+   "name": "깊은 숨",
+   "icon": "🌬️",
+   "text": "기력 회복 +15%.",
+   "p": {
+    "stRegen": 0.15
+   }
+  },
+  {
+   "id": "hammer_quake_p5",
+   "weapon": "hammer",
+   "tree": 1,
+   "row": 3,
+   "col": 0,
+   "req": 6,
+   "kind": "passive",
+   "name": "전리품 숨",
+   "icon": "🍖",
+   "text": "적을 쓰러뜨리면 기력 10 회복.",
+   "p": {
+    "killSt": 10
+   }
+  },
+  {
+   "id": "hammer_quake_u3",
+   "weapon": "hammer",
+   "tree": 1,
+   "row": 3,
+   "col": 1,
+   "req": 6,
+   "kind": "up",
+   "name": "넓은 진동",
+   "icon": "⬆️",
+   "text": "대지 강타 범위 +1m.",
+   "needs": "hammer_quake_a3",
+   "mod": {
+    "add": {
+     "range": 1
+    }
+   }
+  },
+  {
+   "id": "hammer_quake_ult",
+   "weapon": "hammer",
+   "tree": 1,
+   "row": 4,
+   "col": 1,
+   "req": 10,
+   "kind": "ult",
+   "name": "여진",
+   "icon": "🌟",
+   "text": "스킬 피해 +20%p, 스킬 재사용 대기 −10%p.",
+   "p": {
+    "ability": 0.2,
+    "cdr": 0.1
+   }
+  }
+ ]
+}

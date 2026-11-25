@@ -324,7 +324,8 @@ const EAT = {
     return { e, def };
   },
   execute(ctx, a, c, p) {
-    const stats = p.e.stats;
+    // 보상·보급으로 받은 묶음은 수치가 없을 수 있다(v3.1): 보통 점수 40으로 친다
+    const stats = p.e.stats || (p.def.statConvert ? convertStats(p.def.statConvert, Object.fromEntries(Object.keys(p.def.statConvert).map((k) => [k, 40]))) : {});
     takeQty(a.bag, c.key, 1);
     if (p.def.potion) {
       drinkPotion(ctx, a, p.def, stats);

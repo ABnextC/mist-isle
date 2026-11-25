@@ -1,6 +1,7 @@
 // 짐승 그리기: 걸음(다리·머리·꼬리), 준비 동작(웅크림·붉은 번쩍임), 맞을 때 흰 번쩍임, 쓰러짐, 체력 막대.
 // 판정은 코어가 한다. 여기서는 state.mobs를 보고 보이기만 한다.
 
+import { levelTone } from './level-color.js';
 import * as THREE from 'three';
 import { tickLerp } from './interp.js';
 import { makeCreature } from './models/creatures.js';
@@ -467,7 +468,16 @@ export function createMobsView(scene, game, hf, overlay, { posOf = null, wakeHin
     el.classList.toggle('guard', m.mode === 'guard');
     el.style.transform = `translate(${((tmp.x + 1) / 2) * W}px, ${((1 - tmp.y) / 2) * H}px)`;
     el.firstChild.style.width = `${Math.max(0, (m.hp / type.hp) * 100)}%`;
-    el.lastChild.textContent = m.mode === 'guard' ? `${type.name} 🛡️` : type.name;
+    const lv = type.level || 1;
+    const txt = `Lv ${lv} ${type.name}${m.mode === 'guard' ? ' 🛡️' : ''}`;
+    if (el.lastChild._t !== txt) el.lastChild.textContent = el.lastChild._t = txt;
+    // 레벨 색(v3.1)
+    const tone = levelTone(game.state.actors[game.pid || 'p1']?.clevel?.lvl || 1, lv).cls;
+    if (el._tone !== tone) {
+      if (el._tone) el.classList.remove(el._tone);
+      el.classList.add(tone);
+      el._tone = tone;
+    }
   }
 
   return { update, onEvent, views, positionOf: (id) => views.get(id)?.pos };

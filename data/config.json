@@ -1,5 +1,5 @@
 {
-  "dataVersion": 33,
+  "dataVersion": 34,
   "skillCap": 60,
   "time": {
     "secondsPerGameDay": 3600,
@@ -1277,7 +1277,7 @@
         "heavy": 1.05,
         "windup": 0.2,
         "heavyWindup": 0.6,
-        "mult": 0.95,
+        "mult": 1.0,
         "targets": 2
       },
       "hammer": {
@@ -1754,6 +1754,23 @@
         "icon": "🧘",
         "desc": "마나·기력 회복, 활·지팡이 피해"
       }
+    },
+    "questFrac": {
+      "main": 0.55,
+      "side": 0.28,
+      "faction": 0.35,
+      "bounty": 0.45,
+      "daily": 0.12,
+      "bond": 0.25,
+      "birthday": 0.1
+    },
+    "gap": {
+      "grace": 2,
+      "lowPer": 0.06,
+      "lowMin": 0.45,
+      "highPer": 0.03,
+      "highMax": 1.3,
+      "maxGap": 10
     }
   },
   "pvp": {

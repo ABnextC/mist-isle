@@ -39,6 +39,9 @@ import { connectNet, netGame } from '../client/game/net.js';
 import { frame, parseFrames } from '../server/ws.js';
 import { moodFor, composePiece, MOODS, makeRng } from '../client/game/audio/score.js';
 import { SFX } from '../client/game/audio/sfx.js';
+import { gapMult, needXp as lvNeed, mobLevel } from '../core/systems/level.js';
+import { questXp } from '../core/systems/quests.js';
+import { levelTone } from '../client/game/level-color.js';
 
 const LH = 's_lighthouse';
 const FR = 's_forest';
@@ -503,9 +506,15 @@ test('AI 개척민 경제: 게임 30일을 돌려도 은화가 폭주하지 않�
 });
 
 console.log('전투·수렵 (v0.3)');
+// 피해 공식 시험은 레벨 차 배율(v3.1)을 끈다
+function noGap(g) {
+  const D = g._ctx.data;
+  g._ctx.data = { ...D, config: { ...D.config, level: { ...D.config.level, gap: null } } };
+}
 function arena(typeId, seed = 21) {
   const g = createGame({ data, seed, actors: [{ id: 'p1', kind: 'player' }] });
   g.state.econ = null;
+  noGap(g);
   const grp = Object.values(g.state.mobGroups).find((x) => x.type === typeId);
   for (const m of Object.values(g.state.mobs)) if (m.group !== grp.id) delete g.state.mobs[m.id];
   for (const id of Object.keys(g.state.mobGroups)) if (id !== grp.id) delete g.state.mobGroups[id];
@@ -903,6 +912,7 @@ console.log('검은 돛·메인 퀘스트 (v0.5)');
 function lone(typeId, seed = 21) {
   const g = createGame({ data, seed, actors: [{ id: 'p1', kind: 'player' }] });
   g.state.econ = null;
+  noGap(g);
   const m = Object.values(g.state.mobs).find((x) => x.type === typeId);
   const grp = g.state.mobGroups[m.group];
   for (const o of Object.values(g.state.mobs)) if (o !== m) delete g.state.mobs[o.id];
@@ -1219,7 +1229,7 @@ test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사
   ok(a.faction.inf >= 450, '4장 세력 보상 영향력');
   ok(countItem([a.bag, storeOf(a, a.home)], 'food_jerky') >= 4, '선단 몫 육포');
   eq(a.faction?.id, 'fleet', '세력');
-  eq(events.filter((e) => e.type === 'quest.wave').length, 13, '습격 두 물결 둘 + 항구 포위 셋 + 서리 고개 셋 + 안개 폭풍 셋');
+  eq(events.filter((e) => e.type === 'quest.wave').length, 14, '습격 셋(v3.1) + 난파선 둘 + 항구 포위 셋 + 서리 고개 셋 + 안개 폭풍 셋');
   ok(a.marks?.lantern_mark != null && events.some((e) => e.type === 'quest.grant'), '등불의 각인');
   ok(events.some((e) => e.type === 'quest.stepReward' && e.reward.items.some((x) => x.item === 'wpn_sword_copper')), '강두의 구리 검');
   ok(a.bag.some((e) => e.item === 'wpn_sword_iron' && e.crafter === '숲머리 대장장이'), '숲머리 대장장이의 철 검');
@@ -1327,7 +1337,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '3.0.0');
+  eq(st.meta.engine, '3.1.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1519,7 +1529,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '3.0.0');
+  eq(st.meta.engine, '3.1.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -2632,7 +2642,12 @@ test('실전 공성: 마을 곁에 있으면 양쪽 싸움꾼(우리는 민병)�
   Object.assign(a, { x: s.x + 3, z: s.z + 3 });
   const ends = [];
   g.on('war.end', (e) => ends.push(e));
-  g.advance(war.at - g.state.t + 1.5);
+  // 준비 하루 동안 떠도는 짐승에 쓰러지지 않게 버틴다(레벨 1)
+  while (g.state.t < war.at + 1.5) {
+    g.advance(Math.min(10, war.at + 1.5 - g.state.t));
+    a.cb.hp = a.cb.maxHp;
+    a.cb.downUntil = 0;
+  }
   eq(war.phase, 'siege');
   ok(war.live, '실전');
   const fighters = Object.values(g.state.actors).filter((x) => x.rival?.war === war.id);
@@ -2679,6 +2694,114 @@ test('자리에 없으면 물자로 셈하고, AI 조합은 며칠마다 선전�
   g.state.territory.nextAi = 0;
   for (let i = 0; i < 6 && !decl.length; i++) { g.state.territory.nextAi = 0; territoryDaily(C); }
   ok(decl.length >= 1 && decl[0].att.startsWith('ai:'), 'AI 선전포고');
+});
+
+console.log('서브퀘스트·레벨 난이도 (v3.1)');
+test('서브퀘스트 18개(v3.1): 맡기는 사람·대상 짐승·앞선 퀘스트가 다 있고, 권장 레벨이 앞선 퀘스트보다 높다', () => {
+  const NEW = ['sq_lh_rod', 'sq_fo_moon', 'sq_gu_raiders', 'sq_he_wraith2', 'sq_fo_potion', 'sq_lh_lamp', 'sq_po_eel', 'sq_va_ring', 'sq_po_survey', 'sq_hu_arrows', 'sq_wi_iron', 'sq_in_marines', 'sq_as_trout', 'sq_mi_wolves', 'sq_ki_guard', 'sq_ga_glow', 'sq_pi_wraiths', 'sq_pi_storm2'];
+  for (const id of NEW) {
+    const q = data.quests[id];
+    ok(q && q.kind === 'side', `${id} 없음`);
+    ok(data.npcs[q.giver], `${id} 맡기는 사람 ${q.giver}`);
+    ok(q.level >= 1, `${id} 권장 레벨`);
+    for (const r of q.requires || []) {
+      ok(data.quests[r], `${id} 앞선 ${r}`);
+      ok(!data.quests[r].level || q.level > data.quests[r].level - 1, `${id} 레벨 ${q.level} < 앞선 ${data.quests[r].level}`);
+    }
+    for (const st of q.steps) {
+      for (const m of st.mobs || []) ok(data.creatures[m], `${id} 짐승 ${m}`);
+      if (st.type === 'talk') ok(data.npcs[st.npc] || st.npc?.startsWith('@'), `${id} 말 상대 ${st.npc}`);
+      if (st.need) for (const it of Object.keys(st.need)) ok(data.items[it] || data.quests && st.need, `${id} 물건 ${it}`);
+    }
+  }
+});
+
+test('메인 권장 레벨은 장을 따라 줄지 않고, 어느 퀘스트든 그 단계 짐승(두목은 −2)보다 낮지 않다', () => {
+  let prev = 0;
+  for (const ch of data.chapters) for (const id of ch.quests) {
+    const q = data.quests[id];
+    ok(q.level >= prev, `${id} ${q.level} < ${prev}`);
+    prev = q.level;
+  }
+  for (const q of data.lists.quests) {
+    if (!q.level) continue;
+    for (const st of q.steps) for (const m of st.mobs || []) {
+      const c = data.creatures[m];
+      ok(q.level >= (c.level || 1) - (c.boss ? 2 : 0), `${q.id} Lv${q.level} < ${m} Lv${c.level}`);
+    }
+  }
+});
+
+test('레벨 차 배율: 2레벨까지는 그대로, 낮으면 덜 아프고(바닥 있음) 높으면 조금 더 아프다', () => {
+  const g = createGame({ data, seed: 3, actors: [{ id: 'p1', kind: 'player' }] });
+  const C = g._ctx;
+  const a = g.state.actors.p1;
+  const G = data.config.level.gap;
+  const m = Object.values(g.state.mobs).find((x) => x.type === 'wolf');
+  const ml = mobLevel(C, 'wolf');
+  a.clevel.lvl = ml + 2;
+  eq(gapMult(C, a, m), 1, '2레벨 차');
+  eq(gapMult(C, m, a), 1);
+  a.clevel.lvl = ml + 6;
+  near(gapMult(C, m, a), 1 - 4 * G.lowPer, 1e-9, '6레벨 아래 짐승이 때림');
+  near(gapMult(C, a, m), 1 + 4 * G.highPer, 1e-9, '6레벨 위에서 때림');
+  a.clevel.lvl = ml + 40;
+  eq(gapMult(C, m, a), G.lowMin, '바닥');
+  ok(gapMult(C, a, m) <= G.highMax, '천장');
+  // 따라온 동료(ally)는 주인 레벨로 센다
+  eq(gapMult(C, { kind: 'ally', ally: { owner: 'p1' }, cb: {} }, m), gapMult(C, a, m));
+});
+
+test('퀘스트 경험치: 권장 레벨의 한 레벨 몫 × 종류 비율(메인 0.55). 레벨 없는 일일 의뢰는 내 레벨로 친다', () => {
+  const g = createGame({ data, seed: 3, actors: [{ id: 'p1', kind: 'player' }] });
+  const C = g._ctx;
+  const a = g.state.actors.p1;
+  const F = data.config.level.questFrac;
+  const q = data.quests.q3_lookout;
+  eq(questXp(C, a, q), Math.round(lvNeed(C, q.level) * F.main));
+  const side = data.quests.sq_lh_rod;
+  eq(questXp(C, a, side), Math.round(lvNeed(C, side.level) * F.side));
+  const daily = data.lists.quests.find((x) => x.repeat === 'daily' && x.kind === 'side');
+  ok(!daily.level, '일일 의뢰엔 권장 레벨이 없다');
+  a.clevel.lvl = 12;
+  eq(questXp(C, a, daily), Math.round(lvNeed(C, 12) * F.daily));
+});
+
+test('레벨 색: 빨강 +5·주황 +3·노랑 ±2·초록 −3~−7·회색 −8', () => {
+  eq(levelTone(10, 15).cls, 'lv-red');
+  eq(levelTone(10, 13).cls, 'lv-orange');
+  eq(levelTone(10, 12).cls, 'lv-yellow');
+  eq(levelTone(10, 8).cls, 'lv-yellow');
+  eq(levelTone(10, 7).cls, 'lv-green');
+  eq(levelTone(10, 2).cls, 'lv-gray');
+});
+
+test('밤에만 나오는 짐승을 잡는 단계는 단계 글에 🌙 밤에만 나온다를 붙인다', () => {
+  const g = createGame({ data, seed: 3, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  const q = data.lists.quests.find((x) => x.steps[0]?.type === 'kill' && x.steps[0].mobs.every((m) => data.creatures[m].night));
+  ok(q, '밤 짐승 퀘스트');
+  a.quests.active[q.id] = { step: 0, n: 0, used: [], t: 0 };
+  ok(stepText(g._ctx, a, q.id).includes('밤에만'), stepText(g._ctx, a, q.id));
+  a.quests.active.q6_lt = { step: 0, n: 0, used: [], t: 0 };
+  ok(!stepText(g._ctx, a, 'q6_lt').includes('밤에만'), '낮 짐승');
+});
+
+test('수치 없이 받은 음식·물약(보상 묶음)도 먹을 수 있다', () => {
+  const g = createGame({ data, seed: 3, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  a.cb.hp = 10;
+  a.bag.push({ item: 'food_meat', lot: null, bonus: null, qty: 1 });
+  ok(g.dispatch({ type: 'EAT', actor: 'p1', key: keyOf(a.bag.at(-1)) }).ok, '고기');
+  ok(a.cb.hp > 10, `회복 ${a.cb.hp}`);
+});
+
+test('1장 손보기(v3.1): 등대를 지켜라는 세 물결(한 번에 셋까지), 야영지 졸개는 곁의 동료만 부른다', () => {
+  const st = data.quests.q7_raid.steps.find((x) => x.type === 'defend');
+  eq(st.waves.length, 3);
+  ok(st.waves.every((w) => Object.values(w).reduce((s, n) => s + n, 0) <= 3), '물결 크기');
+  for (const k of ['raider', 'raider_spear', 'raider_axe', 'raider_thrower', 'raider_scout']) ok(data.creatures[k].assist <= 7, k);
+  eq(data.creatures.first_keeper.phases.map((p) => Object.values(p.summon).reduce((s, n) => s + n, 0)).join(','), '1,2', '첫 등지기가 부르는 망령');
 });
 
 console.log('멀티 시험 (v3.0)');

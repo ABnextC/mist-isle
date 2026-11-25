@@ -15,10 +15,11 @@
 ```bash
 node tools/test.js                                    # 테스트
 node tools/personas.js --days 7 --seed 2026           # 페르소나 7명 자동 플레이 (--json 가능)
+node tools/campaign.js                                # 진행 페르소나 7명: 1~6장 메인·서브 완주 (--only 이름, --json)
 node tools/headless.js --days 3 --seed 42             # 화면 없이 게임 3일 돌리기
 node tools/headless.js --days 10 --seed 7 --bots 3    # 봇 3명
 node tools/economy.js --days 60 --seed 7              # AI 개척민 섬 경제 점검 (--bots 1, --json 가능)
-node tools/combat.js --trials 30                      # 헤드리스 결투: 장비·실력별 승률 (--foes raider,raider_captain · --site camp)
+node tools/combat.js --trials 30                      # 헤드리스 결투: 장비·실력별 승률 (--foes raider,raider_captain · --site camp · --gap 레벨차)
 python3 -m http.server 8000                           # http://localhost:8000 에서 게임 열기
 node server/index.js --port 8787                      # 멀티 시험 서버(2~8인). http://localhost:8787/?server=auto&name=이름
 ```
@@ -45,6 +46,7 @@ Node 18 이상. 코어와 도구는 외부 패키지가 없다.
 - 본섬(v0.6): 3장에서 배를 고쳐 안개 벽 너머 갈대 나루로 건너간다. 돌아올 수 없고, 창고 짐은 따라간다. 큰 장터·주문·마을 사업은 본섬에서 열린다
 - 세력(v0.7): 4장에서 등불단·자유 선단·안개 학회 가운데 하나를 고른다. 지도자 의뢰와 그 세력다운 생활로 영향력을 쌓으면 등급마다 생활 혜택이 붙는다
 - 내 집(v0.8): 본섬 집터에 오두막을 지어 큰 집까지 올린다. 가구로 아늑함을 쌓아 쉬면 숙련 경험이 오르고, 텃밭에서 산딸기·버섯·갈대를 기른다
+- 서브퀘스트와 레벨 난이도(v3.1): 서브퀘스트 18개, 퀘스트마다 권장 레벨과 색, 레벨 차이가 피해에 들어간다
 - 멀티 시험(v3.0): Node 서버 하나에 2~8명이 붙어 같은 섬을 돈다. 서로 보이고 말할 수 있다
 - 영지전(v2.7): 조합으로 본섬 마을에 선전포고하고 전쟁 물자를 모아 공성으로 깃발을 차지한다. 영지는 세금·수수료 혜택을 준다
 - 필드 PvP(v2.6): 깃발을 올리거나 분쟁 구역에 들면 다른 세력 개척자와 겨룬다. 쓰러지면 재료 일부를 빼앗긴다

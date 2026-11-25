@@ -151,6 +151,7 @@ html, body {
 /* v0.3 전투 */
 .vitals { width: min(360px, 70vw); margin: 0 auto 6px; display: grid; gap: 3px; transition: opacity 0.4s; pointer-events: none; }
 .vitals.dim { opacity: 0.35; }
+.vitals .wearw { font-size: 12px; text-align: center; color: #ffcf7a; text-shadow: 0 1px 2px #000; }
 .vitals .hp, .vitals .st { position: relative; height: 9px; border-radius: 5px; background: rgba(10, 12, 14, 0.6); overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12); }
 .vitals .st { height: 5px; }
 .vitals .hp span { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #a8282a, #e0473c); transition: width 0.15s; }
@@ -800,3 +801,8 @@ ul.attrs li.attr .btns button { min-width: 44px; }
 .netchat input { display: none; width: 100%; margin-top: 4px; padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); background: rgba(16,20,22,0.8); color: #fff; pointer-events: auto; }
 .netchat.typing input { display: block; }
 .netchat.typing .lines div.old { opacity: 0.85; }
+
+/* v3.1 레벨 색 */
+.lvb { display: inline-block; font-size: 11px; font-weight: 700; padding: 0 5px; border-radius: 6px; margin-right: 2px; background: rgba(0,0,0,0.35); vertical-align: 1px; }
+.lv-red { color: #ff6a55; } .lv-orange { color: #ffa23a; } .lv-yellow { color: #f2d45a; } .lv-green { color: #7fd36a; } .lv-gray { color: #9a9a9a; }
+.mobbar.lv-red b { color: #ff7a66; } .mobbar.lv-orange b { color: #ffb050; } .mobbar.lv-yellow b { color: #f6e08a; } .mobbar.lv-green b { color: #a6e08f; } .mobbar.lv-gray b { color: #b4b4b4; }

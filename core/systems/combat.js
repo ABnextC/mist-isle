@@ -2,7 +2,7 @@
 // 모든 판정은 코어가 30Hz로 한다. 화면은 이벤트(combat.*)를 보고 연출만 한다.
 
 import { hurtMob, isAlive, applyMobFx, fxOn } from './mobs.js';
-import { levelPassives, mergeP } from './level.js';
+import { levelPassives, mergeP, gapMult } from './level.js';
 import { nearestSettlement } from '../world.js';
 import { foesNear, markFight, onPvpDown } from './pvp.js';
 import { masteryOf, passivesOf, gainXp, abilityOf } from './mastery.js';
@@ -225,7 +225,7 @@ export function dealHit(ctx, a, m, raw, o) {
     crit = true;
     k *= 1.5 + (P.critDmg || 0);
   }
-  const dmg = Math.max(0.5, Math.round(mitigate(ctx, raw * k, type.armor || 0) * 10) / 10);
+  const dmg = Math.max(0.5, Math.round(mitigate(ctx, raw * k * gapMult(ctx, a, m), type.armor || 0) * 10) / 10);
   const done = hurtMob(ctx, m, a, dmg, o.heavy || o.guardBreak, { crit, ability: o.ability || null });
   if (!done) return 0;
   const steal = (P.lifesteal || 0) + (o.lifesteal || 0) + auraSum(a, t, 'lifesteal');
@@ -261,7 +261,7 @@ export function hitActor(ctx, a, b, raw, o) {
     crit = true;
     k *= 1.5 + (P.critDmg || 0);
   }
-  const dmg = Math.max(0.5, Math.round(raw * k * ctx.cfg.pvp.dmgMult * 10) / 10);
+  const dmg = Math.max(0.5, Math.round(raw * k * ctx.cfg.pvp.dmgMult * gapMult(ctx, a, b) * 10) / 10);
   markFight(ctx, a, b);
   const before = b.cb.hp;
   if (!hurtActor(ctx, b, a, dmg, { unblockable: !!o.guardBreak, pvp: true, crit })) return 0;

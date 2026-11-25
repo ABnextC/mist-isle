@@ -1,15 +1,20 @@
 // 헤드리스 결투: 장비·실력 조합마다 짐승과 여러 번 싸워 승률·걸린 시간·잃은 체력을 잰다.
-// 사용: node tools/combat.js [--trials 30] [--seed 11]
+// 사용: node tools/combat.js [--trials 30] [--seed 11] [--gap 0]
+// v3.1: 레벨이 생겨서, 시험하는 쪽을 짐승 레벨 + gap에 맞춘다(능력치는 무기 주 능력 60%·체질 40%)
 // 진짜 코어(명령·30Hz 판정)와 봇 싸움 요령(core/ai/fighter.js)을 그대로 쓴다.
 
 import { loadData } from './load-data.js';
 import { createGame } from '../core/game.js';
 import { convertStats, starOf } from '../core/formulas.js';
 import { startFight } from '../core/ai/fighter.js';
+import { mobLevel } from '../core/systems/level.js';
+import { maxHpOf } from '../core/systems/combat.js';
+import { masteryOf } from '../core/systems/mastery.js';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((acc, v, i, arr) => (v.startsWith('--') ? [...acc, [v.slice(2), arr[i + 1]]] : acc), []));
 const TRIALS = Number(args.trials || 30);
 const SEED = Number(args.seed || 11);
+const GAP = Number(args.gap || 0);
 const data = loadData();
 
 function gear(itemId, score, n) {
@@ -27,7 +32,12 @@ export const KITS = {
   보통_구리창_가죽: { weapon: 'wpn_spear_copper', score: 45, armor: 45, read: 0.45, block: 0.3, food: 2 },
   숙련_철검_가죽: { weapon: 'wpn_sword_iron', score: 52, armor: 55, read: 0.65, block: 0.3, food: 3 },
   고수_철도끼_가죽: { weapon: 'wpn_battleaxe_iron', score: 62, armor: 62, read: 0.85, block: 0.25, food: 3 },
+  // 6장(v3.1): 안개 장비
+  보통_안개검_안개: { weapon: 'wpn_sword_mist', score: 45, armor: 45, set: 'mist', read: 0.45, block: 0.3, food: 3 },
+  숙련_안개창_안개: { weapon: 'wpn_spear_mist', score: 52, armor: 52, set: 'mist', read: 0.65, block: 0.3, food: 3 },
+  고수_안개도끼_안개: { weapon: 'wpn_battleaxe_mist', score: 62, armor: 62, set: 'mist', read: 0.85, block: 0.25, food: 3 },
 };
+const SETS = { leather: ['arm_leather_hood', 'arm_leather_vest', 'arm_leather_pants'], mist: ['arm_mist_helm', 'arm_mist_cuirass', 'arm_mist_greaves'] };
 
 export function duel(kitName, typeId, seed, packSize = null) {
   const kit = KITS[kitName];
@@ -66,12 +76,20 @@ export function duel(kitName, typeId, seed, packSize = null) {
     game.dispatch({ type: 'EQUIP', actor: 'p1', uid: w.uid });
   }
   if (kit.armor) {
-    for (const id of ['arm_leather_hood', 'arm_leather_vest', 'arm_leather_pants']) {
+    for (const id of SETS[kit.set || 'leather']) {
       const e = gear(id, kit.armor, 1);
       a.bag.push(e);
       game.dispatch({ type: 'EQUIP', actor: 'p1', uid: e.uid });
     }
   }
+  // 레벨 맞추기(v3.1)
+  const lv = Math.max(1, mobLevel(game._ctx, typeId) + GAP);
+  a.clevel.lvl = lv;
+  const sc = data.config.level.scaling[masteryOf(game._ctx, data.items[kit.weapon]?.weapon?.type)] || ['str'];
+  const main = Math.ceil((lv - 1) * 0.6);
+  if (main) game.dispatch({ type: 'ATTR_SPEND', actor: 'p1', attr: sc[0], n: main });
+  if (lv - 1 - main) game.dispatch({ type: 'ATTR_SPEND', actor: 'p1', attr: 'con', n: lv - 1 - main });
+  a.cb.hp = a.cb.maxHp = maxHpOf(game._ctx, a);
   if (kit.food) a.bag.push({ item: 'food_meat', lot: null, bonus: null, stats: { heal: 40 }, star: 2, qty: kit.food });
   startFight(a, first.id, { read: kit.read, block: kit.block });
   a.ai.manual = true;
@@ -121,7 +139,7 @@ export function siteRun(kitName, siteId, seed) {
     game.dispatch({ type: 'EQUIP', actor: 'p1', uid: w.uid });
   }
   if (kit.armor) {
-    for (const id of ['arm_leather_hood', 'arm_leather_vest', 'arm_leather_pants']) {
+    for (const id of SETS[kit.set || 'leather']) {
       const e = gear(id, kit.armor, 1);
       a.bag.push(e);
       game.dispatch({ type: 'EQUIP', actor: 'p1', uid: e.uid });
@@ -166,9 +184,10 @@ function main() {
     return;
   }
   const rows = [];
-  const all = [['crab', null], ['deer', null], ['boar', null], ['wolf', 2], ['wolf', 3],
+  const all = [['crab', null], ['deer', null], ['boar', null], ['wolf', 2], ['wolf', 3], ['wolf', 4],
     ['raider_scout', null], ['raider', null], ['raider_spear', null], ['raider_axe', null], ['raider_thrower', null], ['raider_lt', null], ['raider_captain', null],
-    ['mist_wraith', null], ['stone_haetae', null], ['imugi', null], ['surveyor', null], ['surveyor_spear', null], ['yeogang_wraith', null], ['marine', null], ['marine_captain', null], ['ash_wolf', null], ['frost_wolf', null], ['fire_guardian', null], ['frost_guardian', null]];
+    ['mist_wraith', null], ['stone_haetae', null], ['imugi', null], ['surveyor', null], ['surveyor_spear', null], ['yeogang_wraith', null], ['marine', null], ['marine_captain', null], ['ash_wolf', null], ['frost_wolf', null], ['fire_guardian', null], ['frost_guardian', null],
+    ['storm_wraith', null], ['storm_wolf', null], ['gate_warden', null], ['first_keeper', null]];
   const want = args.foes ? new Set(String(args.foes).split(',')) : null;
   const cases = want ? all.filter(([t]) => want.has(t)) : all;
   const kits = args.kits ? String(args.kits).split(',') : Object.keys(KITS);

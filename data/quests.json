@@ -202,7 +202,8 @@
           }
         ]
       },
-      "next": "q2_chest"
+      "next": "q2_chest",
+      "level": 1
     },
     {
       "id": "q2_chest",
@@ -268,7 +269,8 @@
           }
         ]
       },
-      "next": "q3_lookout"
+      "next": "q3_lookout",
+      "level": 2
     },
     {
       "id": "q3_lookout",
@@ -382,7 +384,8 @@
           }
         ]
       },
-      "next": "q4_forest"
+      "next": "q4_forest",
+      "level": 5
     },
     {
       "id": "q4_forest",
@@ -468,7 +471,8 @@
       "reward": {
         "silver": 40
       },
-      "next": "q5_supplies"
+      "next": "q5_supplies",
+      "level": 5
     },
     {
       "id": "q5_supplies",
@@ -541,7 +545,8 @@
           }
         ]
       },
-      "next": "q6_lt"
+      "next": "q6_lt",
+      "level": 8
     },
     {
       "id": "q6_lt",
@@ -582,7 +587,8 @@
       "reward": {
         "silver": 100
       },
-      "next": "q7_raid"
+      "next": "q7_raid",
+      "level": 10
     },
     {
       "id": "q7_raid",
@@ -624,10 +630,13 @@
               "raider": 1
             },
             {
-              "raider": 2,
+              "raider": 1,
               "raider_spear": 1,
-              "raider_axe": 1,
               "raider_thrower": 1
+            },
+            {
+              "raider": 1,
+              "raider_axe": 1
             }
           ]
         },
@@ -652,7 +661,8 @@
           }
         ]
       },
-      "next": "q8_captain"
+      "next": "q8_captain",
+      "level": 10
     },
     {
       "id": "q8_captain",
@@ -718,7 +728,8 @@
           }
         ]
       },
-      "next": "c2_dim"
+      "next": "c2_dim",
+      "level": 10
     },
     {
       "id": "c2_dim",
@@ -746,7 +757,8 @@
       "reward": {
         "silver": 20
       },
-      "next": "c2_wreck"
+      "next": "c2_wreck",
+      "level": 11
     },
     {
       "id": "c2_wreck",
@@ -809,7 +821,8 @@
           }
         ]
       },
-      "next": "c2_core"
+      "next": "c2_core",
+      "level": 12
     },
     {
       "id": "c2_core",
@@ -862,7 +875,8 @@
       "reward": {
         "silver": 60
       },
-      "next": "c2_forge"
+      "next": "c2_forge",
+      "level": 12
     },
     {
       "id": "c2_forge",
@@ -913,7 +927,8 @@
           }
         ]
       },
-      "next": "c2_ruins"
+      "next": "c2_ruins",
+      "level": 13
     },
     {
       "id": "c2_ruins",
@@ -955,7 +970,8 @@
           }
         ]
       },
-      "next": "c2_haetae"
+      "next": "c2_haetae",
+      "level": 13
     },
     {
       "id": "c2_haetae",
@@ -988,7 +1004,8 @@
           }
         ]
       },
-      "next": "c2_rekindle"
+      "next": "c2_rekindle",
+      "level": 14
     },
     {
       "id": "c2_rekindle",
@@ -1036,7 +1053,8 @@
           }
         ]
       },
-      "next": "c2_anchor"
+      "next": "c2_anchor",
+      "level": 14
     },
     {
       "id": "c2_anchor",
@@ -1095,7 +1113,8 @@
           }
         ]
       },
-      "next": "c3_steps"
+      "next": "c3_steps",
+      "level": 15
     },
     {
       "id": "b_crab",
@@ -1214,7 +1233,8 @@
       "reward": {
         "silver": 80
       },
-      "next": "c3_wall"
+      "next": "c3_wall",
+      "level": 15
     },
     {
       "id": "c3_wall",
@@ -1260,7 +1280,8 @@
       "reward": {
         "silver": 120
       },
-      "next": "c3_mistfolk"
+      "next": "c3_mistfolk",
+      "level": 16
     },
     {
       "id": "c3_mistfolk",
@@ -1303,7 +1324,8 @@
       "reward": {
         "silver": 150
       },
-      "next": "c3_beast"
+      "next": "c3_beast",
+      "level": 17
     },
     {
       "id": "c3_beast",
@@ -1351,7 +1373,8 @@
           }
         ]
       },
-      "next": "c3_survey"
+      "next": "c3_survey",
+      "level": 18
     },
     {
       "id": "c3_survey",
@@ -1415,7 +1438,8 @@
           }
         ]
       },
-      "next": "c3_sunken"
+      "next": "c3_sunken",
+      "level": 18
     },
     {
       "id": "c3_sunken",
@@ -1461,7 +1485,8 @@
           }
         ]
       },
-      "next": "c3_record"
+      "next": "c3_record",
+      "level": 19
     },
     {
       "id": "c3_record",
@@ -1504,7 +1529,8 @@
       "reward": {
         "silver": 200
       },
-      "next": "c3_ember"
+      "next": "c3_ember",
+      "level": 20
     },
     {
       "id": "c3_ember",
@@ -1549,7 +1575,8 @@
           }
         ]
       },
-      "next": "c4_sails"
+      "next": "c4_sails",
+      "level": 21
     },
     {
       "id": "c4_sails",
@@ -1592,7 +1619,8 @@
       "reward": {
         "silver": 150
       },
-      "next": "c4_offer"
+      "next": "c4_offer",
+      "level": 21
     },
     {
       "id": "c4_offer",
@@ -1639,7 +1667,8 @@
       "reward": {
         "silver": 180
       },
-      "next": "c4_mother"
+      "next": "c4_mother",
+      "level": 22
     },
     {
       "id": "c4_mother",
@@ -1688,7 +1717,8 @@
       "reward": {
         "silver": 200
       },
-      "next": "c4_confess"
+      "next": "c4_confess",
+      "level": 22
     },
     {
       "id": "c4_confess",
@@ -1726,7 +1756,8 @@
       "reward": {
         "silver": 200
       },
-      "next": "c4_paths"
+      "next": "c4_paths",
+      "level": 23
     },
     {
       "id": "c4_paths",
@@ -1747,7 +1778,8 @@
       "reward": {
         "silver": 250
       },
-      "next": "c4_pump"
+      "next": "c4_pump",
+      "level": 24
     },
     {
       "id": "c4_pump",
@@ -1844,7 +1876,8 @@
           "inf": 80
         }
       },
-      "next": "c4_fort"
+      "next": "c4_fort",
+      "level": 25
     },
     {
       "id": "c4_fort",
@@ -1942,7 +1975,8 @@
           ]
         }
       },
-      "next": "c4_siege"
+      "next": "c4_siege",
+      "level": 26
     },
     {
       "id": "c4_siege",
@@ -2022,7 +2056,8 @@
           "inf": 100
         }
       },
-      "next": "c4_retreat"
+      "next": "c4_retreat",
+      "level": 26
     },
     {
       "id": "c4_retreat",
@@ -2071,7 +2106,8 @@
           "inf": 150
         }
       },
-      "next": "c5_ridge"
+      "next": "c5_ridge",
+      "level": 27
     },
     {
       "id": "c5_ridge",
@@ -2117,7 +2153,8 @@
       "reward": {
         "silver": 300
       },
-      "next": "c5_watcher"
+      "next": "c5_watcher",
+      "level": 27
     },
     {
       "id": "c5_watcher",
@@ -2157,7 +2194,8 @@
       "reward": {
         "silver": 320
       },
-      "next": "c5_debt"
+      "next": "c5_debt",
+      "level": 28
     },
     {
       "id": "c5_debt",
@@ -2194,7 +2232,8 @@
       "reward": {
         "silver": 250
       },
-      "next": "c5_pass"
+      "next": "c5_pass",
+      "level": 29
     },
     {
       "id": "c5_pass",
@@ -2258,7 +2297,8 @@
       "reward": {
         "silver": 380
       },
-      "next": "c5_fourth"
+      "next": "c5_fourth",
+      "level": 30
     },
     {
       "id": "c5_fourth",
@@ -2307,7 +2347,8 @@
           }
         ]
       },
-      "next": "c5_fifth"
+      "next": "c5_fifth",
+      "level": 30
     },
     {
       "id": "c5_fifth",
@@ -2355,7 +2396,8 @@
       "reward": {
         "silver": 450
       },
-      "next": "c5_wall"
+      "next": "c5_wall",
+      "level": 31
     },
     {
       "id": "c5_wall",
@@ -2400,7 +2442,8 @@
       "reward": {
         "silver": 400
       },
-      "next": "c5_quake"
+      "next": "c5_quake",
+      "level": 32
     },
     {
       "id": "c5_quake",
@@ -2455,7 +2498,8 @@
           "inf": 200
         }
       },
-      "next": "c6_storm"
+      "next": "c6_storm",
+      "level": 33
     },
     {
       "id": "c6_storm",
@@ -2521,7 +2565,8 @@
       "reward": {
         "silver": 500
       },
-      "next": "c6_flags"
+      "next": "c6_flags",
+      "level": 34
     },
     {
       "id": "c6_flags",
@@ -2577,7 +2622,8 @@
           "inf": 150
         }
       },
-      "next": "c6_gate"
+      "next": "c6_gate",
+      "level": 34
     },
     {
       "id": "c6_gate",
@@ -2631,7 +2677,8 @@
           }
         ]
       },
-      "next": "c6_machine"
+      "next": "c6_machine",
+      "level": 36
     },
     {
       "id": "c6_machine",
@@ -2679,7 +2726,8 @@
       "reward": {
         "silver": 650
       },
-      "next": "c6_keeper"
+      "next": "c6_keeper",
+      "level": 36
     },
     {
       "id": "c6_keeper",
@@ -2721,7 +2769,8 @@
           }
         ]
       },
-      "next": "c6_lantern"
+      "next": "c6_lantern",
+      "level": 39
     },
     {
       "id": "c6_lantern",
@@ -2766,7 +2815,8 @@
       "reward": {
         "silver": 700
       },
-      "next": "c6_covenant"
+      "next": "c6_covenant",
+      "level": 39
     },
     {
       "id": "c6_covenant",
@@ -2827,7 +2877,8 @@
           "inf": 300
         }
       },
-      "next": null
+      "next": null,
+      "level": 40
     },
     {
       "id": "sq_lh_fish",
@@ -2861,7 +2912,8 @@
             "qty": 2
           }
         ]
-      }
+      },
+      "level": 3
     },
     {
       "id": "sq_lh_drift",
@@ -2889,7 +2941,8 @@
       ],
       "reward": {
         "silver": 30
-      }
+      },
+      "level": 2
     },
     {
       "id": "sq_fo_mush",
@@ -2923,7 +2976,8 @@
             "qty": 2
           }
         ]
-      }
+      },
+      "level": 6
     },
     {
       "id": "sq_fo_wolves",
@@ -2956,7 +3010,8 @@
       ],
       "reward": {
         "silver": 70
-      }
+      },
+      "level": 6
     },
     {
       "id": "sq_gu_crab",
@@ -2995,7 +3050,8 @@
             "qty": 2
           }
         ]
-      }
+      },
+      "level": 3
     },
     {
       "id": "sq_gu_log",
@@ -3026,7 +3082,8 @@
       "reward": {
         "silver": 60
       },
-      "chain": "물수리 ①/③"
+      "chain": "물수리 ①/③",
+      "level": 3
     },
     {
       "id": "sq_gu_net",
@@ -3055,7 +3112,8 @@
       ],
       "reward": {
         "silver": 80
-      }
+      },
+      "level": 6
     },
     {
       "id": "sq_he_spirit",
@@ -3094,7 +3152,8 @@
             "qty": 1
           }
         ]
-      }
+      },
+      "level": 14
     },
     {
       "id": "sq_fi_boar",
@@ -3128,7 +3187,8 @@
             "qty": 1
           }
         ]
-      }
+      },
+      "level": 9
     },
     {
       "id": "sq_po_errand",
@@ -3163,7 +3223,8 @@
       ],
       "reward": {
         "silver": 60
-      }
+      },
+      "level": 18
     },
     {
       "id": "sq_va_boar",
@@ -3196,7 +3257,8 @@
       ],
       "reward": {
         "silver": 90
-      }
+      },
+      "level": 17
     },
     {
       "id": "sq_va_bridge",
@@ -3225,7 +3287,8 @@
       ],
       "reward": {
         "silver": 120
-      }
+      },
+      "level": 17
     },
     {
       "id": "sq_wi_wraith",
@@ -3258,7 +3321,8 @@
       ],
       "reward": {
         "silver": 110
-      }
+      },
+      "level": 18
     },
     {
       "id": "sq_wi_copper",
@@ -3292,7 +3356,8 @@
             "qty": 10
           }
         ]
-      }
+      },
+      "level": 17
     },
     {
       "id": "sq_wi_dye",
@@ -3320,7 +3385,8 @@
       ],
       "reward": {
         "silver": 70
-      }
+      },
+      "level": 17
     },
     {
       "id": "sq_in_soup",
@@ -3348,7 +3414,8 @@
       ],
       "reward": {
         "silver": 90
-      }
+      },
+      "level": 17
     },
     {
       "id": "sq_in_flute",
@@ -3379,7 +3446,8 @@
       "reward": {
         "silver": 100
       },
-      "chain": "소리의 노래 ①/③"
+      "chain": "소리의 노래 ①/③",
+      "level": 19
     },
     {
       "id": "sq_hu_hides",
@@ -3413,7 +3481,8 @@
             "qty": 2
           }
         ]
-      }
+      },
+      "level": 17
     },
     {
       "id": "sq_hu_mistwolf",
@@ -3446,7 +3515,8 @@
       ],
       "reward": {
         "silver": 140
-      }
+      },
+      "level": 19
     },
     {
       "id": "sq_as_wolves",
@@ -3485,7 +3555,8 @@
             "qty": 4
           }
         ]
-      }
+      },
+      "level": 28
     },
     {
       "id": "sq_ki_oak",
@@ -3513,7 +3584,8 @@
       ],
       "reward": {
         "silver": 160
-      }
+      },
+      "level": 28
     },
     {
       "id": "sq_ki_frost",
@@ -3552,7 +3624,8 @@
             "qty": 2
           }
         ]
-      }
+      },
+      "level": 29
     },
     {
       "id": "sq_mi_marines",
@@ -3592,7 +3665,8 @@
             "qty": 3
           }
         ]
-      }
+      },
+      "level": 28
     },
     {
       "id": "sq_ga_food",
@@ -3620,7 +3694,8 @@
       ],
       "reward": {
         "silver": 220
-      }
+      },
+      "level": 37
     },
     {
       "id": "sq_pi_storm",
@@ -3659,7 +3734,8 @@
             "qty": 2
           }
         ]
-      }
+      },
+      "level": 37
     },
     {
       "id": "sq_gu_log2",
@@ -3694,7 +3770,8 @@
       "reward": {
         "silver": 90
       },
-      "chain": "물수리 ②/③"
+      "chain": "물수리 ②/③",
+      "level": 4
     },
     {
       "id": "sq_gu_log3",
@@ -3736,7 +3813,8 @@
           }
         ]
       },
-      "chain": "물수리 ③/③"
+      "chain": "물수리 ③/③",
+      "level": 5
     },
     {
       "id": "sq_in_song2",
@@ -3773,7 +3851,8 @@
       "reward": {
         "silver": 120
       },
-      "chain": "소리의 노래 ②/③"
+      "chain": "소리의 노래 ②/③",
+      "level": 20
     },
     {
       "id": "sq_in_song3",
@@ -3826,7 +3905,8 @@
           }
         ]
       },
-      "chain": "소리의 노래 ③/③"
+      "chain": "소리의 노래 ③/③",
+      "level": 21
     },
     {
       "id": "sq_ki_cough",
@@ -3856,7 +3936,8 @@
       "reward": {
         "silver": 160
       },
-      "chain": "단비의 약 ①/②"
+      "chain": "단비의 약 ①/②",
+      "level": 30
     },
     {
       "id": "sq_ki_round",
@@ -3901,7 +3982,8 @@
       "reward": {
         "silver": 240
       },
-      "chain": "단비의 약 ②/②"
+      "chain": "단비의 약 ②/②",
+      "level": 31
     },
     {
       "id": "sq_wi_cloth",
@@ -3930,7 +4012,8 @@
       "reward": {
         "silver": 120
       },
-      "chain": "미루의 천 ①/②"
+      "chain": "미루의 천 ①/②",
+      "level": 18
     },
     {
       "id": "sq_wi_feast",
@@ -3984,7 +4067,8 @@
           }
         ]
       },
-      "chain": "미루의 천 ②/②"
+      "chain": "미루의 천 ②/②",
+      "level": 19
     },
     {
       "id": "fq_la_oil",
@@ -4017,7 +4101,8 @@
         "lantern": {
           "inf": 60
         }
-      }
+      },
+      "level": 25
     },
     {
       "id": "fq_la_night",
@@ -4055,7 +4140,8 @@
         "lantern": {
           "inf": 100
         }
-      }
+      },
+      "level": 26
     },
     {
       "id": "fq_fl_sail",
@@ -4088,7 +4174,8 @@
         "fleet": {
           "inf": 60
         }
-      }
+      },
+      "level": 25
     },
     {
       "id": "fq_fl_strays",
@@ -4127,7 +4214,8 @@
         "fleet": {
           "inf": 100
         }
-      }
+      },
+      "level": 26
     },
     {
       "id": "fq_sc_sample",
@@ -4161,7 +4249,8 @@
         "scholars": {
           "inf": 60
         }
-      }
+      },
+      "level": 25
     },
     {
       "id": "fq_sc_record",
@@ -4197,7 +4286,8 @@
         "scholars": {
           "inf": 100
         }
-      }
+      },
+      "level": 26
     },
     {
       "id": "dq_seondeok",
@@ -6430,6 +6520,778 @@
           }
         ]
       }
+    },
+    {
+      "id": "sq_lh_rod",
+      "kind": "side",
+      "giver": "makdong",
+      "requires": [
+        "q4_forest"
+      ],
+      "name": "첫 낚싯대",
+      "summary": "견습 선원 막동이 저녁에 구울 전어를 낚아 오란다.",
+      "steps": [
+        {
+          "type": "have",
+          "need": {
+            "tool_rod_wood": 1
+          },
+          "text": "나무 낚싯대 만들기 — 제작(C) 손 제작: 판재 1 + 갈대 섬유 3"
+        },
+        {
+          "type": "have",
+          "need": {
+            "fish_small": 3
+          },
+          "text": "바닷가 물고기 떼에서 은빛 전어 3마리 낚기",
+          "goal": {
+            "node": [
+              "node_fish"
+            ],
+            "nodeFor": [
+              "fish_small"
+            ]
+          }
+        },
+        {
+          "type": "talk",
+          "npc": "makdong",
+          "text": "막동에게 전어 3마리 건네기",
+          "say": [
+            "오, 진짜 낚았네요! 저는 맨날 줄만 엉켜요.",
+            "선장님 몰래 구워 먹을 거예요. 하나는 형 몫이에요."
+          ],
+          "reply": "맛있게 먹어",
+          "take": {
+            "fish_small": 3
+          }
+        }
+      ],
+      "reward": {
+        "silver": 45,
+        "items": [
+          {
+            "item": "food_fish_grill",
+            "qty": 2
+          }
+        ]
+      },
+      "level": 6
+    },
+    {
+      "id": "sq_fo_moon",
+      "kind": "side",
+      "giver": "soli",
+      "requires": [
+        "q5_supplies"
+      ],
+      "name": "밤에 피는 꽃",
+      "summary": "약초꾼 솔이가 밤에만 피는 달맞이풀을 찾는다.",
+      "steps": [
+        {
+          "type": "have",
+          "need": {
+            "herb_moon": 3
+          },
+          "text": "해가 진 뒤 달맞이풀 3포기 캐기(채취 10)",
+          "goal": {
+            "node": [
+              "node_moonherb"
+            ],
+            "nodeFor": [
+              "herb_moon"
+            ]
+          }
+        },
+        {
+          "type": "talk",
+          "npc": "soli",
+          "text": "솔이에게 달맞이풀 건네기",
+          "say": [
+            "밤이슬 머금은 그대로네요. 낮에 캐면 이 빛이 안 나요.",
+            "약제대에서 기력 물약을 달여 봤어요. 하나 가져가요."
+          ],
+          "reply": "고마워",
+          "take": {
+            "herb_moon": 3
+          }
+        }
+      ],
+      "reward": {
+        "silver": 60,
+        "items": [
+          {
+            "item": "potion_stamina",
+            "qty": 2
+          }
+        ]
+      },
+      "level": 9
+    },
+    {
+      "id": "sq_gu_raiders",
+      "kind": "side",
+      "giver": "baram",
+      "requires": [
+        "q6_lt"
+      ],
+      "name": "그물 도둑",
+      "summary": "바람이 짠 그물을 약탈단이 걷어 간다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "raider_scout"
+          ],
+          "count": 3,
+          "text": "약탈단 정찰꾼 3명 쫓아내기"
+        },
+        {
+          "type": "kill",
+          "mobs": [
+            "raider",
+            "raider_spear",
+            "raider_axe"
+          ],
+          "count": 2,
+          "text": "약탈단 졸개 2명 쓰러뜨리기"
+        },
+        {
+          "type": "talk",
+          "npc": "baram",
+          "text": "바람에게 알리기",
+          "say": [
+            "그 녀석들, 그물만 걷어 가는 게 아니라 찢어 놓고 가요.",
+            "이제 좀 손이 덜 가겠네요. 고마워요."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 90
+      },
+      "level": 11
+    },
+    {
+      "id": "sq_he_wraith2",
+      "kind": "side",
+      "giver": "cheongun",
+      "requires": [
+        "c2_ruins"
+      ],
+      "name": "은자의 밤길",
+      "summary": "숲의 은자 청운이 밤마다 늪 쪽에서 오는 망령을 걱정한다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "mist_wraith"
+          ],
+          "count": 5,
+          "text": "밤에 나오는 안개 망령 5체 흩기"
+        },
+        {
+          "type": "talk",
+          "npc": "cheongun",
+          "text": "청운에게 돌아가기",
+          "say": [
+            "망령은 이 섬이 잊은 것들이야. 미워하지는 말게.",
+            "불빛을 멀리하는 것들이니, 등불을 꺼뜨리지 말게."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 120
+      },
+      "level": 14
+    },
+    {
+      "id": "sq_fo_potion",
+      "kind": "side",
+      "giver": "soli",
+      "requires": [
+        "c2_forge"
+      ],
+      "name": "약제대의 첫 불",
+      "summary": "솔이가 숲머리 약제대에서 물약을 달여 보라고 한다.",
+      "steps": [
+        {
+          "type": "have",
+          "need": {
+            "potion_stamina": 1
+          },
+          "text": "숲머리 약제대에서 기력 물약 달이기 — 수액 1 + 산딸기 3"
+        },
+        {
+          "type": "talk",
+          "npc": "soli",
+          "text": "솔이에게 물약 보여 주기",
+          "say": [
+            "색이 맑네요. 처음 치곤 잘했어요.",
+            "물약은 G를 누르면 바로 마셔요. 싸움 중에 꼭 기억해요."
+          ],
+          "reply": "알았어",
+          "take": {
+            "potion_stamina": 1
+          }
+        }
+      ],
+      "reward": {
+        "silver": 80,
+        "items": [
+          {
+            "item": "potion_heal",
+            "qty": 1
+          }
+        ]
+      },
+      "level": 14
+    },
+    {
+      "id": "sq_lh_lamp",
+      "kind": "side",
+      "giver": "seondeok",
+      "requires": [
+        "c2_core"
+      ],
+      "name": "돌 등 하나",
+      "summary": "순덕이 장터 어귀에 석등을 세우고 싶어 한다.",
+      "steps": [
+        {
+          "type": "have",
+          "need": {
+            "stone_cut": 6
+          },
+          "text": "석공대에서 돌 다듬기 6개 — 돌 4개마다 1개"
+        },
+        {
+          "type": "talk",
+          "npc": "seondeok",
+          "text": "순덕에게 다듬은 돌 건네기",
+          "say": [
+            "어머, 반듯하기도 하지. 저녁 장이 환해지겠네.",
+            "생선 굽는 냄새 맡고 오는 사람이 더 늘겠어."
+          ],
+          "reply": "잘 쓰세요",
+          "take": {
+            "stone_cut": 6
+          }
+        }
+      ],
+      "reward": {
+        "silver": 110
+      },
+      "level": 13
+    },
+    {
+      "id": "sq_po_eel",
+      "kind": "side",
+      "giver": "doseon",
+      "requires": [
+        "c3_mistfolk"
+      ],
+      "name": "뱃사공의 장어",
+      "summary": "뱃사공 도선이 늪 뱀장어로 기운을 차리고 싶어 한다.",
+      "steps": [
+        {
+          "type": "have",
+          "need": {
+            "fish_eel": 3
+          },
+          "text": "늪 뱀장어 굴에서 뱀장어 3마리 낚기(낚시 10)",
+          "goal": {
+            "node": [
+              "node_fish_eel"
+            ],
+            "nodeFor": [
+              "fish_eel"
+            ]
+          }
+        },
+        {
+          "type": "talk",
+          "npc": "doseon",
+          "text": "도선에게 뱀장어 건네기",
+          "say": [
+            "이놈들 힘 좋은 거 봐. 노 젓는 팔에 딱이야.",
+            "장어 구이 하나 줄 테니 먹고 다녀. 채집이 손에 붙을 걸세."
+          ],
+          "reply": "고마워요",
+          "take": {
+            "fish_eel": 3
+          }
+        }
+      ],
+      "reward": {
+        "silver": 130,
+        "items": [
+          {
+            "item": "food_eel",
+            "qty": 2
+          }
+        ]
+      },
+      "level": 18
+    },
+    {
+      "id": "sq_va_ring",
+      "kind": "side",
+      "giver": "okhwa",
+      "requires": [
+        "c3_survey"
+      ],
+      "name": "촌장의 반지",
+      "summary": "느티골 촌장 옥화가 잃어버린 반지를 새로 맞추고 싶어 한다.",
+      "steps": [
+        {
+          "type": "have",
+          "need": {
+            "gem_rough": 2,
+            "ingot_copper": 4
+          },
+          "text": "원석 2개와 구리주괴 4개 모으기"
+        },
+        {
+          "type": "talk",
+          "npc": "okhwa",
+          "text": "옥화에게 재료 건네기",
+          "say": [
+            "남편이 처음 준 반지였는데… 비슷하게라도 맞춰 볼게요.",
+            "석공대에서 원석을 갈면 장신구가 된대요. 자네도 하나 해 봐요."
+          ],
+          "reply": "그렇게요",
+          "take": {
+            "gem_rough": 2,
+            "ingot_copper": 4
+          }
+        }
+      ],
+      "reward": {
+        "silver": 150,
+        "items": [
+          {
+            "item": "gem_cut",
+            "qty": 1
+          }
+        ]
+      },
+      "level": 19
+    },
+    {
+      "id": "sq_po_survey",
+      "kind": "side",
+      "giver": "pal",
+      "requires": [
+        "c4_sails"
+      ],
+      "name": "측량 천막 치우기",
+      "summary": "장꾼 팔복이 늪길을 막은 본토 측량대 때문에 장사를 못 한다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "surveyor",
+            "surveyor_spear"
+          ],
+          "count": 5,
+          "text": "본토 측량 천막의 측량대 5명 쫓아내기"
+        },
+        {
+          "type": "talk",
+          "npc": "pal",
+          "text": "팔복에게 알리기",
+          "say": [
+            "길이 뚫리면 늪 너머 마을까지 물건이 가요.",
+            "장사꾼은 길이 목숨이지. 이건 내 성의일세."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 220,
+        "items": [
+          {
+            "item": "potion_heal",
+            "qty": 2
+          }
+        ]
+      },
+      "level": 22
+    },
+    {
+      "id": "sq_hu_arrows",
+      "kind": "side",
+      "giver": "nallae",
+      "requires": [
+        "c4_offer"
+      ],
+      "name": "화살 스무 대",
+      "summary": "사냥꾼 날래가 함대가 오기 전에 화살을 넉넉히 두고 싶어 한다.",
+      "steps": [
+        {
+          "type": "have",
+          "need": {
+            "arrows_copper": 20
+          },
+          "text": "공예대에서 구리 화살 20대 만들기"
+        },
+        {
+          "type": "talk",
+          "npc": "nallae",
+          "text": "날래에게 화살 건네기",
+          "say": [
+            "깃이 고르게 붙었네요. 바람에 안 흔들려요.",
+            "활은 가방의 좋은 화살부터 써요. 철 화살이면 더 아프고요."
+          ],
+          "reply": "잘 쓰세요",
+          "take": {
+            "arrows_copper": 20
+          }
+        }
+      ],
+      "reward": {
+        "silver": 200
+      },
+      "level": 23
+    },
+    {
+      "id": "sq_wi_iron",
+      "kind": "side",
+      "giver": "jaegan",
+      "requires": [
+        "c4_mother"
+      ],
+      "name": "모자란 쇠",
+      "summary": "대장장이 재간이 함대에 맞설 칼날을 벼릴 쇠가 모자라다.",
+      "steps": [
+        {
+          "type": "have",
+          "need": {
+            "ingot_iron": 6
+          },
+          "text": "철주괴 6개 모으기"
+        },
+        {
+          "type": "talk",
+          "npc": "jaegan",
+          "text": "재간에게 철주괴 건네기",
+          "say": [
+            "이 정도면 창날 스무 개는 나와.",
+            "여울 사람들 손에 쥐여 줄 걸세. 고마우이."
+          ],
+          "reply": "부탁해요",
+          "take": {
+            "ingot_iron": 6
+          }
+        }
+      ],
+      "reward": {
+        "silver": 240
+      },
+      "level": 23
+    },
+    {
+      "id": "sq_in_marines",
+      "kind": "side",
+      "giver": "aksa",
+      "requires": [
+        "c4_fort"
+      ],
+      "name": "노래를 막는 수병",
+      "summary": "떠돌이 악사 소리가 잿빛 요새 수병 때문에 늪길 공연을 못 간다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "marine",
+            "marine_spear"
+          ],
+          "count": 4,
+          "text": "잿빛 요새 수병 4명 쓰러뜨리기"
+        },
+        {
+          "type": "talk",
+          "npc": "aksa",
+          "text": "소리에게 돌아가기",
+          "say": [
+            "이제 늪 너머 마을에도 노래를 들려줄 수 있겠어요.",
+            "새 곡 제목은 「안개를 뚫은 사람」이에요. 누군지 알죠?"
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 280
+      },
+      "level": 27
+    },
+    {
+      "id": "sq_as_trout",
+      "kind": "side",
+      "giver": "seoksu",
+      "requires": [
+        "c5_ridge"
+      ],
+      "name": "서리 송어",
+      "summary": "광부 석수가 고된 갱 일 뒤에 먹을 송어를 바란다.",
+      "steps": [
+        {
+          "type": "have",
+          "need": {
+            "fish_trout": 3
+          },
+          "text": "능선 송어 여울에서 서리 송어 3마리 낚기(낚시 20)",
+          "goal": {
+            "node": [
+              "node_fish_trout"
+            ],
+            "nodeFor": [
+              "fish_trout"
+            ]
+          }
+        },
+        {
+          "type": "talk",
+          "npc": "seoksu",
+          "text": "석수에게 송어 건네기",
+          "say": [
+            "찬물 송어는 살이 달아. 매운탕 끓이면 갱 먼지가 씻기지.",
+            "자네 몫으로 한 그릇 떠 왔네."
+          ],
+          "reply": "잘 먹을게요",
+          "take": {
+            "fish_trout": 3
+          }
+        }
+      ],
+      "reward": {
+        "silver": 300,
+        "items": [
+          {
+            "item": "food_fish_stew",
+            "qty": 1
+          }
+        ]
+      },
+      "level": 28
+    },
+    {
+      "id": "sq_mi_wolves",
+      "kind": "side",
+      "giver": "gangjang",
+      "requires": [
+        "c5_watcher"
+      ],
+      "name": "갱도 앞 늑대",
+      "summary": "광부 우두머리 갱장의 갱도 앞을 늑대 떼가 지킨다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "ash_wolf"
+          ],
+          "count": 4,
+          "text": "잿빛 늑대 4마리 쫓아내기"
+        },
+        {
+          "type": "kill",
+          "mobs": [
+            "frost_wolf"
+          ],
+          "count": 2,
+          "text": "서리 늑대 2마리 쫓아내기"
+        },
+        {
+          "type": "talk",
+          "npc": "gangjang",
+          "text": "갱장에게 알리기",
+          "say": [
+            "이제 광부들이 해 지기 전에 내려올 수 있겠어.",
+            "갱에서 나온 원석일세. 연마하면 값이 꽤 나가."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 340,
+        "items": [
+          {
+            "item": "gem_rough",
+            "qty": 3
+          }
+        ]
+      },
+      "level": 29
+    },
+    {
+      "id": "sq_ki_guard",
+      "kind": "side",
+      "giver": "danbi",
+      "requires": [
+        "c5_pass"
+      ],
+      "name": "강건 물약",
+      "summary": "약사 단비가 탑으로 가는 사람들에게 줄 강건 물약을 함께 달이자고 한다.",
+      "steps": [
+        {
+          "type": "have",
+          "need": {
+            "herb_moon": 2,
+            "fish_eel": 1
+          },
+          "text": "달맞이풀 2포기와 늪 뱀장어 1마리 모으기"
+        },
+        {
+          "type": "talk",
+          "npc": "danbi",
+          "text": "단비에게 재료 건네기",
+          "say": [
+            "이 둘을 다듬은 돌가루와 달이면 몸이 돌처럼 단단해져요.",
+            "처음 달인 것 하나는 당신 몫이에요."
+          ],
+          "reply": "고마워요",
+          "take": {
+            "herb_moon": 2,
+            "fish_eel": 1
+          }
+        }
+      ],
+      "reward": {
+        "silver": 320,
+        "items": [
+          {
+            "item": "potion_guard",
+            "qty": 2
+          }
+        ]
+      },
+      "level": 31
+    },
+    {
+      "id": "sq_ga_glow",
+      "kind": "side",
+      "giver": "boreum",
+      "requires": [
+        "c6_storm"
+      ],
+      "name": "빛나는 물고기",
+      "summary": "야영지 요리사 보름이 심장의 빛나는 물고기로 기운 나는 국을 끓이려 한다.",
+      "steps": [
+        {
+          "type": "have",
+          "need": {
+            "fish_glow": 4
+          },
+          "text": "심장의 물가에서 안개 물고기 4마리 낚기(낚시 28)",
+          "goal": {
+            "node": [
+              "node_fish_glow"
+            ],
+            "nodeFor": [
+              "fish_glow"
+            ]
+          }
+        },
+        {
+          "type": "talk",
+          "npc": "boreum",
+          "text": "보름에게 물고기 건네기",
+          "say": [
+            "국물이 은은하게 빛나요. 먹으면 안개가 덜 무섭대요.",
+            "싸우러 가는 사람들 몫으로 넉넉히 끓일게요."
+          ],
+          "reply": "부탁해요",
+          "take": {
+            "fish_glow": 4
+          }
+        }
+      ],
+      "reward": {
+        "silver": 380,
+        "items": [
+          {
+            "item": "food_fish_stew",
+            "qty": 2
+          }
+        ]
+      },
+      "level": 35
+    },
+    {
+      "id": "sq_pi_wraiths",
+      "kind": "side",
+      "giver": "suryeon",
+      "requires": [
+        "c6_gate"
+      ],
+      "name": "심장의 망령",
+      "summary": "순례자 수련이 심장 가까이 맴도는 폭풍 망령을 달래 달란다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "storm_wraith"
+          ],
+          "count": 4,
+          "text": "폭풍 망령 4체 흩기"
+        },
+        {
+          "type": "talk",
+          "npc": "suryeon",
+          "text": "수련에게 돌아가기",
+          "say": [
+            "저들도 한때 이 섬을 지키던 이들이에요.",
+            "이제야 조용히 잠들겠네요."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 420
+      },
+      "level": 37
+    },
+    {
+      "id": "sq_pi_storm2",
+      "kind": "side",
+      "giver": "suryeon",
+      "requires": [
+        "sq_pi_wraiths",
+        "c6_machine"
+      ],
+      "name": "폭풍 늑대의 길",
+      "summary": "수련이 순례길을 막은 폭풍 늑대 떼를 걱정한다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "storm_wolf"
+          ],
+          "count": 5,
+          "text": "폭풍 늑대 5마리 쫓아내기"
+        },
+        {
+          "type": "talk",
+          "npc": "suryeon",
+          "text": "수련에게 알리기",
+          "say": [
+            "길이 열렸어요. 심장 앞 돌무지까지 다녀올 수 있겠어요.",
+            "순례자들이 모은 안개 결정이에요. 받아 주세요."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 480,
+        "items": [
+          {
+            "item": "shard_mist",
+            "qty": 2
+          }
+        ]
+      },
+      "level": 38
     }
   ]
 }

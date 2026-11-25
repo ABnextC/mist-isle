@@ -1,6 +1,8 @@
 // 화면 위 정보(HUD)와 패널. 아이콘·색을 먼저 보이고, 수치는 패널에서 연다.
 // 버튼은 data-act로 main.js에 넘긴다. HUD는 상태를 직접 고치지 않는다.
 
+import { levelBadge, levelTone } from './level-color.js';
+import { questXp } from '../../core/systems/quests.js';
 import { ownerInfo, tagOf, warsOf, warAt, declareError, supplyPoints, plantError, liveWarOf, flagCount, teamIn } from '../../core/systems/territory.js';
 import { pvpOn, inDisputed, pvpBonus, toggleError } from '../../core/systems/pvp.js';
 import { ERR, fmtProps, fmtStats, stars, itemName, entryStar, describeEvent, ARMOR_CLASS, loadEffects, josa } from '../../core/text.js';
@@ -70,7 +72,7 @@ export function createHud(root, game, { touch, onAct }) {
     <div class="bottom">
       <div class="progress" data-k="progress"><span></span></div>
       <div class="prompt" data-k="prompt"></div>
-      <div class="vitals" data-k="vitals"><div class="lv" data-k="lv"><b data-k="lvn"></b><i><span data-k="lvbar"></span></i></div><div class="hp"><span data-k="hpbar"></span><em data-k="hp"></em></div><div class="st"><span data-k="stbar"></span></div><div class="mp" data-k="mp"><span data-k="mpbar"></span></div></div>
+      <div class="vitals" data-k="vitals"><div class="lv" data-k="lv"><b data-k="lvn"></b><i><span data-k="lvbar"></span></i></div><div class="hp"><span data-k="hpbar"></span><em data-k="hp"></em></div><div class="st"><span data-k="stbar"></span></div><div class="mp" data-k="mp"><span data-k="mpbar"></span></div><div class="wearw" data-k="wearw"></div></div>
       <div class="skillbar" data-k="skillbar"></div>
       ${touch ? '' : '<div class="keys">E 상호작용 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기 · 1·2·3 스킬 · X 무기 바꾸기 · G 물약 · T 영지 · <b>Esc 메뉴</b></div>'}
     </div>
@@ -84,7 +86,7 @@ export function createHud(root, game, { touch, onAct }) {
   const $ = (k) => root.querySelector(`[data-k="${k}"]`);
   const el = {
     clock: $('clock'), silver: $('silver'), focus: $('focus'),
-    vitals: $('vitals'), lv: $('lv'), lvn: $('lvn'), lvbar: $('lvbar'), hp: $('hp'), hpbar: $('hpbar'), stbar: $('stbar'), mp: $('mp'), mpbar: $('mpbar'), downed: $('downed'), hurtfx: $('hurtfx'), focusbar: $('focusbar'), buffs: $('buffs'), quest: $('quest'),
+    vitals: $('vitals'), lv: $('lv'), lvn: $('lvn'), lvbar: $('lvbar'), hp: $('hp'), hpbar: $('hpbar'), stbar: $('stbar'), mp: $('mp'), mpbar: $('mpbar'), wearw: $('wearw'), downed: $('downed'), hurtfx: $('hurtfx'), focusbar: $('focusbar'), buffs: $('buffs'), quest: $('quest'),
     where: $('where'), feed: $('feed'), banner: $('banner'), progress: $('progress'), prompt: $('prompt'),
     actbtn: $('actbtn'), ptitle: $('ptitle'), pbody: $('pbody'), toast: $('toast'), skillbar: $('skillbar'),
     boss: $('boss'), bossname: $('bossname'), bossfill: $('bossfill'),
@@ -334,13 +336,20 @@ export function createHud(root, game, { touch, onAct }) {
       el.mp.style.display = mpShow ? '' : 'none';
       if (mpShow) el.mpbar.style.width = `${((a.cb.mp ?? 0) / (a.cb.maxMp || 100)) * 100}%`;
       set(el.hp, `${Math.ceil(a.cb.hp)}`);
+      // 닳은 장비 알림(v3.1): 무기가 부서진 줄 모르고 싸우다 쓰러졌다(진행 페르소나 콩이)
+      const worn = Object.values(a.equip || {}).filter(Boolean).map((uid) => a.bag.find((x) => x.uid === uid)).filter((e) => e?.maxDur && (e.broken || e.dur / e.maxDur < 0.2));
+      const wpn = worn.find((e) => e.uid === a.equip.weapon);
+      const wtxt = !worn.length ? '' : wpn?.broken ? '💥 무기가 부서졌다 — 대장간에서 고치자(공격력이 크게 준다)'
+        : `🔧 ${worn.some((e) => e.broken) ? '부서진 장비가 있다' : `${wpn ? '무기' : '장비'} 내구가 얼마 안 남았다`} — 대장간(E) → 고치기`;
+      set(el.wearw, wtxt);
+      el.wearw.style.display = wtxt ? '' : 'none';
       // 전투 레벨(v2.3)
       const LV = levelOf(a);
       const capped = LV.lvl >= data.config.level.cap;
       set(el.lvn, `Lv ${LV.lvl}${freePoints(qctxL(), a) > 0 ? ' ✦' : ''}`);
       el.lvbar.style.width = `${capped ? 100 : (LV.xp / lvNeed(qctxL(), LV.lvl)) * 100}%`;
       const busy = a.cb.hp < a.cb.maxHp || a.cb.st < C.stamina || Object.values(game.state.mobs).some((m) => m.target === PID && m.mode !== 'dead') || Object.values(game.state.actors).some((r) => r.rival?.target === PID);
-      el.vitals.classList.toggle('dim', !busy);
+      el.vitals.classList.toggle('dim', !busy && !worn.length);
       el.vitals.classList.toggle('low', a.cb.hp < a.cb.maxHp * 0.3);
       const down = a.cb.downUntil > 0;
       el.downed.classList.toggle('on', down);
@@ -544,6 +553,17 @@ export function createHud(root, game, { touch, onAct }) {
       <p class="muted">사람에게 쓰러지면 장비 내구가 깎이고 가방 재료의 ${P.cargoLoss * 100}%를 빼앗긴다. 장비·음식·물약은 잃지 않는다. 쓰러뜨린 상대가 지닌 은화와 빼앗아 간 재료는 되찾는다.</p>
       <p>쓰러뜨림 ${pv.kills || 0} · 쓰러짐 ${pv.downs || 0} · 전공 ${pv.honor || 0}</p>
       <div class="btns"><button data-act="pvp-flag" data-v="${on ? 0 : 1}" ${err ? 'disabled' : ''} class="${on ? 'warn' : ''}">${on ? '🏳️ 깃발 내리기' : '⚔️ 깃발 올리기'}</button>${why ? `<small class="muted"> ${why}이라 못 내린다</small>` : ''}</div></div>`;
+  }
+  // 퀘스트 권장 레벨(v3.1)
+  function qLv(q) {
+    const me = game.state.actors[PID];
+    return q.level ? `${levelBadge(me?.clevel?.lvl || 1, q.level)} ` : '';
+  }
+  function qWarn(q) {
+    const me = game.state.actors[PID];
+    if (!q.level) return '';
+    const t = levelTone(me?.clevel?.lvl || 1, q.level);
+    return t.cls === 'lv-red' ? ' <em class="no">— 아직 위험하다. 레벨을 더 올리고 가자</em>' : t.cls === 'lv-orange' ? ' <em class="warn">— 조금 어렵다</em>' : '';
   }
   // 영지 창(v2.7)
   function territoryHtml(a) {
@@ -1057,7 +1077,7 @@ export function createHud(root, game, { touch, onAct }) {
     const p = a.quests.active[id];
     const steps = q.steps.map((st, i) => (i < p.step ? `<li class="done">✔ ${esc(st.text)}</li>` : i === p.step ? `<li class="now">▶ ${esc(stepText(ctx, a, id))}</li>` : '')).join('');
     const track = a.quests.track === id ? ' <small class="tracking">📍 따라가는 중</small>' : ` <button class="mini" data-act="quest-track" data-v="${id}">따라가기</button>`;
-    return `<li class="qactive"><b>${esc(q.name)}</b>${track}<p class="muted">${esc(q.summary)}</p><ul class="steps">${steps}</ul><small>보상: ${rewardText(q.reward)}</small></li>`;
+    return `<li class="qactive"><b>${qLv(q)}${esc(q.name)}</b>${track}<p class="muted">${esc(q.summary)}</p><ul class="steps">${steps}</ul><small>보상: ${rewardText(q.reward)} · ✨ 경험치 ${questXp(qctxL(), game.state.actors[PID], q)}</small></li>`;
   }
   function bountyHtml(a) {
     const ctx = questCtx(game);
@@ -1069,7 +1089,7 @@ export function createHud(root, game, { touch, onAct }) {
     const offers = boardOffers(ctx, a);
     html += '<h3>받을 수 있는 현상금</h3>';
     html += offers.length
-      ? `<ul class="list">${offers.map((q) => `<li><div><b>🎯 ${esc(q.name)}</b><small>${esc(q.summary)} · ${q.steps.map((st) => `${esc(st.text)} ${st.count || ''}`).join(', ')} · 🪙 ${q.reward?.silver || 0}</small></div><button data-act="quest-accept" data-v="${q.id}">받기</button></li>`).join('')}</ul>`
+      ? `<ul class="list">${offers.map((q) => `<li><div><b>🎯 ${qLv(q)}${esc(q.name)}</b><small>${esc(q.summary)} · ${q.steps.map((st) => `${esc(st.text)} ${st.count || ''}`).join(', ')} · 🪙 ${q.reward?.silver || 0}</small></div><button data-act="quest-accept" data-v="${q.id}">받기</button></li>`).join('')}</ul>`
       : '<p class="muted">지금 받을 수 있는 현상금이 없다. 메인 퀘스트를 따라가면 늘어난다.</p>';
     const today = data.lists.quests.filter((q) => q.kind === 'bounty' && Q.daily?.[q.id] === day);
     if (today.length) html += `<p class="muted">오늘 끝낸 현상금: ${today.map((q) => esc(q.name)).join(', ')}</p>`;
@@ -1184,8 +1204,8 @@ export function createHud(root, game, { touch, onAct }) {
       const lines = chatLines(npc, a);
       panel.chat ??= Math.floor(Math.random() * lines.length);
       const tag = q.repeat === 'birthday' ? '🎂 생일 잔치' : q.bond ? `💗 마음의 부탁(${esc(tierName(ctx, q.bond))})` : q.repeat === 'daily' ? '오늘의 부탁' : q.faction ? `${data.factions.list.find((f) => f.id === q.faction).icon} 세력 의뢰` : q.chain ? `연작 · ${esc(q.chain)}` : '부가 의뢰';
-      return `${head}<p class="say">${esc(lines[panel.chat % lines.length])}</p><div class="qtag">${tag} · ${esc(q.name)}</div><p class="say">${esc(q.summary)}</p>
-        <p class="muted">▶ ${q.steps.map((st) => esc(st.text)).join(' → ')}</p>${rewardHtml(q.reward)}
+      return `${head}<p class="say">${esc(lines[panel.chat % lines.length])}</p><div class="qtag">${tag} · ${qLv(q)}${esc(q.name)}${qWarn(q)}</div><p class="say">${esc(q.summary)}</p>
+        <p class="muted">▶ ${q.steps.map((st) => esc(st.text)).join(' → ')}</p>${rewardHtml(q.reward)}<p class="muted">✨ 경험치 ${questXp(qctxL(), a, q)}</p>
         <div class="btns"><button class="pri" data-act="quest-accept" data-v="${q.id}">맡겠습니다</button>${inviteBtn(a, panel.npc)}${giftBtn}<button data-act="close">다음에</button></div>`;
     }
     // 세력 지도자(v0.7): 세력이 열렸으면 세력 창을 보인다
@@ -1322,7 +1342,7 @@ export function createHud(root, game, { touch, onAct }) {
       if (offers.length) {
         const where = (npc) => { const n = data.npcs[npc]; return n.at ? data.settlements?.[n.at]?.name || game.state.settlements[n.at]?.name || '' : data.sites?.[n.site]?.name || ''; };
         const kindOf = (q) => (q.repeat === 'birthday' ? '🎂 ' : q.bond ? '💗 ' : q.repeat === 'daily' ? '🔁 ' : q.faction ? `${data.factions.list.find((f) => f.id === q.faction).icon} ` : q.chain ? '🔗 ' : '');
-        body += `<h3>받을 수 있는 의뢰</h3><ul class="list">${offers.map((q) => `<li><div><b>${kindOf(q)}${esc(q.name)}</b><small>${esc(data.npcs[q.giver].name)} · ${esc(where(q.giver))}${q.chain ? ` · ${esc(q.chain)}` : ''} · 🪙 ${q.reward?.silver || 0}</small></div></li>`).join('')}</ul><p class="muted">🔁 날마다 · 🔗 이어지는 이야기 · 💗 정이 들어야 꺼내는 부탁 · 세력 표시는 그 세력 의뢰. 마을 사람은 하루 동안 일터 → 게시판 둘레 → 모닥불 → 집 앞으로 옮겨 다닌다.</p>`;
+        body += `<h3>받을 수 있는 의뢰</h3><ul class="list">${offers.map((q) => `<li><div><b>${kindOf(q)}${qLv(q)}${esc(q.name)}</b><small>${esc(data.npcs[q.giver].name)} · ${esc(where(q.giver))}${q.chain ? ` · ${esc(q.chain)}` : ''} · 🪙 ${q.reward?.silver || 0}</small></div></li>`).join('')}</ul><p class="muted">🔁 날마다 · 🔗 이어지는 이야기 · 💗 정이 들어야 꺼내는 부탁 · 세력 표시는 그 세력 의뢰. 마을 사람은 하루 동안 일터 → 게시판 둘레 → 모닥불 → 집 앞으로 옮겨 다닌다.</p>`;
       }
       const doneN = data.lists.quests.filter((q) => q.kind === 'side' && !q.repeat && Q.done[q.id] != null).length;
       const all = data.lists.quests.filter((q) => q.kind === 'side' && !q.repeat).length;

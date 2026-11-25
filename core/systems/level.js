@@ -22,6 +22,26 @@ export const mobLevel = (ctx, typeId) => {
   const t = ctx.data.creatures[typeId];
   return t?.level ?? Math.max(1, Math.round(Math.sqrt(t?.hp || 40) * 1.2));
 };
+// 싸움 레벨(v3.1): 짐승은 종의 레벨, 사람은 전투 레벨, 동행·민병은 주인의 레벨
+export function fightLevel(ctx, x) {
+  if (!x) return 1;
+  if (!x.kind) return mobLevel(ctx, x.type);
+  const r = x.kind === 'ally' ? ctx.state.actors[x.ally?.owner] || x : x;
+  return r.clevel?.lvl || 1;
+}
+// 레벨 차이 배율(v3.1): 때리는 쪽이 맞는 쪽보다 낮으면 덜 아프게, 높으면 조금 더 아프게.
+// 차이가 grace(2) 안이면 같은 급으로 본다. 피해에 곱한다(짐승↔사람, 사람↔사람 모두)
+export function gapMult(ctx, att, def) {
+  const G = L(ctx).gap;
+  if (!G) return 1;
+  let d = fightLevel(ctx, att) - fightLevel(ctx, def);
+  const g = G.grace ?? 2;
+  d = Math.abs(d) <= g ? 0 : d - Math.sign(d) * g;
+  d = Math.max(-G.maxGap, Math.min(G.maxGap, d));
+  if (d < 0) return Math.max(G.lowMin, 1 + d * G.lowPer);
+  return Math.min(G.highMax, 1 + d * G.highPer);
+}
+
 // 잡았을 때 경험치: 레벨이 너무 낮은 짐승은 적게 준다
 export function mobXp(ctx, a, typeId) {
   const t = ctx.data.creatures[typeId];

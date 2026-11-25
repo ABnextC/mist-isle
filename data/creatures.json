@@ -325,7 +325,7 @@
     "walk": 1.25,
     "temper": "aggressive",
     "aggro": 9,
-    "assist": 10,
+    "assist": 7,
     "leash": 24,
     "r": 0.4,
     "attacks": [
@@ -414,7 +414,7 @@
     "walk": 1.25,
     "temper": "aggressive",
     "aggro": 9,
-    "assist": 10,
+    "assist": 7,
     "leash": 24,
     "r": 0.4,
     "guard": 0.3,
@@ -514,7 +514,7 @@
     "walk": 1.2,
     "temper": "aggressive",
     "aggro": 9.5,
-    "assist": 10,
+    "assist": 7,
     "leash": 24,
     "r": 0.4,
     "engage": 2.6,
@@ -614,7 +614,7 @@
     "walk": 1.15,
     "temper": "aggressive",
     "aggro": 9,
-    "assist": 10,
+    "assist": 7,
     "leash": 24,
     "r": 0.45,
     "attacks": [
@@ -707,7 +707,7 @@
     "walk": 1.3,
     "temper": "aggressive",
     "aggro": 13,
-    "assist": 10,
+    "assist": 7,
     "leash": 26,
     "r": 0.4,
     "engage": 10,
@@ -800,14 +800,14 @@
         "steel": "#44464a"
       }
     },
-    "hp": 420,
-    "dmg": 16,
+    "hp": 360,
+    "dmg": 14,
     "armor": 14,
     "speed": 4.6,
     "walk": 1.25,
     "temper": "aggressive",
     "aggro": 10,
-    "assist": 12,
+    "assist": 9,
     "leash": 26,
     "r": 0.42,
     "guard": 0.4,
@@ -913,14 +913,14 @@
         "steel": "#3a3b40"
       }
     },
-    "hp": 700,
-    "dmg": 20,
+    "hp": 580,
+    "dmg": 17,
     "armor": 16,
     "speed": 4.0,
     "walk": 1.1,
     "temper": "aggressive",
     "aggro": 12,
-    "assist": 16,
+    "assist": 10,
     "leash": 30,
     "r": 0.5,
     "attacks": [
@@ -1108,8 +1108,8 @@
     "statue": true,
     "solo": true,
     "zone": null,
-    "hp": 820,
-    "dmg": 21,
+    "hp": 740,
+    "dmg": 19,
     "armor": 18,
     "speed": 4.8,
     "walk": 1.2,
@@ -2308,7 +2308,7 @@
         ]
       }
     },
-    "level": 36
+    "level": 34
   },
   {
     "id": "storm_wolf",
@@ -2377,7 +2377,7 @@
         ]
       }
     },
-    "level": 38
+    "level": 35
   },
   {
     "id": "gate_warden",
@@ -2470,7 +2470,7 @@
     ],
     "wake": "c6_gate",
     "rise": 2.4,
-    "level": 42
+    "level": 38
   },
   {
     "id": "first_keeper",
@@ -2483,8 +2483,8 @@
       1,
       45
     ],
-    "hp": 2600,
-    "dmg": 27,
+    "hp": 2300,
+    "dmg": 25,
     "armor": 16,
     "speed": 4.1,
     "walk": 1.0,
@@ -2548,7 +2548,7 @@
       {
         "at": 0.66,
         "summon": {
-          "storm_wraith": 2
+          "storm_wraith": 1
         },
         "haste": 1.1,
         "note": "첫 등지기가 등불을 쳐든다. “심장을… 떼어 가려는 자…”"
@@ -2556,7 +2556,7 @@
       {
         "at": 0.33,
         "summon": {
-          "storm_wraith": 3
+          "storm_wraith": 2
         },
         "haste": 1.2,
         "note": "등불이 꺼질 듯 흔들린다. “…아니, 너는… 등불을 든 자인가…”"
@@ -2565,7 +2565,7 @@
     "wake": "c6_keeper",
     "statue": true,
     "rise": 2.6,
-    "level": 46
+    "level": 41
   },
   {
     "id": "ex_yeogang",

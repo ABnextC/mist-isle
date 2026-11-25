@@ -16,7 +16,7 @@ import { factionDef, factionOf, gainInfluence } from './factions.js';
 import { projectProgress } from '../settlements.js';
 import { bondTier, questBond, dailyMult, isBirthday } from './bonds.js';
 import { accompanying } from './allies.js';
-import { gainLevelXp } from './level.js';
+import { gainLevelXp, needXp } from './level.js';
 
 export const TALK_RANGE = 3.6;
 export const USE_RANGE = 2.6;
@@ -94,10 +94,7 @@ function complete(ctx, a, id) {
   questBond(ctx, a, q);
   // 전투 레벨(v2.3): 의뢰마다 경험치
   {
-    const QX = ctx.data.config.level.quest;
-    const k = q.kind === 'side' ? (q.repeat === 'daily' ? 'daily' : q.repeat === 'birthday' ? 'birthday' : q.bond ? 'bond' : q.faction ? 'faction' : 'side') : 'main';
-    const ch = k === 'main' ? Math.max(0, (ctx.data.chapters || []).findIndex((c) => c.quests?.includes(q.id))) : 0;
-    gainLevelXp(ctx, a, (QX[k] || 0) + (k === 'main' ? ch * QX.perChapter : 0), 'quest');
+    gainLevelXp(ctx, a, questXp(ctx, a, q), 'quest');
   }
   // 표식(v0.5.1): 등불의 각인처럼 이야기로 얻는 능력
   for (const g of q.grants || []) {
@@ -139,6 +136,19 @@ const mainFirst = (ctx, x, y) => (ctx.data.quests[x].kind === 'main' ? 0 : 1) - 
 
 // ── 보상 ───────────────────────────────────────────
 // 보상을 준 사람(끝내는 대화 상대). 현상금은 마을 경비대
+// 퀘스트 경험치(v3.1): 권장 레벨 한 칸 경험치의 몫(종류마다). 고정 레벨이 없는 부탁은 지금 내 레벨로 센다
+export function questKind(q) {
+  if (q.kind === 'bounty') return 'bounty';
+  if (q.kind !== 'side') return 'main';
+  return q.repeat === 'daily' ? 'daily' : q.repeat === 'birthday' ? 'birthday' : q.bond ? 'bond' : q.faction ? 'faction' : 'side';
+}
+export function questXp(ctx, a, q) {
+  const LV = ctx.data.config.level;
+  const frac = LV.questFrac?.[questKind(q)] ?? 0.3;
+  const lvl = Math.max(1, Math.min(LV.cap, q.level ?? a.clevel?.lvl ?? 1));
+  return Math.round(needXp(ctx, lvl) * frac);
+}
+
 export function rewardGiver(ctx, q) {
   const last = [...q.steps].reverse().find((s) => s.type === 'talk' && s.npc !== '@leader');
   return last ? ctx.data.npcs[last.npc].name : '마을 경비대';
@@ -522,7 +532,11 @@ export function stepText(ctx, a, id) {
   const st = stepOf(ctx, a, id);
   if (!st) return '';
   const p = a.quests.active[id];
-  if (st.type === 'kill' || st.type === 'use') return `${st.text} (${Math.min(p.n, st.count)}/${st.count})`;
+  if (st.type === 'kill' || st.type === 'use') {
+    // 밤에만 나오는 짐승(v3.1): 낮에 헤매지 않게 알려 준다
+    const night = st.type === 'kill' && st.mobs.every((k) => ctx.data.creatures[k]?.night);
+    return `${st.text} (${Math.min(p.n, st.count)}/${st.count})${night ? ' · 🌙 밤에만 나온다' : ''}`;
+  }
   if (st.type === 'defend') {
     const total = defendTotal(st);
     return p.ev ? `${st.text} (${Math.min(p.n, total)}/${total} · ${p.ev.wave + 1}/${st.waves.length}물결)` : st.text;

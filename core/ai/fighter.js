@@ -82,6 +82,9 @@ export function fightTick(ctx, a) {
   if (cb.hp < cb.maxHp * f.heal) {
     const food = a.bag.find((e) => ctx.data.items[e.item].effect === 'heal');
     if (food && ctx.command({ type: 'EAT', actor: a.id, key: keyOf(food) }).ok) return;
+    // 회복 물약(v3.1): 음식이 없거나 못 먹으면 물약
+    const pot = a.bag.find((e) => ctx.data.items[e.item].potion === 'heal');
+    if (pot && ctx.command({ type: 'EAT', actor: a.id, key: keyOf(pot) }).ok) return;
   }
   // 3) 다가가서 때린다
   const m = chooseTarget(ctx, a, f);

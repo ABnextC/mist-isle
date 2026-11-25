@@ -5,7 +5,7 @@
 //       밤에만 나오는 안개 늑대(away 상태), 임시 짐승(습격 물결·부하, 죽으면 사라진다), 쓰러뜨리면 바로 들어오는 전리품.
 
 import { creditOf } from './allies.js';
-import { gainLevelXp, mobXp } from './level.js';
+import { gainLevelXp, mobXp, gapMult } from './level.js';
 import { rollProps, rollQty, round3 } from '../formulas.js';
 import { fitsHabitat, regionAt } from '../terrain.js';
 import { addEntry, slotsNeeded } from '../inventory.js';
@@ -467,7 +467,7 @@ function strike(ctx, m, type, at) {
   const half = ((at.arc || 90) * DEG) / 2;
   let diff = Math.abs(yawTo(m, a) - m.yaw);
   if (diff > Math.PI) diff = 2 * Math.PI - diff;
-  if (d <= at.range + 0.35 && (d < 0.6 || diff <= half)) hurtActor(ctx, a, m, type.dmg * (at.mult ?? 1) * weakK(ctx, m), at);
+  if (d <= at.range + 0.35 && (d < 0.6 || diff <= half)) hurtActor(ctx, a, m, type.dmg * (at.mult ?? 1) * weakK(ctx, m) * gapMult(ctx, m, a), at);
   else ctx.emit('mob.miss', { mob: m.id, actor: a.id });
 }
 
@@ -511,7 +511,7 @@ function shotsTick(ctx, dt) {
       const src = state.mobs[s.mob] || { id: s.mob, type: s.kind, x: s.x - s.vx * 0.2, z: s.z - s.vz * 0.2 };
       // 막기 방향은 날아온 쪽으로 본다
       const from = { ...src, x: s.x - s.vx * 0.2, z: s.z - s.vz * 0.2 };
-      hurtActor(ctx, hitActor, from, s.dmg, { shot: true });
+      hurtActor(ctx, hitActor, from, s.dmg * (from ? gapMult(ctx, from, hitActor) : 1), { shot: true });
       ctx.emit('shot.hit', { shot: s.id, actor: hitActor.id, x: s.x, z: s.z });
       continue;
     }
@@ -757,7 +757,7 @@ export function mobsTick(ctx, dt0) {
         m.z = round3(nz);
         if (tgt && !m.hitOnce && Math.hypot(tgt.x - m.x, tgt.z - m.z) <= c.hitR) {
           m.hitOnce = true;
-          hurtActor(ctx, tgt, m, type.dmg * (at.mult ?? 1), at);
+          hurtActor(ctx, tgt, m, type.dmg * (at.mult ?? 1) * gapMult(ctx, m, tgt), at);
         }
         if (t >= m.until) {
           m.cd = r2(t + cooldownOf(ctx, type, at));

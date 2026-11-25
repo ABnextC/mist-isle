@@ -1,0 +1,1340 @@
+{
+ "version": "v3.1",
+ "tool": "tools/campaign.js",
+ "seed": "기본",
+ "note": "진행 페르소나: 1장부터 6장까지 메인·서브퀘스트를 실제 전투(봇 싸움 요령)로 깬다. 이동·생활은 시간으로만 어림. 손보기 뒤 마지막 판.",
+ "before": {
+  "note": "손보기 전 첫 판(같은 도구)",
+  "stuck": {
+   "솔": "1장 빼앗긴 보급품 Lv7",
+   "모루": "2장 돌 해태 Lv16(쓰러짐 25)",
+   "하랑": "1장 칼바람 Lv9",
+   "새벽": "1장 물수리의 종 Lv5",
+   "무진": "1장 갈고리 도철 Lv12",
+   "렌": "1장 칼바람 Lv11",
+   "콩이": "1장 빼앗긴 보급품 Lv7"
+  }
+ },
+ "results": [
+  {
+   "id": "persona_sol",
+   "name": "솔",
+   "role": "느긋한 채집러",
+   "grade": "보통",
+   "weapon": "spear",
+   "read": 0.45,
+   "block": 0.35,
+   "quality": 0.3,
+   "level": 39,
+   "chapters": [
+    {
+     "id": "ch1",
+     "name": "1장 · 검은 돛",
+     "start": 1,
+     "end": 12.5,
+     "mainLevels": [
+      1,
+      2,
+      5,
+      5,
+      8,
+      10,
+      10,
+      10
+     ],
+     "quests": 13,
+     "downs": 2,
+     "minutes": {
+      "fight": 5,
+      "grind": 14,
+      "travel": 39,
+      "life": 16,
+      "rest": 5
+     }
+    },
+    {
+     "id": "ch2",
+     "name": "2장 · 꺼져 가는 등불",
+     "start": 12.5,
+     "end": 17.2,
+     "mainLevels": [
+      11,
+      12,
+      12,
+      13,
+      13,
+      14,
+      14,
+      15
+     ],
+     "quests": 9,
+     "downs": 0,
+     "minutes": {
+      "fight": 1,
+      "grind": 4,
+      "travel": 11,
+      "life": 3,
+      "rest": 1
+     }
+    },
+    {
+     "id": "ch3",
+     "name": "3장 · 늪의 불씨",
+     "start": 17.2,
+     "end": 22.5,
+     "mainLevels": [
+      15,
+      16,
+      17,
+      18,
+      18,
+      19,
+      20,
+      21
+     ],
+     "quests": 12,
+     "downs": 1,
+     "minutes": {
+      "fight": 1,
+      "grind": 4,
+      "travel": 14,
+      "life": 9,
+      "rest": 0
+     }
+    },
+    {
+     "id": "ch4",
+     "name": "4장 · 잿빛 함대",
+     "start": 22.5,
+     "end": 28.7,
+     "mainLevels": [
+      21,
+      22,
+      22,
+      23,
+      24,
+      25,
+      26,
+      26,
+      27
+     ],
+     "quests": 12,
+     "downs": 0,
+     "minutes": {
+      "fight": 2,
+      "grind": 4,
+      "travel": 23,
+      "life": 12,
+      "rest": 0
+     }
+    },
+    {
+     "id": "ch5",
+     "name": "5장 · 불과 서리의 탑",
+     "start": 28.7,
+     "end": 34.2,
+     "mainLevels": [
+      27,
+      28,
+      29,
+      30,
+      30,
+      31,
+      32,
+      33
+     ],
+     "quests": 11,
+     "downs": 2,
+     "minutes": {
+      "fight": 4,
+      "grind": 4,
+      "travel": 26,
+      "life": 4,
+      "rest": 1
+     }
+    },
+    {
+     "id": "ch6",
+     "name": "6장 · 안개의 심장",
+     "start": 34.2,
+     "end": 39.9,
+     "mainLevels": [
+      34,
+      34,
+      36,
+      36,
+      39,
+      39,
+      40
+     ],
+     "quests": 11,
+     "downs": 0,
+     "minutes": {
+      "fight": 4,
+      "grind": 4,
+      "travel": 38,
+      "life": 6,
+      "rest": 2
+     }
+    }
+   ],
+   "fails": [],
+   "hard": [
+    {
+     "quest": "c5_fifth",
+     "name": "다섯째 등심",
+     "level": 31,
+     "mine": 32,
+     "downs": 1
+    }
+   ],
+   "kills": 221,
+   "downs": 5,
+   "taken": 6068,
+   "side": 20,
+   "repairs": 3,
+   "broken": 0,
+   "hours": 4.4,
+   "time": {
+    "life": 51,
+    "travel": 150,
+    "fight": 18,
+    "grind": 34,
+    "rest": 8
+   }
+  },
+  {
+   "id": "persona_moru",
+   "name": "모루",
+   "role": "수치 최적화 장인",
+   "grade": "고수",
+   "weapon": "sword",
+   "read": 0.85,
+   "block": 0.25,
+   "quality": 3,
+   "level": 41,
+   "chapters": [
+    {
+     "id": "ch1",
+     "name": "1장 · 검은 돛",
+     "start": 1,
+     "end": 11.7,
+     "mainLevels": [
+      1,
+      2,
+      5,
+      5,
+      8,
+      10,
+      10,
+      10
+     ],
+     "quests": 15,
+     "downs": 1,
+     "minutes": {
+      "fight": 6,
+      "grind": 3,
+      "travel": 40,
+      "life": 15,
+      "rest": 1
+     }
+    },
+    {
+     "id": "ch2",
+     "name": "2장 · 꺼져 가는 등불",
+     "start": 11.7,
+     "end": 17,
+     "mainLevels": [
+      11,
+      12,
+      12,
+      13,
+      13,
+      14,
+      14,
+      15
+     ],
+     "quests": 10,
+     "downs": 0,
+     "minutes": {
+      "fight": 2,
+      "grind": 3,
+      "travel": 11,
+      "life": 3,
+      "rest": 0
+     }
+    },
+    {
+     "id": "ch3",
+     "name": "3장 · 늪의 불씨",
+     "start": 17,
+     "end": 23.5,
+     "mainLevels": [
+      15,
+      16,
+      17,
+      18,
+      18,
+      19,
+      20,
+      21
+     ],
+     "quests": 17,
+     "downs": 2,
+     "minutes": {
+      "fight": 2,
+      "grind": 3,
+      "travel": 33,
+      "life": 15,
+      "rest": 0
+     }
+    },
+    {
+     "id": "ch4",
+     "name": "4장 · 잿빛 함대",
+     "start": 23.5,
+     "end": 30.3,
+     "mainLevels": [
+      21,
+      22,
+      22,
+      23,
+      24,
+      25,
+      26,
+      26,
+      27
+     ],
+     "quests": 13,
+     "downs": 2,
+     "minutes": {
+      "fight": 7,
+      "grind": 3,
+      "travel": 61,
+      "life": 6,
+      "rest": 1
+     }
+    },
+    {
+     "id": "ch5",
+     "name": "5장 · 불과 서리의 탑",
+     "start": 30.3,
+     "end": 36.6,
+     "mainLevels": [
+      27,
+      28,
+      29,
+      30,
+      30,
+      31,
+      32,
+      33
+     ],
+     "quests": 15,
+     "downs": 2,
+     "minutes": {
+      "fight": 6,
+      "grind": 3,
+      "travel": 35,
+      "life": 5,
+      "rest": 2
+     }
+    },
+    {
+     "id": "ch6",
+     "name": "6장 · 안개의 심장",
+     "start": 36.6,
+     "end": 41,
+     "mainLevels": [
+      34,
+      34,
+      36,
+      36,
+      39,
+      39,
+      40
+     ],
+     "quests": 8,
+     "downs": 0,
+     "minutes": {
+      "fight": 4,
+      "grind": 3,
+      "travel": 27,
+      "life": 2,
+      "rest": 0
+     }
+    }
+   ],
+   "fails": [],
+   "hard": [
+    {
+     "quest": "c4_fort",
+     "name": "잿빛 요새",
+     "level": 26,
+     "mine": 28,
+     "downs": 1
+    }
+   ],
+   "kills": 245,
+   "downs": 7,
+   "taken": 5349,
+   "side": 30,
+   "repairs": 3,
+   "broken": 0,
+   "hours": 5,
+   "time": {
+    "life": 47,
+    "travel": 206,
+    "fight": 26,
+    "grind": 18,
+    "rest": 5
+   }
+  },
+  {
+   "id": "persona_harang",
+   "name": "하랑",
+   "role": "시세 차익 상인",
+   "grade": "숙련",
+   "weapon": "spear",
+   "read": 0.65,
+   "block": 0.3,
+   "quality": 1.5,
+   "level": 39,
+   "chapters": [
+    {
+     "id": "ch1",
+     "name": "1장 · 검은 돛",
+     "start": 1,
+     "end": 11.6,
+     "mainLevels": [
+      1,
+      2,
+      5,
+      5,
+      8,
+      10,
+      10,
+      10
+     ],
+     "quests": 10,
+     "downs": 1,
+     "minutes": {
+      "fight": 3,
+      "grind": 17,
+      "travel": 34,
+      "life": 12,
+      "rest": 1
+     }
+    },
+    {
+     "id": "ch2",
+     "name": "2장 · 꺼져 가는 등불",
+     "start": 11.6,
+     "end": 16.9,
+     "mainLevels": [
+      11,
+      12,
+      12,
+      13,
+      13,
+      14,
+      14,
+      15
+     ],
+     "quests": 10,
+     "downs": 0,
+     "minutes": {
+      "fight": 1,
+      "grind": 2,
+      "travel": 10,
+      "life": 3,
+      "rest": 1
+     }
+    },
+    {
+     "id": "ch3",
+     "name": "3장 · 늪의 불씨",
+     "start": 16.9,
+     "end": 22.2,
+     "mainLevels": [
+      15,
+      16,
+      17,
+      18,
+      18,
+      19,
+      20,
+      21
+     ],
+     "quests": 11,
+     "downs": 1,
+     "minutes": {
+      "fight": 2,
+      "grind": 2,
+      "travel": 14,
+      "life": 7,
+      "rest": 0
+     }
+    },
+    {
+     "id": "ch4",
+     "name": "4장 · 잿빛 함대",
+     "start": 22.2,
+     "end": 27.9,
+     "mainLevels": [
+      21,
+      22,
+      22,
+      23,
+      24,
+      25,
+      26,
+      26,
+      27
+     ],
+     "quests": 10,
+     "downs": 0,
+     "minutes": {
+      "fight": 2,
+      "grind": 2,
+      "travel": 14,
+      "life": 8,
+      "rest": 0
+     }
+    },
+    {
+     "id": "ch5",
+     "name": "5장 · 불과 서리의 탑",
+     "start": 27.9,
+     "end": 33.8,
+     "mainLevels": [
+      27,
+      28,
+      29,
+      30,
+      30,
+      31,
+      32,
+      33
+     ],
+     "quests": 11,
+     "downs": 1,
+     "minutes": {
+      "fight": 4,
+      "grind": 2,
+      "travel": 29,
+      "life": 3,
+      "rest": 2
+     }
+    },
+    {
+     "id": "ch6",
+     "name": "6장 · 안개의 심장",
+     "start": 33.8,
+     "end": 39.4,
+     "mainLevels": [
+      34,
+      34,
+      36,
+      36,
+      39,
+      39,
+      40
+     ],
+     "quests": 10,
+     "downs": 1,
+     "minutes": {
+      "fight": 5,
+      "grind": 2,
+      "travel": 34,
+      "life": 4,
+      "rest": 1
+     }
+    }
+   ],
+   "fails": [],
+   "hard": [],
+   "kills": 221,
+   "downs": 4,
+   "taken": 4631,
+   "side": 14,
+   "repairs": 3,
+   "broken": 0,
+   "hours": 3.7,
+   "time": {
+    "life": 37,
+    "travel": 134,
+    "fight": 17,
+    "grind": 27,
+    "rest": 5
+   }
+  },
+  {
+   "id": "persona_saebyeok",
+   "name": "새벽",
+   "role": "탐험·수집가",
+   "grade": "보통",
+   "weapon": "spear",
+   "read": 0.45,
+   "block": 0.3,
+   "quality": 0.5,
+   "level": 43,
+   "chapters": [
+    {
+     "id": "ch1",
+     "name": "1장 · 검은 돛",
+     "start": 1,
+     "end": 13.5,
+     "mainLevels": [
+      1,
+      2,
+      5,
+      5,
+      8,
+      10,
+      10,
+      10
+     ],
+     "quests": 21,
+     "downs": 8,
+     "minutes": {
+      "fight": 6,
+      "grind": 6,
+      "travel": 66,
+      "life": 24,
+      "rest": 8
+     }
+    },
+    {
+     "id": "ch2",
+     "name": "2장 · 꺼져 가는 등불",
+     "start": 13.5,
+     "end": 18.4,
+     "mainLevels": [
+      11,
+      12,
+      12,
+      13,
+      13,
+      14,
+      14,
+      15
+     ],
+     "quests": 12,
+     "downs": 0,
+     "minutes": {
+      "fight": 2,
+      "grind": 6,
+      "travel": 12,
+      "life": 5,
+      "rest": 1
+     }
+    },
+    {
+     "id": "ch3",
+     "name": "3장 · 늪의 불씨",
+     "start": 18.4,
+     "end": 25.7,
+     "mainLevels": [
+      15,
+      16,
+      17,
+      18,
+      18,
+      19,
+      20,
+      21
+     ],
+     "quests": 24,
+     "downs": 3,
+     "minutes": {
+      "fight": 4,
+      "grind": 6,
+      "travel": 77,
+      "life": 17,
+      "rest": 1
+     }
+    },
+    {
+     "id": "ch4",
+     "name": "4장 · 잿빛 함대",
+     "start": 25.7,
+     "end": 31.6,
+     "mainLevels": [
+      21,
+      22,
+      22,
+      23,
+      24,
+      25,
+      26,
+      26,
+      27
+     ],
+     "quests": 15,
+     "downs": 0,
+     "minutes": {
+      "fight": 3,
+      "grind": 6,
+      "travel": 35,
+      "life": 11,
+      "rest": 1
+     }
+    },
+    {
+     "id": "ch5",
+     "name": "5장 · 불과 서리의 탑",
+     "start": 31.6,
+     "end": 37.9,
+     "mainLevels": [
+      27,
+      28,
+      29,
+      30,
+      30,
+      31,
+      32,
+      33
+     ],
+     "quests": 17,
+     "downs": 2,
+     "minutes": {
+      "fight": 5,
+      "grind": 6,
+      "travel": 42,
+      "life": 7,
+      "rest": 4
+     }
+    },
+    {
+     "id": "ch6",
+     "name": "6장 · 안개의 심장",
+     "start": 37.9,
+     "end": 43.3,
+     "mainLevels": [
+      34,
+      34,
+      36,
+      36,
+      39,
+      39,
+      40
+     ],
+     "quests": 12,
+     "downs": 3,
+     "minutes": {
+      "fight": 6,
+      "grind": 6,
+      "travel": 66,
+      "life": 6,
+      "rest": 3
+     }
+    }
+   ],
+   "fails": [],
+   "hard": [
+    {
+     "quest": "q6_lt",
+     "name": "칼바람",
+     "level": 10,
+     "mine": 9,
+     "downs": 1
+    },
+    {
+     "quest": "c3_sunken",
+     "name": "가라앉은 탑",
+     "level": 19,
+     "mine": 24,
+     "downs": 1
+    }
+   ],
+   "kills": 301,
+   "downs": 16,
+   "taken": 8421,
+   "side": 53,
+   "repairs": 9,
+   "broken": 0,
+   "hours": 7.4,
+   "time": {
+    "life": 71,
+    "travel": 297,
+    "fight": 25,
+    "grind": 36,
+    "rest": 17
+   }
+  },
+  {
+   "id": "persona_mujin",
+   "name": "무진",
+   "role": "PvP·영지전 전투광",
+   "grade": "숙련",
+   "weapon": "axe",
+   "read": 0.65,
+   "block": 0.15,
+   "quality": 1,
+   "level": 41,
+   "chapters": [
+    {
+     "id": "ch1",
+     "name": "1장 · 검은 돛",
+     "start": 1,
+     "end": 12.4,
+     "mainLevels": [
+      1,
+      2,
+      5,
+      5,
+      8,
+      10,
+      10,
+      10
+     ],
+     "quests": 16,
+     "downs": 1,
+     "minutes": {
+      "fight": 5,
+      "grind": 15,
+      "travel": 33,
+      "life": 17,
+      "rest": 2
+     }
+    },
+    {
+     "id": "ch2",
+     "name": "2장 · 꺼져 가는 등불",
+     "start": 12.4,
+     "end": 17.5,
+     "mainLevels": [
+      11,
+      12,
+      12,
+      13,
+      13,
+      14,
+      14,
+      15
+     ],
+     "quests": 11,
+     "downs": 0,
+     "minutes": {
+      "fight": 2,
+      "grind": 15,
+      "travel": 10,
+      "life": 5,
+      "rest": 1
+     }
+    },
+    {
+     "id": "ch3",
+     "name": "3장 · 늪의 불씨",
+     "start": 17.5,
+     "end": 23.2,
+     "mainLevels": [
+      15,
+      16,
+      17,
+      18,
+      18,
+      19,
+      20,
+      21
+     ],
+     "quests": 14,
+     "downs": 1,
+     "minutes": {
+      "fight": 1,
+      "grind": 15,
+      "travel": 21,
+      "life": 10,
+      "rest": 0
+     }
+    },
+    {
+     "id": "ch4",
+     "name": "4장 · 잿빛 함대",
+     "start": 23.2,
+     "end": 29.7,
+     "mainLevels": [
+      21,
+      22,
+      22,
+      23,
+      24,
+      25,
+      26,
+      26,
+      27
+     ],
+     "quests": 14,
+     "downs": 0,
+     "minutes": {
+      "fight": 3,
+      "grind": 15,
+      "travel": 26,
+      "life": 11,
+      "rest": 0
+     }
+    },
+    {
+     "id": "ch5",
+     "name": "5장 · 불과 서리의 탑",
+     "start": 29.7,
+     "end": 36,
+     "mainLevels": [
+      27,
+      28,
+      29,
+      30,
+      30,
+      31,
+      32,
+      33
+     ],
+     "quests": 15,
+     "downs": 1,
+     "minutes": {
+      "fight": 3,
+      "grind": 15,
+      "travel": 22,
+      "life": 4,
+      "rest": 2
+     }
+    },
+    {
+     "id": "ch6",
+     "name": "6장 · 안개의 심장",
+     "start": 36,
+     "end": 41.1,
+     "mainLevels": [
+      34,
+      34,
+      36,
+      36,
+      39,
+      39,
+      40
+     ],
+     "quests": 10,
+     "downs": 0,
+     "minutes": {
+      "fight": 3,
+      "grind": 15,
+      "travel": 32,
+      "life": 3,
+      "rest": 0
+     }
+    }
+   ],
+   "fails": [],
+   "hard": [],
+   "kills": 219,
+   "downs": 3,
+   "taken": 3622,
+   "side": 32,
+   "repairs": 2,
+   "broken": 0,
+   "hours": 5.1,
+   "time": {
+    "life": 49,
+    "travel": 143,
+    "fight": 18,
+    "grind": 90,
+    "rest": 6
+   }
+  },
+  {
+   "id": "persona_ren",
+   "name": "렌",
+   "role": "뉴월드 경력자",
+   "grade": "숙련",
+   "weapon": "sword",
+   "read": 0.65,
+   "block": 0.3,
+   "quality": 1.5,
+   "level": 42,
+   "chapters": [
+    {
+     "id": "ch1",
+     "name": "1장 · 검은 돛",
+     "start": 1,
+     "end": 14.1,
+     "mainLevels": [
+      1,
+      2,
+      5,
+      5,
+      8,
+      10,
+      10,
+      10
+     ],
+     "quests": 20,
+     "downs": 5,
+     "minutes": {
+      "fight": 7,
+      "grind": 8,
+      "travel": 67,
+      "life": 20,
+      "rest": 7
+     }
+    },
+    {
+     "id": "ch2",
+     "name": "2장 · 꺼져 가는 등불",
+     "start": 14.1,
+     "end": 18.6,
+     "mainLevels": [
+      11,
+      12,
+      12,
+      13,
+      13,
+      14,
+      14,
+      15
+     ],
+     "quests": 11,
+     "downs": 0,
+     "minutes": {
+      "fight": 2,
+      "grind": 8,
+      "travel": 14,
+      "life": 3,
+      "rest": 1
+     }
+    },
+    {
+     "id": "ch3",
+     "name": "3장 · 늪의 불씨",
+     "start": 18.6,
+     "end": 24.8,
+     "mainLevels": [
+      15,
+      16,
+      17,
+      18,
+      18,
+      19,
+      20,
+      21
+     ],
+     "quests": 19,
+     "downs": 1,
+     "minutes": {
+      "fight": 2,
+      "grind": 8,
+      "travel": 55,
+      "life": 15,
+      "rest": 0
+     }
+    },
+    {
+     "id": "ch4",
+     "name": "4장 · 잿빛 함대",
+     "start": 24.8,
+     "end": 30.6,
+     "mainLevels": [
+      21,
+      22,
+      22,
+      23,
+      24,
+      25,
+      26,
+      26,
+      27
+     ],
+     "quests": 13,
+     "downs": 0,
+     "minutes": {
+      "fight": 3,
+      "grind": 8,
+      "travel": 27,
+      "life": 9,
+      "rest": 0
+     }
+    },
+    {
+     "id": "ch5",
+     "name": "5장 · 불과 서리의 탑",
+     "start": 30.6,
+     "end": 36.8,
+     "mainLevels": [
+      27,
+      28,
+      29,
+      30,
+      30,
+      31,
+      32,
+      33
+     ],
+     "quests": 15,
+     "downs": 1,
+     "minutes": {
+      "fight": 5,
+      "grind": 8,
+      "travel": 27,
+      "life": 4,
+      "rest": 4
+     }
+    },
+    {
+     "id": "ch6",
+     "name": "6장 · 안개의 심장",
+     "start": 36.8,
+     "end": 42,
+     "mainLevels": [
+      34,
+      34,
+      36,
+      36,
+      39,
+      39,
+      40
+     ],
+     "quests": 11,
+     "downs": 1,
+     "minutes": {
+      "fight": 6,
+      "grind": 8,
+      "travel": 63,
+      "life": 3,
+      "rest": 1
+     }
+    }
+   ],
+   "fails": [],
+   "hard": [],
+   "kills": 307,
+   "downs": 8,
+   "taken": 6186,
+   "side": 41,
+   "repairs": 8,
+   "broken": 0,
+   "hours": 6.5,
+   "time": {
+    "life": 55,
+    "travel": 253,
+    "fight": 24,
+    "grind": 48,
+    "rest": 13
+   }
+  },
+  {
+   "id": "persona_kongi",
+   "name": "콩이",
+   "role": "입문자(모바일 겸용)",
+   "grade": "뉴비",
+   "weapon": "sword",
+   "read": 0.2,
+   "block": 0.5,
+   "quality": 0,
+   "level": 41,
+   "chapters": [
+    {
+     "id": "ch1",
+     "name": "1장 · 검은 돛",
+     "start": 1,
+     "end": 13.9,
+     "mainLevels": [
+      1,
+      2,
+      5,
+      5,
+      8,
+      10,
+      10,
+      10
+     ],
+     "quests": 11,
+     "downs": 6,
+     "minutes": {
+      "fight": 5,
+      "grind": 19,
+      "travel": 50,
+      "life": 19,
+      "rest": 16
+     }
+    },
+    {
+     "id": "ch2",
+     "name": "2장 · 꺼져 가는 등불",
+     "start": 13.9,
+     "end": 18.3,
+     "mainLevels": [
+      11,
+      12,
+      12,
+      13,
+      13,
+      14,
+      14,
+      15
+     ],
+     "quests": 10,
+     "downs": 0,
+     "minutes": {
+      "fight": 1,
+      "grind": 3,
+      "travel": 10,
+      "life": 3,
+      "rest": 1
+     }
+    },
+    {
+     "id": "ch3",
+     "name": "3장 · 늪의 불씨",
+     "start": 18.3,
+     "end": 24.4,
+     "mainLevels": [
+      15,
+      16,
+      17,
+      18,
+      18,
+      19,
+      20,
+      21
+     ],
+     "quests": 17,
+     "downs": 2,
+     "minutes": {
+      "fight": 2,
+      "grind": 3,
+      "travel": 87,
+      "life": 11,
+      "rest": 1
+     }
+    },
+    {
+     "id": "ch4",
+     "name": "4장 · 잿빛 함대",
+     "start": 24.4,
+     "end": 29.4,
+     "mainLevels": [
+      21,
+      22,
+      22,
+      23,
+      24,
+      25,
+      26,
+      26,
+      27
+     ],
+     "quests": 10,
+     "downs": 2,
+     "minutes": {
+      "fight": 3,
+      "grind": 3,
+      "travel": 17,
+      "life": 10,
+      "rest": 1
+     }
+    },
+    {
+     "id": "ch5",
+     "name": "5장 · 불과 서리의 탑",
+     "start": 29.4,
+     "end": 34.9,
+     "mainLevels": [
+      27,
+      28,
+      29,
+      30,
+      30,
+      31,
+      32,
+      33
+     ],
+     "quests": 11,
+     "downs": 2,
+     "minutes": {
+      "fight": 4,
+      "grind": 3,
+      "travel": 28,
+      "life": 5,
+      "rest": 2
+     }
+    },
+    {
+     "id": "ch6",
+     "name": "6장 · 안개의 심장",
+     "start": 34.9,
+     "end": 41.2,
+     "mainLevels": [
+      34,
+      34,
+      36,
+      36,
+      39,
+      39,
+      40
+     ],
+     "quests": 8,
+     "downs": 9,
+     "minutes": {
+      "fight": 7,
+      "grind": 9,
+      "travel": 73,
+      "life": 11,
+      "rest": 15
+     }
+    }
+   ],
+   "fails": [],
+   "hard": [
+    {
+     "quest": "q5_supplies",
+     "name": "빼앗긴 보급품",
+     "level": 8,
+     "mine": 6,
+     "downs": 1
+    },
+    {
+     "quest": "sq_gu_raiders",
+     "name": "그물 도둑",
+     "level": 11,
+     "mine": 11,
+     "downs": 2
+    },
+    {
+     "quest": "c4_fort",
+     "name": "잿빛 요새",
+     "level": 26,
+     "mine": 27,
+     "downs": 1
+    },
+    {
+     "quest": "c5_fifth",
+     "name": "다섯째 등심",
+     "level": 31,
+     "mine": 33,
+     "downs": 1
+    },
+    {
+     "quest": "c6_keeper",
+     "name": "첫 등지기",
+     "level": 39,
+     "mine": 40,
+     "downs": 2
+    }
+   ],
+   "kills": 403,
+   "downs": 21,
+   "taken": 14867,
+   "side": 19,
+   "repairs": 23,
+   "broken": 0,
+   "hours": 7.1,
+   "time": {
+    "life": 61,
+    "travel": 264,
+    "fight": 22,
+    "grind": 41,
+    "rest": 35
+   }
+  }
+ ]
+}

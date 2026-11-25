@@ -27,3 +27,23 @@ const P = {
   sun: '<circle cx="12" cy="12" r="4" /> <path d="M12 2v2" /> <path d="M12 20v2" /> <path d="m4.93 4.93 1.41 1.41" /> <path d="m17.66 17.66 1.41 1.41" /> <path d="M2 12h2" /> <path d="M20 12h2" /> <path d="m6.34 17.66-1.41 1.41" /> <path d="m19.07 4.93-1.41 1.41" />',
 };
 export const icon = (name, cls = '') => (P[name] ? `<svg class="ico${cls ? ` ${cls}` : ''}" viewBox="0 0 24 24" aria-hidden="true">${P[name]}</svg>` : '');
+
+// ── 물건 아이콘(v2.2): tools/icons/items.py가 만든 스프라이트를 문서에 한 번 넣고 <use>로 쓴다 ──
+const have = new Set();
+export async function loadItemIcons(url = 'client/assets/icons/items.svg') {
+  try {
+    const t = await (await fetch(url)).text();
+    document.body.insertAdjacentHTML('afterbegin', t);
+    for (const m of t.matchAll(/id="it-([a-z0-9_]+)"/g)) have.add(m[1]);
+  } catch {
+    // 못 불러오면 이모지로 간다
+  }
+}
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+// def: 물건 정의(id·icon) 또는 퀘스트 물건 {id, icon}
+export function ii(def, cls = '') {
+  if (!def) return '';
+  if (have.has(def.id)) return `<svg class="iti${cls ? ` ${cls}` : ''}" viewBox="0 0 64 64" aria-hidden="true"><use href="#it-${def.id}"/></svg>`;
+  return esc(def.icon || '·');
+}
+export const hasItemIcon = (id) => have.has(id);

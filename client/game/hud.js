@@ -19,7 +19,7 @@ import { guildLevel, aiRoom, hireable } from '../../core/systems/guilds.js';
 import { npcPos } from '../../core/world.js';
 import { bondable, bondPts, bondTier, tierName, nextTier, giftDue, giftable, knownLikes, bondLines, B as bondCfg, isBirthday, daysToBirthday, perkOf, inviteDue } from '../../core/systems/bonds.js';
 import { allyOf } from '../../core/systems/allies.js';
-import { icon } from './icons.js';
+import { icon, ii } from './icons.js';
 import { seasonOf, dayOfMonth, isMarketDay } from '../../core/systems/calendar.js';
 import { questCtx, lifeSteps } from './quest.js';
 import { isUnlocked, allowedProject, chapterReached } from '../../core/systems/unlocks.js';
@@ -186,8 +186,8 @@ export function createHud(root, game, { touch, onAct }) {
     el.banner.classList.add('on');
     bannerUntil = performance.now() + ms;
   }
-  function pushFeed(text) {
-    feed.unshift({ text, at: performance.now() });
+  function pushFeed(text, item = null) {
+    feed.unshift({ text, item, at: performance.now() });
     if (feed.length > 5) feed.pop();
   }
 
@@ -198,12 +198,12 @@ export function createHud(root, game, { touch, onAct }) {
       let s = `+${ev.qty} ${itemName(data, ev.item)}`;
       if (lot && !game.state.veins[lot.vein]?.common) s += ` · ${lot.name}`;
       for (const b of ev.byproducts) s += ` · 덤 ${itemName(data, b.item)}`;
-      pushFeed(s);
+      pushFeed(s, data.items[ev.item]);
     } else if (ev.type === 'craft.done') {
       const r = data.recipes[ev.recipe];
       pushFeed(r.type === 'craft'
         ? `${itemName(data, ev.item)} ${stars(ev.star)}${ev.masterwork ? ' ✨걸작' : ''}`
-        : `${itemName(data, ev.item)} ×${ev.qty}${ev.to === 'storage' ? ' → 창고' : ''}`);
+        : `${itemName(data, ev.item)} ×${ev.qty}${ev.to === 'storage' ? ' → 창고' : ''}`, data.items[ev.item]);
     } else if (ev.type === 'skill.up') {
       banner(`${data.skills[ev.skill].icon} ${data.skills[ev.skill].name} ${ev.level}레벨`);
     } else if (ev.type === 'mastery.level') {
@@ -390,7 +390,7 @@ export function createHud(root, game, { touch, onAct }) {
     }
 
     // 획득 기록
-    const fh = feed.filter((f) => now - f.at < 4500).map((f) => `<div style="opacity:${Math.min(1, (4500 - (now - f.at)) / 800)}">${esc(f.text)}</div>`).join('');
+    const fh = feed.filter((f) => now - f.at < 4500).map((f) => `<div style="opacity:${Math.min(1, (4500 - (now - f.at)) / 800)}">${f.item ? `${ii(f.item)} ` : ''}${esc(f.text)}</div>`).join('');
     setHtml(el.feed, fh);
     if (now > toastUntil) el.toast.classList.remove('on');
     if (now > bannerUntil) el.banner.classList.remove('on');
@@ -427,15 +427,15 @@ export function createHud(root, game, { touch, onAct }) {
       const kind = def.armor ? `${ARMOR_CLASS[def.armor.class] || ''} · ` : '';
       const kg = def.weight ? ` · ${def.weight}kg` : '';
       const wear = e.maxDur ? `<u style="width:${Math.round((e.dur / e.maxDur) * 100)}%"></u>` : '';
-      return `<li class="it${e.broken ? ' broken' : ''}"><i class="ic">${def.icon || '·'}${wear}</i><div><b>${def.name}</b>${starHtml}${e.masterwork ? ' ✨' : ''}${e.broken ? ' <em class="no">부서짐</em>' : ''}<small>${kind}${fmtStats(e.stats)}${dur}${kg}</small></div>${act || ''}</li>`;
+      return `<li class="it${e.broken ? ' broken' : ''}"><i class="ic">${ii(def)}${wear}</i><div><b>${def.name}</b>${starHtml}${e.masterwork ? ' ✨' : ''}${e.broken ? ' <em class="no">부서짐</em>' : ''}<small>${kind}${fmtStats(e.stats)}${dur}${kg}</small></div>${act || ''}</li>`;
     }
     if (def.kind === 'consumable') {
-      return `<li class="it"><i class="ic">${def.icon || '·'}<em>${e.qty}</em></i><div><b>${def.name}</b>${starHtml}<small>${fmtStats(e.stats)}</small></div>${act || ''}</li>`;
+      return `<li class="it"><i class="ic">${ii(def)}<em>${e.qty}</em></i><div><b>${def.name}</b>${starHtml}<small>${fmtStats(e.stats)}</small></div>${act || ''}</li>`;
     }
     const lot = e.lot ? game.state.lots[e.lot] : null;
     const bonus = e.bonus ? ' · ' + Object.entries(e.bonus).map(([k, v]) => `${data.config.propNames[k]} +${v}`).join(', ') : '';
     const detail = lot ? `${esc(lot.name)} · ${fmtProps(effectiveProps(e, game.state.lots), data)}${bonus}` : esc(def.note || '');
-    return `<li class="it"><i class="ic">${def.icon || '·'}<em>${e.qty}</em></i><div><b>${def.name}</b>${starHtml}<small>${detail}</small></div>${act || ''}</li>`;
+    return `<li class="it"><i class="ic">${ii(def)}<em>${e.qty}</em></i><div><b>${def.name}</b>${starHtml}<small>${detail}</small></div>${act || ''}</li>`;
   }
 
   function sortEntries(list) {
@@ -454,7 +454,7 @@ export function createHud(root, game, { touch, onAct }) {
     const W = wDef ? masteryOf({ data }, wDef.weapon.type) : null;
     const m = W ? mOf(a, W) : null;
     const kb = (k) => (touch ? '' : `<kbd>${k}</kbd>`);
-    const swap = `<button class="wsl" data-act="swap" title="무기 바꾸기 (X)"><b>${wDef?.icon || '✊'}</b><i>${bE ? data.items[bE.item].icon : '·'}</i>${kb('X')}</button>`;
+    const swap = `<button class="wsl" data-act="swap" title="무기 바꾸기 (X)"><b>${wDef ? ii(wDef) : '✊'}</b><i>${bE ? ii(data.items[bE.item]) : '·'}</i>${kb('X')}</button>`;
     const lo = W ? loadoutOf({ ...a }, W) : [null, null, null];
     const cells = lo.map((id, i) => {
       const n = id ? data.weaponNodes[id] : null;
@@ -564,7 +564,7 @@ export function createHud(root, game, { touch, onAct }) {
       if (!e) return `<div class="eq"><small>${name}</small><b class="muted">비어 있음</b></div>`;
       const def = data.items[e.item];
       const v = def.weapon ? `공격력 ${e.stats.attack}` : `${ARMOR_CLASS[def.armor?.class] || ''} · 방어 ${e.stats.armor}`;
-      return `<div class="eq ${e.broken ? 'broken' : ''}"><small>${name} · ${def.weight || 0}kg</small><b>${def.icon || ''} ${def.name}</b><small>${stars(e.star ?? 0)} · ${v} · 내구 ${e.dur}/${e.maxDur}</small></div>`;
+      return `<div class="eq ${e.broken ? 'broken' : ''}"><small>${name} · ${def.weight || 0}kg</small><b>${ii(def)} ${def.name}</b><small>${stars(e.star ?? 0)} · ${v} · 내구 ${e.dur}/${e.maxDur}</small></div>`;
     }).join('');
     const armor = ['head', 'chest', 'legs'].reduce((s, k) => { const e = a.equip?.[k] ? a.bag.find((x) => x.uid === a.equip[k]) : null; return s + (e && !e.broken ? e.stats.armor : 0); }, 0);
     const { kg, tier } = equipLoad({ data, cfg: data.config, state: game.state }, a);
@@ -619,7 +619,7 @@ export function createHud(root, game, { touch, onAct }) {
       if (gd) {
         const cap = data.guilds.levels[Math.max(0, guildLevel(ctx, gd) - 1)].store;
         const grows = sortEntries(gd.store).map((e) => entryRow(e, `<button data-act="guild-take" data-v="${esc(keyOf(e))}">꺼내기</button>`)).join('') || '<li><small>비어 있다</small></li>';
-        const puts = sortEntries(a.bag).filter((e) => !Object.values(a.equip || {}).includes(e.uid)).map((e) => `<button class="mini" data-act="guild-put" data-v="${esc(keyOf(e))}">${data.items[e.item].icon} ${esc(data.items[e.item].name)}</button>`).join(' ');
+        const puts = sortEntries(a.bag).filter((e) => !Object.values(a.equip || {}).includes(e.uid)).map((e) => `<button class="mini" data-act="guild-put" data-v="${esc(keyOf(e))}">${ii(data.items[e.item])} ${esc(data.items[e.item].name)}</button>`).join(' ');
         html += `<h3>🤝 ${esc(gd.name)} 조합 창고 ${gd.store.length}/${cap}칸</h3><ul class="list">${grows}</ul><p class="muted">가방에서 넣기: ${puts || '없음'}</p>`;
       }
     } else {
@@ -662,7 +662,7 @@ export function createHud(root, game, { touch, onAct }) {
       if (pv.ok && pv.stats) result = `예상 <span class="stars">${stars(pv.star)}</span> ${fmtStats(pv.stats)} · 걸작 ${(pv.masterwork * 100).toFixed(1)}%`;
       else if (pv.ok && pv.props) result = `예상 ${fmtProps(pv.props, data)}${pv.step ? ` · 약한 속성 +${pv.step}` : ''}`;
       const why = pv.ok ? '' : `<small class="no">${ERR[pv.error] || pv.error}</small>`;
-      const outIcon = data.items[r.output?.item]?.icon || sk.icon;
+      const outIcon = r.output?.item && data.items[r.output.item] ? ii(data.items[r.output.item]) : sk.icon;
       return `<li class="rc it${pv.ok ? ' can' : ''}"><i class="ic">${outIcon}${r.output?.qty > 1 ? `<em>${r.output.qty}</em>` : ''}</i><div><b>${r.name}</b> <small>${sk.icon} ${sk.name} ${r.level} · ${r.seconds}초</small>
         <small>${mats}${r.catalyst ? ` · 촉매 ${itemName(data, r.catalyst)}(있으면 사용)` : ''}</small>
         ${result ? `<small class="pv">${result}</small>` : ''}${why}</div>
@@ -676,7 +676,7 @@ export function createHud(root, game, { touch, onAct }) {
       const rr = tools.map((e) => {
         const def = data.items[e.item];
         const cost = repairCost({ data, cfg: data.config }, e, a);
-        return `<li><div><b>${def.icon || ''} ${def.name}</b> <span class="stars">${stars(e.star ?? 0)}</span>
+        return `<li><div><b>${ii(def)} ${def.name}</b> <span class="stars">${stars(e.star ?? 0)}</span>
           <small>${e.broken ? '<em class="no">부서짐</em>' : `내구 ${e.dur}/${e.maxDur}`}${e.repairs ? ` · ${e.repairs}번 고침` : ''} · 고치면 최대 내구 ${Math.max(1, Math.round(e.maxDur * (1 - data.config.repair.maxLoss)))}</small></div>
           <button data-act="repair" data-v="${e.uid}" ${a.silver >= cost ? '' : 'disabled'}>수리 ${cost}은화</button></li>`;
       }).join('');
@@ -736,7 +736,7 @@ export function createHud(root, game, { touch, onAct }) {
       const have = countDeliverable(ctx, lists, o);
       const cond = [o.minStar ? `★${o.minStar} 이상` : '', def.tool ? '내구도 95% 이상' : ''].filter(Boolean).join(' · ');
       const fresh = day - o.postedDay < data.config.orders.agentDelayDays ? ' · 오늘 붙음' : '';
-      return `<li><div><b>${def.icon || ''} ${def.name}</b> ×${o.left}<small>개당 <b class="ok">${o.reward}은화</b>${cond ? ` · ${cond}` : ''} · ${o.expiresDay + 1}일차 아침까지${fresh}</small>
+      return `<li><div><b>${ii(def)} ${def.name}</b> ×${o.left}<small>개당 <b class="ok">${o.reward}은화</b>${cond ? ` · ${cond}` : ''} · ${o.expiresDay + 1}일차 아침까지${fresh}</small>
         <small class="${have ? 'ok' : ''}">${have ? `넘길 수 있는 것 ${Math.min(have, o.left)}개 → ${Math.min(have, o.left) * o.reward}은화` : '조건에 맞는 물건이 없다'}</small></div>
         <button data-act="ord-deliver" data-v="${o.id}" ${have && town ? '' : 'disabled'}>넘기기</button></li>`;
     }).join('');
@@ -864,7 +864,7 @@ export function createHud(root, game, { touch, onAct }) {
   }
 
   // ── 퀘스트(v0.5): 대화·일지·현상금 ─────────────────
-  const itemLabel = (id) => `${data.items[id].icon || ''} ${data.items[id].name}`;
+  const itemLabel = (id) => `${ii(data.items[id])} ${data.items[id].name}`;
   function rewardText(r = {}) {
     const out = [];
     if (r.silver) out.push(`🪙 ${r.silver}`);
@@ -881,7 +881,7 @@ export function createHud(root, game, { touch, onAct }) {
   function questItemsHtml(a) {
     const list = Object.entries(a.quests?.items || {});
     if (!list.length) return '';
-    return `<div class="qitems">${list.map(([k, n]) => `<span>${data.questItems[k]?.icon || '📦'} ${esc(data.questItems[k]?.name || k)}${n > 1 ? ` ×${n}` : ''}</span>`).join('')}</div>`;
+    return `<div class="qitems">${list.map(([k, n]) => `<span>${data.questItems[k] ? ii({ id: k, icon: data.questItems[k].icon }) : '📦'} ${esc(data.questItems[k]?.name || k)}${n > 1 ? ` ×${n}` : ''}</span>`).join('')}</div>`;
   }
   function activeQuestHtml(a, id) {
     const ctx = questCtx(game);
@@ -946,7 +946,7 @@ export function createHud(root, game, { touch, onAct }) {
   function likesHtml(a, npcId) {
     const ctx = questCtx(game);
     const k = knownLikes(ctx, a, npcId);
-    const nm = (ids) => ids.map((it) => `${data.items[it].icon || ''}${esc(data.items[it].name)}`).join(' · ');
+    const nm = (ids) => ids.map((it) => `${ii(data.items[it])}${esc(data.items[it].name)}`).join(' · ');
     if (!k.love.length && !k.like.length && !k.hate.length) return `<p class="muted">좋아하는 걸 아직 모른다. 선물해 보거나 ${esc(tierName(ctx, bondCfg(ctx).revealTier))}이 되면 알려 준다.</p>`;
     return `<ul class="likes">${k.love.length ? `<li>💖 ${nm(k.love)}</li>` : ''}${k.like.length ? `<li>😊 ${nm(k.like)}</li>` : ''}${k.hate.length ? `<li>😣 ${nm(k.hate)}</li>` : ''}</ul>`;
   }
@@ -963,7 +963,7 @@ export function createHud(root, game, { touch, onAct }) {
     const told = knownLikes(ctx, a, npc.id);
     const tag = (it) => (told.love.includes(it) ? '💖' : told.like.includes(it) ? '😊' : told.hate.includes(it) ? '😣' : known[it] ? REACT[known[it]][0] : '');
     const seen = new Set();
-    const rows = a.bag.filter((e) => giftable(ctx, e)).filter((e) => (seen.has(e.item) ? false : seen.add(e.item))).map((e) => `<li><span>${data.items[e.item].icon || ''} ${esc(data.items[e.item].name)} <small>×${countItem([a.bag], e.item)}</small> ${tag(e.item)}</span><button data-act="gift" data-v="${esc(keyOf(e))}">주기</button></li>`).join('');
+    const rows = a.bag.filter((e) => giftable(ctx, e)).filter((e) => (seen.has(e.item) ? false : seen.add(e.item))).map((e) => `<li><span>${ii(data.items[e.item])} ${esc(data.items[e.item].name)} <small>×${countItem([a.bag], e.item)}</small> ${tag(e.item)}</span><button data-act="gift" data-v="${esc(keyOf(e))}">주기</button></li>`).join('');
     return `${head}${likesHtml(a, npc.id)}<p class="muted">가방에서 하나를 준다. 하루 한 번.</p><ul class="list">${rows || '<li class="muted">줄 만한 게 없다(장비는 못 준다)</li>'}</ul><div class="btns"><button data-act="gift-back">돌아가기</button></div>`;
   }
   function talkHtml(a) {
@@ -1052,8 +1052,8 @@ export function createHud(root, game, { touch, onAct }) {
     let html = `<div class="qtag">${esc(t.name)} · ${esc(town.name)}</div>`;
     html += `<p>아늑함 <b>${Math.round(comfort)}</b> — 쉬면 숙련 경험 +${Math.round(restValue(ctx, h) * 100)}% (${H.rest.minutes}분)${t.stations.length ? ` · 집 작업대: ${t.stations.map((x) => esc(data.stations[x]?.name || x)).join('·')}` : ''}</p>`;
     html += `<div class="btns"><button data-act="rest"${wait ? ' disabled' : ''}>🛏️ 쉬기${wait ? ` (${Math.ceil(wait / 60)}분 뒤)` : ''}</button></div>`;
-    const placed = h.furniture.map((e) => `<li><span>${data.items[e.item].icon} ${esc(data.items[e.item].name)} · 아늑함 ${Math.round(e.stats?.comfort || 0)}</span><button data-act="house-take" data-v="${e.uid}">들이기</button></li>`).join('');
-    const inBag = a.bag.filter((e) => e.uid && data.items[e.item].stage === 'furniture').map((e) => `<li><span>${data.items[e.item].icon} ${esc(data.items[e.item].name)} · 아늑함 ${Math.round(e.stats?.comfort || 0)}</span><button data-act="house-place" data-v="${e.uid}"${h.furniture.length >= t.furniture ? ' disabled' : ''}>놓기</button></li>`).join('');
+    const placed = h.furniture.map((e) => `<li><span>${ii(data.items[e.item])} ${esc(data.items[e.item].name)} · 아늑함 ${Math.round(e.stats?.comfort || 0)}</span><button data-act="house-take" data-v="${e.uid}">들이기</button></li>`).join('');
+    const inBag = a.bag.filter((e) => e.uid && data.items[e.item].stage === 'furniture').map((e) => `<li><span>${ii(data.items[e.item])} ${esc(data.items[e.item].name)} · 아늑함 ${Math.round(e.stats?.comfort || 0)}</span><button data-act="house-place" data-v="${e.uid}"${h.furniture.length >= t.furniture ? ' disabled' : ''}>놓기</button></li>`).join('');
     html += `<h3>가구 ${h.furniture.length}/${t.furniture}</h3><ul class="list">${placed || '<li class="muted">목공대에서 가구를 만들어 놓자(의자·탁자·침상·등잔·깔개·선반)</li>'}${inBag}</ul>`;
     const slots = [];
     for (let i = 0; i < t.garden; i++) {
@@ -1213,7 +1213,7 @@ export function createHud(root, game, { touch, onAct }) {
       const suggest = low ? Math.max(1, Math.min(ref, low.price - 1)) : ref;
       const price = prices[key] ?? suggest;
       const lot = e.lot ? game.state.lots[e.lot] : null;
-      return `<li class="mk"><div><b>${def.icon || ''} ${def.name}</b> ×${e.qty} <span class="stars">${stars(st)}</span>
+      return `<li class="mk"><div><b>${ii(def)} ${def.name}</b> ×${e.qty} <span class="stars">${stars(st)}</span>
         <small>${lot ? `${esc(lot.name)} · ` : ''}시세 ${ref} · 사자 ${bid ? `${bid.price}(${bid.qty}개)` : '없음'} · 팔자 최저 ${low ? low.price : '없음'}${elsewhere ? ` · ${elsewhere}` : ''}</small></div>
         <div class="btns">
           ${bid ? `<button data-act="mk-sell" data-v="${esc(key)}" data-n="${bid.price}">바로 팔기 ${bid.price}</button>` : ''}
@@ -1248,14 +1248,14 @@ export function createHud(root, game, { touch, onAct }) {
         const q = Math.min(n, g.qty);
         return `<button data-act="mk-buy" data-v="${g.item}|${g.star}" data-n="${q}" ${a.silver >= q * g.best ? '' : 'disabled'}>${n >= g.qty ? '다' : `${q}개`}</button>`;
       };
-      return `<li class="mk"><div><b>${def.icon || ''} ${def.name}</b> <span class="stars">${stars(g.star)}</span>
+      return `<li class="mk"><div><b>${ii(def)} ${def.name}</b> <span class="stars">${stars(g.star)}</span>
         <small>최저 <b>${g.best}</b>은화 · ${g.qty}개 걸림 · 시세 ${ref}</small></div>
         <div class="btns row">${btn(1)}${g.qty > 5 ? btn(10) : ''}${btn(g.qty)}</div></li>`;
     }).join('');
     const wants = data.lists.items.filter((it) => (it.kind === 'material' || it.kind === 'consumable') && it.value).map((it) => {
       const p2 = Math.max(1, Math.round(refPrice(ctx, at, it.id, 2)));
       const p3 = Math.max(1, Math.round(refPrice(ctx, at, it.id, 3)));
-      return `<li><div><b>${it.icon || ''} ${it.name}</b><small>시세 ★2 ${p2} · ★3 ${p3}</small></div>
+      return `<li><div><b>${ii(it)} ${it.name}</b><small>시세 ★2 ${p2} · ★3 ${p3}</small></div>
         <div class="btns row"><button class="mini" data-act="mk-bid" data-v="${it.id}|0" data-n="${p2}">10개 사자</button><button class="mini" data-act="mk-bid" data-v="${it.id}|3" data-n="${p3}">★3+ 5개</button></div></li>`;
     }).join('');
     return `<ul class="list">${rows || '<li><small>지금 걸린 팔자 주문이 없다.</small></li>'}</ul>
@@ -1268,7 +1268,7 @@ export function createHud(root, game, { touch, onAct }) {
       const def = data.items[o.item];
       const side = o.entry ? '팔자' : '사자';
       const st = o.entry ? stars(o.star) : (o.minStar ? `★${o.minStar} 이상` : '');
-      return `<li><div><b>${side} · ${def.icon || ''} ${def.name}</b> <span class="stars">${st}</span><small>${townName(o.at)} · ${o.qty}개 · 개당 ${o.price}은화 · ${o.expiresDay + 1}일차 아침에 내려감</small></div>
+      return `<li><div><b>${side} · ${ii(def)} ${def.name}</b> <span class="stars">${st}</span><small>${townName(o.at)} · ${o.qty}개 · 개당 ${o.price}은화 · ${o.expiresDay + 1}일차 아침에 내려감</small></div>
         <button data-act="mk-cancel" data-v="${o.id}">거두기</button></li>`;
     }).join('');
     const sold = game.tele.log.filter((ev) => ev.type === 'market.trade' && (ev.seller === PID || ev.buyer === PID)).slice(-8).reverse()

@@ -1315,7 +1315,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '2.1.0');
+  eq(st.meta.engine, '2.2.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1507,7 +1507,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '2.1.0');
+  eq(st.meta.engine, '2.2.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -2211,6 +2211,16 @@ test('생일 잔치: 이웃 이상인 사람의 생일에만 열리고, 이웃 �
   ok(g.dispatch({ type: 'TALK', actor: 'p1', npc: 'seondeok' }).ok, '잔치');
   eq(bondPts(a, 'seondeok'), 45 + data.config.bond.quest.party, '잔치 정');
   ok(!available(W, a, q), '그날 한 번');
+});
+
+console.log('물건 아이콘 (v2.2)');
+
+test('물건 아이콘: 모든 물건과 퀘스트 물건에 그림이 있다(tools/icons/items.py로 다시 만든다)', () => {
+  const svg = readFileSync(new URL('../client/assets/icons/items.svg', import.meta.url), 'utf8');
+  const have = new Set([...svg.matchAll(/id="it-([a-z0-9_]+)"/g)].map((m) => m[1]));
+  const miss = [...Object.keys(data.items), ...Object.keys(data.questItems)].filter((id) => !have.has(id));
+  eq(miss.join(','), '', '그림 없는 물건');
+  ok(!/display:\s*none/.test(svg.slice(0, 300)), '숨김은 display:none이 아니어야 그라데이션이 보인다');
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

@@ -11,6 +11,7 @@ import { stars, ERR, josa } from '../../core/text.js';
 import { bondTier, isBirthday } from '../../core/systems/bonds.js';
 import { seasonOf } from '../../core/systems/calendar.js';
 import { createParticles } from './gfx/particles.js';
+import { loadItemIcons } from './icons.js';
 const nightK0 = (sky) => sky.night;
 import { createScene } from './scene.js';
 import { startTier, createAutoTuner, chosenTier, setChosenTier, TIERS } from './gfx/quality.js';
@@ -94,6 +95,7 @@ async function boot() {
   // 섬이 여럿(v0.6): 내가 있는 섬만 그린다. 다른 섬으로 건너가면 저장하고 다시 불러온다
   const region = regionAt(data.lists.regions, game.state.actors[PID].x);
   setArea(region.bounds);
+  await loadItemIcons(); // 물건 아이콘(v2.2)
   await say('🌫️ 땅과 돌의 결을 굽는 중…');
   const tex = await bakeMaterials(view.renderer, { terrainSize: tier.texTerrain, objectSize: tier.texObject });
   const mats = makeMaterials(tex, ctex);
@@ -864,7 +866,7 @@ async function boot() {
   game.on('quest.use', (ev) => {
     if (ev.actor !== PID) return;
     const it = ev.gives && data.questItems[ev.gives];
-    hud.feed(it ? `${it.icon} ${it.name}${ev.need > 1 ? ` (${ev.n}/${ev.need})` : ''}` : `✔ ${data.objects[ev.obj].name}`);
+    hud.feed(it ? `${it.name}${ev.need > 1 ? ` (${ev.n}/${ev.need})` : ''}` : `✔ ${data.objects[ev.obj].name}`, it ? { id: ev.gives, icon: it.icon } : null);
     actorsView.onEvent(ev);
   });
   game.on('quest.progress', (ev) => {
@@ -921,8 +923,8 @@ async function boot() {
     if (ev.actor !== PID) return;
     const parts = [];
     if (ev.silver) parts.push(`🪙 +${ev.silver}`);
-    for (const x of ev.items) parts.push(`${data.items[x.item].icon || ''} ${data.items[x.item].name} ×${x.qty}`);
-    if (parts.length) hud.feed(parts.join(' · '));
+    for (const x of ev.items) parts.push(`${data.items[x.item].name} ×${x.qty}`);
+    if (parts.length) hud.feed(parts.join(' · '), ev.items[0] ? data.items[ev.items[0].item] : null);
     if (ev.lost) hud.toast('🎒 가방이 가득 차서 전리품 일부를 버렸다', 'warn');
   });
   game.on('shot.end', (ev) => fx.burst(ev.x, ground.hf.height(ev.x, ev.z) + 0.2, ev.z, 0x7a6a58, 4, { lift: 0, spread: 0.1, speed: 0.4, dust: true }));

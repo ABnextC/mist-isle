@@ -29,6 +29,7 @@ import { combatTick, arrowsTick } from './systems/combat.js';
 import { fightersTick } from './ai/fighter.js';
 import { alliesTick } from './systems/allies.js';
 import { rivalsTick } from './systems/rivals.js';
+import { territoryTick, territoryDaily } from './systems/territory.js';
 import { expeditionsTick } from './systems/expeditions.js';
 import { dayOfMonth, seasonOf, isMarketDay } from './systems/calendar.js';
 import { agentsTick } from './systems/agents.js';
@@ -102,6 +103,7 @@ function wrap(ctx, bus) {
       focusTick(ctx);
       questsTick(ctx);
       expeditionsTick(ctx);
+      territoryTick(ctx); // 영지전(v2.7)
       const h = ctx.clock.hour(state.t);
       if (h !== state.clock.hour) {
         state.clock.hour = h;
@@ -117,6 +119,7 @@ function wrap(ctx, bus) {
         settlementsDaily(ctx);
         dailyOrders(ctx);
         econDaily(ctx);
+        territoryDaily(ctx);
         ctx.emit('day.start', { day: d + 1 });
         // 계절·장날(v1.8)
         if (dayOfMonth(ctx) === 1) ctx.emit('season.start', { season: seasonOf(ctx).id });

@@ -75,6 +75,7 @@ export function spawnRival(ctx, band, slot) {
   a.look = { body: ctx.rng.chance(0.3) ? 'f' : 'm', seed: 300 + ctx.rng.int(0, 400), tint: { ...band.tint } };
   a.faction = null;
   a.rival = { band: band.id, faction: band.faction, color: band.color || f?.color || '#c04040', home: band.at ? [...band.at] : at, target: null, moveAt: 0, purse: ctx.rng.int(band.silver[0], band.silver[1]), plan: null, seen: -1 };
+  a.rival.read = band.read ?? 0.4;
   if (band.war) Object.assign(a.rival, { war: band.war, team: band.team, title: band.name });
   a.ai = { on: true, profile: 'rival', manual: true, mem: {} };
   a.pvp = emptyPvp();
@@ -209,8 +210,6 @@ function rivalFight(ctx, rv) {
   const cb = rv.cb;
   const tg = ctx.state.actors[rv.rival.target];
   if (!tg || cb.stunUntil > t) return;
-  const R = RV(ctx);
-  const band = R.bands.find((b) => b.id === rv.rival.band);
   const w = weaponOf(ctx, rv);
   const d = Math.hypot(tg.x - rv.x, tg.z - rv.z);
   // 1) 상대의 공격 읽기
@@ -219,7 +218,7 @@ function rivalFight(ctx, rv) {
     const left = act.hitAt - t;
     if (rv.rival.seen !== act.hitAt) {
       rv.rival.seen = act.hitAt;
-      rv.rival.plan = ctx.rng.chance(band.read) ? (ctx.rng.chance(0.5) ? 'block' : 'dodge') : 'none';
+      rv.rival.plan = ctx.rng.chance(rv.rival.read ?? 0.4) ? (ctx.rng.chance(0.5) ? 'block' : 'dodge') : 'none';
     }
     if (rv.rival.plan === 'dodge' && left < 0.18 && !cb.dodge) {
       const yaw = yawTo(tg, rv) + (ctx.rng.chance(0.5) ? 1.2 : -1.2);

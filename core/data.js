@@ -3,7 +3,7 @@
 
 // 퀘스트 단계 종류(v0.5.2에 생활 단계를 더했다)
 export const STEP_TYPES = ['talk', 'go', 'kill', 'use', 'defend', 'have', 'eat', 'store', 'repair', 'sell', 'project', 'faction'];
-export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects', 'npcs', 'quests', 'unlocks', 'factions', 'housing', 'guilds', 'weapons', 'expeditions', 'rivals'];
+export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects', 'npcs', 'quests', 'unlocks', 'factions', 'housing', 'guilds', 'weapons', 'expeditions', 'rivals', 'territory'];
 
 export function buildData(raw) {
   const problems = [];
@@ -285,9 +285,22 @@ export function buildData(raw) {
     for (const w of b.weapons) if (!items[w]?.weapon) problems.push(`다른 세력 무리 ${b.id}: 무기 ${w} 없음`);
     for (const [s, a] of Object.entries(b.armor || {})) if (items[a]?.armor?.slot !== s) problems.push(`다른 세력 무리 ${b.id}: ${s} 갑옷 ${a} 이상`);
   }
+  // 영지(v2.7)
+  const T = raw.territory || { holds: [], aiGuilds: [], supply: [] };
+  const sids = new Set(raw.regions.flatMap((r) => r.settlements.map((s) => s.id)));
+  for (const g of T.aiGuilds) {
+    if (!factions.list.some((f) => f.id === g.faction)) problems.push(`AI 조합 ${g.id}: 세력 ${g.faction} 없음`);
+    for (const w of g.weapons) if (!items[w]?.weapon) problems.push(`AI 조합 ${g.id}: 무기 ${w} 없음`);
+  }
+  for (const h of T.holds) {
+    if (!sids.has(h.settlement)) problems.push(`영지 ${h.settlement}: 마을 없음`);
+    if (h.owner.startsWith('ai:') && !T.aiGuilds.some((g) => `ai:${g.id}` === h.owner)) problems.push(`영지 ${h.settlement}: 주인 ${h.owner} 없음`);
+  }
+  for (const s of T.supply) if (s.item && !items[s.item]) problems.push(`전쟁 물자 ${s.item} 없음`);
   if (problems.length) throw new Error('데이터 오류\n- ' + problems.join('\n- '));
 
   return {
+    territory: T,
     rivals: raw.rivals || { bands: [], names: ['이름 없음'], respawnSec: 240, aggro: 16, leash: 42, fallSec: 2.5 },
     weapons,
     weaponNodes,

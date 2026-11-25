@@ -1,5 +1,6 @@
 // 미니맵: 위가 북쪽(z가 큰 쪽). 산지 소문은 점선 고리, 가까운 노드는 점으로.
 
+import { ownerInfo } from '../../core/systems/territory.js';
 import { regionAt } from '../../core/terrain.js';
 import { valueNoise } from '../../core/terrain.js';
 import { npcPos } from '../../core/world.js';
@@ -150,6 +151,17 @@ export function createMinimap(canvas, game, terrain) {
       g.arc(px, py, 4.5, 0, Math.PI * 2);
       g.fill();
       g.stroke();
+      // 영지(v2.7): 주인 조합 색 테
+      const hold = state.territory?.holds?.[s.id];
+      if (hold) {
+        const o = ownerInfo({ state, data }, hold.owner);
+        const atWar = Object.values(state.territory.wars).some((w) => w.settlement === s.id);
+        g.strokeStyle = atWar ? (Math.floor(time * 3) % 2 ? '#ff5040' : o.color) : o.color;
+        g.lineWidth = 2.5;
+        g.beginPath();
+        g.arc(px, py, 7, 0, Math.PI * 2);
+        g.stroke();
+      }
       g.lineWidth = 1;
       // 마을 이름(v0.4: 마을이 둘)
       g.font = '10px sans-serif';

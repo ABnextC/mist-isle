@@ -8,11 +8,12 @@ import { dailyOrders } from './orders.js';
 import { initCombat, emptyEquip } from './systems/combat.js';
 import { emptyPvp } from './systems/pvp.js';
 import { emptyRivals, initRivals } from './systems/rivals.js';
+import { emptyTerritory, initTerritory } from './systems/territory.js';
 import { initMobs } from './systems/mobs.js';
 import { newSettlement, initProjects, settlementsDaily } from './settlements.js';
 import { emptyQuests, startQuest, firstQuest } from './systems/quests.js';
 
-export const ENGINE_VERSION = '2.6.0';
+export const ENGINE_VERSION = '2.7.0';
 
 export function spawnPoint(region, terrain) {
   const [x, inland] = region.spawn;
@@ -61,7 +62,7 @@ export function createState(data, seed) {
     clock: { hour: 0, day: 0 },
     rng: seedState(seed),
     nextId: 1,
-    regions: {}, lots: {}, veins: {}, nodes: {}, settlements: {}, projects: {}, actors: {}, mobs: {}, mobGroups: {}, shots: [], arrows: [], zones: [], houses: {}, guilds: {}, runs: {}, rivals: emptyRivals(),
+    regions: {}, lots: {}, veins: {}, nodes: {}, settlements: {}, projects: {}, actors: {}, mobs: {}, mobGroups: {}, shots: [], arrows: [], zones: [], houses: {}, guilds: {}, runs: {}, rivals: emptyRivals(), territory: emptyTerritory(),
     market: emptyMarket(), orders: [], econ: null,
   };
 }
@@ -89,6 +90,7 @@ export function populate(ctx, actorSpecs) {
   state.projects = initProjects(data);
   initMobs(ctx);
   initRivals(ctx);
+  initTerritory(ctx);
   state.econ = initEcon(ctx);
   settlementsDaily(ctx);
   dailyOrders(ctx);

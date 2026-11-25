@@ -163,6 +163,8 @@ export function createAudio(game, { pid, heightAt, regionOf, zoneOf, townOf, cam
   on('day.start', () => play('bell', null, { gain: 0.5, wet: 0.5 }));
   on('pvp.flag', (ev) => { if (mine(ev)) play(ev.on ? 'guardbreak' : 'equip', null, { gain: 0.5 }); });
   on('rival.fall', (ev) => { if (ev.by === pid) play('quest', null, { gain: 0.8 }); });
+  on('war.siege', () => play('guardbreak', null, { gain: 0.6, wet: 0.5 }));
+  on('war.end', () => play('quest', null));
 
   // 도구가 닿은 순간(actorsView 타격) → 재질 소리
   const STRIKE = { chop: 'chop', chop_tree: 'chop', mine: 'mine', harvest: 'rustle', pick_bush: 'rustle', pick_ground: 'rustle', skin: 'skin' };
@@ -230,7 +232,7 @@ export function createAudio(game, { pid, heightAt, regionOf, zoneOf, townOf, cam
       if (Math.hypot(m.x - a.x, m.z - a.z) < 30) { fight = true; break; }
     }
     if (!fight) fight = Object.values(game.state.actors).some((r) => r.rival?.target === pid); // 다른 세력 개척자(v2.6)
-    music.setMood(moodFor({ region, night: (info.night ?? 0) > 0.5, combat: fight, boss: !!info.boss, town: !!townOf(a) }));
+    music.setMood(moodFor({ region, night: (info.night ?? 0) > 0.5, combat: fight || !!info.siege, boss: !!info.boss || !!info.siege, town: !!townOf(a) }));
     music.update();
   }
 

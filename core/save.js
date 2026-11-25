@@ -8,6 +8,7 @@ import { pickCenter, pickNodeSpot, openVein } from './systems/veins.js';
 import { initCombat, emptyEquip } from './systems/combat.js';
 import { emptyPvp } from './systems/pvp.js';
 import { emptyRivals, initRivals } from './systems/rivals.js';
+import { emptyTerritory, initTerritory } from './systems/territory.js';
 import { initMobs, groupSpot } from './systems/mobs.js';
 import { emptyQuests, startQuest, firstQuest } from './systems/quests.js';
 import { makeClock } from './clock.js';
@@ -590,6 +591,16 @@ const MIGRATIONS = [
       st.rivals = st.rivals || emptyRivals();
       initRivals(migrationCtx(st, data, 0x26a1f00d));
       st.meta.engine = '2.6.0';
+    },
+  },
+  {
+    // v2.6 → v2.7: 영지전. 본섬 마을 다섯을 AI 조합 셋이 나눠 쥔 채로 시작한다
+    from: 31,
+    to: 32,
+    run(st, data) {
+      st.territory = st.territory || emptyTerritory();
+      initTerritory(migrationCtx(st, data, 0x27b0a5e1));
+      st.meta.engine = '2.7.0';
     },
   },
 ];

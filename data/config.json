@@ -1,5 +1,5 @@
 {
-  "dataVersion": 31,
+  "dataVersion": 32,
   "skillCap": 60,
   "time": {
     "secondsPerGameDay": 3600,
@@ -1766,5 +1766,30 @@
     "honorPerKill": 10,
     "killXpMult": 2.5,
     "killInf": 25
+  },
+  "war": {
+    "declareSilver": 800,
+    "prepDays": 1,
+    "siegeSec": 600,
+    "captureSec": 45,
+    "flagR": 7,
+    "nearR": 60,
+    "baseDefenders": 6,
+    "defPerPoints": 60,
+    "maxDefenders": 14,
+    "baseAttackers": 6,
+    "attPerPoints": 60,
+    "maxAttackers": 14,
+    "wave": 5,
+    "militiaPerPoints": 80,
+    "maxMilitia": 4,
+    "aiSupplyPerDay": 120,
+    "aiDeclareEvery": 4,
+    "aiWarChance": 0.5,
+    "taxPerDay": 120,
+    "marketMult": 0.95,
+    "seedYield": 0.1,
+    "defendBonus": 1.15,
+    "cooldownDays": 2
   }
 }

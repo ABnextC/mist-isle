@@ -1,0 +1,148 @@
+{
+  "holds": [
+    {
+      "settlement": "s_port",
+      "owner": "ai:anchor"
+    },
+    {
+      "settlement": "s_valley",
+      "owner": "ai:lamp"
+    },
+    {
+      "settlement": "s_willow",
+      "owner": "ai:anchor"
+    },
+    {
+      "settlement": "s_ash",
+      "owner": "ai:ledger"
+    },
+    {
+      "settlement": "s_kiln",
+      "owner": "ai:lamp"
+    }
+  ],
+  "aiGuilds": [
+    {
+      "id": "anchor",
+      "name": "잿빛 닻 조합",
+      "faction": "fleet",
+      "color": "#3f7fb0",
+      "icon": "⚓",
+      "level": 24,
+      "score": 60,
+      "weapons": [
+        "wpn_spear_iron",
+        "wpn_sword_iron",
+        "wpn_bow_oak"
+      ],
+      "armor": {
+        "head": "arm_leather_hood",
+        "chest": "arm_leather_vest",
+        "legs": "arm_leather_pants"
+      },
+      "tint": {
+        "shirt": "#c9d4d8",
+        "vest": "#2f5a7a",
+        "trousers": "#2a3440",
+        "lthr": "#4a3420"
+      }
+    },
+    {
+      "id": "lamp",
+      "name": "등불 수호회",
+      "faction": "lantern",
+      "color": "#d9a83a",
+      "icon": "🏮",
+      "level": 26,
+      "score": 62,
+      "weapons": [
+        "wpn_hammer_iron",
+        "wpn_sword_iron",
+        "wpn_battleaxe_iron"
+      ],
+      "armor": {
+        "head": "arm_iron_helm",
+        "chest": "arm_iron_cuirass",
+        "legs": "arm_iron_greaves"
+      },
+      "tint": {
+        "shirt": "#e8d8b0",
+        "vest": "#8a5a1a",
+        "trousers": "#3a2e22",
+        "lthr": "#5a3a1a"
+      }
+    },
+    {
+      "id": "ledger",
+      "name": "푸른 기록회",
+      "faction": "scholars",
+      "color": "#7a5ac0",
+      "icon": "📘",
+      "level": 30,
+      "score": 66,
+      "weapons": [
+        "wpn_staff_oak",
+        "wpn_bow_oak",
+        "wpn_spear_iron"
+      ],
+      "armor": {
+        "head": "arm_leather_hood",
+        "chest": "arm_leather_vest",
+        "legs": "arm_leather_pants"
+      },
+      "tint": {
+        "shirt": "#d8d0e4",
+        "vest": "#4a3a6e",
+        "trousers": "#2e2a3a",
+        "lthr": "#3a2c40"
+      }
+    }
+  ],
+  "supply": [
+    {
+      "stage": "potion",
+      "points": 12,
+      "name": "물약"
+    },
+    {
+      "stage": "food",
+      "points": 6,
+      "name": "음식"
+    },
+    {
+      "stage": "ammo",
+      "points": 0.6,
+      "name": "화살"
+    },
+    {
+      "item": "stone_cut",
+      "points": 4,
+      "name": "다듬은 돌(성벽)"
+    },
+    {
+      "item": "lumber_oak",
+      "points": 3,
+      "name": "참나무 판재(공성 사다리)"
+    },
+    {
+      "item": "lumber_birch",
+      "points": 2,
+      "name": "자작나무 판재"
+    },
+    {
+      "item": "ingot_iron",
+      "points": 5,
+      "name": "철주괴(병장기)"
+    },
+    {
+      "item": "ingot_copper",
+      "points": 2,
+      "name": "구리주괴"
+    },
+    {
+      "item": "nails_copper",
+      "points": 1,
+      "name": "못"
+    }
+  ]
+}

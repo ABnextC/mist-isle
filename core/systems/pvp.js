@@ -5,6 +5,7 @@
 import { regionAt, zoneAt } from '../terrain.js';
 import { isUnlocked } from './unlocks.js';
 import { addEntry } from '../inventory.js';
+import { liveWarOf, teamIn } from './territory.js';
 
 const r2 = (v) => Math.round(v * 100) / 100;
 export const PV = (ctx) => ctx.cfg.pvp;
@@ -38,6 +39,13 @@ export function hostile(ctx, a, b) {
   const A = rootOf(ctx, a);
   const B = rootOf(ctx, b);
   if (!A || !B || A === B) return false;
+  // 공성(v2.7): 같은 전쟁 안에서는 편으로 가른다
+  const wa = liveWarOf(ctx, A);
+  const wb = liveWarOf(ctx, B);
+  if (wa || wb) {
+    if (wa && wa === wb) return teamIn(ctx, A, wa) !== teamIn(ctx, B, wa);
+    if (A.rival?.war || B.rival?.war) return false;
+  }
   if (A.kind === 'rival' && B.kind === 'rival') return false;
   const sa = sideOf(A);
   const sb = sideOf(B);

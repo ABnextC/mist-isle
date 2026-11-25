@@ -17,6 +17,9 @@ import { mOf, needXp, loadoutOf, abilityOf, passivesOf } from '../core/systems/m
 import { spawnTemp, hurtMob } from '../core/systems/mobs.js';
 import { gainLevelXp, levelPassives, jewelGather } from '../core/systems/level.js';
 import { hostile, pvpOn, pvpBonus } from '../core/systems/pvp.js';
+import { newGuild } from '../core/systems/guilds.js';
+import { hurtActor } from '../core/systems/combat.js';
+import { territoryDaily, seedYield } from '../core/systems/territory.js';
 import { passivesNow } from '../core/systems/combat.js';
 import { settlementDaily } from '../core/settlements.js';
 import { isUnlocked, allowedProject, chapterReached } from '../core/systems/unlocks.js';
@@ -1320,7 +1323,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '2.6.0');
+  eq(st.meta.engine, '2.7.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1512,7 +1515,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '2.6.0');
+  eq(st.meta.engine, '2.7.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -2578,6 +2581,100 @@ test('깃발을 올리면 채집량·숙련 경험이 오른다', () => {
   ok(g.dispatch({ type: 'PVP_FLAG', actor: 'p1', on: true }).ok);
   near(xpMult(C, a, 'mining'), x0 + data.config.pvp.flagBonus, 1e-9, '숙련 경험');
   near(pvpBonus(C, a), data.config.pvp.flagBonus, 1e-9, '채집량에 더한다');
+});
+
+console.log('영지전 (v2.7)');
+
+function warGame(seed = 7) {
+  const g = createGame({ data, seed, actors: [{ id: 'p1', kind: 'player' }] });
+  g.state.econ = null;
+  const a = g.state.actors.p1;
+  const C = g._ctx;
+  a.unlockAll = true;
+  a.silver = 5000;
+  return { g, a, C };
+}
+
+test('영지 다섯을 AI 조합 셋이 나눠 쥐고 시작한다. 선전포고는 조합·은화가 있어야 하고, 하루 뒤 공성이 열린다', () => {
+  const { g, a, C } = warGame();
+  const H = g.state.territory.holds;
+  eq(Object.keys(H).sort().join(','), 's_ash,s_kiln,s_port,s_valley,s_willow');
+  ok(Object.values(H).every((h) => h.owner.startsWith('ai:')), 'AI 주인');
+  eq(g.dispatch({ type: 'WAR_DECLARE', actor: 'p1', settlement: 's_port' }).error, 'no_guild');
+  const gd = newGuild(C, a, '시험 조합', 's_port');
+  a.guild = gd.id;
+  eq(g.dispatch({ type: 'WAR_DECLARE', actor: 'p1', settlement: 's_gate' }).error, 'not_territory');
+  ok(g.dispatch({ type: 'WAR_DECLARE', actor: 'p1', settlement: 's_port' }).ok, '선전포고');
+  eq(a.silver, 5000 - data.config.war.declareSilver);
+  eq(g.dispatch({ type: 'WAR_DECLARE', actor: 'p1', settlement: 's_valley' }).error, 'busy_war', '한 번에 한 전쟁');
+  const war = Object.values(g.state.territory.wars)[0];
+  near(war.at - g.state.t, data.config.war.prepDays * data.config.time.secondsPerGameDay, 1, '준비 하루');
+  a.bag.push({ item: 'potion_heal', lot: null, bonus: null, qty: 20 }, { item: 'stone', lot: null, bonus: null, qty: 5 });
+  eq(g.dispatch({ type: 'WAR_SUPPLY', actor: 'p1', war: war.id, key: keyOf(a.bag.find((e) => e.item === 'stone')), qty: 5 }).error, 'not_supply');
+  ok(g.dispatch({ type: 'WAR_SUPPLY', actor: 'p1', war: war.id, key: keyOf(a.bag.find((e) => e.item === 'potion_heal')), qty: 20 }).ok);
+  eq(war.sup.att, 20 * 12, '물약 20 = 240점');
+  eq(countItem([a.bag], 'potion_heal'), 0);
+});
+
+test('실전 공성: 마을 곁에 있으면 양쪽 싸움꾼(우리는 민병)이 서고, 깃발 곁에 우리만 남으면 차지가 올라 영지가 된다. 세금·수수료·씨앗 혜택', () => {
+  const { g, a, C } = warGame();
+  const gd = newGuild(C, a, '시험 조합', 's_port');
+  a.guild = gd.id;
+  ok(g.dispatch({ type: 'WAR_DECLARE', actor: 'p1', settlement: 's_port' }).ok);
+  const war = Object.values(g.state.territory.wars)[0];
+  a.bag.push({ item: 'potion_heal', lot: null, bonus: null, qty: 30 });
+  ok(g.dispatch({ type: 'WAR_SUPPLY', actor: 'p1', war: war.id, key: keyOf(a.bag.find((e) => e.item === 'potion_heal')), qty: 30 }).ok);
+  const s = g.state.settlements.s_port;
+  Object.assign(a, { x: s.x + 3, z: s.z + 3 });
+  const ends = [];
+  g.on('war.end', (e) => ends.push(e));
+  g.advance(war.at - g.state.t + 1.5);
+  eq(war.phase, 'siege');
+  ok(war.live, '실전');
+  const fighters = Object.values(g.state.actors).filter((x) => x.rival?.war === war.id);
+  ok(fighters.some((x) => x.rival.team === 'def') && fighters.some((x) => x.rival.team === 'att'), '양쪽');
+  eq(fighters.filter((x) => x.rival.team === 'att').length + war.left.att, Math.min(data.config.war.maxMilitia, Math.floor(360 / data.config.war.militiaPerPoints)), '민병 수');
+  const militia = fighters.find((x) => x.rival.team === 'att');
+  const foe = fighters.find((x) => x.rival.team === 'def');
+  eq(hostile(C, a, militia), false, '민병은 우리 편');
+  ok(hostile(C, a, foe) && hostile(C, militia, foe), '수비는 적');
+  for (let i = 0; i < 400 && !ends.length; i++) {
+    for (const x of Object.values(g.state.actors)) if (x.rival?.war === war.id && x.rival.team === 'def' && x.cb.downUntil === 0 && i % 4 === 0) hurtActor(C, x, a, 9999, { pvp: true });
+    a.cb.hp = a.cb.maxHp;
+    Object.assign(a, { x: war.x, z: war.z });
+    g.advance(1);
+  }
+  eq(ends[0]?.winner, 'att', '차지했다');
+  eq(g.state.territory.holds.s_port.owner, `g:${gd.id}`);
+  ok(!Object.values(g.state.actors).some((x) => x.rival?.war), '싸움꾼은 물러간다');
+  const silver = a.silver;
+  territoryDaily(C);
+  eq(a.silver, silver + data.config.war.taxPerDay, '세금');
+  near(feeMult(C, a, 'market'), data.config.war.marketMult, 1e-9, '거래소 수수료');
+  a.bag.push({ item: 'seed_territory', lot: null, bonus: null, qty: 1 });
+  Object.assign(a, { x: s.x, z: s.z });
+  ok(g.dispatch({ type: 'SEED_PLANT', actor: 'p1', settlement: 's_port' }).ok, '씨앗');
+  near(seedYield(C, a), data.config.war.seedYield, 1e-9, '채집량');
+});
+
+test('자리에 없으면 물자로 셈하고, AI 조합은 며칠마다 선전포고한다', () => {
+  const { g, a, C } = warGame();
+  const gd = newGuild(C, a, '시험 조합', 's_port');
+  a.guild = gd.id;
+  ok(g.dispatch({ type: 'WAR_DECLARE', actor: 'p1', settlement: 's_port' }).ok);
+  const war = Object.values(g.state.territory.wars)[0];
+  const ends = [];
+  g.on('war.end', (e) => ends.push(e));
+  Object.assign(a, { x: 150, z: 30 }); // 등대섬
+  g.advance(war.at - g.state.t + 2);
+  eq(ends[0]?.how, 'auto', '물자 셈');
+  ok(g.state.territory.holds.s_port.cool > g.state.t, '휴전');
+  // AI끼리: 날을 넘기며 선전포고가 생긴다
+  const decl = [];
+  g.on('war.declare', (e) => decl.push(e));
+  g.state.territory.nextAi = 0;
+  for (let i = 0; i < 6 && !decl.length; i++) { g.state.territory.nextAi = 0; territoryDaily(C); }
+  ok(decl.length >= 1 && decl[0].att.startsWith('ai:'), 'AI 선전포고');
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

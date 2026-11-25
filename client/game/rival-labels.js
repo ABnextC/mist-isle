@@ -45,7 +45,7 @@ export function createRivalLabels(overlay, game, positionOf, pid) {
       e.style.transform = `translate(${((tmp.x + 1) / 2) * W}px, ${((1 - tmp.y) / 2) * H}px)`;
       e.firstChild.style.width = `${Math.max(0, (a.cb.hp / a.cb.maxHp) * 100)}%`;
       const band = game.data.rivals.bands.find((b) => b.id === a.rival.band);
-      const txt = `Lv ${a.clevel.lvl} ${a.name} · ${band?.name || ''}`;
+      const txt = `Lv ${a.clevel.lvl} ${a.name} · ${band?.name || a.rival.title || ''}`;
       const b = e.lastChild;
       if (b._t !== txt) {
         b.textContent = b._t = txt;

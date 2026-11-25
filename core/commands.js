@@ -3,6 +3,7 @@
 // 싱글에서는 로컬 코어가, 멀티에서는 서버가 같은 함수를 돌린다.
 
 import { toggleError, toggle } from './systems/pvp.js';
+import { declareError, declareWar, supplyError, supply, plantError, plant, W as WAR, tagOf } from './systems/territory.js';
 import { guildOf, newGuild, trimAgents, aiRoom, hireable, rollJobs, jobProgress, storeCap } from './systems/guilds.js';
 import { plotDef, tierDef, nextTier, homeOf, nearPlot, comfortOf, restValue, plantDef } from './systems/housing.js';
 import { feeMult, recipeAllowed, factionDef, factionOf, tasksOf, taskDone, gainInfluence } from './systems/factions.js';
@@ -1477,8 +1478,38 @@ const PVP_FLAG = {
   },
 };
 
+// 영지전(v2.7): 선전포고·전쟁 물자·영토 씨앗
+const WAR_DECLARE = {
+  validate(ctx, a, c) {
+    if (a.kind !== 'player') return 'bad_args';
+    if (!isUnlocked(ctx, a, 'territory')) return 'locked';
+    return declareError(ctx, a, c.settlement) || {};
+  },
+  execute(ctx, a, c) {
+    a.silver -= WAR(ctx).declareSilver;
+    declareWar(ctx, tagOf(ctx, a), c.settlement, { by: a.id });
+  },
+};
+const WAR_SUPPLY = {
+  validate(ctx, a, c) {
+    const n = Math.floor(Number(c.qty) || 0);
+    return supplyError(ctx, a, c.war, c.key, n) || { n };
+  },
+  execute(ctx, a, c, p) {
+    supply(ctx, a, c.war, c.key, p.n);
+  },
+};
+const SEED_PLANT = {
+  validate(ctx, a, c) {
+    return plantError(ctx, a, c.settlement) || {};
+  },
+  execute(ctx, a, c) {
+    plant(ctx, a, c.settlement);
+  },
+};
+
 const HANDLERS = {
-  PVP_FLAG, EXP_START, EXP_LEAVE, LEARN_BP, ATTR_SPEND, ATTR_RESET, INVITE, DISMISS_ALLY, GREET, GIFT, TALK, QUEST_ACCEPT, QUEST_USE, QUEST_TRACK, FACTION_JOIN, FACTION_TASK,
+  WAR_DECLARE, WAR_SUPPLY, SEED_PLANT, PVP_FLAG, EXP_START, EXP_LEAVE, LEARN_BP, ATTR_SPEND, ATTR_RESET, INVITE, DISMISS_ALLY, GREET, GIFT, TALK, QUEST_ACCEPT, QUEST_USE, QUEST_TRACK, FACTION_JOIN, FACTION_TASK,
   HOUSE_BUY, HOUSE_UPGRADE, HOUSE_PLACE, HOUSE_TAKE, REST, GARDEN_PLANT, GARDEN_HARVEST,
   FERRY, GUILD_CREATE, GUILD_JOIN, GUILD_LEAVE, GUILD_HIRE, GUILD_DISMISS, GUILD_GIVE, GUILD_PUT, GUILD_TAKE,
   MOVE, MOVE_INPUT, GATHER, CRAFT, EAT, STORE, TAKE, SET_AUTOPILOT, RECALL,

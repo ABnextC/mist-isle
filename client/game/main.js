@@ -45,6 +45,8 @@ import { isUnlocked } from '../../core/systems/unlocks.js';
 import { createNpcLabels } from './npc-labels.js';
 import { createAudio, LEVELS } from './audio/index.js';
 import { createRivalLabels } from './rival-labels.js';
+import { createSiegeView } from './siege-view.js';
+import { ownerInfo, tagOf, liveWarOf } from '../../core/systems/territory.js';
 
 const SAVE_KEY = 'mist-isle:v1';
 const OLD_KEY = 'mist-isle:v0';
@@ -125,6 +127,7 @@ async function boot() {
   document.body.appendChild(floaters);
   const mobsView = createMobsView(view.scene, game, ground.hf, floaters, { posOf: actorsView.positionOf, wakeHint: (type) => canWake(type, game.state.actors[PID]) });
   const rivalLabels = createRivalLabels(floaters, game, actorsView.positionOf, PID);
+  const siegeView = createSiegeView(view.scene, game, ground.hf);
   window.__mist.mobsView = mobsView;
   const shotsView = createShotsView(view.scene, game, ground.hf);
   const npcLabels = createNpcLabels(floaters, game, actorsView.positionOf);
@@ -524,6 +527,14 @@ async function boot() {
       case 'mastery': hud.toggle('mastery'); break;
       case 'char': hud.toggle('char'); break;
       case 'exped': hud.toggle('exped'); break;
+      case 'territory': hud.toggle('territory'); break;
+      case 'war-declare': game.dispatch({ type: 'WAR_DECLARE', actor: PID, settlement: v }); break;
+      case 'war-seed': game.dispatch({ type: 'SEED_PLANT', actor: PID, settlement: v }); break;
+      case 'war-supply': {
+        const [war, key, qty] = String(v).split('>');
+        game.dispatch({ type: 'WAR_SUPPLY', actor: PID, war, key, qty: Number(qty) });
+        break;
+      }
       case 'attr': {
         const [attr, n] = v.split(':');
         const r = game.dispatch({ type: 'ATTR_SPEND', actor: PID, attr, n: Number(n) });
@@ -911,6 +922,32 @@ async function boot() {
     if (ev.actor !== PID || hud.panel?.kind !== 'talk') return;
     hud.open('talk', { npc: ev.npc, gift: true, react: ev });
   });
+  // 영지전(v2.7)
+  const qc = () => questCtx(game);
+  const townOf = (sid) => game.state.settlements[sid]?.name || sid;
+  const myTag = () => tagOf(qc(), game.state.actors[PID]);
+  game.on('war.declare', (ev) => {
+    const A = ownerInfo(qc(), ev.att);
+    const D = ownerInfo(qc(), ev.def);
+    const mine = ev.att === myTag() || ev.def === myTag();
+    const left = Math.round((ev.at - game.state.t) / 60);
+    if (mine) hud.banner(`${ev.att === myTag() ? '⚔️ 선전포고' : '🛡️ 우리 영지에 선전포고'} — ${townOf(ev.settlement)} · 공성까지 ${left}분 (T)`, 4200);
+    else hud.toast(`🏰 ${A.icon} ${A.name}이(가) ${D.icon} ${D.name}의 ${townOf(ev.settlement)}에 선전포고했다`, 'info', 5000);
+  });
+  game.on('war.siege', (ev) => {
+    if (ev.att === myTag() || ev.def === myTag()) hud.banner(`🔥 공성 시작 — ${townOf(ev.settlement)} · 깃발을 ${ev.att === myTag() ? '차지하라' : '지켜라'}`, 3600);
+  });
+  game.on('war.end', (ev) => {
+    const mine = ev.att === myTag() || ev.def === myTag();
+    const W0 = ownerInfo(qc(), ev.owner);
+    if (mine) {
+      const won = (ev.winner === 'att') === (ev.att === myTag());
+      hud.banner(won ? `🏆 ${townOf(ev.settlement)} — ${ev.att === myTag() ? '차지했다! 우리 영지다' : '지켜냈다'}` : `🏳️ ${townOf(ev.settlement)} — ${ev.att === myTag() ? '공성 실패' : '빼앗겼다'}${ev.how === 'auto' ? '(물자 셈)' : ''}`, 4200);
+    } else hud.toast(`🏰 ${townOf(ev.settlement)}: ${W0.icon} ${W0.name}의 영지${ev.winner === 'att' ? '가 됐다' : '로 남았다'}`, 'info', 4500);
+  });
+  game.on('war.tax', (ev) => { if (ev.members.includes(PID)) hud.toast(`🪙 ${townOf(ev.settlement)} 세금 +${ev.each}`, 'good'); });
+  game.on('war.seed', (ev) => { if (ev.actor === PID) hud.banner(`🌱 ${townOf(ev.settlement)}에 영토 씨앗을 심었다 — 그 땅 채집량 +10%`, 3600); });
+  game.on('war.supply', (ev) => { if (ev.actor === PID) hud.toast(`📦 전쟁 물자 +${ev.points}점 (모두 ${Math.round(ev.total)}점)`, 'good'); });
   // 필드 PvP(v2.6)
   game.on('pvp.flag', (ev) => {
     if (ev.actor !== PID) return;
@@ -920,7 +957,7 @@ async function boot() {
     if (ev.target !== PID) return;
     const r = game.state.actors[ev.actor];
     const band = r && data.rivals.bands.find((b) => b.id === r.rival.band);
-    if (r) hud.toast(`⚔️ ${band?.name || '다른 세력'} ${josa(r.name, '이', '가')} 덤빈다 (Lv ${r.clevel.lvl})`, 'warn');
+    if (r) hud.toast(`⚔️ ${band?.name || r.rival.title || '다른 세력'} ${josa(r.name, '이', '가')} 덤빈다 (Lv ${r.clevel.lvl})`, 'warn');
   });
   game.on('pvp.down', (ev) => {
     if (ev.actor !== PID) return;
@@ -1190,6 +1227,7 @@ async function boot() {
     strikeFx();
     mobsView.update(dt, view.camera);
     rivalLabels.update(view.camera);
+    siegeView.update(now / 1000);
     shotsView.update();
     npcLabels.update(view.camera, a);
     updateFloats(dt);
@@ -1263,7 +1301,7 @@ async function boot() {
     perf.lap('view');
     const bossInfo = bossNow(a);
     hud.update(dt, { target: ui.target, gathering: !!ui.gather, quest: questNow, questDist: goal ? Math.hypot(goal.x - p.x, goal.z - p.z) : null, boss: bossInfo });
-    audio.update(dt, { night: nightK, fire: fireNear(p), boss: !!bossInfo?.boss });
+    audio.update(dt, { night: nightK, fire: fireNear(p), boss: !!bossInfo?.boss, siege: !!liveWarOf(questCtx(game), a) });
     if (now - lastMap > 200) {
       minimap.draw(PID, cam.st.yaw, goal, now / 1000);
       lastMap = now;

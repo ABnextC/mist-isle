@@ -9,6 +9,7 @@ import { seedState, makeRng } from '../rng.js';
 import { gated } from './unlocks.js';
 import { guildPerks } from './guilds.js';
 import { pvpBonus } from './pvp.js';
+import { territoryFeeMult } from './territory.js';
 
 export const factionDef = (ctx, id) => ctx.data.factions.list.find((f) => f.id === id) || null;
 export const factionOf = (a) => a?.faction?.id || null;
@@ -55,6 +56,7 @@ export function feeMult(ctx, a, kind) {
   for (const p of perksOf(ctx, a)) if (p.kind === kind) m *= p.mult;
   // 단짝 혜택(v1.7): 장꾼·뱃사공·대장장이
   for (const p of bondPerks(ctx, a)) if (p.kind === kind) m *= p.mult;
+  m *= territoryFeeMult(ctx, a, kind); // 영지(v2.7)
   return m;
 }
 

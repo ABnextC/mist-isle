@@ -1,6 +1,7 @@
 // 화면 위 정보(HUD)와 패널. 아이콘·색을 먼저 보이고, 수치는 패널에서 연다.
 // 버튼은 data-act로 main.js에 넘긴다. HUD는 상태를 직접 고치지 않는다.
 
+import { ownerInfo, tagOf, warsOf, warAt, declareError, supplyPoints, plantError, liveWarOf, flagCount, teamIn } from '../../core/systems/territory.js';
 import { pvpOn, inDisputed, pvpBonus, toggleError } from '../../core/systems/pvp.js';
 import { ERR, fmtProps, fmtStats, stars, itemName, entryStar, describeEvent, ARMOR_CLASS, loadEffects, josa } from '../../core/text.js';
 import { equipLoad } from '../../core/systems/combat.js';
@@ -71,7 +72,7 @@ export function createHud(root, game, { touch, onAct }) {
       <div class="prompt" data-k="prompt"></div>
       <div class="vitals" data-k="vitals"><div class="lv" data-k="lv"><b data-k="lvn"></b><i><span data-k="lvbar"></span></i></div><div class="hp"><span data-k="hpbar"></span><em data-k="hp"></em></div><div class="st"><span data-k="stbar"></span></div><div class="mp" data-k="mp"><span data-k="mpbar"></span></div></div>
       <div class="skillbar" data-k="skillbar"></div>
-      ${touch ? '' : '<div class="keys">E 상호작용 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기 · 1·2·3 스킬 · X 무기 바꾸기 · G 물약 · <b>Esc 메뉴</b></div>'}
+      ${touch ? '' : '<div class="keys">E 상호작용 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기 · 1·2·3 스킬 · X 무기 바꾸기 · G 물약 · T 영지 · <b>Esc 메뉴</b></div>'}
     </div>
     ${touch ? '<button class="act-btn" data-act="interact" data-k="actbtn">✋</button><div class="cbtns"><button data-hold="attack" title="공격(길게 강공)">⚔️</button><button data-hold="block" title="막기">🛡️</button><button data-tap="dodge" title="구르기">🌀</button><button data-tap="potion" title="물약">🧪</button></div>' : ''}
     <div class="downed" data-k="downed"></div>
@@ -355,7 +356,14 @@ export function createHud(root, game, { touch, onAct }) {
     const qd = questDist == null ? '' : questDist < 30 ? ` · ${Math.round(questDist)}m` : ` · ${Math.round(questDist / 5) * 5}m`;
     // 원정 중(v2.3)이면 추적기 자리에 원정 진행을 보인다
     const run = runOf(qctxL(), a);
-    if (run) {
+    const lw = liveWarOf(qctxL(), a);
+    if (lw && lw.phase === 'siege') {
+      const s = game.state.settlements[lw.settlement];
+      const left = Math.max(0, Math.ceil(lw.until - game.state.t));
+      const me = teamIn(qctxL(), a, lw);
+      const n = flagCount(qctxL(), lw);
+      setHtml(el.quest, `<b>🏰 공성 · ${esc(s.name)} (${me === 'att' ? '공격' : '수비'})</b><span>깃발 ${Math.round(lw.cap)}% · 깃발 곁 우리 ${n[me]} / 상대 ${n[me === 'att' ? 'def' : 'att']} · 남은 ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}</span>`);
+    } else if (run) {
       const ex = data.expeditions[run.ex];
       const left = Math.max(0, Math.ceil(run.until - game.state.t));
       setHtml(el.quest, `<b>${ex.icon} ${esc(ex.name)}</b><span>${run.boss ? '☠️ 두목' : `물결 ${run.wave + 1}/${ex.waves.length}`} · 남은 시간 ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}</span>`);
@@ -537,6 +545,61 @@ export function createHud(root, game, { touch, onAct }) {
       <p>쓰러뜨림 ${pv.kills || 0} · 쓰러짐 ${pv.downs || 0} · 전공 ${pv.honor || 0}</p>
       <div class="btns"><button data-act="pvp-flag" data-v="${on ? 0 : 1}" ${err ? 'disabled' : ''} class="${on ? 'warn' : ''}">${on ? '🏳️ 깃발 내리기' : '⚔️ 깃발 올리기'}</button>${why ? `<small class="muted"> ${why}이라 못 내린다</small>` : ''}</div></div>`;
   }
+  // 영지 창(v2.7)
+  function territoryHtml(a) {
+    const C = qctxL();
+    const TS = game.state.territory;
+    if (!TS) return '<p class="muted">영지가 없다</p>';
+    const W = data.config.war;
+    const locked = !isUnlocked(C, a, 'territory');
+    const tag = tagOf(C, a);
+    const g = tag ? game.state.guilds[a.guild] : null;
+    const t = game.state.t;
+    const clock = (sec) => { const s = Math.max(0, Math.ceil(sec)); return s >= 3600 ? `${Math.floor(s / 3600)}시간 ${Math.floor((s % 3600) / 60)}분` : `${Math.floor(s / 60)}분 ${s % 60}초`; };
+    const head = locked ? `<p class="muted">🔒 ${esc(data.unlocks.territory.hint)}</p>`
+      : !g ? '<p class="muted">영지전은 조합으로 한다. 마을 게시판에서 조합을 세우거나 들자.</p>'
+        : `<p>🛡️ <b>${esc(g.name)}</b> · 은화 ${a.silver} · 선전포고 🪙${W.declareSilver}</p>`;
+    const rows = Object.entries(TS.holds).map(([sid, h]) => {
+      const s = game.state.settlements[sid];
+      const o = ownerInfo(C, h.owner);
+      const war = warAt(C, sid);
+      const mine = h.owner === tag;
+      let status = '';
+      if (war) {
+        const A = ownerInfo(C, war.att);
+        status = war.phase === 'prep' ? `<small class="no">⚔️ ${esc(A.name)}의 선전포고 · 공성까지 ${clock(war.at - t)}</small>` : `<small class="no">🔥 공성 중 · 깃발 ${Math.round(war.cap)}%</small>`;
+      } else if (h.cool > t) status = `<small class="muted">휴전 ${clock(h.cool - t)}</small>`;
+      const err = !locked && tag ? declareError(C, a, sid) : 'x';
+      const btn = !mine && !war && !locked && tag ? `<button class="mini" data-act="war-declare" data-v="${sid}" ${err ? 'disabled' : ''}>선전포고</button>` : '';
+      const seed = mine && !h.blessed && a.bag.some((e) => e.item === 'seed_territory') ? `<button class="mini" data-act="war-seed" data-v="${sid}" ${plantError(C, a, sid) ? 'disabled' : ''}>🌱 씨앗 심기</button>` : '';
+      return `<li><div><b>${esc(s?.name || sid)} <span style="color:${o.color}">${o.icon} ${esc(o.name)}</span>${mine ? ' <em class="ok">우리 영지</em>' : ''}${h.blessed ? ' 🌱' : ''}</b>${status}</div><div class="btns">${btn}${seed}</div></li>`;
+    }).join('');
+    // 우리 조합 전쟁: 물자 넣기
+    let wars = '';
+    for (const war of tag ? warsOf(C, tag) : []) {
+      const side = war.att === tag ? 'att' : 'def';
+      const foe = ownerInfo(C, side === 'att' ? war.def : war.att);
+      const s = game.state.settlements[war.settlement];
+      const sup = sortEntries(a.bag).filter((e) => !e.uid && supplyPoints(C, e.item) > 0).map((e) => {
+        const pts = supplyPoints(C, e.item);
+        return `<li>${ii(data.items[e.item])} ${esc(data.items[e.item].name)} ×${e.qty} <small class="muted">개당 ${pts}점</small><div class="btns"><button class="mini" data-act="war-supply" data-v="${war.id}>${esc(keyOf(e))}>1">1</button><button class="mini" data-act="war-supply" data-v="${war.id}>${esc(keyOf(e))}>${e.qty}">모두</button></div></li>`;
+      }).join('') || '<li><small class="muted">가방에 전쟁 물자가 없다(물약·음식·화살·다듬은 돌·판재·주괴·못)</small></li>';
+      wars += `<div class="pvpbox"><b>${side === 'att' ? '⚔️ 공격' : '🛡️ 수비'} · ${esc(s.name)} — 상대 ${foe.icon} ${esc(foe.name)}</b>
+        <p>${war.phase === 'prep' ? `공성까지 ${clock(war.at - t)}` : `공성 중 · 깃발 ${Math.round(war.cap)}% · 남은 ${clock(war.until - t)}`}</p>
+        <p class="muted">물자 — 우리 ${Math.round(war.sup[side])}점 · 상대 ${Math.round(war.sup[side === 'att' ? 'def' : 'att'])}점. ${W.militiaPerPoints}점마다 민병 1명(최대 ${W.maxMilitia}). 공성 때 마을 ${W.nearR}m 안에 있으면 직접 싸운다. 없으면 물자로 셈한다.</p>
+        ${war.phase === 'prep' ? `<ul class="list">${sup}</ul>` : ''}</div>`;
+    }
+    const log = (TS.log || []).slice(0, 6).map((l) => {
+      const A = ownerInfo(C, l.att);
+      const D = ownerInfo(C, l.def);
+      const s = game.state.settlements[l.settlement];
+      return `<li><small>${l.day + 1}일 · ${esc(s?.name || l.settlement)}: ${A.icon}${esc(A.name)} → ${D.icon}${esc(D.name)} — ${l.winner === 'att' ? '공격 승리' : '수비 승리'}${l.how === 'auto' ? '(물자 셈)' : ''}</small></li>`;
+    }).join('');
+    return `${head}<ul class="list">${rows}</ul>${wars}
+      <p class="muted">공성: 마을 가운데 깃발 둘레(${W.flagR}m)에 공격 쪽만 있으면 깃발이 오르고, ${W.captureSec}초쯤 버티면 차지한다. 수비 쪽만 있으면 내려간다. ${Math.round(W.siegeSec / 60)}분 안에 못 차지하면 수비 승리.</p>
+      <p class="muted">영지 혜택: 날마다 세금 ${W.taxPerDay}은화(조합원끼리 나눔), 영지 하나마다 거래소 수수료 −5%(셋까지), 영토 씨앗을 심으면 그 땅 채집량 +${W.seedYield * 100}%.</p>
+      ${log ? `<h3>지난 전쟁</h3><ul class="list">${log}</ul>` : ''}`;
+  }
   // 원정 창(v2.3)
   function expedHtml(a) {
     const C = qctxL();
@@ -574,13 +637,14 @@ export function createHud(root, game, { touch, onAct }) {
       ${tile('char', icon('users'), '능력치', 'P', freePoints(qctxL(), a) ? `점수 ${freePoints(qctxL(), a)}` : `Lv ${levelOf(a).lvl}`)}
       ${tile('mastery', icon('mastery'), '무기 숙련', 'N', pts ? `점수 ${pts}` : '')}
       ${tile('exped', icon('flame'), '원정', 'O', runOf(qctxL(), a) ? '진행 중' : '')}
+      ${tile('territory', icon('shield'), '영지', 'T', warsOf(qctxL(), tagOf(qctxL(), a) || '-').length ? '전쟁 중' : '')}
       ${tile('skills', icon('skills'), '생활 스킬', 'K')}
       ${tile('journal', icon('journal'), '일지', 'J')}
       ${tile('log', icon('log'), '기록', 'L')}
       ${tile('recall', icon('recall'), '귀환', 'H', cd > 0 ? `${Math.ceil(cd / 60)}분 뒤` : esc(townName(a.home)), cd > 0 || a.action?.type === 'recall')}
       ${tile('menu', icon('settings'), '설정', '')}
     </div>
-    ${touch ? '' : `<h3>조작</h3><p class="muted keyhelp">WASD 이동 · 마우스 끌기 시점 · 휠 거리 · E 상호작용 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기 · 1·2·3 무기 스킬 · X 무기 바꾸기 · G 물약 · Esc 창 닫기/메뉴</p>`}
+    ${touch ? '' : `<h3>조작</h3><p class="muted keyhelp">WASD 이동 · 마우스 끌기 시점 · 휠 거리 · E 상호작용 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기 · 1·2·3 무기 스킬 · X 무기 바꾸기 · G 물약 · T 영지 · Esc 창 닫기/메뉴</p>`}
     <div class="row"><a href="patchnotes.html">패치노트</a><span class="muted">v${ENGINE_VERSION}</span></div>`;
   }
 
@@ -1430,7 +1494,7 @@ export function createHud(root, game, { touch, onAct }) {
   }
 
   const TITLE_ICON = { '☰': 'menu', '⚔️': 'mastery', '🎒': 'bag', '📈': 'skills', '📜': 'log', '📋': 'board', '⚖️': 'market', '⚙️': 'settings', '📖': 'journal', '💬': 'talk', '🏠': 'home' };
-  const TITLES = { hub: '☰ 메뉴', char: '⭐ 능력치', exped: '🔥 원정', mastery: '⚔️ 무기 숙련', bag: '🎒 가방', skills: '📈 생활 스킬', log: '📜 기록', board: '📋 마을 게시판', market: '⚖️ 등대 마을 거래소', menu: '⚙️ 설정', journal: '📖 일지' };
+  const TITLES = { hub: '☰ 메뉴', char: '⭐ 능력치', exped: '🔥 원정', territory: '🏰 영지', mastery: '⚔️ 무기 숙련', bag: '🎒 가방', skills: '📈 생활 스킬', log: '📜 기록', board: '📋 마을 게시판', market: '⚖️ 등대 마을 거래소', menu: '⚙️ 설정', journal: '📖 일지' };
 
   function renderPanel(force) {
     if (!panel) return;
@@ -1444,6 +1508,7 @@ export function createHud(root, game, { touch, onAct }) {
     else if (panel.kind === 'mastery') html = masteryHtml(a);
     else if (panel.kind === 'char') html = charHtml(a);
     else if (panel.kind === 'exped') html = expedHtml(a);
+    else if (panel.kind === 'territory') html = territoryHtml(a);
     else if (panel.kind === 'craft') {
       const st = data.stations[panel.station];
       title = `${st.icon} ${panel.station === 'hand' ? '맨손 제작' : st.name}`;

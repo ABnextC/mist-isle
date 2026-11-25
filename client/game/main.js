@@ -43,6 +43,7 @@ import { createShotsView } from './shots-view.js';
 import { canWake } from '../../core/systems/mobs.js';
 import { isUnlocked } from '../../core/systems/unlocks.js';
 import { createNpcLabels } from './npc-labels.js';
+import { createAudio, LEVELS } from './audio/index.js';
 
 const SAVE_KEY = 'mist-isle:v1';
 const OLD_KEY = 'mist-isle:v0';
@@ -560,6 +561,13 @@ async function boot() {
         break;
       }
       case 'swap': game.dispatch({ type: 'SWAP_WEAPON', actor: PID }); break;
+      case 'vol': {
+        // 소리 크기(v2.5): v = '갈래:단계'
+        const [k, i] = String(v).split(':');
+        audio.set(k, LEVELS[+i] ?? 0);
+        hud.refresh?.();
+        break;
+      }
       case 'potion': {
         // 물약 바로 마시기(v2.4): 지금 가장 모자란 것부터 — 체력, 마나, 기력, 그다음 강건
         const cb = a?.cb;
@@ -673,6 +681,35 @@ async function boot() {
   const hud = createHud(document.getElementById('hud'), game, { touch, onAct });
   window.__mist.hud = hud; // 확인 도구용
   window.__mist.onAct = (act, v, n) => onAct(act, v, n);
+  // 소리(v2.5)
+  const audio = createAudio(game, {
+    pid: PID,
+    heightAt: (x, z) => ground.hf.height(x, z),
+    regionOf: (a) => regionAt(data.lists.regions, a.x),
+    zoneOf: (a) => zoneAt(regionAt(data.lists.regions, a.x), a.x, a.z),
+    townOf: (a) => settlementAt({ state: game.state }, a),
+    camera: view.camera,
+    cam,
+  });
+  hud.settings.audio = audio.settings;
+  window.__mist.audio = audio;
+  // 불 곁(모닥불·화덕·대장간·조리대)인지: 0.5초마다 잰다
+  let fireK = 0;
+  let fireAt = 0;
+  const FIRE_ST = { forge: 1, smelter: 1, kitchen: 0.8 };
+  function fireNear(p) {
+    const now = performance.now();
+    if (now - fireAt < 500) return fireK;
+    fireAt = now;
+    let best = 99;
+    for (const o of game.statics) if (o.kind === 'campfire') best = Math.min(best, Math.hypot(o.x - p.x, o.z - p.z));
+    for (const s of Object.values(game.state.settlements)) {
+      if (Math.hypot(s.x - p.x, s.z - p.z) > 40) continue;
+      for (const st of s.stations) if (FIRE_ST[st.type]) best = Math.min(best, Math.hypot(st.x - p.x, st.z - p.z) / FIRE_ST[st.type]);
+    }
+    fireK = Math.max(0, 1 - best / 8);
+    return fireK;
+  }
   let liveTier = tier;
   function applyTier(t) {
     liveTier = t;
@@ -702,10 +739,14 @@ async function boot() {
   function strikeFx() {
     for (const s of actorsView.takeStrikes()) {
       const n = STRIKE_FX[s.kind];
-      if (!n) continue;
+      if (!n) {
+        audio.onStrike(s);
+        continue;
+      }
       const color = s.nodeType ? NODE_CHIP[s.nodeType] : 0x7a3a2a;
       fx.burst(s.x, s.y, s.z, color, n, { lift: 0, spread: 0.12, speed: 0.45, dust: s.kind === 'mine' || s.kind === 'chop' });
       if (s.node) nodesView.shake(s.node);
+      audio.onStrike(s);
     }
   }
   game.on('gather.done', (ev) => {
@@ -1195,7 +1236,9 @@ async function boot() {
     const goal = questNow?.goal || null;
     guide.update(now / 1000, p, goal);
     perf.lap('view');
-    hud.update(dt, { target: ui.target, gathering: !!ui.gather, quest: questNow, questDist: goal ? Math.hypot(goal.x - p.x, goal.z - p.z) : null, boss: bossNow(a) });
+    const bossInfo = bossNow(a);
+    hud.update(dt, { target: ui.target, gathering: !!ui.gather, quest: questNow, questDist: goal ? Math.hypot(goal.x - p.x, goal.z - p.z) : null, boss: bossInfo });
+    audio.update(dt, { night: nightK, fire: fireNear(p), boss: !!bossInfo?.boss });
     if (now - lastMap > 200) {
       minimap.draw(PID, cam.st.yaw, goal, now / 1000);
       lastMap = now;

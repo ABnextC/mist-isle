@@ -29,6 +29,8 @@ import { plotPos, homeOf, comfortOf } from '../core/systems/housing.js';
 import { hireable, guildLevel } from '../core/systems/guilds.js';
 import { stepText } from '../core/systems/quests.js';
 import { readFileSync } from 'node:fs';
+import { moodFor, composePiece, MOODS } from '../client/game/audio/score.js';
+import { SFX } from '../client/game/audio/sfx.js';
 
 const LH = 's_lighthouse';
 const FR = 's_forest';
@@ -1317,7 +1319,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '2.4.0');
+  eq(st.meta.engine, '2.5.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1509,7 +1511,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '2.4.0');
+  eq(st.meta.engine, '2.5.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -2420,6 +2422,40 @@ test('새 작업대에서 물약·다듬은 돌·반지·화살·낚싯대를 �
   give('lumber_birch', 3); give('ingot_copper', 2); give('cloth_reed', 1);
   make('rc_arrows_copper', 'arrows_copper');
   make('rc_rod_copper', 'tool_rod_copper');
+});
+
+console.log('소리 (v2.5)');
+
+test('배경 음악: 지역·밤·마을·싸움·두목마다 분위기를 고르고, 같은 씨앗이면 같은 곡, 음은 들을 만한 높이 안에', () => {
+  eq(moodFor({ region: 'wreck_coast' }), 'coast');
+  eq(moodFor({ region: 'swamp_shore', night: true }), 'swamp_night');
+  eq(moodFor({ region: 'ember_ridge', town: true }), 'town', '낮의 마을');
+  eq(moodFor({ region: 'ember_ridge', town: true, night: true }), 'ember_night', '밤엔 마을도 지역 밤 음악');
+  eq(moodFor({ region: 'mist_heart', combat: true }), 'combat');
+  eq(moodFor({ region: 'mist_heart', combat: true, boss: true }), 'boss');
+  const INST = new Set(['pad', 'bass', 'pluck', 'bell', 'flute', 'horn', 'kick', 'tom', 'shaker']);
+  for (const id of Object.keys(MOODS)) {
+    const a = composePiece(id, 16, 5);
+    const b = composePiece(id, 16, 5);
+    eq(JSON.stringify(a), JSON.stringify(b), `${id} 재현`);
+    ok(a.length > 16 * 3, `${id} 음 수 ${a.length}`);
+    for (const n of a) {
+      ok(INST.has(n.inst), `${id} 악기 ${n.inst}`);
+      if (n.midi) ok(n.midi >= 28 && n.midi <= 96, `${id} 높이 ${n.midi}`);
+      ok(n.at >= 0 && n.at < 64 && n.dur > 0 && n.vel > 0 && n.vel <= 1.2, `${id} 박자`);
+    }
+    const drums = a.some((n) => n.inst === 'kick');
+    eq(drums, !!MOODS[id].drums, `${id} 북은 싸움에만`);
+  }
+});
+
+test('효과음: 게임이 부르는 소리 이름이 모두 요리법에 있다', () => {
+  const src = readFileSync(new URL('../client/game/audio/index.js', import.meta.url), 'utf8');
+  const names = new Set([...src.matchAll(/play\('([a-z_]+)'/g)].map((m) => m[1]));
+  for (const m of src.matchAll(/STRIKE = \{([^}]*)\}/g)) for (const v of m[1].matchAll(/'([a-z_]+)'/g)) names.add(v[1]);
+  names.add('splash');
+  ok(names.size >= 25, `이름 ${names.size}개`);
+  for (const n of names) ok(SFX[n] && typeof SFX[n].play === 'function' && SFX[n].life > 0, `요리법 없음: ${n}`);
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

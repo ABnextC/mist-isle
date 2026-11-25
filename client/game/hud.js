@@ -1372,6 +1372,18 @@ export function createHud(root, game, { touch, onAct }) {
     return tabsHtml([['sell', '팔기'], ['buy', '사기'], ['mine', '내 주문']], tab) + head + body;
   }
 
+  // 소리(v2.5): 갈래마다 끔·작게·보통·크게
+  function soundHtml() {
+    const S = settings.audio;
+    if (!S) return '';
+    const L = [0, 0.35, 0.7, 1];
+    const row = (k, name) => {
+      const cur = L.reduce((bi, v, i) => (Math.abs(v - S[k]) < Math.abs(L[bi] - S[k]) ? i : bi), 0);
+      return `<div class="vrow"><span>${name}</span>${['끔', '작게', '보통', '크게'].map((l, i) => `<button class="mini ${cur === i ? 'on' : ''}" data-act="vol" data-v="${k}:${i}">${l}</button>`).join('')}</div>`;
+    };
+    return `<h3>소리</h3>${row('master', '전체')}${row('sfx', '효과음')}${row('amb', '환경음')}${row('music', '음악')}
+      <p class="muted">소리는 화면을 한 번 누르거나 키를 누르면 깨어난다. 음악은 한동안 흐르다 쉬고, 싸움이 붙으면 북이 들어온다.</p>`;
+  }
   function menuHtml(a) {
     const armed = settings.resetArmed > performance.now();
     const sp = [1, 10, 30].map((s) => `<button data-act="speed" data-v="${s}" class="${settings.speed === s ? 'on' : ''}">×${s}</button>`).join('');
@@ -1383,6 +1395,7 @@ export function createHud(root, game, { touch, onAct }) {
       <h3>화질</h3><div class="row">${gf}</div>
       <p class="muted">지금 ${esc(settings.gfxNow)} · 그림자·후처리·해상도는 바로 바뀌고, 풀 양·지형·텍스처 해상도는 다시 열 때 바뀐다. 자동은 여유가 있으면 최고까지 올린다.</p>
       <div class="row"><button data-act="perf" class="${settings.perf ? 'on' : ''}">📊 성능 표시 (F3)</button></div>
+      ${soundHtml()}
       <h3>연출</h3><div class="row"><button data-act="fx-talkcam" class="${settings.talkCam ? 'on' : ''}">🎬 대화 카메라</button><button data-act="fx-particles" class="${settings.particles ? 'on' : ''}">🍂 계절 입자</button></div>
       <h3>시험용 시간 배속</h3><div class="row">${sp}</div>
       <h3>도움</h3><div class="row">

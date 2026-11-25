@@ -436,6 +436,28 @@ const MIGRATIONS = [
       for (const a of Object.values(st.actors)) if (a.cb) Object.assign(a.cb, { mp: a.cb.mp ?? mana, maxMp: a.cb.maxMp ?? mana });
     },
   },
+  {
+    // v1.2 → v1.3: 안개의 심장(6장). 새 지역의 야영지·산지·짐승·자리 무리를 만든다
+    from: 18,
+    to: 19,
+    run(st, data) {
+      st.meta.engine = '1.3.0';
+      const ctx = migrationCtx(st, data, 0x1e3a7c55);
+      const cfg = data.config;
+      for (const region of data.lists.regions) {
+        if (st.regions[region.id]) continue;
+        const density = {};
+        for (const fam of Object.keys(cfg.families)) density[fam] = 1;
+        st.regions[region.id] = { id: region.id, density };
+        for (const sdef of region.settlements) if (!st.settlements[sdef.id]) st.settlements[sdef.id] = newSettlement(region, sdef, cfg);
+        for (const vc of region.veins) {
+          if (vc.common) openVein(ctx, region, vc, { common: true });
+          for (let i = 0; i < (vc.rotating || 0); i++) openVein(ctx, region, vc, { initial: true });
+        }
+      }
+      initMobs(ctx);
+    },
+  },
 ];
 
 // v0.5.2: 1~2장 퀘스트에 생활 단계가 끼었다. 하던 단계 번호를 새 번호로(앞에 낀 단계는 건너뛴다)

@@ -2341,6 +2341,37 @@
             "ferry": "c5_ridge"
           }
         ]
+      },
+      {
+        "id": "heart_dock_port",
+        "name": "나루 동쪽 뱃머리",
+        "beach": [
+          1262,
+          0.8
+        ],
+        "r": 5,
+        "structures": [
+          {
+            "kind": "ship_white",
+            "dx": 0,
+            "dz": -7.5,
+            "r": 3.4,
+            "rot": 1.6
+          }
+        ],
+        "objects": [
+          {
+            "id": "o_ship_heart",
+            "kind": "door",
+            "dx": 0,
+            "dz": -2.2,
+            "rot": 0,
+            "name": "심장 가는 배",
+            "verb": "배 타기",
+            "cross": "mist_heart",
+            "ferry": "c6_gate"
+          }
+        ]
       }
     ]
   },
@@ -2844,6 +2875,536 @@
             "dx": 10,
             "dz": 2,
             "yaw": 3.8
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mist_heart",
+    "name": "안개의 심장",
+    "island": "안개섬 본섬",
+    "tier": 5,
+    "bounds": [
+      3000,
+      0,
+      3460,
+      460
+    ],
+    "spawn": [
+      3170,
+      3
+    ],
+    "terrain": {
+      "shore": 24,
+      "shoreWobble": 8,
+      "seaFloor": -9,
+      "beach": 1.2,
+      "inland": 15,
+      "hills": 13,
+      "ridge": 22,
+      "townHeight": 2.0,
+      "wadeDepth": -1.1,
+      "edge": 20
+    },
+    "settlements": [
+      {
+        "id": "s_gate",
+        "name": "심장 문 야영지",
+        "x": 3200,
+        "z": 66,
+        "radius": 16,
+        "flat": "local",
+        "pop": 8,
+        "cap": 12,
+        "stations": [
+          {
+            "type": "storage",
+            "dx": -1,
+            "dz": -9,
+            "rot": 0
+          },
+          {
+            "type": "kitchen",
+            "dx": 7,
+            "dz": -6,
+            "rot": -2.4
+          },
+          {
+            "type": "tannery",
+            "dx": -10,
+            "dz": 2,
+            "rot": 1.5
+          },
+          {
+            "type": "sawbench",
+            "dx": 10,
+            "dz": 3,
+            "rot": -1.5
+          },
+          {
+            "type": "smelter",
+            "dx": 11,
+            "dz": -4,
+            "rot": -1.9
+          },
+          {
+            "type": "forge",
+            "dx": 5,
+            "dz": 10,
+            "rot": -2.7
+          },
+          {
+            "type": "armorbench",
+            "dx": -5,
+            "dz": 10,
+            "rot": 2.7
+          }
+        ],
+        "structures": [
+          {
+            "kind": "board",
+            "dx": 3,
+            "dz": -3,
+            "r": 0.5
+          },
+          {
+            "kind": "campfire",
+            "dx": 0,
+            "dz": 2,
+            "r": 0.7
+          },
+          {
+            "kind": "tent",
+            "dx": -14,
+            "dz": -5,
+            "r": 1.9,
+            "rot": 1.1
+          },
+          {
+            "kind": "tent",
+            "dx": 15,
+            "dz": 9,
+            "r": 1.9,
+            "rot": -2.0
+          },
+          {
+            "kind": "tent",
+            "dx": -13,
+            "dz": 9,
+            "r": 1.9,
+            "rot": 2.3
+          },
+          {
+            "kind": "tent",
+            "dx": 14,
+            "dz": -11,
+            "r": 1.9,
+            "rot": -0.8
+          },
+          {
+            "kind": "cabin",
+            "dx": 0,
+            "dz": 14,
+            "r": 2.6,
+            "rot": 3.14
+          },
+          {
+            "kind": "cabin",
+            "dx": -15,
+            "dz": -14,
+            "r": 2.6,
+            "rot": 0.7
+          }
+        ]
+      }
+    ],
+    "decor": [],
+    "places": [
+      "보랏빛 비탈",
+      "숨 쉬는 바위",
+      "울음 골",
+      "빛 갈래",
+      "고요한 못",
+      "흩어진 돌기둥",
+      "등지기 무덤",
+      "푸른 틈",
+      "안개 샘",
+      "맥 줄기 언덕"
+    ],
+    "propDist": {
+      "mean": 50,
+      "sd": 14,
+      "luckyChance": 0.06,
+      "luckyBonus": [
+        20,
+        35
+      ],
+      "common": [
+        30,
+        40
+      ]
+    },
+    "veins": [
+      {
+        "node": "node_stone",
+        "common": 24,
+        "cluster": [
+          4,
+          10
+        ],
+        "start": 30,
+        "rotating": 0
+      },
+      {
+        "node": "node_copper",
+        "common": 10,
+        "cluster": [
+          4,
+          9
+        ],
+        "rotating": 2,
+        "nodes": [
+          6,
+          10
+        ],
+        "radius": [
+          15,
+          30
+        ],
+        "life": [
+          5,
+          9
+        ]
+      },
+      {
+        "node": "node_reed",
+        "common": 16,
+        "cluster": [
+          5,
+          10
+        ],
+        "start": 35,
+        "rotating": 1,
+        "nodes": [
+          8,
+          12
+        ],
+        "radius": [
+          20,
+          35
+        ],
+        "life": [
+          5,
+          9
+        ]
+      },
+      {
+        "node": "node_berry",
+        "common": 12,
+        "cluster": [
+          4,
+          9
+        ],
+        "start": 40,
+        "rotating": 1,
+        "nodes": [
+          6,
+          10
+        ],
+        "radius": [
+          15,
+          30
+        ],
+        "life": [
+          5,
+          9
+        ]
+      }
+    ],
+    "zones": [
+      {
+        "id": "storm",
+        "name": "안개 폭풍 지대",
+        "tier": 5,
+        "z0": 140,
+        "fade": 18,
+        "icon": "🌪️",
+        "paint": [
+          0.34,
+          0.36,
+          0.44,
+          0.75
+        ],
+        "bare": 0.6,
+        "trees": 0.1,
+        "fog": 1.9,
+        "enter": "안개가 소용돌이친다. 폭풍에 휩쓸린 짐승과 망령이 날뛴다"
+      },
+      {
+        "id": "core",
+        "name": "심장부",
+        "tier": 5,
+        "z0": 330,
+        "fade": 20,
+        "icon": "💠",
+        "paint": [
+          0.22,
+          0.3,
+          0.48,
+          0.85
+        ],
+        "bare": 0.95,
+        "trees": 0.04,
+        "fog": 1.35,
+        "enter": "땅이 숨을 쉰다. 발밑 영맥이 푸르게 빛난다"
+      }
+    ],
+    "sites": [
+      {
+        "id": "heart_dock",
+        "name": "심장 만 뱃머리",
+        "beach": [
+          3170,
+          0.8
+        ],
+        "r": 5,
+        "structures": [
+          {
+            "kind": "ship_white",
+            "dx": 0,
+            "dz": -7.5,
+            "r": 3.4,
+            "rot": 1.5
+          }
+        ],
+        "objects": [
+          {
+            "id": "o_ship_back2",
+            "kind": "door",
+            "dx": 0,
+            "dz": -2.2,
+            "rot": 0,
+            "name": "갈대 나루 가는 배",
+            "verb": "배 타기",
+            "cross": "swamp_shore",
+            "ferry": "c6_gate"
+          }
+        ]
+      },
+      {
+        "id": "heart_gate",
+        "name": "심장 문",
+        "x": 3220,
+        "z": 210,
+        "r": 13,
+        "flat": "local",
+        "structures": [
+          {
+            "kind": "pillar_broken",
+            "dx": -6,
+            "dz": 3,
+            "r": 0.6,
+            "rot": 0.2
+          },
+          {
+            "kind": "pillar_broken",
+            "dx": 6,
+            "dz": 3,
+            "r": 0.6,
+            "rot": 2.8
+          },
+          {
+            "kind": "rubble",
+            "dx": -9,
+            "dz": -6,
+            "r": 0,
+            "rot": 0.4
+          },
+          {
+            "kind": "rubble",
+            "dx": 8,
+            "dz": -7,
+            "r": 0,
+            "rot": 1.4
+          }
+        ],
+        "members": [
+          {
+            "type": "gate_warden",
+            "dx": 0,
+            "dz": 2,
+            "yaw": 3.1
+          },
+          {
+            "type": "storm_wraith",
+            "dx": -7,
+            "dz": -6,
+            "yaw": 3
+          },
+          {
+            "type": "storm_wraith",
+            "dx": 7,
+            "dz": -6,
+            "yaw": 3.2
+          }
+        ]
+      },
+      {
+        "id": "heart_machine",
+        "name": "채굴 장치",
+        "x": 3310,
+        "z": 330,
+        "r": 14,
+        "flat": "local",
+        "structures": [
+          {
+            "kind": "drill_rig",
+            "dx": 0,
+            "dz": 5,
+            "r": 2.6,
+            "rot": 3.1
+          },
+          {
+            "kind": "tent_white",
+            "dx": -9,
+            "dz": -4,
+            "r": 1.9,
+            "rot": 2.0
+          },
+          {
+            "kind": "banner_blue",
+            "dx": 7,
+            "dz": -7,
+            "r": 0.25,
+            "rot": 0
+          },
+          {
+            "kind": "crates",
+            "dx": 8,
+            "dz": 1,
+            "r": 0.8,
+            "rot": 0.5
+          },
+          {
+            "kind": "pump",
+            "dx": -6,
+            "dz": 6,
+            "r": 1.2,
+            "rot": 0.6
+          }
+        ],
+        "objects": [
+          {
+            "id": "o_machine_valve",
+            "kind": "brazier",
+            "dx": 0,
+            "dz": 1.2,
+            "rot": 0,
+            "name": "채굴 장치 손잡이",
+            "verb": "멈추기"
+          }
+        ],
+        "members": [
+          {
+            "type": "marine",
+            "dx": -5,
+            "dz": -6,
+            "yaw": 3
+          },
+          {
+            "type": "marine",
+            "dx": 5,
+            "dz": -7,
+            "yaw": 3.2
+          },
+          {
+            "type": "marine_spear",
+            "dx": -9,
+            "dz": 2,
+            "yaw": 2.4
+          },
+          {
+            "type": "marine_spear",
+            "dx": 9,
+            "dz": 3,
+            "yaw": 3.8
+          },
+          {
+            "type": "marine",
+            "dx": 0,
+            "dz": -9,
+            "yaw": 3.1
+          },
+          {
+            "type": "marine_captain",
+            "dx": 0,
+            "dz": -3,
+            "yaw": 3.1
+          }
+        ]
+      },
+      {
+        "id": "heart_core",
+        "name": "안개의 심장",
+        "x": 3220,
+        "z": 415,
+        "r": 15,
+        "flat": "local",
+        "structures": [
+          {
+            "kind": "heart_crystal",
+            "dx": 0,
+            "dz": 5,
+            "r": 2.4,
+            "rot": 0
+          },
+          {
+            "kind": "pillar_broken",
+            "dx": -8,
+            "dz": 5,
+            "r": 0.6,
+            "rot": 0.7
+          },
+          {
+            "kind": "pillar_broken",
+            "dx": 8,
+            "dz": 5,
+            "r": 0.6,
+            "rot": 2.2
+          },
+          {
+            "kind": "pillar_broken",
+            "dx": -6,
+            "dz": -5,
+            "r": 0.6,
+            "rot": 1.1
+          },
+          {
+            "kind": "pillar_broken",
+            "dx": 6,
+            "dz": -5,
+            "r": 0.6,
+            "rot": 2.6
+          }
+        ],
+        "objects": [
+          {
+            "id": "o_heart",
+            "kind": "brazier",
+            "dx": 0,
+            "dz": 1.6,
+            "rot": 0,
+            "name": "안개의 심장",
+            "verb": "등불 바치기"
+          }
+        ],
+        "members": [
+          {
+            "type": "first_keeper",
+            "dx": 0,
+            "dz": -2,
+            "yaw": 3.1
           }
         ]
       }

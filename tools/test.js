@@ -1024,7 +1024,7 @@ test('안개 늑대는 밤에만 나온다: 낮엔 숨고, 밤에 마을 사이 
   ok(wolves().every((x) => x.mode === 'away'), '해가 뜨면 사라진다');
 });
 
-test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사업·배 고치기·안개 벽 건너기·늪의 불씨·세 갈래 길·물러가는 함대·떨리는 섬까지 막히는 데 없이 41개, 건너면 해금·보상·현상금', () => {
+test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사업·배 고치기·안개 벽 건너기·늪의 불씨·세 갈래 길·물러가는 함대·떨리는 섬·새 맹약까지 막히는 데 없이 48개, 건너면 해금·보상·현상금', () => {
   const g = createGame({ data, seed: 7, actors: [{ id: 'p1', kind: 'player' }] });
   g.state.econ = null;
   const st = g.state;
@@ -1198,11 +1198,13 @@ test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사
   ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch3' && e.next === 'ch4'), '3장 끝 → 4장');
   ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch4'), '4장 끝');
   ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch5'), '5장 끝');
+  ok(events.some((e) => e.type === 'chapter.done' && e.chapter === 'ch6'), '6장 끝(이야기 한 매듭)');
+  ok(countItem([a.bag, storeOf(a, a.home)], 'seed_territory') >= 1, '영토 씨앗');
   ok(events.some((e) => e.type === 'world.veinShift' && e.closed > 0), '떨리는 섬: 산지가 다 옮겨 갔다');
   ok(a.faction.inf >= 450, '4장 세력 보상 영향력');
   ok(countItem([a.bag, storeOf(a, a.home)], 'food_jerky') >= 4, '선단 몫 육포');
   eq(a.faction?.id, 'fleet', '세력');
-  eq(events.filter((e) => e.type === 'quest.wave').length, 10, '습격 두 물결 둘 + 항구 포위 셋 + 서리 고개 셋');
+  eq(events.filter((e) => e.type === 'quest.wave').length, 13, '습격 두 물결 둘 + 항구 포위 셋 + 서리 고개 셋 + 안개 폭풍 셋');
   ok(a.marks?.lantern_mark != null && events.some((e) => e.type === 'quest.grant'), '등불의 각인');
   ok(events.some((e) => e.type === 'quest.stepReward' && e.reward.items.some((x) => x.item === 'wpn_sword_copper')), '강두의 구리 검');
   ok(a.bag.some((e) => e.item === 'wpn_sword_iron' && e.crafter === '숲머리 대장장이'), '숲머리 대장장이의 철 검');
@@ -1310,7 +1312,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '1.2.0');
+  eq(st.meta.engine, '1.3.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1502,7 +1504,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '1.2.0');
+  eq(st.meta.engine, '1.3.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -1844,7 +1846,9 @@ test('활: 화살이 날아가 맞히고(당겨 쏘면 더 세다), 관통 사�
   const { g, a, m, grp } = lone('boar');
   a.bag.push(kit('wpn_bow_oak', 50, 'b1'));
   g.dispatch({ type: 'EQUIP', actor: 'p1', uid: 'b1' });
-  m.mode = 'idle';
+  // 숲 나무가 화살을 막지 않게 탁 트인 들판으로 옮긴다
+  const open = () => Object.assign(m, { x: 200, z: 70, mode: 'idle', target: null, calmUntil: g.state.t + 60, until: g.state.t + 60, leash: 999 });
+  open();
   const hits = [];
   g.on('combat.hit', (e) => hits.push(e));
   a.x = m.x - 12;
@@ -1854,18 +1858,21 @@ test('활: 화살이 날아가 맞히고(당겨 쏘면 더 세다), 관통 사�
   eq(hits.length, 1, '맞혔다');
   ok(mOf(a, 'bow').xp > 0 || mOf(a, 'bow').lvl > 1, '활 숙련');
   const light = hits[0].dmg;
+  g.advance(1);
+  open();
   m.hp = data.creatures.boar.hp;
   a.x = m.x - 12;
   a.z = m.z;
   a.cb.st = 100;
-  g.advance(1);
+  hits.length = 0;
   ok(g.dispatch({ type: 'ATTACK', actor: 'p1', kind: 'heavy', yaw: yawTo(a, m) }).ok);
   g.advance(1.6);
-  ok(hits[hits.length - 1].dmg > light * 1.5, `당겨 쏘기 ${hits[hits.length - 1].dmg} > 짧게 ${light}`);
+  ok(hits.length && hits[0].dmg > light * 1.5, `당겨 쏘기 ${hits[0]?.dmg} > 짧게 ${light}`);
   eq(g.state.arrows.length, 0, '화살은 사라진다');
   // 관통: 셋을 줄 세운다
+  open();
   const more = [0, 1].map((i) => spawnTemp(tctx(g), grp, 'boar', m.x + 1.5 + i * 1.5, m.z));
-  for (const x of [m, ...more]) { x.hp = data.creatures.boar.hp; x.mode = 'idle'; x.z = m.z; }
+  for (const x of [m, ...more]) Object.assign(x, { hp: data.creatures.boar.hp, mode: 'idle', z: m.z, leash: 999, calmUntil: g.state.t + 60, until: g.state.t + 60, target: null });
   a.mastery.bow = { xp: 0, lvl: 5, nodes: [] };
   ok(g.dispatch({ type: 'MASTERY_LEARN', actor: 'p1', node: 'bow_marks_a1' }).ok);
   ok(g.dispatch({ type: 'MASTERY_LEARN', actor: 'p1', node: 'bow_ranger_a1' }).ok);

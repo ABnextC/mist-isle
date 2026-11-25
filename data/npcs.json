@@ -303,5 +303,92 @@
       "해든 녀석, 여기까지 따라왔군."
     ],
     "appear": "c5_ridge"
+  },
+  {
+    "id": "yunseo_heart",
+    "name": "윤서",
+    "title": "본토 학자",
+    "dx": -5,
+    "dz": -7,
+    "yaw": 0.4,
+    "look": {
+      "body": "f",
+      "seed": 53,
+      "chest": "robe",
+      "tint": {
+        "robe": "#2e4a6e",
+        "sash": "#d8d0b8",
+        "shirt": "#e6e0d2",
+        "trousers": "#2a2e38",
+        "scarf": "#8aa0b8"
+      }
+    },
+    "chat": [
+      "심장이 이렇게 가까이서 숨 쉬는 건 처음 봐요.",
+      "해든 제독은 끝까지 장치 곁에 있을 거예요."
+    ],
+    "at": "s_gate",
+    "appear": "c6_gate"
+  },
+  {
+    "id": "haerim_heart",
+    "name": "해림",
+    "title": "등대지기",
+    "dx": -3,
+    "dz": -4,
+    "yaw": 0.2,
+    "look": {
+      "body": "f",
+      "seed": 41,
+      "chest": "robe",
+      "head": "robe",
+      "tint": {
+        "robe": "#3a4a5c",
+        "sash": "#c8a050",
+        "hood": "#34404e",
+        "shirt": "#d0c6b0",
+        "trousers": "#3a3632"
+      }
+    },
+    "chat": [
+      "등불은 무기가 아닐세. 길을 비추는 것이지.",
+      "이 아이가… 끝내 여기까지 왔구먼."
+    ],
+    "appear": "c6_lantern",
+    "site": "heart_core"
+  },
+  {
+    "id": "haeden_heart",
+    "name": "해든",
+    "title": "잿빛 함대 제독",
+    "site": "heart_core",
+    "dx": 3,
+    "dz": -4,
+    "yaw": -0.2,
+    "appear": "c6_lantern",
+    "look": {
+      "body": "m",
+      "seed": 71,
+      "chest": "heavy",
+      "legs": "light",
+      "tint": {
+        "shirt": "#d8d4c8",
+        "vest": "#2a3446",
+        "trousers": "#232a36",
+        "scarf": "#8a8f98",
+        "belt": "#2a2018",
+        "lthr": "#2a2018",
+        "linen": "#c8c4b8",
+        "pad": "#2c3a52",
+        "hood": "#2a3446",
+        "mail": "#6a7078",
+        "plate": "#3a4250",
+        "steel": "#9aa0a8"
+      }
+    },
+    "chat": [
+      "…어머니의 등불이 이렇게 밝았던가.",
+      "본토엔… 다른 길을 찾아 주시오."
+    ]
   }
 ]

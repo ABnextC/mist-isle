@@ -929,3 +929,45 @@ export function bake(model) {
   for (const [mat, list] of Object.entries(model.parts)) out[mat] = merge(list);
   return out;
 }
+
+// 안개의 심장(v1.3): 땅에서 솟은 푸른 결정 다발. 가운데 큰 결정이 숨 쉬듯 빛난다
+export function heartCrystal() {
+  const { parts, fx, add } = kit();
+  add('rockBare', P(new THREE.CylinderGeometry(2.4, 2.9, 0.6, 12), 0xffffff, { y: 0.2 }));
+  add('spirit', P(new THREE.OctahedronGeometry(1.0, 0), 0xffffff, { y: 2.6, sy: 2.0 }));
+  const R = rng(77);
+  for (let i = 0; i < 9; i++) {
+    const a = (i / 9) * Math.PI * 2 + R() * 0.3;
+    const d = 1.2 + R() * 0.9;
+    const h = 0.6 + R() * 1.2;
+    add(i % 3 === 0 ? 'spirit' : 'spiritDim', P(new THREE.OctahedronGeometry(0.32 + R() * 0.2, 0), 0xffffff,
+      { x: Math.cos(a) * d, z: Math.sin(a) * d, y: 0.6 + h * 0.6, sy: 1.6 + h, rz: (R() - 0.5) * 0.6, rx: (R() - 0.5) * 0.6 }));
+  }
+  // 땅 밑으로 뻗는 영맥 줄기
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    add('spiritDim', box(0.18, 0.05, 3.2, { x: Math.cos(a) * 3.2, z: Math.sin(a) * 3.2, y: 0.03, ry: -a + Math.PI / 2 }));
+  }
+  fx.glows.push(V(0, 2.6, 0));
+  return { parts, fx };
+}
+
+// 해든의 채굴 장치(v1.3): 쇠 틀 망루 아래 땅에 박힌 굴착 관, 김을 뿜는 통 둘
+export function drillRig() {
+  const { parts, fx, add } = kit();
+  add('planksDark', box(4.2, 0.3, 4.2, { y: 0.15 }));
+  for (const [x, z] of [[-1.6, -1.6], [1.6, -1.6], [-1.6, 1.6], [1.6, 1.6]]) {
+    add('iron', P(new THREE.CylinderGeometry(0.1, 0.14, 5.2, 8), 0xffffff, { x: x * 0.8, z: z * 0.8, y: 2.6, rx: -z * 0.05, rz: x * 0.05 }));
+  }
+  for (const y of [1.6, 3.4]) add('iron', P(new THREE.TorusGeometry(1.35, 0.06, 4, 4), 0xffffff, { y, rx: Math.PI / 2, rz: Math.PI / 4 }));
+  add('copperMetal', P(new THREE.CylinderGeometry(0.42, 0.42, 1.0, 12), 0xffffff, { y: 5.3 }));
+  add('iron', P(new THREE.CylinderGeometry(0.22, 0.22, 5.6, 10), 0xffffff, { y: 2.5 }));
+  add('spirit', P(new THREE.CylinderGeometry(0.16, 0.16, 0.6, 10), 0xffffff, { y: 0.45 }));
+  for (const x of [-2.4, 2.4]) {
+    add('iron', P(new THREE.CylinderGeometry(0.6, 0.65, 1.6, 12), 0xffffff, { x, y: 0.95 }));
+    add('copperMetal', P(new THREE.CylinderGeometry(0.66, 0.66, 0.1, 12), 0xffffff, { x, y: 1.75 }));
+    add('iron', taperTube([V(x * 0.8, 1.2, 0), V(x * 0.4, 1.4, 0), V(0.25 * Math.sign(x), 1.1, 0)], [0.08, 0.08, 0.08], { radial: 6, vScale: 1, cap: true }));
+    fx.smokes.push(V(x, 1.9, 0));
+  }
+  return { parts, fx };
+}

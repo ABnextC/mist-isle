@@ -10,6 +10,7 @@
   {"id": "sap_birch", "name": "자작나무 수액", "stage": "misc", "tier": 1, "value": 15, "icon": "💧", "note": "제재 촉매"},
   {"id": "sand_fine", "name": "고운 모래", "stage": "misc", "tier": 0, "value": 8, "icon": "⏳", "note": "제련 촉매(모래 용제)"},
   {"id": "gem_rough", "name": "거친 원석", "stage": "misc", "tier": 1, "value": 60, "icon": "💎", "note": "장신구 재료(이후 패치)"},
+  {"id": "seed_territory", "name": "영토 씨앗", "stage": "misc", "tier": 5, "value": 0, "icon": "🌱", "note": "심장이 돌봄의 대가로 내어 준 씨앗. 잿병 든 땅을 천천히 낫게 한다. 영지가 열리면 쓴다."},
   {"id": "seed_berry", "name": "산딸기 씨앗", "stage": "misc", "tier": 0, "value": 6, "icon": "🌱", "note": "텃밭(이후 패치)"},
   {"id": "lumber_drift", "name": "거친 목재", "family": "wood", "stage": "refined", "tier": 0, "value": 16, "icon": "🪵"},
   {"id": "lumber_birch", "name": "자작나무 목재", "family": "wood", "stage": "refined", "tier": 1, "value": 36, "icon": "🪵"},

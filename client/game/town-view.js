@@ -5,7 +5,7 @@
 
 import * as THREE from 'three';
 import { STATIONS, house, lighthouse, board, market, campfire, wreck, pier, lampPost, fence, bake, tent, cabin, site, pennant, torch,
-  banner, palisade, crates, watchtower, shipBlack, chest, supply, papers, altar, pillar, arch, mural, rubble, brazier, towerOld, pump } from './models/town.js';
+  banner, palisade, crates, watchtower, shipBlack, chest, supply, papers, altar, pillar, arch, mural, rubble, brazier, towerOld, pump, heartCrystal, drillRig } from './models/town.js';
 
 const BEAM_V = `
 varying float vAlong;
@@ -161,6 +161,8 @@ export function createTownView(scene, game, hf, { mats, terrain, region, me = nu
       else if (o.kind === 'ship_black') place(shipBlack(), o.x, o.z, o.rot, { dy: -0.75, tilt: [0.03, 0.12] });
       else if (o.kind === 'tower_old') place(towerOld(), o.x, o.z, o.rot);
       else if (o.kind === 'pump') place(pump(), o.x, o.z, o.rot);
+      else if (o.kind === 'heart_crystal') place(heartCrystal(), o.x, o.z, o.rot);
+      else if (o.kind === 'drill_rig') place(drillRig(), o.x, o.z, o.rot);
       else if (o.kind === 'ship_white') place(shipBlack('cloth'), o.x, o.z, o.rot, { dy: -0.75, tilt: [0.02, 0.06] });
       else if (o.kind === 'chest') place(chest(houseSeed++), o.x, o.z, o.rot);
       else if (o.kind === 'supply') place(supply(), o.x, o.z, o.rot);

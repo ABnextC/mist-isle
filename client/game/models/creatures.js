@@ -453,6 +453,14 @@ const MAKERS = { crab, deer, boar, wolf, mist_wolf: mistWolf, mist_wraith: wrait
   frost_wolf: (seed) => tint(mistWolf(seed), 0xdfeaf6, 0x0a1622, 1.05),
   fire_guardian: (seed) => tint(haetae(seed), 0x9a7466, 0x5a1a04, 1.12),
   frost_guardian: (seed) => tint(haetae(seed), 0xd8e6f2, 0x123048, 1.12),
+  // 안개의 심장(v1.3)
+  storm_wraith: (seed) => tint(wraith(seed), 0x8a90c8, 0x1a2a58, 1.12),
+  storm_wolf: (seed) => tint(mistWolf(seed), 0x7a7ca0, 0x101a3a, 1.1),
+  gate_warden: (seed) => tint(haetae(seed), 0x9aa4c8, 0x1e3070, 1.2),
+  first_keeper: (seed) => {
+    const q = tint(wraith(seed), 0xf2e2b0, 0x6a5010, 1.7);
+    return q;
+  },
 };
 
 function tint(q, color, emissive, scale) {

@@ -16,6 +16,7 @@ import { yawTo } from '../core/systems/combat.js';
 import { mOf, needXp, loadoutOf, abilityOf, passivesOf } from '../core/systems/mastery.js';
 import { spawnTemp, hurtMob } from '../core/systems/mobs.js';
 import { gainLevelXp, levelPassives, jewelGather } from '../core/systems/level.js';
+import { hostile, pvpOn, pvpBonus } from '../core/systems/pvp.js';
 import { passivesNow } from '../core/systems/combat.js';
 import { settlementDaily } from '../core/settlements.js';
 import { isUnlocked, allowedProject, chapterReached } from '../core/systems/unlocks.js';
@@ -1319,7 +1320,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '2.5.0');
+  eq(st.meta.engine, '2.6.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1511,7 +1512,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '2.5.0');
+  eq(st.meta.engine, '2.6.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -2456,6 +2457,127 @@ test('효과음: 게임이 부르는 소리 이름이 모두 요리법에 있다
   names.add('splash');
   ok(names.size >= 25, `이름 ${names.size}개`);
   for (const n of names) ok(SFX[n] && typeof SFX[n].play === 'function' && SFX[n].life > 0, `요리법 없음: ${n}`);
+});
+
+console.log('필드 PvP (v2.6)');
+
+function pvpGame(seed = 7) {
+  const g = createGame({ data, seed, actors: [{ id: 'p1', kind: 'player' }] });
+  g.state.econ = null;
+  const a = g.state.actors.p1;
+  const C = g._ctx;
+  const rivals = Object.values(g.state.actors).filter((x) => x.kind === 'rival');
+  return { g, a, C, rivals };
+}
+
+test('분쟁 구역 셋에 다른 세력 개척자 무리가 돌고, 짐승은 그들을 건드리지 않는다', () => {
+  const { g, C, rivals } = pvpGame();
+  eq(rivals.length, data.rivals.bands.reduce((n, b) => n + b.count, 0), '무리 인원');
+  for (const r of rivals) {
+    const band = data.rivals.bands.find((b) => b.id === r.rival.band);
+    const zn = (data.regions[band.region].zones || []).find((z) => z.id === band.zone);
+    ok(r.z >= zn.z0 && zn.disputed, `${r.id} 분쟁 구역 안`);
+    ok(r.equip.weapon && r.equip.chest, `${r.id} 무장`);
+  }
+  eq(new Set(rivals.map((r) => r.name)).size, rivals.length, '이름이 겹치지 않는다');
+  g.advance(600);
+  ok(Object.values(g.state.actors).filter((x) => x.kind === 'rival' && x.cb.downUntil === 0).length === rivals.length, '짐승에게 쓰러지지 않는다');
+  ok(C, 'ctx');
+});
+
+test('적대 규칙: 4장 전엔 아무도 못 치고, 깃발을 올리거나 분쟁 구역에 들면 다른 세력과 겨룬다. 같은 세력·동행은 한편', () => {
+  const { g, a, C, rivals } = pvpGame();
+  const r = rivals.find((x) => x.rival.band === 'swamp');
+  eq(hostile(C, a, r), false, '잠겨 있으면 못 친다');
+  eq(g.dispatch({ type: 'PVP_FLAG', actor: 'p1', on: true }).error, 'locked');
+  a.unlockAll = true;
+  eq(hostile(C, a, r), false, '깃발을 안 올리면 마을·들판에선 못 친다');
+  ok(g.dispatch({ type: 'PVP_FLAG', actor: 'p1', on: true }).ok, '깃발');
+  ok(hostile(C, a, r) && hostile(C, r, a), '깃발을 올리면 서로');
+  a.faction = { id: 'fleet', inf: 0 };
+  eq(hostile(C, a, r), false, '같은 세력(자유 선단)은 한편');
+  a.faction = { id: 'lantern', inf: 0 };
+  ok(hostile(C, a, r), '다른 세력');
+  eq(g.dispatch({ type: 'PVP_FLAG', actor: 'p1', on: false }).error, 'pvp_cd', '올린 지 5분 안');
+  g.advance(data.config.pvp.minOnSec + 1);
+  ok(g.dispatch({ type: 'PVP_FLAG', actor: 'p1', on: false }).ok, '내린다');
+  eq(pvpOn(C, a), false);
+  Object.assign(a, { x: r.x + 30, z: r.z });
+  ok(pvpOn(C, a), '분쟁 구역에선 늘 켜진다');
+  eq(g.dispatch({ type: 'PVP_FLAG', actor: 'p1', on: true }).ok, true);
+  g.advance(data.config.pvp.minOnSec + 1);
+  eq(g.dispatch({ type: 'PVP_FLAG', actor: 'p1', on: false }).error, 'disputed', '분쟁 구역 안에선 못 내린다');
+  near(pvpBonus(C, a), data.config.pvp.flagBonus + data.config.pvp.disputedBonus, 1e-9, '분쟁 구역 보너스');
+});
+
+test('PvP 싸움: 칼로 다른 세력 사람을 베면 PvP 배율로 줄어든 피해가 들어가고, 쓰러뜨리면 은화·빼앗긴 재료·영향력·경험치를 얻으며 잠시 뒤 새 사람이 온다', () => {
+  const { g, a, C, rivals } = pvpGame();
+  a.unlockAll = true;
+  a.faction = { id: 'lantern', inf: 0 };
+  const r = rivals.find((x) => x.rival.band === 'swamp');
+  a.bag.push(kit('wpn_sword_iron', 60, 'u_sw'));
+  ok(g.dispatch({ type: 'EQUIP', actor: 'p1', uid: 'u_sw' }).ok);
+  ok(g.dispatch({ type: 'PVP_FLAG', actor: 'p1', on: true }).ok);
+  r.bag.push({ item: 'stone', lot: null, bonus: null, qty: 7 });
+  // 앞에 세우고 한 번 벤다(상대 손발은 묶는다)
+  r.rival.target = null;
+  r.ai.on = false;
+  g.advance(0.2);
+  Object.assign(a, { x: r.x, z: r.z - 1.2, yaw: 0 });
+  r.cb.hp = 40;
+  const hp0 = r.cb.hp;
+  const evs = [];
+  g.on('rival.fall', (e) => evs.push(e));
+  ok(g.dispatch({ type: 'ATTACK', actor: 'p1', kind: 'light', yaw: yawTo(a, r) }).ok);
+  g.advance(0.6);
+  ok(r.cb.hp < hp0, `맞았다 ${hp0}→${r.cb.hp}`);
+  const sw = data.config.combat.weapons.sword;
+  ok(hp0 - r.cb.hp < a.bag.find((e) => e.uid === 'u_sw').stats.attack * (sw?.mult ?? 1) * 2, 'PvP 배율로 줄었다');
+  const silver0 = a.silver;
+  r.cb.hp = 0.5;
+  for (let i = 0; i < 10 && !evs.length; i++) {
+    Object.assign(a, { x: r.x, z: r.z - 1.2 });
+    g.dispatch({ type: 'ATTACK', actor: 'p1', kind: 'light', yaw: yawTo(a, r) });
+    g.advance(1);
+  }
+  g.advance(data.rivals.fallSec + 0.5);
+  eq(evs[0]?.by, 'p1', '쓰러뜨렸다');
+  ok(a.silver > silver0, '은화');
+  ok(countItem([a.bag], 'stone') >= 7, '빼앗겼던 재료(돌)를 되찾는다');
+  ok(a.faction.inf >= data.config.pvp.killInf, '세력 영향력');
+  ok(a.clevel.xp > 0 || a.clevel.lvl > 1, '전투 경험치');
+  eq(a.pvp.kills, 1);
+  ok(!g.state.actors[r.id], '무리에서 빠진다');
+  g.advance(data.rivals.respawnSec + 1);
+  ok(g.state.actors[r.id], '새 사람이 온다');
+});
+
+test('다른 세력에게 쓰러지면 가방 재료의 4분의 1을 빼앗기고 장비·음식은 그대로다', () => {
+  const { g, a, C, rivals } = pvpGame();
+  a.unlockAll = true;
+  const r = rivals.find((x) => x.rival.band === 'swamp');
+  a.bag.push({ item: 'stone', lot: null, bonus: null, qty: 40 }, kit('food_meat', 50, null));
+  a.bag[a.bag.length - 1].qty = 3;
+  delete a.bag[a.bag.length - 1].uid;
+  Object.assign(a, { x: r.x + 6, z: r.z });
+  ok(pvpOn(C, a), '분쟁 구역');
+  const evs = [];
+  g.on('pvp.down', (e) => evs.push(e));
+  for (let i = 0; i < 90 && !evs.length; i++) g.advance(1);
+  eq(evs[0]?.actor, 'p1', '쓰러졌다');
+  eq(countItem([a.bag], 'stone'), 30, '돌 40 → 30');
+  eq(countItem([a.bag], 'food_meat'), 3, '음식은 그대로');
+  ok(countItem([r.bag], 'stone') >= 10, '상대가 가져갔다');
+  eq(a.pvp.downs, 1);
+});
+
+test('깃발을 올리면 채집량·숙련 경험이 오른다', () => {
+  const { g, a, C } = pvpGame();
+  a.unlockAll = true;
+  const x0 = xpMult(C, a, 'mining');
+  ok(g.dispatch({ type: 'PVP_FLAG', actor: 'p1', on: true }).ok);
+  near(xpMult(C, a, 'mining'), x0 + data.config.pvp.flagBonus, 1e-9, '숙련 경험');
+  near(pvpBonus(C, a), data.config.pvp.flagBonus, 1e-9, '채집량에 더한다');
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

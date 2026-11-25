@@ -6,11 +6,13 @@ import { emptyMarket } from './market.js';
 import { initEcon } from './systems/economy.js';
 import { dailyOrders } from './orders.js';
 import { initCombat, emptyEquip } from './systems/combat.js';
+import { emptyPvp } from './systems/pvp.js';
+import { emptyRivals, initRivals } from './systems/rivals.js';
 import { initMobs } from './systems/mobs.js';
 import { newSettlement, initProjects, settlementsDaily } from './settlements.js';
 import { emptyQuests, startQuest, firstQuest } from './systems/quests.js';
 
-export const ENGINE_VERSION = '2.5.0';
+export const ENGINE_VERSION = '2.6.0';
 
 export function spawnPoint(region, terrain) {
   const [x, inland] = region.spawn;
@@ -43,6 +45,7 @@ export function newActor(data, spec, at) {
     bonds: {},
     clevel: { lvl: 1, xp: 0, attrs: { str: 0, dex: 0, int: 0, con: 0, foc: 0 } },
     exp: { run: null, last: {} },
+    pvp: emptyPvp(),
     known: {},
     loadout: {},
     quests: emptyQuests(),
@@ -58,7 +61,7 @@ export function createState(data, seed) {
     clock: { hour: 0, day: 0 },
     rng: seedState(seed),
     nextId: 1,
-    regions: {}, lots: {}, veins: {}, nodes: {}, settlements: {}, projects: {}, actors: {}, mobs: {}, mobGroups: {}, shots: [], arrows: [], zones: [], houses: {}, guilds: {}, runs: {},
+    regions: {}, lots: {}, veins: {}, nodes: {}, settlements: {}, projects: {}, actors: {}, mobs: {}, mobGroups: {}, shots: [], arrows: [], zones: [], houses: {}, guilds: {}, runs: {}, rivals: emptyRivals(),
     market: emptyMarket(), orders: [], econ: null,
   };
 }
@@ -85,6 +88,7 @@ export function populate(ctx, actorSpecs) {
   for (const a of Object.values(state.actors)) if (a.kind === 'player' && q0) startQuest(ctx, a, q0);
   state.projects = initProjects(data);
   initMobs(ctx);
+  initRivals(ctx);
   state.econ = initEcon(ctx);
   settlementsDaily(ctx);
   dailyOrders(ctx);

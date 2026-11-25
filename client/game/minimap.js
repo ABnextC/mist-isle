@@ -53,7 +53,7 @@ export function createMinimap(canvas, game, terrain) {
       g.stroke();
       g.fillStyle = 'rgba(220, 245, 200, 0.9)';
       g.font = '10px sans-serif';
-      g.fillText(`${zn.name} T${zn.tier}`, 6, zy - 4);
+      g.fillText(`${zn.name} T${zn.tier}${zn.disputed ? ' ⚔ 분쟁' : ''}`, 6, zy - 4);
     }
     g.setLineDash([]);
     for (const m of Object.values(state.mobs || {})) {
@@ -64,6 +64,19 @@ export function createMinimap(canvas, game, terrain) {
       g.fillStyle = m.target ? '#ff5040' : T.faction || T.night ? 'rgba(235, 90, 70, 0.9)' : 'rgba(255, 200, 120, 0.8)';
       g.beginPath();
       g.arc(mx, my, T.boss || T.elite ? 3 : 1.8, 0, Math.PI * 2);
+      g.fill();
+    }
+    // 다른 세력 개척자(v2.6): 세력 색 마름모
+    for (const r of Object.values(state.actors)) {
+      if (r.kind !== 'rival' || r.cb.downUntil > 0 || Math.abs(r.x - a.x) > 60 || Math.abs(r.z - a.z) > 60) continue;
+      const [rx, ry] = toPx(r.x, r.z);
+      g.fillStyle = r.rival.target === actorId ? '#ff5040' : r.rival.color;
+      g.beginPath();
+      g.moveTo(rx, ry - 3);
+      g.lineTo(rx + 3, ry);
+      g.lineTo(rx, ry + 3);
+      g.lineTo(rx - 3, ry);
+      g.closePath();
       g.fill();
     }
     // 약탈단 자리(v0.5): 검은 깃발 표시와 이름. 옛터(v0.5.1)는 푸른 불꽃

@@ -1,5 +1,5 @@
 {
-  "dataVersion": 30,
+  "dataVersion": 31,
   "skillCap": 60,
   "time": {
     "secondsPerGameDay": 3600,
@@ -1755,5 +1755,16 @@
         "desc": "마나·기력 회복, 활·지팡이 피해"
       }
     }
+  },
+  "pvp": {
+    "dmgMult": 0.55,
+    "flagBonus": 0.1,
+    "disputedBonus": 0.1,
+    "minOnSec": 300,
+    "combatLockSec": 60,
+    "cargoLoss": 0.25,
+    "honorPerKill": 10,
+    "killXpMult": 2.5,
+    "killInf": 25
   }
 }

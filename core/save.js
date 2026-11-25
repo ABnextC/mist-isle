@@ -6,6 +6,8 @@ import { makeTerrain, makeWorld, fitsHabitat, hashStr } from './terrain.js';
 import { stationLayout, stationAt } from './world.js';
 import { pickCenter, pickNodeSpot, openVein } from './systems/veins.js';
 import { initCombat, emptyEquip } from './systems/combat.js';
+import { emptyPvp } from './systems/pvp.js';
+import { emptyRivals, initRivals } from './systems/rivals.js';
 import { initMobs, groupSpot } from './systems/mobs.js';
 import { emptyQuests, startQuest, firstQuest } from './systems/quests.js';
 import { makeClock } from './clock.js';
@@ -577,6 +579,17 @@ const MIGRATIONS = [
     to: 30,
     run(st) {
       st.meta.engine = '2.5.0';
+    },
+  },
+  {
+    // v2.5 → v2.6: 필드 PvP. 개척자마다 깃발(꺼짐), 분쟁 구역에 다른 세력 개척자 무리를 세운다
+    from: 30,
+    to: 31,
+    run(st, data) {
+      for (const a of Object.values(st.actors)) if (!a.pvp) a.pvp = emptyPvp();
+      st.rivals = st.rivals || emptyRivals();
+      initRivals(migrationCtx(st, data, 0x26a1f00d));
+      st.meta.engine = '2.6.0';
     },
   },
 ];

@@ -1,6 +1,7 @@
 // 화면 위 정보(HUD)와 패널. 아이콘·색을 먼저 보이고, 수치는 패널에서 연다.
 // 버튼은 data-act로 main.js에 넘긴다. HUD는 상태를 직접 고치지 않는다.
 
+import { pvpOn, inDisputed, pvpBonus, toggleError } from '../../core/systems/pvp.js';
 import { ERR, fmtProps, fmtStats, stars, itemName, entryStar, describeEvent, ARMOR_CLASS, loadEffects, josa } from '../../core/text.js';
 import { equipLoad } from '../../core/systems/combat.js';
 import { masteryOf, mOf, loadoutOf, abilityOf, needXp, spentIn, learnError, resetCost } from '../../core/systems/mastery.js';
@@ -337,7 +338,7 @@ export function createHud(root, game, { touch, onAct }) {
       const capped = LV.lvl >= data.config.level.cap;
       set(el.lvn, `Lv ${LV.lvl}${freePoints(qctxL(), a) > 0 ? ' ✦' : ''}`);
       el.lvbar.style.width = `${capped ? 100 : (LV.xp / lvNeed(qctxL(), LV.lvl)) * 100}%`;
-      const busy = a.cb.hp < a.cb.maxHp || a.cb.st < C.stamina || Object.values(game.state.mobs).some((m) => m.target === PID && m.mode !== 'dead');
+      const busy = a.cb.hp < a.cb.maxHp || a.cb.st < C.stamina || Object.values(game.state.mobs).some((m) => m.target === PID && m.mode !== 'dead') || Object.values(game.state.actors).some((r) => r.rival?.target === PID);
       el.vitals.classList.toggle('dim', !busy);
       el.vitals.classList.toggle('low', a.cb.hp < a.cb.maxHp * 0.3);
       const down = a.cb.downUntil > 0;
@@ -346,7 +347,10 @@ export function createHud(root, game, { touch, onAct }) {
     }
     const ld = equipLoad({ data, cfg: data.config, state: game.state }, a);
     const ldTag = ld.tier.id === 'medium' ? [] : [`${ld.tier.id === 'light' ? '🪶' : '🏋️'} ${ld.tier.name} ${ld.kg}kg`];
-    set(el.buffs, [...ldTag, ...a.buffs.map((b) => `🍽️ 채집량 +${Math.round(b.value * 100)}% · ${Math.ceil((b.endsAt - game.state.t) / 60)}분`)].join('  '));
+    // PvP(v2.6): 깃발이 서 있으면 표시
+    const pv = pvpOn(qctxL(), a);
+    const pvTag = pv ? [`⚔️ PvP${inDisputed(qctxL(), a) ? '·분쟁 구역' : ''} +${Math.round(pvpBonus(qctxL(), a) * 100)}%`] : [];
+    set(el.buffs, [...pvTag, ...ldTag, ...a.buffs.map((b) => `🍽️ 채집량 +${Math.round(b.value * 100)}% · ${Math.ceil((b.endsAt - game.state.t) / 60)}분`)].join('  '));
     // 목표까지 거리: 멀면 5m 단위로(글자가 덜 바뀌게)
     const qd = questDist == null ? '' : questDist < 30 ? ` · ${Math.round(questDist)}m` : ` · ${Math.round(questDist / 5) * 5}m`;
     // 원정 중(v2.3)이면 추적기 자리에 원정 진행을 보인다
@@ -514,7 +518,24 @@ export function createHud(root, game, { touch, onAct }) {
       <h3>능력치 <small class="${free ? 'ok' : 'muted'}">남은 점수 ${free}</small></h3>
       <ul class="list attrs">${rows}</ul>
       <h3>지금 무기: ${esc(wName)}</h3><p class="muted">주 능력치 1점당 피해 +${S.mainDmg * 100}%, 부 능력치 +${S.subDmg * 100}%</p><p>${eff.join(' · ')}</p>
-      <div class="btns"><button data-act="attr-reset" ${spentOf(a) ? '' : 'disabled'}>점수 되돌리기 · 🪙${attrCost(C, a)}</button></div>`;
+      <div class="btns"><button data-act="attr-reset" ${spentOf(a) ? '' : 'disabled'}>점수 되돌리기 · 🪙${attrCost(C, a)}</button></div>
+      ${pvpHtml(a)}`;
+  }
+  // 필드 PvP(v2.6)
+  function pvpHtml(a) {
+    const C = qctxL();
+    if (!isUnlocked(C, a, 'pvp')) return `<div class="pvpbox"><b>⚔️ 필드 PvP</b><p class="muted">🔒 ${esc(data.unlocks.pvp.hint)}</p></div>`;
+    const on = !!a.pvp?.on;
+    const dz = inDisputed(C, a);
+    const err = toggleError(C, a, !on);
+    const why = err === 'disputed' ? '분쟁 구역 안' : err === 'pvp_cd' ? `올린 지 5분 안(${Math.ceil(data.config.pvp.minOnSec - (game.state.t - a.pvp.since))}초)` : err === 'in_fight' ? '방금 싸움' : '';
+    const P = data.config.pvp;
+    const pv = a.pvp || {};
+    return `<div class="pvpbox"><b>⚔️ 필드 PvP ${on || dz ? '<em class="no">켜짐</em>' : '<em class="muted">꺼짐</em>'}${dz ? ' · 분쟁 구역' : ''}</b>
+      <p class="muted">깃발을 올리면 다른 세력과 들판에서 겨룬다. 채집량·숙련 경험 +${P.flagBonus * 100}%(분쟁 구역은 +${(P.flagBonus + P.disputedBonus) * 100}%). 안개 늪·서리 설원·안개 폭풍 지대는 분쟁 구역이라 늘 켜진다.</p>
+      <p class="muted">사람에게 쓰러지면 장비 내구가 깎이고 가방 재료의 ${P.cargoLoss * 100}%를 빼앗긴다. 장비·음식·물약은 잃지 않는다. 쓰러뜨린 상대가 지닌 은화와 빼앗아 간 재료는 되찾는다.</p>
+      <p>쓰러뜨림 ${pv.kills || 0} · 쓰러짐 ${pv.downs || 0} · 전공 ${pv.honor || 0}</p>
+      <div class="btns"><button data-act="pvp-flag" data-v="${on ? 0 : 1}" ${err ? 'disabled' : ''} class="${on ? 'warn' : ''}">${on ? '🏳️ 깃발 내리기' : '⚔️ 깃발 올리기'}</button>${why ? `<small class="muted"> ${why}이라 못 내린다</small>` : ''}</div></div>`;
   }
   // 원정 창(v2.3)
   function expedHtml(a) {

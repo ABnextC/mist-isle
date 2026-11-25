@@ -8,6 +8,7 @@ import { hashStr } from '../terrain.js';
 import { seedState, makeRng } from '../rng.js';
 import { gated } from './unlocks.js';
 import { guildPerks } from './guilds.js';
+import { pvpBonus } from './pvp.js';
 
 export const factionDef = (ctx, id) => ctx.data.factions.list.find((f) => f.id === id) || null;
 export const factionOf = (a) => a?.faction?.id || null;
@@ -31,7 +32,7 @@ export function perksOf(ctx, a) {
 const hasSkill = (p, skill) => p.skills === '*' || p.skills?.includes(skill);
 
 export function xpMult(ctx, a, skill) {
-  let m = 1;
+  let m = 1 + pvpBonus(ctx, a); // PvP 깃발(v2.6)
   for (const p of perksOf(ctx, a)) if (p.kind === 'xp' && hasSkill(p, skill)) m *= p.mult;
   const boost = a?.buffs?.find((b) => b.type === 'xpBoost');
   if (boost) m *= 1 + boost.value;

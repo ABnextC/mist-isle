@@ -44,6 +44,7 @@ import { canWake } from '../../core/systems/mobs.js';
 import { isUnlocked } from '../../core/systems/unlocks.js';
 import { createNpcLabels } from './npc-labels.js';
 import { createAudio, LEVELS } from './audio/index.js';
+import { createRivalLabels } from './rival-labels.js';
 
 const SAVE_KEY = 'mist-isle:v1';
 const OLD_KEY = 'mist-isle:v0';
@@ -123,6 +124,7 @@ async function boot() {
   floaters.id = 'floaters';
   document.body.appendChild(floaters);
   const mobsView = createMobsView(view.scene, game, ground.hf, floaters, { posOf: actorsView.positionOf, wakeHint: (type) => canWake(type, game.state.actors[PID]) });
+  const rivalLabels = createRivalLabels(floaters, game, actorsView.positionOf, PID);
   window.__mist.mobsView = mobsView;
   const shotsView = createShotsView(view.scene, game, ground.hf);
   const npcLabels = createNpcLabels(floaters, game, actorsView.positionOf);
@@ -561,6 +563,7 @@ async function boot() {
         break;
       }
       case 'swap': game.dispatch({ type: 'SWAP_WEAPON', actor: PID }); break;
+      case 'pvp-flag': game.dispatch({ type: 'PVP_FLAG', actor: PID, on: v === '1' || v === 1 }); break;
       case 'vol': {
         // 소리 크기(v2.5): v = '갈래:단계'
         const [k, i] = String(v).split(':');
@@ -908,6 +911,27 @@ async function boot() {
     if (ev.actor !== PID || hud.panel?.kind !== 'talk') return;
     hud.open('talk', { npc: ev.npc, gift: true, react: ev });
   });
+  // 필드 PvP(v2.6)
+  game.on('pvp.flag', (ev) => {
+    if (ev.actor !== PID) return;
+    hud.toast(ev.on ? '⚔️ 깃발을 올렸다 — 다른 세력과 겨룰 수 있다. 채집·숙련 +10%' : '🏳️ 깃발을 내렸다', ev.on ? 'warn' : 'info');
+  });
+  game.on('rival.aggro', (ev) => {
+    if (ev.target !== PID) return;
+    const r = game.state.actors[ev.actor];
+    const band = r && data.rivals.bands.find((b) => b.id === r.rival.band);
+    if (r) hud.toast(`⚔️ ${band?.name || '다른 세력'} ${josa(r.name, '이', '가')} 덤빈다 (Lv ${r.clevel.lvl})`, 'warn');
+  });
+  game.on('pvp.down', (ev) => {
+    if (ev.actor !== PID) return;
+    const lost = ev.taken.map((x) => `${data.items[x.item].name} ×${x.qty}`).join(', ');
+    setTimeout(() => hud.toast(`🩸 사람에게 쓰러졌다${lost ? ` — 빼앗긴 것: ${lost}` : ''}. 쓰러뜨리면 되찾는다`, 'warn', 6000), 800);
+  });
+  game.on('rival.fall', (ev) => {
+    if (ev.by !== PID) return;
+    const got = [`🪙 ${ev.silver}`, ...ev.loot.map((x) => `${data.items[x.item].name} ×${x.qty}`)].join(' · ');
+    hud.toast(`🏆 ${josa(ev.name || '상대', '을', '를')} 쓰러뜨렸다 — ${got}`, 'good', 5000);
+  });
   // 물약(v2.4)
   game.on('potion', (ev) => {
     if (ev.actor !== PID) return;
@@ -1165,6 +1189,7 @@ async function boot() {
     actorsView.update(dt, now / 1000);
     strikeFx();
     mobsView.update(dt, view.camera);
+    rivalLabels.update(view.camera);
     shotsView.update();
     npcLabels.update(view.camera, a);
     updateFloats(dt);

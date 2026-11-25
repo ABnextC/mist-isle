@@ -3,6 +3,7 @@
 
 import { seasonYield } from './calendar.js';
 import { jewelGather } from './level.js';
+import { pvpBonus } from './pvp.js';
 import { extraChance } from './factions.js';
 import { addEntry, slotsNeeded } from '../inventory.js';
 import { rollQty, skillYieldBonus, round3 } from '../formulas.js';
@@ -176,7 +177,7 @@ function resolveGather(ctx, actor) {
   const skill = actor.skills[type.skill];
   const buff = actor.buffs.find((b) => b.type === 'gatherYield');
   // 계절(v1.8): 많이 나는 철과 덜 나는 철
-  const mult = (1 + skillYieldBonus(skill.level, type.level, cfg) + (tool?.stats.yield ?? 0) + (buff ? buff.value : 0) + jewelGather(ctx, actor)) * (ctx.clock ? seasonYield(ctx, item.id) : 1);
+  const mult = (1 + skillYieldBonus(skill.level, type.level, cfg) + (tool?.stats.yield ?? 0) + (buff ? buff.value : 0) + jewelGather(ctx, actor) + pvpBonus(ctx, actor)) * (ctx.clock ? seasonYield(ctx, item.id) : 1);
   const base = rng.int(type.yield[0], type.yield[1]);
   // 세력 혜택(v0.7): 확률로 하나 더
   const fx = extraChance(ctx, actor, 'gather', type.skill);

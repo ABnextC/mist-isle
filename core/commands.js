@@ -2,6 +2,7 @@
 // 검증 단계는 상태를 바꾸지 않는다. 실행 단계는 실패하지 않는다.
 // 싱글에서는 로컬 코어가, 멀티에서는 서버가 같은 함수를 돌린다.
 
+import { toggleError, toggle } from './systems/pvp.js';
 import { guildOf, newGuild, trimAgents, aiRoom, hireable, rollJobs, jobProgress, storeCap } from './systems/guilds.js';
 import { plotDef, tierDef, nextTier, homeOf, nearPlot, comfortOf, restValue, plantDef } from './systems/housing.js';
 import { feeMult, recipeAllowed, factionDef, factionOf, tasksOf, taskDone, gainInfluence } from './systems/factions.js';
@@ -1465,8 +1466,19 @@ const LEARN_BP = {
   },
 };
 
+// 필드 PvP 깃발(v2.6): on true/false
+const PVP_FLAG = {
+  validate(ctx, a, c) {
+    if (a.kind !== 'player') return 'bad_args';
+    return toggleError(ctx, a, !!c.on) || {};
+  },
+  execute(ctx, a, c) {
+    toggle(ctx, a, !!c.on);
+  },
+};
+
 const HANDLERS = {
-  EXP_START, EXP_LEAVE, LEARN_BP, ATTR_SPEND, ATTR_RESET, INVITE, DISMISS_ALLY, GREET, GIFT, TALK, QUEST_ACCEPT, QUEST_USE, QUEST_TRACK, FACTION_JOIN, FACTION_TASK,
+  PVP_FLAG, EXP_START, EXP_LEAVE, LEARN_BP, ATTR_SPEND, ATTR_RESET, INVITE, DISMISS_ALLY, GREET, GIFT, TALK, QUEST_ACCEPT, QUEST_USE, QUEST_TRACK, FACTION_JOIN, FACTION_TASK,
   HOUSE_BUY, HOUSE_UPGRADE, HOUSE_PLACE, HOUSE_TAKE, REST, GARDEN_PLANT, GARDEN_HARVEST,
   FERRY, GUILD_CREATE, GUILD_JOIN, GUILD_LEAVE, GUILD_HIRE, GUILD_DISMISS, GUILD_GIVE, GUILD_PUT, GUILD_TAKE,
   MOVE, MOVE_INPUT, GATHER, CRAFT, EAT, STORE, TAKE, SET_AUTOPILOT, RECALL,

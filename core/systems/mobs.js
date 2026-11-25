@@ -282,7 +282,7 @@ function nearestActor(ctx, m, r, type = null) {
   let best = null;
   let bd = r;
   for (const a of Object.values(ctx.state.actors)) {
-    if (isDown(a)) continue;
+    if (isDown(a) || a.kind === 'rival') continue; // 다른 세력 개척자(v2.6)는 짐승이 건드리지 않는다
     if (type?.wake && !canWake(type, a)) continue;
     const d = Math.hypot(a.x - m.x, a.z - m.z);
     if (d < bd) {
@@ -500,7 +500,7 @@ function shotsTick(ctx, dt) {
     let hitActor = null;
     if (!done) {
       for (const a of Object.values(state.actors)) {
-        if (isDown(a)) continue;
+        if (isDown(a) || a.kind === 'rival') continue;
         if (Math.hypot(a.x - s.x, a.z - s.z) <= s.r + 0.3) {
           hitActor = a;
           break;
@@ -579,7 +579,7 @@ export function mobsTick(ctx, dt0) {
   const { state, data } = ctx;
   const t = state.t;
   const regionOf = (g) => regionAt(data.lists.regions, g.x);
-  const actors = Object.values(state.actors);
+  const actors = Object.values(state.actors).filter((a) => a.kind !== 'rival');
   const night = ctx.clock.isNight(t);
   let slot = 0;
   for (const m of Object.values(state.mobs)) {

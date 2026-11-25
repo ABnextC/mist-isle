@@ -28,6 +28,7 @@ import { mobsTick } from './systems/mobs.js';
 import { combatTick, arrowsTick } from './systems/combat.js';
 import { fightersTick } from './ai/fighter.js';
 import { alliesTick } from './systems/allies.js';
+import { rivalsTick } from './systems/rivals.js';
 import { expeditionsTick } from './systems/expeditions.js';
 import { dayOfMonth, seasonOf, isMarketDay } from './systems/calendar.js';
 import { agentsTick } from './systems/agents.js';
@@ -92,6 +93,7 @@ function wrap(ctx, bus) {
     combatTick(ctx, 1 / HZ);
     arrowsTick(ctx, 1 / HZ);
     alliesTick(ctx);
+    rivalsTick(ctx);
     fightersTick(ctx);
     actionsTick(ctx);
     craftingTick(ctx);

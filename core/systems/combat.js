@@ -4,6 +4,7 @@
 import { hurtMob, isAlive, applyMobFx, fxOn } from './mobs.js';
 import { levelPassives, mergeP } from './level.js';
 import { nearestSettlement } from '../world.js';
+import { foesNear, markFight, onPvpDown } from './pvp.js';
 import { masteryOf, passivesOf, gainXp, abilityOf } from './mastery.js';
 
 const DEG = Math.PI / 180;
@@ -238,6 +239,40 @@ export function dealHit(ctx, a, m, raw, o) {
   return done;
 }
 
+// PvP(v2.6): 사람이 사람을 때린다. 숙련·레벨·버프·치명을 얹고 PvP 배율로 누른 뒤 hurtActor로 넘긴다
+const ACTOR_R = 0.45;
+function actorTargets(ctx, a, yaw, range, arcDeg, n) {
+  if (n <= 0) return [];
+  const half = (arcDeg * DEG) / 2;
+  return foesNear(ctx, a, a.x, a.z, range + ACTOR_R)
+    .filter(({ b, d }) => arcDeg >= 360 || d <= 0.4 || angDiff(yawTo(a, b), yaw) <= half)
+    .slice(0, n);
+}
+export function hitActor(ctx, a, b, raw, o) {
+  const t = ctx.state.t;
+  const P = o.P;
+  let k = 1 + (P.dmg || 0) + auraSum(a, t, 'dmg');
+  if (o.ability) k += P.ability || 0;
+  else k += (o.heavy ? P.heavy : P.light) || 0;
+  if (P.far && Math.hypot(b.x - a.x, b.z - a.z) > 12) k += P.far;
+  if (a.cb.hp < a.cb.maxHp * 0.5) k += P.lowHp || 0;
+  let crit = false;
+  if (P.crit > 0 && ctx.rng.next() < P.crit) {
+    crit = true;
+    k *= 1.5 + (P.critDmg || 0);
+  }
+  const dmg = Math.max(0.5, Math.round(raw * k * ctx.cfg.pvp.dmgMult * 10) / 10);
+  markFight(ctx, a, b);
+  const before = b.cb.hp;
+  if (!hurtActor(ctx, b, a, dmg, { unblockable: !!o.guardBreak, pvp: true, crit })) return 0;
+  const done = r2(before - b.cb.hp);
+  const steal = (P.lifesteal || 0) + (o.lifesteal || 0) + auraSum(a, t, 'lifesteal');
+  if (steal > 0 && done > 0) a.cb.hp = r2(Math.min(a.cb.maxHp, a.cb.hp + done * steal));
+  if (o.w?.mastery) gainXp(ctx, a, o.w.mastery, done * ctx.data.weapons.xp.perDmg);
+  a.stats.dmgDealt = r2((a.stats.dmgDealt || 0) + done);
+  return done;
+}
+
 // 휘두른 순간의 판정: 사거리·각도 안의 짐승을 가까운 순서로 무기가 허락하는 수만큼 때린다
 function swing(ctx, a) {
   const C = ctx.cfg.combat;
@@ -255,9 +290,14 @@ function swing(ctx, a) {
     wear(ctx, a, w.entry, 1);
     return;
   }
-  const hits = targetsIn(ctx, a, act.yaw, w.spec.range + (P.range || 0), w.spec.arc, w.spec.targets + (P.targets || 0));
+  const reach = w.spec.range + (P.range || 0);
+  const cap = w.spec.targets + (P.targets || 0);
+  const hits = targetsIn(ctx, a, act.yaw, reach, w.spec.arc, cap);
   for (const { m } of hits) dealHit(ctx, a, m, w.attack * w.spec.mult * (heavy ? C.heavyMult : 1), { w, P, heavy });
-  if (hits.length) wear(ctx, a, w.entry, 1);
+  // 사람(v2.6): 짐승을 때리고 남은 수만큼
+  const foes = actorTargets(ctx, a, act.yaw, reach, w.spec.arc, cap - hits.length);
+  for (const { b } of foes) hitActor(ctx, a, b, w.attack * w.spec.mult * (heavy ? C.heavyMult : 1), { w, P, heavy });
+  if (hits.length || foes.length) wear(ctx, a, w.entry, 1);
   else ctx.emit('combat.miss', { actor: a.id, kind: act.kind });
 }
 
@@ -330,6 +370,11 @@ function resolveAbility(ctx, a) {
       if (ab.execute && m.hp < type.hp * ab.execute.below) mult = ab.execute.mult;
       dealHit(ctx, a, m, w.attack * w.spec.mult * mult, { w, P, ability: act.node, guardBreak: !!ab.guardBreak, lifesteal: ab.lifesteal || 0, fx });
     }
+    if (ab.mult > 0) {
+      const foes = actorTargets(ctx, a, act.yaw, range, arc, (ab.targets || 1) + (P.targets || 0) - hits.length);
+      for (const { b } of foes) hitActor(ctx, a, b, w.attack * w.spec.mult * ab.mult, { w, P, ability: act.node, guardBreak: !!ab.guardBreak, lifesteal: ab.lifesteal || 0 });
+      hits = hits.concat(foes);
+    }
     if (hits.length && ab.mult > 0) wear(ctx, a, w.entry, 1);
   }
   if (ab.heal) cb.hp = r2(Math.min(cb.maxHp, cb.hp + cb.maxHp * ab.heal));
@@ -354,6 +399,13 @@ export function aimAt(ctx, a, yaw, range, aimDeg) {
     if (diff > aimDeg * DEG) continue;
     const score = diff + d * 0.004;
     if (!best || score < best.s || (score === best.s && m.id < best.m.id)) best = { m, s: score };
+  }
+  for (const { b, d } of foesNear(ctx, a, a.x, a.z, range)) {
+    if (d < 0.3) continue;
+    const diff = angDiff(yawTo(a, b), yaw);
+    if (diff > aimDeg * DEG) continue;
+    const score = diff + d * 0.004;
+    if (!best || score < best.s) best = { m: b, s: score };
   }
   return best ? Math.round(yawTo(a, best.m) * 1000) / 1000 : yaw;
 }
@@ -401,6 +453,10 @@ function explode(ctx, a, s, x, z) {
     if (Math.hypot(m.x - x, m.z - z) > s.explode.r + ctx.data.creatures[m.type].r) continue;
     dealHit(ctx, a, m, s.attack * s.mult * s.explode.mult, { w, P, ability: s.ability, fx: s.fx });
   }
+  for (const { b } of foesNear(ctx, a, x, z, s.explode.r + ACTOR_R)) {
+    if (s.hit.includes(b.id)) continue;
+    hitActor(ctx, a, b, s.attack * s.mult * s.explode.mult, { w, P, ability: s.ability });
+  }
   ctx.emit('arrow.explode', { arrow: s.id, x, z, r: s.explode.r, proj: s.proj });
 }
 
@@ -421,6 +477,19 @@ export function arrowsTick(ctx, dt) {
           s.hit.push(m.id);
           arrowHit(ctx, a, s, m);
           ctx.emit('arrow.hit', { arrow: s.id, mob: m.id, x: s.x, z: s.z, proj: s.proj });
+          if (s.hit.length >= s.pierce) {
+            done = true;
+            break;
+          }
+        }
+      }
+      if (!done && a) {
+        for (const { b } of foesNear(ctx, a, s.x, s.z, s.r + ACTOR_R)) {
+          if (s.hit.includes(b.id)) continue;
+          s.hit.push(b.id);
+          const P = mergeP(passivesOf(ctx, a, s.w), levelPassives(ctx, a, s.w));
+          hitActor(ctx, a, b, s.attack * s.mult, { w: { mastery: s.w }, P, heavy: s.heavy, ability: s.ability, guardBreak: s.guardBreak });
+          ctx.emit('arrow.hit', { arrow: s.id, actor: b.id, x: s.x, z: s.z, proj: s.proj });
           if (s.hit.length >= s.pierce) {
             done = true;
             break;
@@ -455,6 +524,7 @@ export function arrowsTick(ctx, dt) {
         const hits = Object.values(state.mobs).filter((m) => isAlive(m) && Math.hypot(m.x - z.x, m.z - z.z) <= z.r + ctx.data.creatures[m.type].r)
           .sort((p, q) => (p.id < q.id ? -1 : 1)).slice(0, z.targets);
         for (const m of hits) dealHit(ctx, a, m, z.attack * z.mult, { w, P, ability: z.node, fx: z.fx });
+        for (const { b } of foesNear(ctx, a, z.x, z.z, z.r + ACTOR_R).slice(0, Math.max(0, z.targets - hits.length))) hitActor(ctx, a, b, z.attack * z.mult, { w, P, ability: z.node });
         ctx.emit('zone.tick', { zone: z.id, x: z.x, z: z.z, r: z.r, hits: hits.length, proj: z.proj });
         z.left--;
         z.next = r2(z.next + z.every);
@@ -518,11 +588,15 @@ export function hurtActor(ctx, a, mob, raw, opts = null) {
   dmg = Math.round(mitigate(ctx, dmg, armorOf(ctx, a) + (P.armor || 0)) * 10) / 10;
   cb.hp = r2(Math.max(0, cb.hp - dmg));
   cb.lastHitAt = t;
+  if (opts?.pvp) {
+    cb.lastBy = mob.id; // PvP(v2.6): 누구에게 맞았나
+    if (a.rival) a.rival.lastBy = mob.id;
+  }
   const pieces = SLOTS.map((s) => equipped(ctx, a, s)).filter((e) => e && !e.broken);
   if (pieces.length) wear(ctx, a, ctx.rng.pick(pieces), 1);
   a.stats.dmgTaken = r2((a.stats.dmgTaken || 0) + dmg);
   interrupt(ctx, a, 'hit');
-  ctx.emit('combat.hurt', { actor: a.id, mob: mob.id, dmg, blocked, hp: cb.hp });
+  ctx.emit('combat.hurt', { actor: a.id, mob: mob.id, dmg, blocked, hp: cb.hp, pvp: !!opts?.pvp, crit: !!opts?.crit });
   if (cb.hp <= 0) down(ctx, a, mob);
   return true;
 }
@@ -546,7 +620,10 @@ function down(ctx, a, mob) {
     if (e && e.maxDur) wear(ctx, a, e, Math.max(1, Math.round(e.maxDur * C.deathWear)));
   }
   a.stats.downs = (a.stats.downs || 0) + 1;
-  ctx.emit('actor.down', { actor: a.id, mob: mob?.id ?? null, species: mob?.type ?? null, x: a.x, z: a.z });
+  // PvP(v2.6): 사람에게 쓰러지면 재료 일부를 빼앗긴다
+  const by = mob && ctx.state.actors[mob.id];
+  const taken = by ? onPvpDown(ctx, a, by) : null;
+  ctx.emit('actor.down', { actor: a.id, mob: by ? null : mob?.id ?? null, by: by ? by.id : null, species: mob?.type ?? null, x: a.x, z: a.z, taken });
 }
 
 // 가장 가까운 마을 창고 앞에서 일어난다(v0.4)

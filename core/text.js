@@ -98,6 +98,10 @@ export const ERR = {
   no_points: '남은 능력치 점수가 없다',
   locked: '아직 열리지 않았다',
   night_only: '밤에만 핀다 — 해가 진 뒤에 캐자',
+  disputed: '분쟁 구역 안에서는 깃발을 내릴 수 없다',
+  pvp_cd: '깃발을 올린 지 5분이 안 됐다',
+  in_fight: '방금까지 싸웠다. 1분 뒤에 내릴 수 있다',
+  same: '이미 그렇다',
   potion_cd: '물약을 막 마셨다. 조금 뒤에',
   in_run: '이미 원정 중이다',
   no_run: '원정 중이 아니다',
@@ -273,9 +277,9 @@ export function describeEvent(ev, game) {
     case 'skin.done':
       return `${p}🔪 ${data.creatures[ev.species]?.name ?? ev.species} 손질: ${ev.items.map((x) => `${itemName(data, x.item)} ${x.qty}`).join(' · ')}`;
     case 'actor.down':
-      return `${p}💀 ${ev.species ? `${data.creatures[ev.species]?.name ?? ev.species}에게 ` : ''}쓰러짐 — 가까운 마을에서 다시 일어난다(낀 장비 내구 −10%)`;
+      return `${p}💀 ${ev.by ? `${game?.state?.actors?.[ev.by]?.name ?? '사람'}에게 ` : ev.species ? `${data.creatures[ev.species]?.name ?? ev.species}에게 ` : ''}쓰러짐 — 가까운 마을에서 다시 일어난다(낀 장비 내구 −10%)`;
     case 'equip': {
-      const SLOT = { weapon: '무기', head: '머리', chest: '몸통', legs: '다리' };
+      const SLOT = { weapon: '무기', weapon2: '등 무기', head: '머리', chest: '몸통', legs: '다리', ring: '반지', neck: '목걸이' };
       return ev.uid ? `${p}🛡️ ${SLOT[ev.slot]}: ${itemName(data, ev.item)} 낌` : `${p}${SLOT[ev.slot]} 장비를 벗음`;
     }
     case 'combat.guardbreak':

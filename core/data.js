@@ -3,7 +3,7 @@
 
 // 퀘스트 단계 종류(v0.5.2에 생활 단계를 더했다)
 export const STEP_TYPES = ['talk', 'go', 'kill', 'use', 'defend', 'have', 'eat', 'store', 'repair', 'sell', 'project', 'faction'];
-export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects', 'npcs', 'quests', 'unlocks', 'factions', 'housing', 'guilds', 'weapons', 'expeditions'];
+export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects', 'npcs', 'quests', 'unlocks', 'factions', 'housing', 'guilds', 'weapons', 'expeditions', 'rivals'];
 
 export function buildData(raw) {
   const problems = [];
@@ -276,9 +276,19 @@ export function buildData(raw) {
   for (const n of weapons.nodes) if (n.needs && weaponNodes[n.needs]?.kind !== 'active') problems.push(`숙련 칸 ${n.id}: 앞 칸 ${n.needs}가 액티브가 아님`);
   for (const [t, m] of Object.entries(weapons.mastery)) if (!weapons.types[m] || !config.combat.weapons[t]) problems.push(`숙련 연결 ${t}→${m} 이상`);
   for (const t of Object.keys(weapons.types)) if (!config.combat.weapons[t]) problems.push(`무기 ${t}: 전투 값 없음`);
+  // 다른 세력 개척자(v2.6)
+  for (const b of raw.rivals?.bands || []) {
+    const g = regions[b.region];
+    if (!g) problems.push(`다른 세력 무리 ${b.id}: 지역 ${b.region} 없음`);
+    else if (!(g.zones || []).some((z) => z.id === b.zone && z.disputed)) problems.push(`다른 세력 무리 ${b.id}: 분쟁 구역 ${b.zone} 아님`);
+    if (!factions.list.some((f) => f.id === b.faction)) problems.push(`다른 세력 무리 ${b.id}: 세력 ${b.faction} 없음`);
+    for (const w of b.weapons) if (!items[w]?.weapon) problems.push(`다른 세력 무리 ${b.id}: 무기 ${w} 없음`);
+    for (const [s, a] of Object.entries(b.armor || {})) if (items[a]?.armor?.slot !== s) problems.push(`다른 세력 무리 ${b.id}: ${s} 갑옷 ${a} 이상`);
+  }
   if (problems.length) throw new Error('데이터 오류\n- ' + problems.join('\n- '));
 
   return {
+    rivals: raw.rivals || { bands: [], names: ['이름 없음'], respawnSec: 240, aggro: 16, leash: 42, fallSec: 2.5 },
     weapons,
     weaponNodes,
     guilds,

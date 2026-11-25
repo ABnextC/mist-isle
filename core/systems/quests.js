@@ -15,6 +15,7 @@ import { unlockedSet } from './unlocks.js';
 import { factionDef, factionOf, gainInfluence } from './factions.js';
 import { projectProgress } from '../settlements.js';
 import { bondTier, questBond, dailyMult } from './bonds.js';
+import { accompanying } from './allies.js';
 
 export const TALK_RANGE = 3.6;
 export const USE_RANGE = 2.6;
@@ -173,7 +174,7 @@ function rewardEntry(ctx, q, it) {
 }
 
 // 가방에 넣고, 자리가 없으면 귀환 지점 마을 창고로 보낸다
-function giveReward(ctx, a, q) {
+export function giveReward(ctx, a, q) {
   // 세력마다 다른 보상(v0.7.1): rewardBy[세력]을 덧붙이고, inf는 그 세력 영향력
   const by = q.rewardBy?.[factionOf(a)];
   const r = by ? { silver: (q.reward?.silver || 0) + (by.silver || 0), items: [...(q.reward?.items || []), ...(by.items || [])] } : q.reward || {};
@@ -200,6 +201,8 @@ function giveReward(ctx, a, q) {
 // 이 NPC와 이야기해야 넘어가는 퀘스트들(메인 먼저)
 // 이야기 뒤에 나타나는 NPC(v0.7): appear 퀘스트를 받았거나 끝냈을 때만 보이고 말을 건다
 export function npcShown(ctx, a, npc) {
+  // 동행(v1.7) 중인 사람은 제자리에 없다
+  if (ctx.state && accompanying(ctx.state, npc)) return false;
   const ap = ctx.data.npcs[npc]?.appear;
   return !ap || !!a?.quests?.active?.[ap] || a?.quests?.done?.[ap] != null;
 }

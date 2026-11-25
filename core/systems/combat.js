@@ -495,6 +495,7 @@ export function hurtActor(ctx, a, mob, raw, opts = null) {
   // 받는 피해 줄이기(v1.1): 스킬 버프 + 궁지의 광기
   const dr = Math.min(0.7, auraSum(a, t, 'dr') + (cb.hp < cb.maxHp * 0.5 ? P.lowHpDr || 0 : 0));
   if (dr > 0) dmg *= 1 - dr;
+  if (a.kind === 'ally') dmg *= 1 - ctx.cfg.bond.allyDr; // 동행(v1.7)은 질기다
   dmg = Math.round(mitigate(ctx, dmg, armorOf(ctx, a) + (P.armor || 0)) * 10) / 10;
   cb.hp = r2(Math.max(0, cb.hp - dmg));
   cb.lastHitAt = t;

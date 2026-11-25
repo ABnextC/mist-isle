@@ -9,6 +9,7 @@
 import * as THREE from 'three';
 import { tickLerp } from './interp.js';
 import { workSpots, npcPos } from '../../core/world.js';
+import { accompanying } from '../../core/systems/allies.js';
 import { makeActorModel } from './models/actor.js';
 import { loadClips, clips as animClips, sample as animSample, sampleOnce as animOnce, sampleTool, hasClip, blend as animBlend, smoothstep, NB } from './anim.js';
 
@@ -718,7 +719,7 @@ export function createActorsView(scene, game, hf, camera = null) {
       const p = npcActor(n, me);
       const v = views.get(p.id);
       // 이야기 뒤에 나타나는 NPC(v0.7)
-      const hidden = n.appear && !(me?.quests?.active?.[n.appear] || me?.quests?.done?.[n.appear] != null);
+      const hidden = (n.appear && !(me?.quests?.active?.[n.appear] || me?.quests?.done?.[n.appear] != null)) || accompanying(state, n.id);
       const far = hidden || Math.abs(p.x - cx) > FAR_M || Math.abs(p.z - cz) > FAR_M;
       if (v) v.m.root.visible = !far;
       if (!far) listBuf.push(p);

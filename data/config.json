@@ -1,5 +1,5 @@
 {
-  "dataVersion": 22,
+  "dataVersion": 23,
   "skillCap": 60,
   "time": {
     "secondsPerGameDay": 3600,
@@ -1578,6 +1578,14 @@
       "talk": 3
     },
     "dailyBonus": 0.1,
-    "revealTier": 2
+    "revealTier": 2,
+    "thanksTier": 3,
+    "perkTier": 4,
+    "companionSec": 1200,
+    "allyDr": 0.5,
+    "birthdayMult": 2
+  },
+  "calendar": {
+    "monthDays": 28
   }
 }

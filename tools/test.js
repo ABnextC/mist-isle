@@ -17,8 +17,9 @@ import { mOf, needXp, loadoutOf, abilityOf, passivesOf } from '../core/systems/m
 import { spawnTemp } from '../core/systems/mobs.js';
 import { settlementDaily } from '../core/settlements.js';
 import { isUnlocked, allowedProject, chapterReached } from '../core/systems/unlocks.js';
-import { stepNpc, npcMark, available } from '../core/systems/quests.js';
-import { bondPts, knownLikes } from '../core/systems/bonds.js';
+import { stepNpc, npcMark, available, npcShown } from '../core/systems/quests.js';
+import { bondPts, knownLikes, isBirthday } from '../core/systems/bonds.js';
+import { repairCost } from '../core/market.js';
 import { rankOf, xpMult, extraChance, feeMult, recipeAllowed, tasksOf, factionOnEvent } from '../core/systems/factions.js';
 import { addXp } from '../core/systems/progress.js';
 import { plotPos, homeOf, comfortOf } from '../core/systems/housing.js';
@@ -1313,7 +1314,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '1.6.0');
+  eq(st.meta.engine, '1.7.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1505,7 +1506,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '1.6.0');
+  eq(st.meta.engine, '1.7.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -2082,6 +2083,80 @@ test('마음의 부탁: 정이 들어야 열리고, 의뢰를 끝내면 정이 �
   const k = [...a.bag, ...storeOf(a, a.home)].find((e) => e.item === 'keep_pot');
   ok(k && k.stats.comfort > 30, '정표 가구');
   ok(data.lists.quests.filter((q) => q.bond).every((q) => data.npcs[q.giver].gifts), '마음의 부탁은 정을 쌓는 사람이 준다');
+});
+
+console.log('단짝과 생일 (v1.7)');
+
+test('답례·생일·값 깎기: 친한 사이는 인사하면 답례를 주고, 생일 선물은 정이 곱절, 단짝 장꾼·뱃사공·대장장이는 값을 깎아 준다', () => {
+  const g = createGame({ data, seed: 9, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  const W = { state: g.state, data, cfg: data.config, statics: g.statics, terrain: g.terrain, clock: g.clock, rng: null };
+  const thanks = [];
+  g.on('bond.thanks', (e) => thanks.push(e));
+  const p = npcPos(W, 'seondeok');
+  Object.assign(a, { x: p.x + 1, z: p.z });
+  a.bonds = { seondeok: { pts: 90, greet: null, gift: null, known: {} } };
+  ok(g.dispatch({ type: 'GREET', actor: 'p1', npc: 'seondeok' }).ok);
+  eq(thanks.length, 1, '답례');
+  ok(data.npcs.seondeok.gifts.like.includes(thanks[0].item), '좋아하는 것 가운데 하나');
+  ok(countItem([a.bag, storeOf(a, a.home)], thanks[0].item) >= 2, '두 개');
+  // 생일: 그날로 옮겨 선물
+  const M = data.config.calendar.monthDays;
+  const day = g.clock.day(g.state.t);
+  const want = data.npcs.seondeok.birthday;
+  g.state.t += (((want - 1 - (day % M)) + M) % M) * data.config.time.secondsPerGameDay;
+  ok(isBirthday(W, 'seondeok'), '생일');
+  a.bag.push({ item: 'mushroom', lot: null, bonus: null, qty: 1 });
+  const before = bondPts(a, 'seondeok');
+  ok(g.dispatch({ type: 'GIFT', actor: 'p1', npc: 'seondeok', key: keyOf(a.bag.find((e) => e.item === 'mushroom')) }).ok);
+  eq(bondPts(a, 'seondeok') - before, 24, '💖 12 × 2');
+  // 단짝 혜택
+  eq(feeMult(W, a, 'market'), 1);
+  a.bonds.pal = { pts: 160, greet: null, gift: null, known: {} };
+  a.bonds.jaegan = { pts: 160, greet: null, gift: null, known: {} };
+  near(feeMult(W, a, 'market'), 0.8, 1e-9, '장꾼');
+  const tool = kit('tool_axe_copper', 50, 't1');
+  tool.dur = 1;
+  const full = repairCost(W, tool);
+  ok(repairCost(W, tool, a) < full, '대장장이 단골');
+});
+
+test('동행: 단짝 사냥꾼은 하루 한 번 같이 나서서 주인을 노리는 짐승과 싸우고, 잡은 몫은 주인 것, 시간이 되면 돌아간다', () => {
+  const { g, a, m } = lone('wolf');
+  const W = { state: g.state, data, statics: g.statics, terrain: g.terrain, clock: g.clock };
+  const evs = [];
+  g.on('ally.leave', (e) => evs.push(e));
+  const p = npcPos(W, 'gombo');
+  Object.assign(a, { x: p.x + 1, z: p.z });
+  eq(g.dispatch({ type: 'INVITE', actor: 'p1', npc: 'gombo' }).error, 'not_companion', '단짝이어야');
+  a.bonds = { gombo: { pts: 160, greet: null, gift: null, known: {} } };
+  ok(g.dispatch({ type: 'INVITE', actor: 'p1', npc: 'gombo' }).ok, '같이 가자');
+  const al = g.state.actors.ally_p1;
+  ok(al && al.kind === 'ally', '동행이 섰다');
+  ok(!npcShown(W, a, 'gombo'), '마을엔 없다');
+  eq(g.dispatch({ type: 'INVITE', actor: 'p1', npc: 'gombo' }).error, 'ally_out');
+  // 들판에서 늑대가 주인을 노린다
+  a.quests.active.sq_fo_wolves = { step: 0, n: 0, used: [], t: 0 };
+  Object.assign(a, { x: 200, z: 72 });
+  Object.assign(al, { x: 201.5, z: 71 });
+  Object.assign(m, { x: 204, z: 72, mode: 'chase', target: 'p1', leash: 999, until: null });
+  for (let i = 0; i < 200 && m.mode !== 'dead'; i++) {
+    a.cb.hp = a.cb.maxHp;
+    g.advance(0.3);
+  }
+  eq(m.mode, 'dead', '늑대를 잡았다');
+  eq(m.killer, 'ally_p1', '동행이 잡았다');
+  eq(a.quests.active.sq_fo_wolves.n, 1, '주인 몫');
+  // 따라온다
+  a.x += 20;
+  g.advance(12);
+  ok(Math.hypot(al.x - a.x, al.z - a.z) < 6, '따라온다');
+  g.advance(data.config.bond.companionSec);
+  ok(!g.state.actors.ally_p1, '돌아갔다');
+  eq(evs[0]?.reason, 'time');
+  ok(npcShown(W, a, 'gombo'), '마을로 돌아왔다');
+  Object.assign(a, { x: npcPos(W, 'gombo').x + 1, z: npcPos(W, 'gombo').z });
+  eq(g.dispatch({ type: 'INVITE', actor: 'p1', npc: 'gombo' }).error, 'invited_today', '하루 한 번');
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

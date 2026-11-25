@@ -3,6 +3,7 @@
 // 영향력은 지도자에게 받는 세력 의뢰(물건 건네기)와 그 세력다운 생활 활동(하루 상한)으로 쌓인다.
 // 세력은 바꿀 수 있다. 바꾸면 쌓은 영향력을 모두 잃고, 며칠은 다시 못 바꾼다.
 
+import { bondPerks } from './bonds.js';
 import { hashStr } from '../terrain.js';
 import { seedState, makeRng } from '../rng.js';
 import { gated } from './unlocks.js';
@@ -51,6 +52,8 @@ export function extraChance(ctx, a, kind, skill) {
 export function feeMult(ctx, a, kind) {
   let m = 1;
   for (const p of perksOf(ctx, a)) if (p.kind === kind) m *= p.mult;
+  // 단짝 혜택(v1.7): 장꾼·뱃사공·대장장이
+  for (const p of bondPerks(ctx, a)) if (p.kind === kind) m *= p.mult;
   return m;
 }
 

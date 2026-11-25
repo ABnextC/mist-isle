@@ -4,6 +4,7 @@
 // v0.5: 검은 돛 약탈단(사람 모양) — 공격 여러 개·막기·단계(부하 부르기)·던지기, 자리(야영지)에 서 있는 보초,
 //       밤에만 나오는 안개 늑대(away 상태), 임시 짐승(습격 물결·부하, 죽으면 사라진다), 쓰러뜨리면 바로 들어오는 전리품.
 
+import { creditOf } from './allies.js';
 import { rollProps, rollQty, round3 } from '../formulas.js';
 import { fitsHabitat, regionAt } from '../terrain.js';
 import { addEntry, slotsNeeded } from '../inventory.js';
@@ -450,8 +451,10 @@ function kill(ctx, m, a) {
   a.stats.kills = a.stats.kills || {};
   a.stats.kills[m.type] = (a.stats.kills[m.type] || 0) + 1;
   ctx.emit('mob.die', { mob: m.id, species: m.type, actor: a.id, x: m.x, z: m.z, temp: !!m.temp });
-  if (type.drops) autoLoot(ctx, m, a, type);
-  questKill(ctx, a, m);
+  // 동행(v1.7)이 잡은 짐승은 주인 몫
+  const own = creditOf(ctx, a);
+  if (type.drops) autoLoot(ctx, m, own, type);
+  questKill(ctx, own, m);
   onKill(ctx, a, m);
 }
 

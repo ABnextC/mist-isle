@@ -23,7 +23,8 @@ import { corpseOpen, skinLoot, skinSeconds } from './systems/mobs.js';
 import { talkDue, talk, useDue, useObj, available, startQuest, nearNpc, questNote, TALK_RANGE, USE_RANGE, BOARD_RANGE, talkReady, npcShown } from './systems/quests.js';
 import { isUnlocked, allowedProject } from './systems/unlocks.js';
 import { objPos } from './world.js';
-import { bondable, greetDue, greet, giftDue, giftable, gift } from './systems/bonds.js';
+import { bondable, greetDue, greet, giftDue, giftable, gift, perkOf, inviteDue } from './systems/bonds.js';
+import { spawnAlly, dismissAlly, allyOf } from './systems/allies.js';
 
 // ── 도우미 ─────────────────────────────────────────────
 function matchSlot(data, e, slot) {
@@ -531,7 +532,7 @@ const REPAIR = {
     if (!kind || e.maxDur == null) return 'not_repairable';
     if (!stationFor(ctx, a, ctx.cfg.repair.stations?.[kind] || 'forge')) return 'no_station';
     if (!e.broken && e.dur >= e.maxDur) return 'not_damaged';
-    const cost = repairCost(ctx, e);
+    const cost = repairCost(ctx, e, a);
     if (a.silver < cost) return 'no_silver';
     return { e, cost };
   },
@@ -1349,8 +1350,35 @@ const GIFT = {
   },
 };
 
+// 동행(v1.7): 단짝 사냥꾼·싸움꾼에게 "같이 가자"(하루 한 번). 돌려보내기는 언제든
+const INVITE = {
+  validate(ctx, a, c) {
+    if (a.kind !== 'player') return 'bad_args';
+    const p = perkOf(ctx, a, c.npc);
+    if (!p || p.kind !== 'companion') return 'not_companion';
+    const bad = alive(ctx, a);
+    if (bad) return bad;
+    if (allyOf(ctx, a)) return 'ally_out';
+    if (!nearNpc(ctx, a, c.npc, TALK_RANGE) || !npcShown(ctx, a, c.npc)) return 'too_far';
+    if (!inviteDue(ctx, a, c.npc)) return 'invited_today';
+    return {};
+  },
+  execute(ctx, a, c) {
+    spawnAlly(ctx, a, c.npc);
+  },
+};
+const DISMISS_ALLY = {
+  validate(ctx, a) {
+    const al = allyOf(ctx, a);
+    return al ? { al } : 'no_ally';
+  },
+  execute(ctx, a, c, p) {
+    dismissAlly(ctx, p.al, 'sent');
+  },
+};
+
 const HANDLERS = {
-  GREET, GIFT, TALK, QUEST_ACCEPT, QUEST_USE, QUEST_TRACK, FACTION_JOIN, FACTION_TASK,
+  INVITE, DISMISS_ALLY, GREET, GIFT, TALK, QUEST_ACCEPT, QUEST_USE, QUEST_TRACK, FACTION_JOIN, FACTION_TASK,
   HOUSE_BUY, HOUSE_UPGRADE, HOUSE_PLACE, HOUSE_TAKE, REST, GARDEN_PLANT, GARDEN_HARVEST,
   FERRY, GUILD_CREATE, GUILD_JOIN, GUILD_LEAVE, GUILD_HIRE, GUILD_DISMISS, GUILD_GIVE, GUILD_PUT, GUILD_TAKE,
   MOVE, MOVE_INPUT, GATHER, CRAFT, EAT, STORE, TAKE, SET_AUTOPILOT, RECALL,

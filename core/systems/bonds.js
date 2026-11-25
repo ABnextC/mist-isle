@@ -4,6 +4,8 @@
 // 이웃부터 좋아하는 것을 알려 주며, 단계마다 '마음의 부탁'(q.bond)이 열린다. 오늘의 부탁 보상도 단계만큼 늘어난다.
 // 정을 쌓을 수 있는 사람은 gifts가 있는 마을 사람이다. 행위자마다 따로 쌓이므로 멀티플레이에서도 그대로 쓴다.
 
+import { giveReward } from './quests.js';
+
 export const B = (ctx) => ctx.data.config.bond;
 export const bondable = (ctx, npc) => !!ctx.data.npcs[npc]?.gifts;
 export const bondPts = (a, npc) => a?.bonds?.[npc]?.pts || 0;
@@ -47,7 +49,47 @@ export const giftDue = (ctx, a, npc) => bondable(ctx, npc) && a?.bonds?.[npc]?.g
 
 export function greet(ctx, a, npc) {
   rec(a, npc).greet = today(ctx);
-  return gainBond(ctx, a, npc, B(ctx).greet, 'greet');
+  const got = gainBond(ctx, a, npc, B(ctx).greet, 'greet');
+  // 답례(v1.7): 친한 사이부터 인사하면 그 사람이 좋아하는 것 가운데 하나를 나눠 준다(하루 한 번)
+  if (bondTier(ctx, a, npc) >= B(ctx).thanksTier) {
+    const pool = (ctx.data.npcs[npc].gifts.like || []).filter((it) => ctx.data.items[it] && ctx.data.items[it].kind !== 'equipment');
+    if (pool.length) {
+      const item = pool[ctx.rng.int(0, pool.length - 1)];
+      const qty = bondTier(ctx, a, npc) >= B(ctx).perkTier ? 3 : 2;
+      const reward = giveReward(ctx, a, { id: `thanks:${npc}`, steps: [{ type: 'talk', npc }], reward: { items: [{ item, qty }] } });
+      ctx.emit('bond.thanks', { actor: a.id, npc, item, qty, reward });
+    }
+  }
+  return got;
+}
+
+// ── 달력·생일(v1.7): 한 달은 monthDays일. 그날이 생일이면 선물 정이 곱절 ──
+export const dayOfMonth = (ctx, t = ctx.state.t) => (ctx.clock.day(t) % ctx.data.config.calendar.monthDays) + 1;
+export const isBirthday = (ctx, npc, t) => ctx.data.npcs[npc]?.birthday === dayOfMonth(ctx, t);
+export function daysToBirthday(ctx, npc) {
+  const bd = ctx.data.npcs[npc]?.birthday;
+  if (!bd) return null;
+  const M = ctx.data.config.calendar.monthDays;
+  return (bd - dayOfMonth(ctx) + M) % M;
+}
+
+// ── 단짝 혜택(v1.7): npc.perk — companion(동행)·market·ship·repair(값 깎기) ──
+export function perkOf(ctx, a, npc) {
+  const p = ctx.data.npcs[npc]?.perk;
+  return p && bondTier(ctx, a, npc) >= B(ctx).perkTier ? p : null;
+}
+export function bondPerks(ctx, a) {
+  if (!a?.bonds) return [];
+  const out = [];
+  for (const npc of Object.keys(a.bonds)) {
+    const p = perkOf(ctx, a, npc);
+    if (p) out.push({ ...p, npc });
+  }
+  return out;
+}
+export const inviteDue = (ctx, a, npc) => a?.bonds?.[npc]?.invite !== today(ctx);
+export function markInvite(ctx, a, npc) {
+  rec(a, npc).invite = today(ctx);
 }
 
 // 선물: 장비(낱개)·퀘스트 물건·nogift는 못 준다
@@ -67,8 +109,10 @@ export function gift(ctx, a, npc, item) {
   const react = giftReact(ctx, npc, item);
   r.gift = today(ctx);
   r.known[item] = react;
-  const got = gainBond(ctx, a, npc, B(ctx).gift[react], 'gift');
-  ctx.emit('bond.gift', { actor: a.id, npc, item, react, amt: got });
+  const birthday = isBirthday(ctx, npc);
+  const amt = B(ctx).gift[react] * (birthday && react !== 'hate' ? B(ctx).birthdayMult : 1);
+  const got = gainBond(ctx, a, npc, amt, 'gift');
+  ctx.emit('bond.gift', { actor: a.id, npc, item, react, amt: got, birthday });
   return { react, amt: got };
 }
 

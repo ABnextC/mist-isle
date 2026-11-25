@@ -37,10 +37,10 @@ export function refPrice(ctx, at, item, star) {
 }
 
 // 수리비: 닳은 만큼 × 물건 값 × 수리 비율. 부서진 도구는 전부 닳은 것으로 친다(설계 7.5·8.1)
-export function repairCost(ctx, e) {
+export function repairCost(ctx, e, a = null) {
   const max = e.maxDur ?? e.stats?.durability ?? 1;
   const worn = e.broken ? 1 : Math.max(0, 1 - (e.dur ?? 0) / max);
-  return Math.max(1, Math.ceil(baseValue(ctx, e.item, e.star ?? 0) * ctx.cfg.repair.rate * worn));
+  return Math.max(1, Math.ceil(baseValue(ctx, e.item, e.star ?? 0) * ctx.cfg.repair.rate * worn * (a ? feeMult(ctx, a, 'repair') : 1)));
 }
 
 export function npcPrice(ctx, item, star) {

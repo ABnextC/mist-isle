@@ -17,7 +17,8 @@ import { factionOf, rankOf, tasksOf, taskDone } from '../../core/systems/faction
 import { comfortOf, restValue } from '../../core/systems/housing.js';
 import { guildLevel, aiRoom, hireable } from '../../core/systems/guilds.js';
 import { npcPos } from '../../core/world.js';
-import { bondable, bondPts, bondTier, tierName, nextTier, giftDue, giftable, knownLikes, bondLines, B as bondCfg } from '../../core/systems/bonds.js';
+import { bondable, bondPts, bondTier, tierName, nextTier, giftDue, giftable, knownLikes, bondLines, B as bondCfg, isBirthday, daysToBirthday, perkOf, inviteDue } from '../../core/systems/bonds.js';
+import { allyOf } from '../../core/systems/allies.js';
 import { questCtx, lifeSteps } from './quest.js';
 import { isUnlocked, allowedProject, chapterReached } from '../../core/systems/unlocks.js';
 
@@ -662,7 +663,7 @@ export function createHud(root, game, { touch, onAct }) {
       const tools = pools.flat().filter((e) => e.uid && data.items[e.item].tool && e.maxDur != null && (e.broken || e.dur < e.maxDur));
       const rr = tools.map((e) => {
         const def = data.items[e.item];
-        const cost = repairCost({ data, cfg: data.config }, e);
+        const cost = repairCost({ data, cfg: data.config }, e, a);
         return `<li><div><b>${def.icon || ''} ${def.name}</b> <span class="stars">${stars(e.star ?? 0)}</span>
           <small>${e.broken ? '<em class="no">부서짐</em>' : `내구 ${e.dur}/${e.maxDur}`}${e.repairs ? ` · ${e.repairs}번 고침` : ''} · 고치면 최대 내구 ${Math.max(1, Math.round(e.maxDur * (1 - data.config.repair.maxLoss)))}</small></div>
           <button data-act="repair" data-v="${e.uid}" ${a.silver >= cost ? '' : 'disabled'}>수리 ${cost}은화</button></li>`;
@@ -911,7 +912,17 @@ export function createHud(root, game, { touch, onAct }) {
     const pts = bondPts(a, npcId);
     const nx = nextTier(ctx, a, npcId);
     const pct = nx ? Math.round(((pts - nx.from) / (nx.min - nx.from)) * 100) : 100;
-    return `<div class="bond"><span class="hearts">${hearts(t)}</span> <b>${esc(tierName(ctx, t))}</b><i><em style="width:${pct}%"></em></i><small>${nx ? `${pts}/${nx.min} → ${esc(nx.name)}` : '정이 가득하다'}</small></div>`;
+    const bd = isBirthday(ctx, npcId) ? '<span class="bday">🎂 오늘 생일</span>' : '';
+    const perk = perkOf(ctx, a, npcId);
+    return `<div class="bond"><span class="hearts">${hearts(t)}</span> <b>${esc(tierName(ctx, t))}</b>${bd}<i><em style="width:${pct}%"></em></i><small>${nx ? `${pts}/${nx.min} → ${esc(nx.name)}` : '정이 가득하다'}</small></div>${perk ? `<div class="perk">🤝 단짝 혜택 · ${esc(perk.text)}</div>` : ''}`;
+  }
+  // 동행(v1.7): 단짝 사냥꾼에게 "같이 가자"
+  function inviteBtn(a, npcId) {
+    const ctx = questCtx(game);
+    const p = perkOf(ctx, a, npcId);
+    if (p?.kind !== 'companion') return '';
+    if (allyOf(ctx, a)) return '';
+    return inviteDue(ctx, a, npcId) ? `<button data-act="invite" data-v="${npcId}">🏹 같이 가자</button>` : '<button disabled>오늘은 다녀왔다</button>';
   }
   const REACT = { love: ['💖', '눈을 반짝인다. 무척 좋아하는 것이다.'], like: ['😊', '반갑게 받는다.'], plain: ['🙂', '고맙다며 받는다.'], hate: ['😣', '난처한 얼굴로 받는다. 좋아하지 않는 것 같다.'] };
   function likesHtml(a, npcId) {
@@ -927,7 +938,7 @@ export function createHud(root, game, { touch, onAct }) {
     if (panel.react) {
       const r = panel.react;
       const [ic, line] = REACT[r.react];
-      return `${head}<p class="say">${ic} ${esc(npc.name)}에게 ${esc(josa(data.items[r.item].name, '을', '를'))} 건넸다. ${line}</p><p class="muted">정 ${r.amt >= 0 ? '+' : ''}${r.amt}</p><div class="btns"><button data-act="gift-back">돌아가기</button><button data-act="close">잘 있어요</button></div>`;
+      return `${head}<p class="say">${ic} ${esc(npc.name)}에게 ${esc(josa(data.items[r.item].name, '을', '를'))} 건넸다. ${line}</p><p class="muted">정 ${r.amt >= 0 ? '+' : ''}${r.amt}${r.birthday && r.react !== 'hate' ? ' · 🎂 생일 선물이라 곱절' : ''}</p><div class="btns"><button data-act="gift-back">돌아가기</button><button data-act="close">잘 있어요</button></div>`;
     }
     if (!giftDue(ctx, a, npc.id)) return `${head}<p class="muted">오늘은 이미 선물했다. 내일 또 주자.</p><div class="btns"><button data-act="gift-back">돌아가기</button></div>`;
     const known = a.bonds?.[npc.id]?.known || {};
@@ -989,14 +1000,15 @@ export function createHud(root, game, { touch, onAct }) {
       const tag = q.bond ? `💗 마음의 부탁(${esc(tierName(ctx, q.bond))})` : q.repeat === 'daily' ? '오늘의 부탁' : q.faction ? `${data.factions.list.find((f) => f.id === q.faction).icon} 세력 의뢰` : q.chain ? `연작 · ${esc(q.chain)}` : '부가 의뢰';
       return `${head}<p class="say">${esc(lines[panel.chat % lines.length])}</p><div class="qtag">${tag} · ${esc(q.name)}</div><p class="say">${esc(q.summary)}</p>
         <p class="muted">▶ ${q.steps.map((st) => esc(st.text)).join(' → ')}</p>${rewardHtml(q.reward)}
-        <div class="btns"><button class="pri" data-act="quest-accept" data-v="${q.id}">맡겠습니다</button>${giftBtn}<button data-act="close">다음에</button></div>`;
+        <div class="btns"><button class="pri" data-act="quest-accept" data-v="${q.id}">맡겠습니다</button>${inviteBtn(a, panel.npc)}${giftBtn}<button data-act="close">다음에</button></div>`;
     }
     // 세력 지도자(v0.7): 세력이 열렸으면 세력 창을 보인다
     const fdef = data.factions.list.find((f) => f.leader === panel.npc);
     if (fdef && isUnlocked(ctx, a, 'faction')) return `${head}${factionHtml(a, fdef, ctx)}`;
     const lines = chatLines(npc, a);
     panel.chat ??= Math.floor(Math.random() * lines.length);
-    return `${head}<p class="say">${esc(lines[panel.chat % lines.length])}</p><div class="btns">${giftBtn}<button data-act="close">잘 있어요</button></div>`;
+    const bdSay = isBirthday(ctx, panel.npc) && bondTier(ctx, a, panel.npc) >= 1 ? `<p class="muted">🎂 오늘은 ${esc(npc.name)}의 생일이다. 오늘 선물하면 정이 곱절로 든다.</p>` : '';
+    return `${head}<p class="say">${esc(lines[panel.chat % lines.length])}</p>${bdSay}<div class="btns">${inviteBtn(a, panel.npc)}${giftBtn}<button data-act="close">잘 있어요</button></div>`;
   }
   // 내 집(v0.8)
   function houseHtml(a, plotId) {
@@ -1084,11 +1096,16 @@ export function createHud(root, game, { touch, onAct }) {
       const bq = data.lists.quests.find((q) => q.bond && q.giver === n.id && a.quests?.done?.[q.id] == null);
       const hint = bq ? (t >= bq.bond ? `💗 「${esc(bq.name)}」 부탁이 있다` : `💗 ${esc(tierName(ctx, bq.bond))}이 되면 부탁할 게 있다고 한다`) : '';
       const k = knownLikes(ctx, a, n.id);
+      const dd = daysToBirthday(ctx, n.id);
+      const bday = dd == null ? '' : dd === 0 ? '🎂 오늘 생일!' : `🎂 ${n.birthday}일(${dd}일 뒤)`;
+      const perk = n.perk ? (perkOf(ctx, a, n.id) ? `🤝 ${esc(n.perk.text)}` : `🔒 단짝이 되면: ${esc(n.perk.text)}`) : '';
+      const al = allyOf(ctx, a);
+      const with_ = al?.ally?.npc === n.id ? `<small>🏹 같이 다니는 중 · ${Math.max(1, Math.ceil((al.ally.until - game.state.t) / 60))}분 남음 <button data-act="ally-dismiss">돌려보내기</button></small>` : '';
       const likes = [...k.love.map((it) => `💖${esc(data.items[it].name)}`), ...k.like.map((it) => `😊${esc(data.items[it].name)}`)].join(' ');
-      return `<li><div><b>${esc(n.name)}</b> <span class="hearts">${hearts(t)}</span> <small>${esc(tierName(ctx, t))}${nx ? ` · ${bondPts(a, n.id)}/${nx.min}` : ''} · ${esc(n.title)} · ${esc(where(n))}</small>${likes ? `<small>${likes}</small>` : ''}${hint ? `<small>${hint}</small>` : ''}</div></li>`;
+      return `<li><div><b>${esc(n.name)}</b> <span class="hearts">${hearts(t)}</span> <small>${esc(tierName(ctx, t))}${nx ? ` · ${bondPts(a, n.id)}/${nx.min}` : ''} · ${esc(n.title)} · ${esc(where(n))}</small>${likes ? `<small>${likes}</small>` : ''}${hint ? `<small>${hint}</small>` : ''}${bday || perk ? `<small>${[bday, perk].filter(Boolean).join(' · ')}</small>` : ''}${with_}</div></li>`;
     }).join('');
     const total = data.lists.npcs.filter((n) => n.gifts).length;
-    return `<p class="muted">인사 하루 한 번 +${bondCfg(ctx).greet} · 선물 하루 한 번(💖 +${bondCfg(ctx).gift.love}, 😊 +${bondCfg(ctx).gift.like}) · 그 사람 의뢰. 정이 들수록 오늘의 부탁 은화가 늘고, 말이 바뀌고, 정표 가구를 주는 부탁이 열린다.</p><ul class="list people">${rows}</ul><p class="muted">정을 나눈 사람 ${met.length}/${total}</p>`;
+    return `<p class="muted">인사 하루 한 번 +${bondCfg(ctx).greet} · 선물 하루 한 번(💖 +${bondCfg(ctx).gift.love}, 😊 +${bondCfg(ctx).gift.like}) · 그 사람 의뢰. 정이 들수록 오늘의 부탁 은화가 늘고, 말이 바뀌고, 정표 가구를 주는 부탁이 열린다. 친한 사이는 인사하면 답례를 주고, 단짝은 혜택(동행·할인)을 준다. 생일에 주는 선물은 곱절.</p><ul class="list people">${rows}</ul><p class="muted">정을 나눈 사람 ${met.length}/${total}</p>`;
   }
   function journalHtml(a) {
     const tab = panel.tab || 'main';

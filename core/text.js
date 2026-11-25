@@ -91,6 +91,10 @@ export const ERR = {
   already: '오늘은 이미 인사했다',
   gifted_today: '오늘은 이미 선물했다',
   not_giftable: '선물할 수 없는 물건이다',
+  not_companion: '단짝이 되어야 같이 나선다',
+  ally_out: '이미 같이 다니는 사람이 있다',
+  invited_today: '오늘은 이미 같이 다녀왔다',
+  no_ally: '같이 다니는 사람이 없다',
   // 퀘스트(v0.5)
   no_npc: '그런 사람은 없음',
   no_quest: '없는 퀘스트',
@@ -171,7 +175,7 @@ const SKILL_ICON = (data, id) => data.skills[id]?.icon || '';
 export function describeEvent(ev, game) {
   const { data, state } = game;
   const who = state.actors[ev.actor]?.name;
-  const p = who && Object.keys(state.actors).length > 1 ? `[${who}] ` : '';
+  const p = who && Object.values(state.actors).filter((x) => x.kind !== 'ally').length > 1 ? `[${who}] ` : '';
   switch (ev.type) {
     case 'gather.done': {
       const lot = state.lots[ev.lot];

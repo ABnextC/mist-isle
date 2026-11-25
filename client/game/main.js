@@ -8,6 +8,7 @@ import { dist, settlementAt, storeOf, workSpots } from '../../core/world.js';
 import { avgProps, keyOf } from '../../core/inventory.js';
 import { starOf } from '../../core/formulas.js';
 import { stars, ERR, josa } from '../../core/text.js';
+import { bondTier, isBirthday } from '../../core/systems/bonds.js';
 import { createScene } from './scene.js';
 import { startTier, createAutoTuner, chosenTier, setChosenTier, TIERS } from './gfx/quality.js';
 import { bakeMaterials, makeCanvasTextures } from './gfx/texgen.js';
@@ -486,6 +487,13 @@ async function boot() {
       case 'quest-accept':
         if (game.dispatch({ type: 'QUEST_ACCEPT', actor: PID, quest: v }).ok) hud.toast(`📜 「${data.quests[v].name}」을(를) 받았다`, 'good');
         break;
+      case 'invite': {
+        const r = game.dispatch({ type: 'INVITE', actor: PID, npc: v });
+        if (!r.ok) hud.toast(ERR[r.error] || r.error, 'bad');
+        else hud.close();
+        break;
+      }
+      case 'ally-dismiss': game.dispatch({ type: 'DISMISS_ALLY', actor: PID }); break;
       case 'gift-open': hud.open('talk', { npc: hud.panel.npc, gift: true }); break;
       case 'gift-back': hud.open('talk', { npc: hud.panel.npc }); break;
       case 'gift': {
@@ -789,6 +797,26 @@ async function boot() {
   game.on('bond.gift', (ev) => {
     if (ev.actor !== PID || hud.panel?.kind !== 'talk') return;
     hud.open('talk', { npc: ev.npc, gift: true, react: ev });
+  });
+  game.on('bond.thanks', (ev) => {
+    if (ev.actor !== PID) return;
+    hud.toast(`🎁 ${josa(data.npcs[ev.npc].name, '이', '가')} 답례로 ${data.items[ev.item].name} ${ev.qty}개를 줬다`, 'good');
+  });
+  const LEAVE = { time: '해가 기울어 마을로 돌아갔다', down: '다쳐서 마을로 돌아갔다', far: '멀리 떠나는 길엔 따라오지 못했다', sent: '마을로 돌아갔다' };
+  game.on('ally.join', (ev) => {
+    if (ev.actor !== PID) return;
+    hud.banner(`🏹 ${josa(data.npcs[ev.npc].name, '이', '가')} 같이 나섰다 · ${Math.round(data.config.bond.companionSec / 60)}분`);
+  });
+  game.on('ally.leave', (ev) => {
+    if (ev.actor !== PID) return;
+    hud.toast(`🏹 ${josa(data.npcs[ev.npc].name, '은', '는')} ${LEAVE[ev.reason] || LEAVE.sent}`, 'info');
+  });
+  game.on('day.start', () => {
+    const a = me();
+    if (!a?.bonds) return;
+    const qc = questCtx(game);
+    const who = Object.keys(a.bonds).filter((id) => bondTier(qc, a, id) >= 1 && isBirthday(qc, id));
+    if (who.length) setTimeout(() => hud.toast(`🎂 오늘은 ${who.map((id) => data.npcs[id].name).join('·')}의 생일이다. 선물하면 정이 곱절로 든다`, 'info', 7000), 3000);
   });
   game.on('bond.tier', (ev) => {
     if (ev.actor !== PID) return;

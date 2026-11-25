@@ -242,6 +242,8 @@ export function buildData(raw) {
   for (const n of raw.npcs) {
     // 호감도(v1.6): 선물 물건과 정이 든 뒤의 말
     for (const k of ['love', 'like', 'hate']) for (const it of n.gifts?.[k] || []) if (!items[it]) problems.push(`NPC ${n.id}: 선물 ${it} 없음`);
+    if (n.perk?.kind === 'companion' && !items[n.perk.weapon]?.weapon) problems.push(`NPC ${n.id}: 동행 무기 ${n.perk.weapon}`);
+    if (n.birthday != null && !(n.birthday >= 1 && n.birthday <= raw.config.calendar.monthDays)) problems.push(`NPC ${n.id}: 생일 ${n.birthday}`);
     for (const t of Object.keys(n.chatBond || {})) if (!(+t >= 1 && +t < raw.config.bond.tiers.length)) problems.push(`NPC ${n.id}: 정 단계 ${t}`);
     for (const sp of n.routine || []) {
       if (sp.at ? !settlements[sp.at] : !raw.regions.some((r) => r.sites.some((s) => s.id === sp.site))) problems.push(`NPC ${n.id}: 동선 자리 ${sp.at || sp.site} 없음`);

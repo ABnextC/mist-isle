@@ -129,6 +129,10 @@
     "qi_mural": {
       "name": "옛터 벽화 베낀 종이",
       "icon": "📜"
+    },
+    "qi_bell": {
+      "name": "물수리의 종",
+      "icon": "🔔"
     }
   },
   "quests": [
@@ -3001,12 +3005,12 @@
         "q2_chest"
       ],
       "name": "빛바랜 항해일지",
-      "summary": "노 선장의 옛 배 「물수리」가 남쪽 작은 만에 가라앉았다. 무엇이 남았는지 보고 와 달라 한다.",
+      "summary": "노 선장의 옛 배 「물수리」가 검은 돛 정박지 앞바다에 가라앉았다. 무엇이 남았는지 보고 와 달라 한다.",
       "steps": [
         {
           "type": "go",
           "site": "cove",
-          "text": "남쪽 작은 만에 가 보기"
+          "text": "검은 돛 정박지 앞바다 살피기"
         },
         {
           "type": "talk",
@@ -3021,7 +3025,8 @@
       ],
       "reward": {
         "silver": 60
-      }
+      },
+      "chain": "물수리 ①/③"
     },
     {
       "id": "sq_gu_net",
@@ -3373,7 +3378,8 @@
       ],
       "reward": {
         "silver": 100
-      }
+      },
+      "chain": "소리의 노래 ①/③"
     },
     {
       "id": "sq_hu_hides",
@@ -3654,6 +3660,717 @@
           }
         ]
       }
+    },
+    {
+      "id": "sq_gu_log2",
+      "kind": "side",
+      "giver": "noseon",
+      "requires": [
+        "sq_gu_log"
+      ],
+      "name": "물수리의 종",
+      "summary": "노 선장이 가라앉은 「물수리」의 종을 건져 와 달라 한다. 검은 돛 정박지 앞 바다에 잠겨 있다.",
+      "steps": [
+        {
+          "type": "use",
+          "objs": [
+            "o_ship_bell"
+          ],
+          "count": 1,
+          "text": "검은 돛 정박지에서 물수리의 종 건져 올리기",
+          "gives": "qi_bell"
+        },
+        {
+          "type": "talk",
+          "npc": "noseon",
+          "text": "노 선장에게 종 가져가기",
+          "say": [
+            "…이 소리야. 폭풍 치던 밤에도 이 종을 울려 선원들을 불렀지.",
+            "고맙네. 이제 이 녀석을 줄 사람이 하나 있어."
+          ],
+          "reply": "누구요?"
+        }
+      ],
+      "reward": {
+        "silver": 90
+      },
+      "chain": "물수리 ②/③"
+    },
+    {
+      "id": "sq_gu_log3",
+      "kind": "side",
+      "giver": "noseon",
+      "requires": [
+        "sq_gu_log2"
+      ],
+      "name": "마지막 항해",
+      "summary": "노 선장이 등대 마을 견습 선원 막동에게 할 말이 있다고 한다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "makdong",
+          "text": "등대 마을 막동에게 노 선장의 말 전하기",
+          "say": [
+            "노 선장님이요? 저를요? …갈게요!"
+          ],
+          "reply": "같이 가자"
+        },
+        {
+          "type": "talk",
+          "npc": "noseon",
+          "text": "노 선장과 막동의 이야기 듣기",
+          "say": [
+            "막동이라 했나. 바다 나가고 싶다고?",
+            "이 나침반을 가져가라. 물수리를 마흔 해 이끈 놈이야. 안개 속에서도 북을 가리키지.",
+            "배는 네가 지어라. 이름은… 물수리 둘째로 하든가."
+          ],
+          "reply": "좋은 이름이에요"
+        }
+      ],
+      "reward": {
+        "silver": 140,
+        "items": [
+          {
+            "item": "food_soup",
+            "qty": 2
+          }
+        ]
+      },
+      "chain": "물수리 ③/③"
+    },
+    {
+      "id": "sq_in_song2",
+      "kind": "side",
+      "giver": "aksa",
+      "requires": [
+        "sq_in_flute",
+        "c3_mistfolk"
+      ],
+      "name": "늪의 노래",
+      "summary": "악사 소리가 물안개 사람들의 옛 노래를 배우고 싶어 한다. 무녀 아라에게 물어봐 달라 한다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "ara",
+          "text": "물안개 마을 아라에게 노래 묻기",
+          "say": [
+            "노래라… 우리 노래는 늪이 부르는 것을 따라 할 뿐이니라.",
+            "「물이 차면 등불을 들고, 물이 빠지면 씨를 뿌린다.」 이 한 줄이면 되느니."
+          ],
+          "reply": "전하겠습니다"
+        },
+        {
+          "type": "talk",
+          "npc": "aksa",
+          "text": "소리에게 노래 전하기",
+          "say": [
+            "물이 차면 등불을 들고… 하, 이건 노래가 아니라 사는 법이구려.",
+            "이걸로 한 곡 지어 보리다. 들려줄 자리가 있어야 할 텐데."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 120
+      },
+      "chain": "소리의 노래 ②/③"
+    },
+    {
+      "id": "sq_in_song3",
+      "kind": "side",
+      "giver": "aksa",
+      "requires": [
+        "sq_in_song2"
+      ],
+      "name": "주막의 밤",
+      "summary": "소리가 새 노래를 들려줄 잔치를 열자고 한다. 손님을 부르고 국을 마련하자.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "beomdol",
+          "text": "사냥꾼 쉼터 범돌을 잔치에 부르기",
+          "say": [
+            "노래? 허허, 내 귀가 아직 쓸 만한지 볼까."
+          ],
+          "reply": "꼭 오세요"
+        },
+        {
+          "type": "talk",
+          "npc": "okhwa",
+          "text": "느티골 옥화를 잔치에 부르기",
+          "say": [
+            "주막 잔치라니, 마을 사람들도 데려가겠네."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "jumo",
+          "text": "금순에게 잔치 국 3 건네기",
+          "take": {
+            "food_soup": 3
+          },
+          "say": [
+            "손님 맞을 국이 넉넉하네.",
+            "…들려? 소리가 시작했어. 오늘 밤은 길겠네."
+          ],
+          "reply": "들어 볼까요"
+        }
+      ],
+      "reward": {
+        "silver": 200,
+        "items": [
+          {
+            "item": "food_tea",
+            "qty": 2
+          }
+        ]
+      },
+      "chain": "소리의 노래 ③/③"
+    },
+    {
+      "id": "sq_ki_cough",
+      "kind": "side",
+      "giver": "danbi",
+      "requires": [
+        "sq_ki_frost"
+      ],
+      "name": "숯 연기 기침",
+      "summary": "숯가마 사람들이 연기에 기침을 한다. 단비가 약 지을 재료를 부탁한다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "danbi",
+          "text": "단비에게 버섯 6·산딸기 4 건네기",
+          "take": {
+            "mushroom": 6,
+            "berry": 4
+          },
+          "say": [
+            "좋아요, 달여서 사흘 먹으면 가라앉을 거예요.",
+            "그런데… 굴막 사람들한테도 가져다줘야 해요."
+          ],
+          "reply": "제가 가죠"
+        }
+      ],
+      "reward": {
+        "silver": 160
+      },
+      "chain": "단비의 약 ①/②"
+    },
+    {
+      "id": "sq_ki_round",
+      "kind": "side",
+      "giver": "danbi",
+      "requires": [
+        "sq_ki_cough"
+      ],
+      "name": "약 나르기",
+      "summary": "단비가 지은 약을 잿고개 석수와 광부 굴막 갱장에게 나눠 준다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "seoksu",
+          "text": "잿고개 석수에게 약 주기",
+          "say": [
+            "약이라고? 단비가? …고맙다고 전해 줘. 쓰긴 쓰구먼."
+          ],
+          "reply": "전할게요"
+        },
+        {
+          "type": "talk",
+          "npc": "gangjang",
+          "text": "광부 굴막 갱장에게 약 주기",
+          "say": [
+            "굴 먼지에 목이 다 상했는데 잘됐어.",
+            "숯가마 쪽에 쇠를 좀 보내야겠군. 빚은 갚아야지."
+          ],
+          "reply": "전할게요"
+        },
+        {
+          "type": "talk",
+          "npc": "danbi",
+          "text": "단비에게 돌아가기",
+          "say": [
+            "다들 받았대요? 다행이에요.",
+            "능선 사람들이 서로 오가는 길이 생긴 것 같아요."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 240
+      },
+      "chain": "단비의 약 ②/②"
+    },
+    {
+      "id": "sq_wi_cloth",
+      "kind": "side",
+      "giver": "miru",
+      "requires": [
+        "sq_wi_dye"
+      ],
+      "name": "물들인 천",
+      "summary": "미루가 붉게 물들일 갈대 천을 더 찾는다. 여울 잔치에 걸 천이다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "miru",
+          "text": "미루에게 갈대 천 4 건네기",
+          "take": {
+            "cloth_reed": 4
+          },
+          "say": [
+            "이걸 다 물들이면 여울이 노을빛이 될 거예요.",
+            "버들 할매가 잔치를 열자고 하셨어요!"
+          ],
+          "reply": "잔치요?"
+        }
+      ],
+      "reward": {
+        "silver": 120
+      },
+      "chain": "미루의 천 ①/②"
+    },
+    {
+      "id": "sq_wi_feast",
+      "kind": "side",
+      "giver": "beodeul",
+      "requires": [
+        "sq_wi_cloth",
+        "c3_mistfolk"
+      ],
+      "name": "여울 잔치",
+      "summary": "버들 할매가 여울 사람과 물안개 사람을 한자리에 모으려 한다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "ara",
+          "text": "물안개 마을 아라를 잔치에 부르기",
+          "say": [
+            "여울 잔치라… 내 어미 때 이후로 처음이로구나. 가겠노라."
+          ],
+          "reply": "기다릴게요"
+        },
+        {
+          "type": "talk",
+          "npc": "yeoul_mist",
+          "text": "여울을 잔치에 부르기",
+          "say": [
+            "잔치요? 아버지 이야기를 할 수 있을까요… 갈게요."
+          ],
+          "reply": "꼭 와요"
+        },
+        {
+          "type": "talk",
+          "npc": "beodeul",
+          "text": "버들 할매에게 잔치 고기 3 건네기",
+          "take": {
+            "food_meat": 3
+          },
+          "say": [
+            "자, 다 모였구먼. 늪과 여울이 한자리라니.",
+            "오래 살고 볼 일이야."
+          ],
+          "reply": "잔치를 즐겨요"
+        }
+      ],
+      "reward": {
+        "silver": 220,
+        "items": [
+          {
+            "item": "food_berry",
+            "qty": 3
+          }
+        ]
+      },
+      "chain": "미루의 천 ②/②"
+    },
+    {
+      "id": "fq_la_oil",
+      "kind": "side",
+      "giver": "lamp_aide",
+      "requires": [
+        "c4_paths"
+      ],
+      "name": "등불 기름",
+      "summary": "등불단이 밤길 등불에 쓸 자작 수액을 모은다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "lamp_aide",
+          "text": "단아에게 자작 수액 6 건네기",
+          "take": {
+            "sap_birch": 6
+          },
+          "say": [
+            "이거면 나루 길 등불을 한 달은 켜요."
+          ],
+          "reply": "여기 있습니다"
+        }
+      ],
+      "reward": {
+        "silver": 80
+      },
+      "faction": "lantern",
+      "rewardBy": {
+        "lantern": {
+          "inf": 60
+        }
+      }
+    },
+    {
+      "id": "fq_la_night",
+      "kind": "side",
+      "giver": "lamp_aide",
+      "requires": [
+        "fq_la_oil"
+      ],
+      "name": "밤길 지키기",
+      "summary": "등불단이 밤에 떠도는 망령에게서 나루 사람들을 지킨다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "mist_wraith"
+          ],
+          "count": 5,
+          "text": "밤에 안개 망령 5 잠재우기"
+        },
+        {
+          "type": "talk",
+          "npc": "lamp_aide",
+          "text": "단아에게 알리기",
+          "say": [
+            "등불단 이름으로 고마워요. 해림 어른께도 말씀드릴게요."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 140
+      },
+      "faction": "lantern",
+      "rewardBy": {
+        "lantern": {
+          "inf": 100
+        }
+      }
+    },
+    {
+      "id": "fq_fl_sail",
+      "kind": "side",
+      "giver": "boatswain",
+      "requires": [
+        "c4_paths"
+      ],
+      "name": "선단 돛 수선",
+      "summary": "자유 선단 배의 찢긴 돛을 기울 천이 필요하다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "boatswain",
+          "text": "억쇠에게 갈대 천 6 건네기",
+          "take": {
+            "cloth_reed": 6
+          },
+          "say": [
+            "좋아, 이걸로 큰 돛 하나는 다시 편다."
+          ],
+          "reply": "여기 있습니다"
+        }
+      ],
+      "reward": {
+        "silver": 80
+      },
+      "faction": "fleet",
+      "rewardBy": {
+        "fleet": {
+          "inf": 60
+        }
+      }
+    },
+    {
+      "id": "fq_fl_strays",
+      "kind": "side",
+      "giver": "boatswain",
+      "requires": [
+        "fq_fl_sail"
+      ],
+      "name": "함대 낙오병",
+      "summary": "물러가지 않은 함대 낙오병이 늪 기슭을 떠돈다. 선단이 몰아낸다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "marine",
+            "marine_spear"
+          ],
+          "count": 4,
+          "text": "함대 낙오병 4 몰아내기"
+        },
+        {
+          "type": "talk",
+          "npc": "boatswain",
+          "text": "억쇠에게 알리기",
+          "say": [
+            "하하, 선단 배가 이제 마음 놓고 다니겠어."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 140
+      },
+      "faction": "fleet",
+      "rewardBy": {
+        "fleet": {
+          "inf": 100
+        }
+      }
+    },
+    {
+      "id": "fq_sc_sample",
+      "kind": "side",
+      "giver": "scribe",
+      "requires": [
+        "c4_paths"
+      ],
+      "name": "영맥 표본",
+      "summary": "안개 학회가 영맥이 흐르는 돌과 원석을 모은다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "scribe",
+          "text": "글보에게 원석 2·돌 10 건네기",
+          "take": {
+            "gem_rough": 2,
+            "stone": 10
+          },
+          "say": [
+            "이 원석, 결이 살아 있어요. 윤서 선생님이 좋아하실 거예요."
+          ],
+          "reply": "여기 있습니다"
+        }
+      ],
+      "reward": {
+        "silver": 80
+      },
+      "faction": "scholars",
+      "rewardBy": {
+        "scholars": {
+          "inf": 60
+        }
+      }
+    },
+    {
+      "id": "fq_sc_record",
+      "kind": "side",
+      "giver": "scribe",
+      "requires": [
+        "fq_sc_sample",
+        "c3_sunken"
+      ],
+      "name": "옛 탑 기록",
+      "summary": "학회가 가라앉은 탑 둘레를 다시 살펴 기록하려 한다.",
+      "steps": [
+        {
+          "type": "go",
+          "site": "sunken_tower",
+          "text": "가라앉은 탑 둘레 살피기"
+        },
+        {
+          "type": "talk",
+          "npc": "scribe",
+          "text": "글보에게 본 것 전하기",
+          "say": [
+            "물이 반 뼘 빠졌다고요? 기록해 둘게요. 영맥이 진정되고 있다는 뜻이에요."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 140
+      },
+      "faction": "scholars",
+      "rewardBy": {
+        "scholars": {
+          "inf": 100
+        }
+      }
+    },
+    {
+      "id": "dq_seondeok",
+      "kind": "side",
+      "giver": "seondeok",
+      "requires": [
+        "sq_lh_fish"
+      ],
+      "name": "국거리",
+      "summary": "순덕이 오늘 국에 넣을 미역을 찾는다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "seondeok",
+          "text": "순덕에게 미역 3 건네기",
+          "take": {
+            "seaweed": 3
+          },
+          "say": [
+            "오늘도 고마워. 내일 또 와."
+          ],
+          "reply": "여기 있습니다"
+        }
+      ],
+      "reward": {
+        "silver": 25
+      },
+      "repeat": "daily"
+    },
+    {
+      "id": "dq_jogae",
+      "kind": "side",
+      "giver": "jogae",
+      "requires": [
+        "sq_gu_crab"
+      ],
+      "name": "그물 손질",
+      "summary": "조개댁이 그물 기울 갈대를 찾는다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "jogae",
+          "text": "조개댁에게 갈대 4 건네기",
+          "take": {
+            "fiber_reed": 4
+          },
+          "say": [
+            "오늘 그물은 이걸로 됐어."
+          ],
+          "reply": "여기 있습니다"
+        }
+      ],
+      "reward": {
+        "silver": 30
+      },
+      "repeat": "daily"
+    },
+    {
+      "id": "dq_jumo",
+      "kind": "side",
+      "giver": "jumo",
+      "requires": [
+        "sq_in_soup"
+      ],
+      "name": "주막 장작",
+      "summary": "금순이 오늘 국솥 땔 장작을 찾는다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "jumo",
+          "text": "금순에게 자작 통나무 5 건네기",
+          "take": {
+            "log_birch": 5
+          },
+          "say": [
+            "오늘 밤도 솥이 끓겠네. 고마워."
+          ],
+          "reply": "여기 있습니다"
+        }
+      ],
+      "reward": {
+        "silver": 40
+      },
+      "repeat": "daily"
+    },
+    {
+      "id": "dq_beomdol",
+      "kind": "side",
+      "giver": "beomdol",
+      "requires": [
+        "sq_hu_hides"
+      ],
+      "name": "사슴 사냥",
+      "summary": "범돌이 오늘 쉼터 사람들 먹일 사슴을 부탁한다.",
+      "steps": [
+        {
+          "type": "kill",
+          "mobs": [
+            "deer"
+          ],
+          "count": 2,
+          "text": "사슴 2마리 잡기"
+        },
+        {
+          "type": "talk",
+          "npc": "beomdol",
+          "text": "범돌에게 알리기",
+          "say": [
+            "오늘 저녁은 사슴 고기구먼. 수고했네."
+          ],
+          "reply": "알겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 45
+      },
+      "repeat": "daily"
+    },
+    {
+      "id": "dq_musoe",
+      "kind": "side",
+      "giver": "musoe",
+      "requires": [
+        "sq_ki_oak"
+      ],
+      "name": "숯가마 불",
+      "summary": "무쇠가 오늘 숯가마 불 지킬 참나무를 찾는다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "musoe",
+          "text": "무쇠에게 참나무 통나무 3 건네기",
+          "take": {
+            "log_oak": 3
+          },
+          "say": [
+            "불이 안 꺼졌어. 오늘도 고맙다."
+          ],
+          "reply": "여기 있습니다"
+        }
+      ],
+      "reward": {
+        "silver": 60
+      },
+      "repeat": "daily"
+    },
+    {
+      "id": "dq_boreum",
+      "kind": "side",
+      "giver": "boreum",
+      "requires": [
+        "sq_ga_food"
+      ],
+      "name": "야영지 밥",
+      "summary": "보름이 오늘 야영지 밥에 넣을 고기를 찾는다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "boreum",
+          "text": "보름에게 날고기 3 건네기",
+          "take": {
+            "meat_raw": 3
+          },
+          "say": [
+            "오늘도 다들 배불리 먹겠어요."
+          ],
+          "reply": "여기 있습니다"
+        }
+      ],
+      "reward": {
+        "silver": 80
+      },
+      "repeat": "daily"
     }
   ]
 }

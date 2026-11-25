@@ -114,7 +114,42 @@ export function sitePos(ctx, id) {
 }
 
 // NPC 자리: 놓아 둔 statics에서 읽는다(자리 NPC는 해안선을 따라 놓이므로 지형이 있어야 한다)
+// 하루 동선(v1.5): routine [{h, at|site, dx, dz, yaw, what}] — h는 하루 시각(0=동틀 녘, 24=다음 동틀 녘).
+// 시각이 바뀌면 앞 자리에서 새 자리로 걸어간다(초속 1.3m). 코어와 화면이 같은 값을 쓴다.
+const WALK = 1.3;
+function spotXZ(ctx, sp) {
+  const b = sp.at ? ctx.data.settlements[sp.at] : ctx.data.sites?.[sp.site];
+  if (!b) return null;
+  const [bx, bz] = b.x != null ? [b.x, b.z] : ctx.terrain ? siteXZ(ctx.terrain, b) : [null, null];
+  return bx == null ? null : { x: bx + (sp.dx || 0), z: bz + (sp.dz || 0), yaw: sp.yaw || 0, what: sp.what || null };
+}
+export function npcRoutine(ctx, n) {
+  const R = n?.routine;
+  const T = ctx.data?.config?.time;
+  if (!R?.length || !T || !ctx.state) return null;
+  const dayLen = T.secondsPerGameDay;
+  const hourLen = dayLen / 24;
+  const tt = (((ctx.state.t + (T.startPhase || 0) * dayLen) % dayLen) + dayLen) % dayLen;
+  const hour = tt / hourLen;
+  let i = R.length - 1;
+  for (let k = 0; k < R.length; k++) if (R[k].h <= hour) i = k;
+  const cur = spotXZ(ctx, R[i]);
+  const pre = spotXZ(ctx, R[(i - 1 + R.length) % R.length]);
+  if (!cur) return null;
+  let since = tt - R[i].h * hourLen;
+  if (since < 0) since += dayLen;
+  const d = pre ? Math.hypot(cur.x - pre.x, cur.z - pre.z) : 0;
+  const walk = d / WALK;
+  if (pre && since < walk && d < 200) {
+    const k = since / walk;
+    return { x: pre.x + (cur.x - pre.x) * k, z: pre.z + (cur.z - pre.z) * k, yaw: Math.atan2(cur.x - pre.x, cur.z - pre.z), what: '걸어가는 중', walking: true };
+  }
+  return cur;
+}
+
 export function npcPos(ctx, id) {
+  const r = npcRoutine(ctx, ctx.data?.npcs[id]);
+  if (r) return r;
   const o = ctx.statics?.find((x) => x.npc === id);
   if (o) return { x: o.x, z: o.z, yaw: o.rot };
   const n = ctx.data?.npcs[id];

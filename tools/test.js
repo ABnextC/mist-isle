@@ -17,7 +17,7 @@ import { mOf, needXp, loadoutOf, abilityOf, passivesOf } from '../core/systems/m
 import { spawnTemp } from '../core/systems/mobs.js';
 import { settlementDaily } from '../core/settlements.js';
 import { isUnlocked, allowedProject, chapterReached } from '../core/systems/unlocks.js';
-import { stepNpc, npcMark } from '../core/systems/quests.js';
+import { stepNpc, npcMark, available } from '../core/systems/quests.js';
 import { rankOf, xpMult, extraChance, feeMult, recipeAllowed, tasksOf, factionOnEvent } from '../core/systems/factions.js';
 import { addXp } from '../core/systems/progress.js';
 import { plotPos, homeOf, comfortOf } from '../core/systems/housing.js';
@@ -1312,7 +1312,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '1.4.0');
+  eq(st.meta.engine, '1.5.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1504,7 +1504,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '1.4.0');
+  eq(st.meta.engine, '1.5.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -1925,7 +1925,7 @@ console.log('사람들의 섬 (v1.4)');
 test('부가 의뢰: 앞 이야기를 마치면 마을 사람에게 받고(머리 위 초록 !), 건넬 것을 모아 오면 보상을 받는다. 한 번만 받는다', () => {
   const g = createGame({ data, seed: 9, actors: [{ id: 'p1', kind: 'player' }] });
   const a = g.state.actors.p1;
-  const W = { state: g.state, data, statics: g.statics, terrain: g.terrain };
+  const W = { state: g.state, data, statics: g.statics, terrain: g.terrain, clock: g.clock };
   const at = (npc) => { const p = npcPos(W, npc); Object.assign(a, { x: p.x + 1, z: p.z }); };
   at('jogae');
   eq(npcMark(W, a, 'jogae'), null, '아직 1장 초반');
@@ -1963,6 +1963,57 @@ test('부가 의뢰 사람과 새 마을: 모든 부가 의뢰는 있는 사람�
     ok(g.state.settlements[s], s);
     ok(g.state.settlements[s].stations.some((st) => st.type === 'storage'), `${s} 창고`);
   }
+});
+
+console.log('하루를 사는 사람들 (v1.5)');
+
+test('하루 동선: 마을 사람은 아침 일터 → 한낮 게시판 둘레 → 저녁 모닥불 → 밤 집 앞으로 걸어가고, 말을 걸려면 지금 있는 곳으로 가야 한다', () => {
+  const g = createGame({ data, seed: 9, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  const W = { state: g.state, data, statics: g.statics, terrain: g.terrain };
+  const T = data.config.time;
+  const hourLen = T.secondsPerGameDay / 24;
+  const atHour = (h) => { g.state.t = ((h * hourLen - T.startPhase * T.secondsPerGameDay) % T.secondsPerGameDay + T.secondsPerGameDay) % T.secondsPerGameDay; };
+  const n = data.npcs.seondeok;
+  eq(n.routine.length, 4, '하루 네 자리');
+  atHour(3);
+  const morning = npcPos(W, 'seondeok');
+  atHour(15);
+  const evening = npcPos(W, 'seondeok');
+  ok(Math.hypot(morning.x - evening.x, morning.z - evening.z) > 2, '저녁엔 다른 곳');
+  eq(evening.what, '모닥불 곁에서 쉬는 중');
+  atHour(13);
+  g.state.t += 1;
+  const walking = npcPos(W, 'seondeok');
+  ok(walking.walking, '바뀐 직후엔 걸어가는 중');
+  a.quests.done.q1_ashore = 1;
+  a.quests.done.q2_chest = 1;
+  atHour(3);
+  Object.assign(a, { x: evening.x + 1, z: evening.z });
+  eq(g.dispatch({ type: 'QUEST_ACCEPT', actor: 'p1', quest: 'sq_lh_fish' }).error, 'too_far', '아침엔 모닥불 곁에 없다');
+  Object.assign(a, { x: morning.x + 1, z: morning.z });
+  ok(g.dispatch({ type: 'QUEST_ACCEPT', actor: 'p1', quest: 'sq_lh_fish' }).ok, '일터에서 받는다');
+});
+
+test('연작·세력·오늘의 부탁: 앞 의뢰를 끝내야 다음이 열리고, 세력 의뢰는 그 세력만, 오늘의 부탁은 하루에 한 번', () => {
+  const g = createGame({ data, seed: 9, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  const W = { state: g.state, data, statics: g.statics, terrain: g.terrain, clock: g.clock };
+  const Q = data.quests;
+  ok(!available(W, a, Q.sq_gu_log2), '물수리 ②는 ① 뒤');
+  a.quests.done.sq_gu_log = 1;
+  ok(available(W, a, Q.sq_gu_log2), '① 끝내면 ②');
+  a.quests.done.c4_paths = 1;
+  ok(!available(W, a, Q.fq_la_oil), '세력 없음');
+  a.faction = { id: 'fleet', inf: 0, since: 0, done: {}, today: 0 };
+  ok(!available(W, a, Q.fq_la_oil), '다른 세력');
+  ok(available(W, a, Q.fq_fl_sail), '선단 의뢰');
+  a.quests.done.sq_lh_fish = 1;
+  ok(available(W, a, Q.dq_seondeok), '오늘의 부탁');
+  a.quests.daily.dq_seondeok = g.clock.day(g.state.t);
+  ok(!available(W, a, Q.dq_seondeok), '오늘은 끝');
+  g.state.t += data.config.time.secondsPerGameDay;
+  ok(available(W, a, Q.dq_seondeok), '내일 다시');
 });
 
 console.log(`\n${pass}개 통과, ${fail}개 실패`);

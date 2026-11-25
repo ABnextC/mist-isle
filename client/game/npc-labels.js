@@ -3,6 +3,7 @@
 
 import * as THREE from 'three';
 import { npcMark } from '../../core/systems/quests.js';
+import { npcRoutine } from '../../core/world.js';
 import { questCtx } from './quest.js';
 
 export function createNpcLabels(overlay, game, positionOf) {
@@ -51,7 +52,10 @@ export function createNpcLabels(overlay, game, positionOf) {
         b.className = mark === '!' ? 'new' : mark === '?' ? 'due' : mark === 'side' ? 'side' : '';
       }
       if (span._t !== n.name) span.textContent = span._t = n.name;
-      if (small._t !== n.title) small.textContent = small._t = n.title;
+      // 하루 동선(v1.5): 일터가 아닌 곳에 있으면 무엇을 하는지 덧붙인다
+      const rp = n.routine ? npcRoutine(ctx, n) : null;
+      const sub = rp?.what && rp.what !== '일하는 중' ? `${n.title} · ${rp.what}` : n.title;
+      if (small._t !== sub) small.textContent = small._t = sub;
     }
   }
   return { update };

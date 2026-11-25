@@ -238,6 +238,15 @@ export function buildData(raw) {
   for (const j of guilds.jobs) if (!items[j.item]) problems.push(`조합 일감 ${j.item} 없음`);
   if (problems.length) throw new Error('데이터 오류\n- ' + problems.join('\n- '));
 
+  // 하루 동선·말 바뀌기(v1.5)
+  for (const n of raw.npcs) {
+    for (const sp of n.routine || []) {
+      if (sp.at ? !settlements[sp.at] : !raw.regions.some((r) => r.sites.some((s) => s.id === sp.site))) problems.push(`NPC ${n.id}: 동선 자리 ${sp.at || sp.site} 없음`);
+      if (!(sp.h >= 0 && sp.h < 24)) problems.push(`NPC ${n.id}: 동선 시각 ${sp.h}`);
+    }
+    for (const c of n.chatAfter || []) if (!raw.quests.quests.some((q) => q.id === c.quest)) problems.push(`NPC ${n.id}: 말 바뀌기 퀘스트 ${c.quest} 없음`);
+  }
+  for (const q of raw.quests.quests) if (q.faction && !factions.list.some((f) => f.id === q.faction)) problems.push(`퀘스트 ${q.id}: 세력 ${q.faction} 없음`);
   // 무기 숙련(v1.1)
   const weapons = raw.weapons || { cap: 20, xp: { base: 25, exp: 1.5, perDmg: 1, perKill: 0.25 }, reset: { perPoint: 15 }, mastery: {}, types: {}, nodes: [] };
   const weaponNodes = {};

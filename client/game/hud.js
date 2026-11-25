@@ -893,6 +893,12 @@ export function createHud(root, game, { touch, onAct }) {
     if (today.length) html += `<p class="muted">오늘 끝낸 현상금: ${today.map((q) => esc(q.name)).join(', ')}</p>`;
     return html;
   }
+  // 말 바뀌기(v1.5): 끝낸 의뢰가 있으면 그 뒤의 말을 한다(가장 나중 것)
+  function chatLines(npc, a) {
+    let lines = npc.chat;
+    for (const c of npc.chatAfter || []) if (a.quests?.done?.[c.quest] != null) lines = c.lines;
+    return lines;
+  }
   function talkHtml(a) {
     const ctx = questCtx(game);
     const npc = data.npcs[panel.npc];
@@ -938,16 +944,19 @@ export function createHud(root, game, { touch, onAct }) {
     const offers = npcOffers(ctx, a, panel.npc);
     if (offers.length) {
       const q = offers[0];
-      panel.chat ??= Math.floor(Math.random() * npc.chat.length);
-      return `${head}<p class="say">${esc(npc.chat[panel.chat % npc.chat.length])}</p><div class="qtag">부가 의뢰 · ${esc(q.name)}</div><p class="say">${esc(q.summary)}</p>
+      const lines = chatLines(npc, a);
+      panel.chat ??= Math.floor(Math.random() * lines.length);
+      const tag = q.repeat === 'daily' ? '오늘의 부탁' : q.faction ? `${data.factions.list.find((f) => f.id === q.faction).icon} 세력 의뢰` : q.chain ? `연작 · ${esc(q.chain)}` : '부가 의뢰';
+      return `${head}<p class="say">${esc(lines[panel.chat % lines.length])}</p><div class="qtag">${tag} · ${esc(q.name)}</div><p class="say">${esc(q.summary)}</p>
         <p class="muted">▶ ${q.steps.map((st) => esc(st.text)).join(' → ')}</p>${rewardHtml(q.reward)}
         <div class="btns"><button class="pri" data-act="quest-accept" data-v="${q.id}">맡겠습니다</button><button data-act="close">다음에</button></div>`;
     }
     // 세력 지도자(v0.7): 세력이 열렸으면 세력 창을 보인다
     const fdef = data.factions.list.find((f) => f.leader === panel.npc);
     if (fdef && isUnlocked(ctx, a, 'faction')) return `${head}${factionHtml(a, fdef, ctx)}`;
-    panel.chat ??= Math.floor(Math.random() * npc.chat.length);
-    return `${head}<p class="say">${esc(npc.chat[panel.chat % npc.chat.length])}</p><div class="btns"><button data-act="close">잘 있어요</button></div>`;
+    const lines = chatLines(npc, a);
+    panel.chat ??= Math.floor(Math.random() * lines.length);
+    return `${head}<p class="say">${esc(lines[panel.chat % lines.length])}</p><div class="btns"><button data-act="close">잘 있어요</button></div>`;
   }
   // 내 집(v0.8)
   function houseHtml(a, plotId) {
@@ -1051,10 +1060,11 @@ export function createHud(root, game, { touch, onAct }) {
       const offers = data.lists.quests.filter((q) => q.kind === 'side' && available(qctx, a, q) && npcShown(qctx, a, q.giver));
       if (offers.length) {
         const where = (npc) => { const n = data.npcs[npc]; return n.at ? data.settlements?.[n.at]?.name || game.state.settlements[n.at]?.name || '' : data.sites?.[n.site]?.name || ''; };
-        body += `<h3>받을 수 있는 의뢰</h3><ul class="list">${offers.map((q) => `<li><div><b>${esc(q.name)}</b><small>${esc(data.npcs[q.giver].name)} · ${esc(where(q.giver))} · 🪙 ${q.reward?.silver || 0}</small></div></li>`).join('')}</ul>`;
+        const kindOf = (q) => (q.repeat === 'daily' ? '🔁 ' : q.faction ? `${data.factions.list.find((f) => f.id === q.faction).icon} ` : q.chain ? '🔗 ' : '');
+        body += `<h3>받을 수 있는 의뢰</h3><ul class="list">${offers.map((q) => `<li><div><b>${kindOf(q)}${esc(q.name)}</b><small>${esc(data.npcs[q.giver].name)} · ${esc(where(q.giver))}${q.chain ? ` · ${esc(q.chain)}` : ''} · 🪙 ${q.reward?.silver || 0}</small></div></li>`).join('')}</ul><p class="muted">🔁 날마다 · 🔗 이어지는 이야기 · 세력 표시는 그 세력 의뢰. 마을 사람은 하루 동안 일터 → 게시판 둘레 → 모닥불 → 집 앞으로 옮겨 다닌다.</p>`;
       }
-      const doneN = data.lists.quests.filter((q) => q.kind === 'side' && Q.done[q.id] != null).length;
-      const all = data.lists.quests.filter((q) => q.kind === 'side').length;
+      const doneN = data.lists.quests.filter((q) => q.kind === 'side' && !q.repeat && Q.done[q.id] != null).length;
+      const all = data.lists.quests.filter((q) => q.kind === 'side' && !q.repeat).length;
       body += `<p class="muted">끝낸 부가 의뢰 ${doneN}/${all}</p>`;
     } else if (tab === 'bounty') {
       body = bountyHtml(a).replace(/<button data-act="quest-accept"[^>]*>받기<\/button>/g, '<small class="muted">게시판에서</small>');

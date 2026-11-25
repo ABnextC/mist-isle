@@ -920,6 +920,15 @@
             "dz": -4.8,
             "rot": 0.2,
             "name": "도철의 궤짝"
+          },
+          {
+            "id": "o_ship_bell",
+            "kind": "chest",
+            "dx": -9,
+            "dz": -6,
+            "rot": 0.6,
+            "name": "물에 잠긴 배의 종",
+            "verb": "건져 올리기"
           }
         ],
         "members": [

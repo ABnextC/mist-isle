@@ -675,13 +675,17 @@ export function createActorsView(scene, game, hf, camera = null) {
   function npcActor(n, me) {
     const id = `npc:${n.id}`;
     let p = pseudo.get(id);
+    const pos = npcPos(game, n.id);
     if (!p) {
-      const pos = npcPos(game, n.id);
       p = baseLook(id, n.look || {}, { kind: 'npc', npc: n.id, x: pos.x, z: pos.z, yaw: pos.yaw, home: pos.yaw });
       pseudo.set(id, p);
     }
-    // 가까이 오면 개척자 쪽을 본다
-    p.yaw = me && Math.hypot(me.x - p.x, me.z - p.z) < 7 ? Math.atan2(me.x - p.x, me.z - p.z) : p.home;
+    // 하루 동선(v1.5): 코어가 정한 자리를 따라 걷는다
+    p.x = pos.x;
+    p.z = pos.z;
+    p.home = pos.yaw;
+    // 가까이 오면(걷는 중이 아니면) 개척자 쪽을 본다
+    p.yaw = !pos.walking && me && Math.hypot(me.x - p.x, me.z - p.z) < 7 ? Math.atan2(me.x - p.x, me.z - p.z) : p.home;
     return p;
   }
   const listBuf = [];

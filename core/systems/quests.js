@@ -48,6 +48,8 @@ export function available(ctx, a, q) {
   if (q.repeat === 'daily') {
     if (Q.daily[q.id] === ctx.clock.day(ctx.state.t)) return false;
   } else if (Q.done[q.id] != null) return false;
+  // 세력 의뢰(v1.5): 그 세력 사람만
+  if (q.faction && a.faction?.id !== q.faction) return false;
   return (q.requires || []).every((r) => Q.done[r] != null);
 }
 

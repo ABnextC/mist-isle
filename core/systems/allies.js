@@ -80,6 +80,8 @@ export function alliesTick(ctx) {
     else if (isDown(al)) dismissAlly(ctx, al, 'down');
     else if (t >= al.ally.until) dismissAlly(ctx, al, 'time');
     if (!ctx.state.actors[al.id]) continue;
+    // 탈것(v3.2): 주인이 타면 같이 탄다(싸우는 동안은 내린다)
+    al.riding = o.riding && !al.ai.mem.fight ? o.riding : null;
     if (d > WARP_M) {
       stopFight(al);
       al.x = Math.round((o.x + 1.4) * 1000) / 1000;

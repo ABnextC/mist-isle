@@ -281,6 +281,43 @@ export const SFX = {
       burst(ac, out, { kind: 'pink', filter: 'bandpass', freq: 700, to: 300, glide: 0.3, q: 2, at: t, a: 0.05, d: 0.25, peak: 0.15 });
     },
   },
+  // 탈것(v3.2): 말굽(땅이 단단할수록 또각), 휘파람, 길잡이 돌이 열리는 소리
+  hoof: {
+    life: 0.3,
+    play(ac, out, o = {}) {
+      const t = T(ac);
+      const v = 0.85 + Math.random() * 0.3;
+      const hard = o.surface === 'stone' ? 1 : o.surface === 'sand' || o.surface === 'snow' ? 0.2 : 0.55;
+      tone(ac, out, { type: 'sine', freq: 140 * v, to: 70, glide: 0.06, at: t, a: 0.002, d: 0.08, peak: 0.3 });
+      burst(ac, out, { kind: 'white', filter: 'bandpass', freq: 1900 * v, q: 3, at: t, d: 0.03, peak: 0.16 * hard });
+      if (o.surface === 'water') burst(ac, out, { kind: 'white', filter: 'lowpass', freq: 2400, to: 500, glide: 0.2, at: t, d: 0.22, peak: 0.25 });
+    },
+  },
+  whistle: {
+    life: 1.2,
+    play(ac, out) {
+      const t = T(ac);
+      tone(ac, out, { type: 'sine', freq: 1500, to: 2300, glide: 0.18, at: t, a: 0.02, d: 0.25, peak: 0.12 });
+      tone(ac, out, { type: 'sine', freq: 1700, to: 1250, glide: 0.25, at: t + 0.32, a: 0.02, d: 0.35, peak: 0.12 });
+    },
+  },
+  neigh: {
+    life: 1.4,
+    play(ac, out) {
+      const t = T(ac);
+      for (let i = 0; i < 7; i++) tone(ac, out, { type: 'sawtooth', freq: 520 - i * 38 + (i % 2) * 60, at: t + i * 0.09, a: 0.01, d: 0.11, peak: 0.05 });
+      burst(ac, out, { kind: 'pink', filter: 'lowpass', freq: 900, at: t + 0.7, a: 0.05, d: 0.4, peak: 0.12 });
+    },
+  },
+  waystone: {
+    life: 2.4,
+    play(ac, out) {
+      const t = T(ac);
+      tone(ac, out, { type: 'sine', freq: 82, to: 165, glide: 1.6, at: t, a: 0.4, d: 1.8, peak: 0.3 });
+      for (let i = 0; i < 5; i++) fmBell(ac, out, { freq: midi(76 + [0, 7, 12, 16, 19][i]), ratio: 2, index: 0.6, at: t + 0.4 + i * 0.22, d: 1.0, peak: 0.05 });
+      burst(ac, out, { kind: 'pink', filter: 'bandpass', freq: 600, to: 5000, glide: 1.8, q: 3, at: t + 0.2, a: 0.8, d: 1.2, peak: 0.18 });
+    },
+  },
   step: {
     life: 0.3,
     play(ac, out, o = {}) {

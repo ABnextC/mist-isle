@@ -1,3 +1,5 @@
+import { travelError, startTravel } from './systems/waystones.js';
+import { DISMOUNT_ON, dismount, summonError, startSummon, buyError, buyMount, mountsOf, gearError, putGear, takeGear } from './systems/mounts.js';
 // 명령: 검증 → 실행 → 이벤트.
 // 검증 단계는 상태를 바꾸지 않는다. 실행 단계는 실패하지 않는다.
 // 싱글에서는 로컬 코어가, 멀티에서는 서버가 같은 함수를 돌린다.
@@ -1511,7 +1513,74 @@ const SEED_PLANT = {
   },
 };
 
+// ── 빠른 이동·탈것(v3.2) ──────────────────────────
+const FAST_TRAVEL = {
+  validate(ctx, a, c) {
+    return travelError(ctx, a, c.to) || {};
+  },
+  execute(ctx, a, c) {
+    startTravel(ctx, a, c.to);
+  },
+};
+// V: 타고 있으면 내리고, 아니면 부른다(시전 summonSec)
+const MOUNT = {
+  validate(ctx, a) {
+    if (a.riding) return {};
+    return summonError(ctx, a) || {};
+  },
+  execute(ctx, a) {
+    if (a.riding) dismount(ctx, a, 'self');
+    else startSummon(ctx, a);
+  },
+};
+const DISMOUNT = {
+  validate(ctx, a) {
+    return a.riding ? {} : 'not_riding';
+  },
+  execute(ctx, a) {
+    dismount(ctx, a, 'self');
+  },
+};
+const MOUNT_BUY = {
+  validate(ctx, a, c) {
+    return buyError(ctx, a, c.mount) || {};
+  },
+  execute(ctx, a, c) {
+    buyMount(ctx, a, c.mount);
+  },
+};
+const MOUNT_PICK = {
+  validate(ctx, a, c) {
+    if (!mountsOf(a).own.includes(c.mount)) return 'bad_args';
+    return {};
+  },
+  execute(ctx, a, c) {
+    mountsOf(a).pick = c.mount;
+    if (a.riding) a.riding = c.mount;
+    ctx.emit('mount.pick', { actor: a.id, mount: c.mount });
+  },
+};
+const MOUNT_GEAR = {
+  validate(ctx, a, c) {
+    return gearError(ctx, a, c.item) || {};
+  },
+  execute(ctx, a, c) {
+    putGear(ctx, a, c.item);
+  },
+};
+const MOUNT_UNGEAR = {
+  validate(ctx, a, c) {
+    if (!['saddle', 'shoes'].includes(c.slot) || !mountsOf(a).gear[c.slot]) return 'bad_args';
+    if (a.bag.length >= ctx.cfg.bag.slots && !a.bag.some((e) => e.item === mountsOf(a).gear[c.slot] && !e.uid)) return 'bag_full';
+    return {};
+  },
+  execute(ctx, a, c) {
+    takeGear(ctx, a, c.slot);
+  },
+};
+
 const HANDLERS = {
+  FAST_TRAVEL, MOUNT, DISMOUNT, MOUNT_BUY, MOUNT_PICK, MOUNT_GEAR, MOUNT_UNGEAR,
   WAR_DECLARE, WAR_SUPPLY, SEED_PLANT, PVP_FLAG, EXP_START, EXP_LEAVE, LEARN_BP, ATTR_SPEND, ATTR_RESET, INVITE, DISMISS_ALLY, GREET, GIFT, TALK, QUEST_ACCEPT, QUEST_USE, QUEST_TRACK, FACTION_JOIN, FACTION_TASK,
   HOUSE_BUY, HOUSE_UPGRADE, HOUSE_PLACE, HOUSE_TAKE, REST, GARDEN_PLANT, GARDEN_HARVEST,
   FERRY, GUILD_CREATE, GUILD_JOIN, GUILD_LEAVE, GUILD_HIRE, GUILD_DISMISS, GUILD_GIVE, GUILD_PUT, GUILD_TAKE,
@@ -1536,7 +1605,10 @@ export function makeCommands(ctx) {
       ctx.emit('cmd.rejected', { actor: cmd?.actor ?? null, cmd: cmd?.type ?? null, reason: v.error });
       return { ok: false, error: v.error };
     }
-    HANDLERS[cmd.type].execute(ctx, ctx.state.actors[cmd.actor], cmd, v.plan);
+    const actor = ctx.state.actors[cmd.actor];
+    // 탈것(v3.2): 휘두르기·캐기·만들기 같은 일은 내린 뒤에 한다
+    if (actor.riding && DISMOUNT_ON.has(cmd.type)) dismount(ctx, actor, 'act');
+    HANDLERS[cmd.type].execute(ctx, actor, cmd, v.plan);
     return { ok: true };
   }
 

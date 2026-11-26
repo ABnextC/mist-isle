@@ -1,5 +1,5 @@
 {
-  "dataVersion": 34,
+  "dataVersion": 35,
   "skillCap": 60,
   "time": {
     "secondsPerGameDay": 3600,
@@ -1808,5 +1808,20 @@
     "seedYield": 0.1,
     "defendBonus": 1.15,
     "cooldownDays": 2
+  },
+  "fastTravel": {
+    "castSec": 4,
+    "useRange": 4,
+    "attuneRange": 7,
+    "base": 5,
+    "perM": 0.04,
+    "crossFee": 30,
+    "homeMult": 0.5,
+    "combatLockSec": 8
+  },
+  "mount": {
+    "summonSec": 1.5,
+    "combatLockSec": 5,
+    "stableRange": 4.5
   }
 }

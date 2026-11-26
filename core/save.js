@@ -619,6 +619,22 @@ const MIGRATIONS = [
       st.meta.engine = '3.1.0';
     },
   },
+  {
+    // v3.1 → v3.2: 길잡이 돌·탈것. 지금 섬의 마을 돌은 이미 다녀 본 길로 친다
+    from: 34,
+    to: 35,
+    run(st, data) {
+      for (const a of Object.values(st.actors)) {
+        a.mounts = a.mounts || { own: [], pick: null, gear: { saddle: null, shoes: null } };
+        a.riding = null;
+        a.ways = a.ways || {};
+        if (a.kind !== 'player') continue;
+        const here = data.lists.regions.find((r) => a.x >= r.bounds[0] && a.x <= r.bounds[2]);
+        for (const w of data.lists.waystones || []) if (w.at && (w.at === a.home || w.region === here?.id)) a.ways[w.id] = 0;
+      }
+      st.meta.engine = '3.2.0';
+    },
+  },
 ];
 
 // v0.5.2: 1~2장 퀘스트에 생활 단계가 끼었다. 하던 단계 번호를 새 번호로(앞에 낀 단계는 건너뛴다)

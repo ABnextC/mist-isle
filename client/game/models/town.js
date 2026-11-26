@@ -1026,3 +1026,75 @@ export function drillRig() {
   }
   return { parts, fx };
 }
+
+// 길잡이 돌(v3.2): 넓적 받침 위에 선 키 큰 선돌. 앞면에 등불 고리와 세로 새김줄, 꼭대기 옆에 쇠고리 등잔.
+// lit: 길을 익힌 돌(새김줄이 푸르게 빛난다)
+export function waystone(lit = false) {
+  const { parts, fx, add } = kit();
+  const rune = lit ? 'spirit' : 'rockWet';
+  add('rock', cyl(0.95, 1.08, 0.24, 9, { y: 0.12 }));
+  add('stone', cyl(0.7, 0.78, 0.18, 9, { y: 0.33 }));
+  // 선돌: 아래가 넓고 위로 좁아지는 네모 돌 세 마디(조금씩 비틀어 손으로 깎은 맛)
+  add('stone', box(0.66, 0.9, 0.46, { y: 0.87 }));
+  add('stone', box(0.58, 0.8, 0.42, { y: 1.7, ry: 0.04 }));
+  add('stone', box(0.48, 0.5, 0.36, { y: 2.33, ry: -0.03, rz: 0.03 }));
+  add('rock', box(0.56, 0.12, 0.42, { y: 2.62, rz: 0.06 }));
+  // 앞면(+z) 등불 고리와 새김줄
+  add(rune, P(new THREE.TorusGeometry(0.17, 0.03, 6, 18), 0xffffff, { y: 1.78, z: 0.215 }));
+  add(rune, P(new THREE.CircleGeometry(0.07, 12), 0xffffff, { y: 1.78, z: 0.222 }));
+  for (const [x, y0, y1] of [[-0.14, 0.55, 1.45], [0.14, 0.55, 1.45], [0, 0.5, 1.5]]) add(rune, box(0.035, y1 - y0, 0.02, { x, y: (y0 + y1) / 2, z: 0.235 }));
+  for (const y of [0.7, 1.0, 1.3]) add(rune, box(0.32, 0.03, 0.02, { y, z: 0.235 }));
+  add(rune, box(0.03, 0.34, 0.02, { y: 2.3, z: 0.185 }));
+  // 옆 쇠고리 등잔
+  add('iron', box(0.04, 0.04, 0.34, { x: 0.3, y: 2.35, z: 0.0, ry: Math.PI / 2 }));
+  add('iron', cyl(0.008, 0.008, 0.18, 4, { x: 0.46, y: 2.25 }));
+  add('iron', cyl(0.07, 0.09, 0.03, 8, { x: 0.46, y: 2.14 }));
+  add(lit ? 'spirit' : 'glass', cyl(0.06, 0.06, 0.14, 8, { x: 0.46, y: 2.05 }));
+  add('iron', cyl(0.09, 0.07, 0.03, 8, { x: 0.46, y: 1.96 }));
+  return { parts, fx };
+}
+
+// 마구간(v3.2): 기둥 넷에 한쪽으로 기운 지붕, 뒷벽 널판, 앞 울타리, 여물통·건초 더미·말뚝
+export function stable(seed = 1) {
+  const { parts, fx, add } = kit();
+  const R = rng(seed + 311);
+  const W = 4.6;
+  const D = 3.2;
+  for (const [x, z, h] of [[-W / 2, -D / 2, 2.7], [W / 2, -D / 2, 2.7], [-W / 2, D / 2, 2.2], [W / 2, D / 2, 2.2], [0, -D / 2, 2.7]]) {
+    add('barkDark', cyl(0.09, 0.11, h, 7, { x, y: h / 2, z }));
+  }
+  // 지붕(뒤가 높고 앞이 낮다): 널판 여러 장
+  const tilt = Math.atan2(0.5, D);
+  for (let i = 0; i < 7; i++) {
+    const x = -W / 2 - 0.2 + (i + 0.5) * ((W + 0.4) / 7);
+    add(i % 2 ? 'planks' : 'planksDark', box((W + 0.4) / 7 + 0.02, 0.06, D + 0.6, { x, y: 2.5, z: 0, rx: -tilt }));
+  }
+  add('barkDark', box(W + 0.5, 0.12, 0.12, { y: 2.66, z: -D / 2 }));
+  add('barkDark', box(W + 0.5, 0.12, 0.12, { y: 2.16, z: D / 2 }));
+  // 뒷벽과 옆벽 반쯤
+  for (let i = 0; i < 9; i++) add(i % 3 ? 'planks' : 'planksDark', box(W / 9 - 0.02, 2.5, 0.06, { x: -W / 2 + (i + 0.5) * (W / 9), y: 1.25, z: -D / 2 - 0.05 }));
+  for (const sx of [-1, 1]) for (let j = 0; j < 4; j++) add('planks', box(0.06, 0.16, D, { x: sx * (W / 2 + 0.05), y: 0.35 + j * 0.3, z: 0 }));
+  // 칸막이
+  add('planksDark', box(0.06, 1.1, D * 0.6, { y: 0.6, z: -D * 0.2 }));
+  // 여물통·건초
+  add('planksDark', box(1.2, 0.36, 0.42, { x: -1.2, y: 0.3, z: -D / 2 + 0.35 }));
+  add('sawdust', box(1.1, 0.08, 0.34, { x: -1.2, y: 0.46, z: -D / 2 + 0.35 }));
+  for (let i = 0; i < 5; i++) add('sawdust', box(0.7 + R() * 0.3, 0.42, 0.5, { x: 1.4 + (R() - 0.5) * 0.4, y: 0.21 + (i > 2 ? 0.42 : 0), z: -D / 2 + 0.45 + (i % 3) * 0.48, ry: (R() - 0.5) * 0.4 }));
+  // 앞 울타리와 말뚝·고삐 걸이
+  for (const sx of [-1, 1]) {
+    add('barkDark', cyl(0.06, 0.07, 1.1, 6, { x: sx * (W / 2 + 1.0), y: 0.55, z: D / 2 + 1.2 }));
+    add('planks', box(1.05, 0.08, 0.08, { x: sx * (W / 2 + 0.5), y: 0.8, z: D / 2 + 0.6, ry: sx * 0.75 }));
+    add('planks', box(1.05, 0.08, 0.08, { x: sx * (W / 2 + 0.5), y: 0.45, z: D / 2 + 0.6, ry: sx * 0.75 }));
+  }
+  add('barkDark', box(1.6, 0.08, 0.08, { x: 0.6, y: 0.95, z: D / 2 + 0.9 }));
+  add('barkDark', cyl(0.05, 0.05, 0.95, 6, { x: -0.15, y: 0.48, z: D / 2 + 0.9 }));
+  add('barkDark', cyl(0.05, 0.05, 0.95, 6, { x: 1.35, y: 0.48, z: D / 2 + 0.9 }));
+  add('rope', cyl(0.015, 0.015, 0.5, 4, { x: 0.9, y: 0.75, z: D / 2 + 0.92, rz: 0.4 }));
+  // 등잔(밤에 켠다)
+  add('iron', cyl(0.05, 0.06, 0.18, 6, { x: W / 2, y: 2.0, z: D / 2 + 0.12 }));
+  fx.lights.push({ kind: 'torch', p: V(W / 2, 2.0, D / 2 + 0.25) });
+  // 간판(말굽)
+  add('planks', box(0.8, 0.4, 0.05, { x: -W / 2 + 0.6, y: 2.0, z: D / 2 + 0.14 }));
+  add('iron', P(new THREE.TorusGeometry(0.11, 0.025, 4, 12, Math.PI * 1.4), 0xffffff, { x: -W / 2 + 0.6, y: 2.0, z: D / 2 + 0.18, rz: -Math.PI * 0.2 }));
+  return { parts, fx };
+}

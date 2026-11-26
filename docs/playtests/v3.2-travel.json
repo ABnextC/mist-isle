@@ -1,0 +1,504 @@
+{
+ "version": "v3.2",
+ "tool": "tools/campaign.js",
+ "note": "같은 진행 페르소나 7명을 두 번 돌렸다. before는 CAMP_TRAVEL=old(걷기만, v3.1처럼), after는 탈것을 살 만하면 사고 길잡이 돌을 쓴다(사람마다 아끼는 시간 기준 FT_MIN). 이동·생활은 시간 어림. 콩이의 쓰러진 뒤 일어난 자리는 따로 한 번 더 돌려 쟀다(19번 중 14번 들판 돌, 1,189m 덜 걸음).",
+ "before": [
+  {
+   "id": "persona_sol",
+   "name": "솔",
+   "role": "느긋한 채집러",
+   "grade": "보통",
+   "level": 40,
+   "hours": 5.2,
+   "downs": 8,
+   "side": 25,
+   "time": {
+    "life": 43,
+    "travel": 112,
+    "fight": 21,
+    "grind": 29,
+    "rest": 12,
+    "wait": 93
+   },
+   "travel": {
+    "ft": 0,
+    "ftSilver": 0,
+    "mounts": [],
+    "rideKm": 0,
+    "walkKm": 30.2,
+    "ways": 16,
+    "silver": 21109
+   }
+  },
+  {
+   "id": "persona_moru",
+   "name": "모루",
+   "role": "수치 최적화 장인",
+   "grade": "고수",
+   "level": 39,
+   "hours": 4.5,
+   "downs": 3,
+   "side": 25,
+   "time": {
+    "life": 47,
+    "travel": 129,
+    "fight": 22,
+    "grind": 18,
+    "rest": 4,
+    "wait": 54
+   },
+   "travel": {
+    "ft": 0,
+    "ftSilver": 0,
+    "mounts": [],
+    "rideKm": 0,
+    "walkKm": 34.7,
+    "ways": 16,
+    "silver": 21531
+   }
+  },
+  {
+   "id": "persona_harang",
+   "name": "하랑",
+   "role": "시세 차익 상인",
+   "grade": "숙련",
+   "level": 39,
+   "hours": 4,
+   "downs": 4,
+   "side": 13,
+   "time": {
+    "life": 40,
+    "travel": 100,
+    "fight": 17,
+    "grind": 22,
+    "rest": 9,
+    "wait": 50
+   },
+   "travel": {
+    "ft": 0,
+    "ftSilver": 0,
+    "mounts": [],
+    "rideKm": 0,
+    "walkKm": 26.9,
+    "ways": 15,
+    "silver": 18957
+   }
+  },
+  {
+   "id": "persona_saebyeok",
+   "name": "새벽",
+   "role": "탐험·수집가",
+   "grade": "보통",
+   "level": 43,
+   "hours": 7,
+   "downs": 6,
+   "side": 54,
+   "time": {
+    "life": 71,
+    "travel": 172,
+    "fight": 21,
+    "grind": 36,
+    "rest": 13,
+    "wait": 106
+   },
+   "travel": {
+    "ft": 0,
+    "ftSilver": 0,
+    "mounts": [],
+    "rideKm": 0,
+    "walkKm": 46.3,
+    "ways": 16,
+    "silver": 25851
+   }
+  },
+  {
+   "id": "persona_mujin",
+   "name": "무진",
+   "role": "PvP·영지전 전투광",
+   "grade": "숙련",
+   "level": 41,
+   "hours": 6.4,
+   "downs": 6,
+   "side": 33,
+   "time": {
+    "life": 50,
+    "travel": 146,
+    "fight": 19,
+    "grind": 90,
+    "rest": 10,
+    "wait": 70
+   },
+   "travel": {
+    "ft": 0,
+    "ftSilver": 0,
+    "mounts": [],
+    "rideKm": 0,
+    "walkKm": 39.5,
+    "ways": 16,
+    "silver": 22390
+   }
+  },
+  {
+   "id": "persona_ren",
+   "name": "렌",
+   "role": "뉴월드 경력자",
+   "grade": "숙련",
+   "level": 42,
+   "hours": 6.3,
+   "downs": 7,
+   "side": 50,
+   "time": {
+    "life": 63,
+    "travel": 162,
+    "fight": 22,
+    "grind": 48,
+    "rest": 10,
+    "wait": 74
+   },
+   "travel": {
+    "ft": 0,
+    "ftSilver": 0,
+    "mounts": [],
+    "rideKm": 0,
+    "walkKm": 43.6,
+    "ways": 16,
+    "silver": 25242
+   }
+  },
+  {
+   "id": "persona_kongi",
+   "name": "콩이",
+   "role": "입문자(모바일 겸용)",
+   "grade": "뉴비",
+   "level": 39,
+   "hours": 4.5,
+   "downs": 19,
+   "side": 11,
+   "time": {
+    "life": 51,
+    "travel": 118,
+    "fight": 17,
+    "grind": 50,
+    "rest": 17,
+    "wait": 15
+   },
+   "travel": {
+    "ft": 0,
+    "ftSilver": 0,
+    "mounts": [],
+    "rideKm": 0,
+    "walkKm": 31.7,
+    "ways": 15,
+    "silver": 18829
+   }
+  }
+ ],
+ "after": [
+  {
+   "id": "persona_sol",
+   "name": "솔",
+   "role": "느긋한 채집러",
+   "grade": "보통",
+   "level": 40,
+   "hours": 4.7,
+   "downs": 8,
+   "side": 25,
+   "time": {
+    "life": 46,
+    "travel": 80,
+    "fight": 21,
+    "grind": 29,
+    "rest": 12,
+    "wait": 93
+   },
+   "travel": {
+    "ft": 1,
+    "ftSilver": 12,
+    "mounts": [
+     {
+      "id": "pony",
+      "ch": "ch1",
+      "lv": 10
+     },
+     {
+      "id": "horse",
+      "ch": "ch3",
+      "lv": 20
+     },
+     {
+      "id": "goat",
+      "ch": "ch5",
+      "lv": 30
+     }
+    ],
+    "rideKm": 22.8,
+    "walkKm": 7.4,
+    "ways": 15,
+    "silver": 16247
+   }
+  },
+  {
+   "id": "persona_moru",
+   "name": "모루",
+   "role": "수치 최적화 장인",
+   "grade": "고수",
+   "level": 39,
+   "hours": 3.5,
+   "downs": 3,
+   "side": 25,
+   "time": {
+    "life": 50,
+    "travel": 66,
+    "fight": 22,
+    "grind": 18,
+    "rest": 4,
+    "wait": 54
+   },
+   "travel": {
+    "ft": 19,
+    "ftSilver": 246,
+    "mounts": [
+     {
+      "id": "pony",
+      "ch": "ch1",
+      "lv": 7
+     },
+     {
+      "id": "horse",
+      "ch": "ch3",
+      "lv": 19
+     },
+     {
+      "id": "goat",
+      "ch": "ch5",
+      "lv": 29
+     }
+    ],
+    "rideKm": 31.5,
+    "walkKm": 3.2,
+    "ways": 15,
+    "silver": 16435
+   }
+  },
+  {
+   "id": "persona_harang",
+   "name": "하랑",
+   "role": "시세 차익 상인",
+   "grade": "숙련",
+   "level": 39,
+   "hours": 3.4,
+   "downs": 4,
+   "side": 13,
+   "time": {
+    "life": 43,
+    "travel": 62,
+    "fight": 17,
+    "grind": 22,
+    "rest": 9,
+    "wait": 50
+   },
+   "travel": {
+    "ft": 14,
+    "ftSilver": 144,
+    "mounts": [
+     {
+      "id": "pony",
+      "ch": "ch1",
+      "lv": 8
+     },
+     {
+      "id": "horse",
+      "ch": "ch3",
+      "lv": 18
+     },
+     {
+      "id": "goat",
+      "ch": "ch5",
+      "lv": 28
+     }
+    ],
+    "rideKm": 22,
+    "walkKm": 4.9,
+    "ways": 15,
+    "silver": 13963
+   }
+  },
+  {
+   "id": "persona_saebyeok",
+   "name": "새벽",
+   "role": "탐험·수집가",
+   "grade": "보통",
+   "level": 43,
+   "hours": 6,
+   "downs": 6,
+   "side": 54,
+   "time": {
+    "life": 74,
+    "travel": 110,
+    "fight": 21,
+    "grind": 36,
+    "rest": 13,
+    "wait": 106
+   },
+   "travel": {
+    "ft": 2,
+    "ftSilver": 24,
+    "mounts": [
+     {
+      "id": "pony",
+      "ch": "ch1",
+      "lv": 6
+     },
+     {
+      "id": "horse",
+      "ch": "ch3",
+      "lv": 21
+     },
+     {
+      "id": "goat",
+      "ch": "ch5",
+      "lv": 32
+     }
+    ],
+    "rideKm": 42.7,
+    "walkKm": 3.6,
+    "ways": 16,
+    "silver": 20977
+   }
+  },
+  {
+   "id": "persona_mujin",
+   "name": "무진",
+   "role": "PvP·영지전 전투광",
+   "grade": "숙련",
+   "level": 41,
+   "hours": 5.5,
+   "downs": 6,
+   "side": 33,
+   "time": {
+    "life": 53,
+    "travel": 90,
+    "fight": 19,
+    "grind": 90,
+    "rest": 10,
+    "wait": 70
+   },
+   "travel": {
+    "ft": 8,
+    "ftSilver": 114,
+    "mounts": [
+     {
+      "id": "pony",
+      "ch": "ch1",
+      "lv": 6
+     },
+     {
+      "id": "horse",
+      "ch": "ch3",
+      "lv": 20
+     },
+     {
+      "id": "goat",
+      "ch": "ch5",
+      "lv": 30
+     }
+    ],
+    "rideKm": 36.2,
+    "walkKm": 3.2,
+    "ways": 16,
+    "silver": 17426
+   }
+  },
+  {
+   "id": "persona_ren",
+   "name": "렌",
+   "role": "뉴월드 경력자",
+   "grade": "숙련",
+   "level": 42,
+   "hours": 5.1,
+   "downs": 7,
+   "side": 50,
+   "time": {
+    "life": 66,
+    "travel": 88,
+    "fight": 22,
+    "grind": 48,
+    "rest": 10,
+    "wait": 74
+   },
+   "travel": {
+    "ft": 31,
+    "ftSilver": 406,
+    "mounts": [
+     {
+      "id": "pony",
+      "ch": "ch1",
+      "lv": 5
+     },
+     {
+      "id": "horse",
+      "ch": "ch3",
+      "lv": 21
+     },
+     {
+      "id": "goat",
+      "ch": "ch5",
+      "lv": 31
+     }
+    ],
+    "rideKm": 40.3,
+    "walkKm": 3.3,
+    "ways": 16,
+    "silver": 19986
+   }
+  },
+  {
+   "id": "persona_kongi",
+   "name": "콩이",
+   "role": "입문자(모바일 겸용)",
+   "grade": "뉴비",
+   "level": 39,
+   "hours": 3.8,
+   "downs": 19,
+   "side": 11,
+   "time": {
+    "life": 54,
+    "travel": 73,
+    "fight": 17,
+    "grind": 50,
+    "rest": 17,
+    "wait": 15
+   },
+   "travel": {
+    "ft": 4,
+    "ftSilver": 50,
+    "mounts": [
+     {
+      "id": "pony",
+      "ch": "ch1",
+      "lv": 10
+     },
+     {
+      "id": "horse",
+      "ch": "ch3",
+      "lv": 20
+     },
+     {
+      "id": "goat",
+      "ch": "ch5",
+      "lv": 28
+     }
+    ],
+    "rideKm": 26.9,
+    "walkKm": 4.8,
+    "ways": 14,
+    "silver": 13929
+   }
+  }
+ ],
+ "kongiRespawn": {
+  "downs": 19,
+  "fieldWaystone": 14,
+  "savedM": 1189
+ }
+}

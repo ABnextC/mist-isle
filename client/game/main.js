@@ -403,6 +403,8 @@ async function boot() {
       else game.dispatch({ type: 'QUEST_USE', actor: PID, obj: t.id });
     } else if (t.kind === 'board') hud.open('board', { tab: boardOffers(questCtx(game), me()).length ? 'bounty' : undefined });
     else if (t.kind === 'market') hud.open('market');
+    else if (t.kind === 'waystone') hud.open('travel', { from: t.id });
+    else if (t.kind === 'stable') hud.open('stable', { at: t.id });
     else if (t.kind === 'plot') hud.open('house', { plot: t.id });
   }
 
@@ -482,6 +484,22 @@ async function boot() {
       case 'rest': game.dispatch({ type: 'REST', actor: PID }); break;
       case 'garden-plant': { const [slot, item] = String(v).split(':'); game.dispatch({ type: 'GARDEN_PLANT', actor: PID, slot: +slot, item }); break; }
       case 'garden-harvest': game.dispatch({ type: 'GARDEN_HARVEST', actor: PID, slot: +v }); break;
+      case 'travel-go':
+        stopBot();
+        ui.gather = null;
+        game.dispatch({ type: 'FAST_TRAVEL', actor: PID, to: v });
+        hud.close();
+        break;
+      case 'mount':
+        stopBot();
+        ui.gather = null;
+        if (!me().riding) game.dispatch({ type: 'MOVE_INPUT', actor: PID, dx: 0, dz: 0 });
+        game.dispatch({ type: 'MOUNT', actor: PID });
+        break;
+      case 'mount-buy': game.dispatch({ type: 'MOUNT_BUY', actor: PID, mount: v }); break;
+      case 'mount-pick': game.dispatch({ type: 'MOUNT_PICK', actor: PID, mount: v }); break;
+      case 'mount-gear': game.dispatch({ type: 'MOUNT_GEAR', actor: PID, item: v }); break;
+      case 'mount-ungear': game.dispatch({ type: 'MOUNT_UNGEAR', actor: PID, slot: v }); break;
       case 'cross-go': {
         // 오가는 배(v0.9): 퀘스트로 타는 게 아니면 그냥 배를 탄다
         const viaQuest = !data.objects[v]?.ferry || useDue(questCtx(game), me(), v);
@@ -860,6 +878,15 @@ async function boot() {
         if (d <= o.r + 3) consider(d - o.r, dx, dz, { kind: 'plot', id: o.plot, x: o.x, z: o.z });
       }
     }
+    // 길잡이 돌·마구간(v3.2)
+    for (const o of game.statics) {
+      if (o.kind !== 'waystone' && o.kind !== 'stable') continue;
+      const dx = o.x - a.x;
+      const dz = o.z - a.z;
+      const d = Math.hypot(dx, dz);
+      if (o.kind === 'stable' && !isUnlocked(questCtx(game), a, 'mount')) continue;
+      if (d <= (o.r || 0.7) + 2.6) consider(d - (o.r || 0.7), dx, dz, { kind: o.kind, id: o.way || o.at, x: o.x, z: o.z, r: o.r });
+    }
     for (const o of game.statics) {
       if (o.kind !== 'board' && o.kind !== 'market') continue;
       const dx = o.x - a.x;
@@ -912,6 +939,15 @@ async function boot() {
       best.label = h ? (h.owner === PID ? '🏠 내 집' : '남의 집') : '🪧 빈 집터';
       best.verb = h ? '들어가기' : '살펴보기';
       best.radius = 2.4;
+    } else if (best.kind === 'waystone') {
+      const w = data.waystones[best.id];
+      best.label = `🪨 길잡이 돌 · ${w?.name ?? ''}${a.ways?.[best.id] == null ? ' — 다가가면 길을 익힌다' : ''}`;
+      best.verb = '건너뛰기';
+      best.radius = 1.0;
+    } else if (best.kind === 'stable') {
+      best.label = `🐎 ${state.settlements[best.id]?.name ?? ''} 마구간`;
+      best.verb = '탈것 보기';
+      best.radius = 2.6;
     } else if (best.kind === 'market') {
       const town = settlementAt({ state }, a);
       best.label = `${town ? town.name + ' ' : ''}거래소`;
@@ -1173,7 +1209,7 @@ async function boot() {
     if (ev.actor !== PID) return;
     const fade = document.createElement('div');
     fade.className = 'crossfade';
-    fade.textContent = ev.ferry ? '⛵ 배로 건너는 중…' : '🌫️ 안개 벽을 건너는 중…';
+    fade.textContent = ev.travel ? '🪨 길잡이 돌을 따라 건너는 중…' : ev.ferry ? '⛵ 배로 건너는 중…' : '🌫️ 안개 벽을 건너는 중…';
     document.body.appendChild(fade);
     if (net) {
       // 멀티: 서버가 내 자리를 쥐고 있다. 다시 붙으면 새 섬이 그려진다
@@ -1343,7 +1379,9 @@ async function boot() {
         ov = { x: p.x + (q.x - p.x) * 0.62, y: Math.max(p.y, q.y) + 1.35, z: p.z + (q.z - p.z) * 0.62, yaw: th + (wide ? 0.62 : 0.4), dist: wide ? 4.6 : 5.2, pitch: 0.16 };
       }
     }
-    cam.update(dt, p.x, p.y, p.z, ov);
+    // 탈것(v3.2): 타면 시선이 안장 높이만큼 올라가고(부드럽게) 조금 뒤로 물러난다
+    ui.rideY = (ui.rideY || 0) + ((me().riding ? 0.9 : 0) - (ui.rideY || 0)) * Math.min(1, dt * 4);
+    cam.update(dt, p.x, p.y + ui.rideY, p.z, ov);
     focusVec.set(p.x, p.y, p.z);
     const t = game.state.t;
     const sec = now / 1000;

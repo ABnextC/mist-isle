@@ -18,6 +18,9 @@ import { keyOf } from '../core/inventory.js';
 import { regionAt } from '../core/terrain.js';
 import { isAlive } from '../core/systems/mobs.js';
 import { masteryOf } from '../core/systems/mastery.js';
+import { mountsOf, mountSpeed, gainMount } from '../core/systems/mounts.js';
+import { travelCost, wayStatic } from '../core/systems/waystones.js';
+import { isUnlocked } from '../core/systems/unlocks.js';
 
 const args = (() => {
   const o = { seed: 2026, json: false, only: null };
@@ -56,6 +59,12 @@ const ARMOR = {
   mist: { head: 'arm_mist_helm', chest: 'arm_mist_cuirass', legs: 'arm_mist_greaves' },
 };
 const SPEED = 4.5; // 걷기 m/s(길 돌아가기 포함 어림)
+// v3.2: 길잡이 돌·탈것을 쓰는가(CAMP_TRAVEL=old면 v3.1처럼 걷기만)
+const V32 = process.env.CAMP_TRAVEL !== 'old';
+// 길잡이 돌을 쓰려면 아끼는 시간이 이만큼(초) 넘어야 한다(걷기를 즐기는 사람은 크게)
+const FT_MIN = { persona_sol: 90, persona_moru: 20, persona_harang: 20, persona_saebyeok: 150, persona_mujin: 30, persona_ren: 20, persona_kongi: 40 };
+// 탈것을 사는 여윳돈(값의 몇 배가 있어야 사나)
+const MOUNT_SPARE = { persona_sol: 1.6, persona_moru: 1.2, persona_harang: 1.1, persona_saebyeok: 1.5, persona_mujin: 1.2, persona_ren: 1.1, persona_kongi: 2.0 };
 
 export function runCampaign(data, pid, { seed }) {
   const prof = data.agents[pid];
@@ -66,7 +75,7 @@ export function runCampaign(data, pid, { seed }) {
   const st = g.state;
   const a = st.actors.p1;
   a.ai = { on: true, profile: 'campaign', manual: true, mem: {} };
-  const T = { life: 0, travel: 0, fight: 0, grind: 0, rest: 0 }; // 초
+  const T = { life: 0, travel: 0, fight: 0, grind: 0, rest: 0, wait: 0 }; // 초
   const chapters = [];
   const fails = [];
   const hard = []; // 쓰러짐이 난 퀘스트
@@ -78,11 +87,92 @@ export function runCampaign(data, pid, { seed }) {
   g.on('mob.die', (ev) => { if (ev.actor === 'p1') fightLog.kills++; });
   g.on('actor.down', (ev) => { if (ev.actor === 'p1') fightLog.downs++; });
 
+  const TR = { ft: 0, ftSilver: 0, mounts: [], rideM: 0, walkM: 0, upWay: 0, up: 0, upSaved: 0 };
+  let downAt = null;
+  g.on('actor.down', (e) => { if (e.actor === 'p1') downAt = { x: e.x, z: e.z }; });
+  g.on('actor.up', (e) => {
+    if (e.actor !== 'p1' || !downAt) return;
+    TR.up++;
+    // 들판 쉼터 돌에서 일어났으면, 마을 창고까지보다 덜 걷는 거리
+    if (e.way && !data.waystones[e.way].at) {
+      TR.upWay++;
+      const s = st.settlements[e.settlement];
+      const sto = s.stations.find((x) => x.type === 'storage') || s;
+      TR.upSaved += Math.max(0, Math.hypot(sto.x + 2.2 - downAt.x, sto.z - downAt.z) - Math.hypot(a.x - downAt.x, a.z - downAt.z));
+    }
+  });
+  // 걸어서 지나가는 길목(30m 안)의 길잡이 돌은 길을 익힌다
+  function attuneAlong(x0, z0, x1, z1) {
+    const L2 = (x1 - x0) ** 2 + (z1 - z0) ** 2 || 1;
+    for (const w of data.lists.waystones) {
+      if (a.ways[w.id] != null) continue;
+      const o = wayStatic(C, w.id);
+      if (!o) continue;
+      const k = Math.max(0, Math.min(1, ((o.x - x0) * (x1 - x0) + (o.z - z0) * (z1 - z0)) / L2));
+      if (Math.hypot(o.x - (x0 + (x1 - x0) * k), o.z - (z0 + (z1 - z0) * k)) <= 30) a.ways[w.id] = Math.round(st.t);
+    }
+  }
+  // 이 거리를 가는 데 드는 시간(탈 수 있으면 25m 넘을 때 탄다: 부르기 1.5초)
+  const moveSec = (d) => {
+    if (V32 && a.riding === null && mountsOf(a).pick && d > 25) {
+      a.riding = mountsOf(a).pick;
+      const v = SPEED * mountSpeed(C, a);
+      a.riding = null;
+      TR.rideM += d;
+      return d / v + C.cfg.mount.summonSec;
+    }
+    TR.walkM += d;
+    return d / SPEED;
+  };
   const warpTo = (x, z, why = 'travel') => {
     const d = Math.hypot(x - a.x, z - a.z);
-    T[why] += d / SPEED;
+    let sec = moveSec(d);
+    let ft = null;
+    if (V32 && d > 60) {
+      // 빠른 이동: 가장 가까운 익힌 돌까지 가서 → 목적지에서 가장 가까운 익힌 돌로
+      const same = regionAt(data.lists.regions, a.x).id;
+      const known = data.lists.waystones.filter((w) => a.ways[w.id] != null && (same === 'wreck_coast') === (w.region === 'wreck_coast')).map((w) => ({ w, o: wayStatic(C, w.id) }));
+      const near = (px, pz) => known.reduce((b, k) => (!b || Math.hypot(k.o.x - px, k.o.z - pz) < Math.hypot(b.o.x - px, b.o.z - pz) ? k : b), null);
+      const s0 = near(a.x, a.z);
+      const s1 = near(x, z);
+      if (s0 && s1 && s0 !== s1) {
+        const d0 = Math.hypot(s0.o.x - a.x, s0.o.z - a.z);
+        const d1 = Math.hypot(x - s1.o.x, z - s1.o.z);
+        const fsec = d0 / SPEED + C.cfg.fastTravel.castSec + d1 / SPEED;
+        // 값은 돌 앞에 섰을 때로 잰다
+        const ox = a.x;
+        const oz = a.z;
+        Object.assign(a, { x: s0.o.x, z: s0.o.z });
+        const cost = travelCost(C, a, s1.w.id);
+        Object.assign(a, { x: ox, z: oz });
+        if (sec - fsec >= FT_MIN[pid] && a.silver >= cost + 50) ft = { fsec, cost, s0, s1 };
+      }
+    }
+    if (ft) {
+      sec = ft.fsec;
+      a.silver -= ft.cost;
+      TR.ft++;
+      TR.ftSilver += ft.cost;
+    } else attuneAlong(a.x, a.z, x, z);
+    T[why] += sec;
     Object.assign(a, { x, z, move: null, dest: null, nav: null });
   };
+  // 마을에 들를 때: 탈것을 살 만하면 산다(조랑말 → 갈기 말 → 서리 산양)
+  function buyMountMaybe() {
+    if (!V32 || !isUnlocked(C, a, 'mount')) return;
+    for (const id of ['goat', 'horse', 'pony']) {
+      const m = data.mounts[id];
+      if (mountsOf(a).own.includes(id)) return; // 더 좋은 걸 이미 있다
+      if (m.need?.quest && a.quests.done[m.need.quest] == null) continue;
+      if (a.silver < m.price * MOUNT_SPARE[pid]) continue;
+      a.silver -= m.price;
+      gainMount(C, a, id);
+      mountsOf(a).pick = id;
+      TR.mounts.push({ id, ch: chNow, lv: a.clevel.lvl });
+      T.life += 60;
+      return;
+    }
+  }
   const adv = (sec, why) => {
     g.advance(sec);
     if (why) T[why] += sec;
@@ -123,6 +213,7 @@ export function runCampaign(data, pid, { seed }) {
   // 마을에서 회복거리를 채워 온다(음식 4, 2장부터 물약 3까지). 채우는 데 1분
   let chNow = 'ch1';
   function restock() {
+    buyMountMaybe();
     const sc = score(chNow);
     const have = (id) => a.bag.filter((e) => e.item === id).reduce((s, e) => s + e.qty, 0);
     const meat = data.items.food_meat;
@@ -199,8 +290,7 @@ export function runCampaign(data, pid, { seed }) {
         stopFight(a);
         // 쓰러지면 마을에서 일어나 다시 걸어온다
         adv(data.config.combat.downSec + 1, 'rest');
-        rest();
-        T.travel += 60;
+        rest(); // 돌아가는 길은 부르는 쪽(warpTo)이 센다
         return 'down';
       }
       if (!isAlive(m)) {
@@ -347,7 +437,7 @@ export function runCampaign(data, pid, { seed }) {
         // 밤에만 나오는 무리(안개 늑대)면 밤까지 기다린다
         const night = step.mobs.some((k) => data.creatures[k].night);
         for (let k = 0; !m && k < (night ? 480 : 120); k++) {
-          adv(10, 'travel');
+          adv(10, 'wait'); // 짐승이 다시 나오기(밤)를 기다린다
           m = near(step.mobs, s) || (k > 30 ? near(step.mobs) : null);
         }
         if (!m) lastWhy = 'no_mob';
@@ -475,7 +565,7 @@ export function runCampaign(data, pid, { seed }) {
       id: ch.id, name: ch.name, start: cur.start, end: Math.round(xp0() * 10) / 10,
       mainLevels: ch.quests.map((qid) => data.quests[qid].level || 0),
       quests: cur.quests.length, downs: fightLog.downs - cur.downs,
-      minutes: { fight: tt('fight'), grind: tt('grind'), travel: tt('travel'), life: tt('life'), rest: tt('rest') },
+      minutes: { fight: tt('fight'), grind: tt('grind'), travel: tt('travel'), life: tt('life'), rest: tt('rest'), wait: tt('wait') },
     });
     if (fails.length && fails.at(-1).quest && data.quests[fails.at(-1).quest].kind === 'main') break;
   }
@@ -485,6 +575,7 @@ export function runCampaign(data, pid, { seed }) {
     level: a.clevel.lvl, chapters, fails, hard, kills: fightLog.kills, downs: fightLog.downs, taken: Math.round(fightLog.taken),
     side: doneSide, repairs: fightLog.repairs || 0, broken: fightLog.broken || 0, hours: Math.round(Object.values(T).reduce((s, v) => s + v, 0) / 360) / 10,
     time: Object.fromEntries(Object.entries(T).map(([k, v]) => [k, Math.round(v / 60)])),
+    travel: { ft: TR.ft, ftSilver: TR.ftSilver, mounts: TR.mounts, rideKm: Math.round(TR.rideM / 100) / 10, walkKm: Math.round(TR.walkM / 100) / 10, ways: Object.keys(a.ways).length, silver: Math.round(a.silver), up: TR.up, upWay: TR.upWay, upSavedM: Math.round(TR.upSaved) },
   };
 }
 
@@ -499,6 +590,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (args.json) continue;
     console.log(`\n[${r.name} · ${r.role} · ${r.grade}] ${Math.round((Date.now() - t0) / 1000)}초 · 레벨 ${r.level} · 어림 ${r.hours}시간 · 처치 ${r.kills} · 쓰러짐 ${r.downs} · 서브 ${r.side} · 수리 ${r.repairs}(부서진 채 ${r.broken})`);
     for (const c of r.chapters) console.log(`  ${c.id} ${c.name}: Lv ${c.start} → ${c.end} (메인 권장 ${c.mainLevels[0]}~${c.mainLevels.at(-1)}) · 퀘스트 ${c.quests} · 쓰러짐 ${c.downs} · 분 ${JSON.stringify(c.minutes)}`);
+    const tv = r.travel;
+    console.log(`  이동 ${r.time.travel}분(${Math.round((r.time.travel / Object.values(r.time).reduce((s, v) => s + v, 0)) * 100)}%) · 길잡이 돌 ${tv.ft}번 🪙${tv.ftSilver} · 익힌 돌 ${tv.ways} · 탈것 ${tv.mounts.map((m) => `${data.mounts[m.id].name}(${m.ch} Lv${m.lv})`).join('→') || '없음'} · 탄 거리 ${tv.rideKm}km 걸은 거리 ${tv.walkKm}km · 남은 은화 ${tv.silver}`);
     if (r.hard.length) console.log('  쓰러짐 난 곳:', r.hard.map((h) => `${h.name}(권장 ${h.level}/내 ${h.mine}) ×${h.downs}`).join(', '));
     if (r.fails.length) console.log('  막힘:', r.fails.map((f) => `${f.name}(권장 ${f.level}/내 ${f.mine}) ${f.step}단계 ${f.why || ''}`).join(', '));
   }

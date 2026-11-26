@@ -1,0 +1,155 @@
+{
+  "waystones": [
+    {
+      "id": "w_lighthouse",
+      "name": "등대 마을",
+      "region": "wreck_coast",
+      "at": "s_lighthouse"
+    },
+    {
+      "id": "w_forest",
+      "name": "숲머리",
+      "region": "wreck_coast",
+      "at": "s_forest"
+    },
+    {
+      "id": "w_gull",
+      "name": "갈매기 포구",
+      "region": "wreck_coast",
+      "at": "s_gull"
+    },
+    {
+      "id": "w_hermit_hut",
+      "name": "솔바람 오두막",
+      "region": "wreck_coast",
+      "site": "hermit_hut"
+    },
+    {
+      "id": "w_port",
+      "name": "갈대 나루",
+      "region": "swamp_shore",
+      "at": "s_port"
+    },
+    {
+      "id": "w_valley",
+      "name": "느티골",
+      "region": "swamp_shore",
+      "at": "s_valley"
+    },
+    {
+      "id": "w_willow",
+      "name": "버들 여울",
+      "region": "swamp_shore",
+      "at": "s_willow"
+    },
+    {
+      "id": "w_mist_village",
+      "name": "물안개 마을",
+      "region": "swamp_shore",
+      "site": "mist_village"
+    },
+    {
+      "id": "w_ferry_inn",
+      "name": "물레방아 주막",
+      "region": "swamp_shore",
+      "site": "ferry_inn"
+    },
+    {
+      "id": "w_hunter_lodge",
+      "name": "사냥꾼 쉼터",
+      "region": "swamp_shore",
+      "site": "hunter_lodge"
+    },
+    {
+      "id": "w_ash",
+      "name": "잿고개",
+      "region": "ember_ridge",
+      "at": "s_ash"
+    },
+    {
+      "id": "w_kiln",
+      "name": "숯가마 마을",
+      "region": "ember_ridge",
+      "at": "s_kiln"
+    },
+    {
+      "id": "w_frost_pass",
+      "name": "서리 고개",
+      "region": "ember_ridge",
+      "site": "frost_pass"
+    },
+    {
+      "id": "w_miner_camp",
+      "name": "광부 굴막",
+      "region": "ember_ridge",
+      "site": "miner_camp"
+    },
+    {
+      "id": "w_gate",
+      "name": "심장 문 야영지",
+      "region": "mist_heart",
+      "at": "s_gate"
+    },
+    {
+      "id": "w_pilgrim_cairn",
+      "name": "순례자 돌무지",
+      "region": "mist_heart",
+      "site": "pilgrim_cairn"
+    }
+  ],
+  "mounts": [
+    {
+      "id": "pony",
+      "name": "조랑말",
+      "speed": 1.45,
+      "price": 450,
+      "look": "pony",
+      "desc": "등대섬 들판에서 자란 작은 말. 겁이 많지만 순하고, 먹이를 가리지 않는다."
+    },
+    {
+      "id": "horse",
+      "name": "갈기 말",
+      "speed": 1.6,
+      "price": 1600,
+      "look": "horse",
+      "need": {
+        "quest": "c3_mistfolk"
+      },
+      "desc": "늪 기슭 목장에서 기른 키 큰 말. 늪길에서도 발이 빠지지 않는다."
+    },
+    {
+      "id": "goat",
+      "name": "서리 산양",
+      "speed": 1.7,
+      "price": 2800,
+      "look": "goat",
+      "need": {
+        "quest": "c5_ridge"
+      },
+      "desc": "능선 광부들이 타는 굵은 뿔 산양. 비탈을 가리지 않는다."
+    },
+    {
+      "id": "mist_deer",
+      "name": "안개 사슴",
+      "speed": 1.7,
+      "price": null,
+      "look": "mist_deer",
+      "quest": "sq_lodge_deer",
+      "desc": "범돌이 길들인 안개 사슴. 뿔 끝에 옅은 빛이 돈다. 살 수 없다."
+    }
+  ],
+  "stables": {
+    "s_lighthouse": [
+      "pony"
+    ],
+    "s_port": [
+      "pony",
+      "horse"
+    ],
+    "s_ash": [
+      "pony",
+      "horse",
+      "goat"
+    ]
+  }
+}

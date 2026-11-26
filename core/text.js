@@ -44,6 +44,16 @@ export const ERR = {
   bad_price: '값이 맞지 않음',
   bad_qty: '수량이 맞지 않음',
   no_silver: '은화가 모자람',
+  unknown_way: '아직 길을 익히지 못한 돌이다(한 번 가 봐야 한다)',
+  in_combat: '싸우는 중에는 안 된다(잠깐 숨을 돌리자)',
+  in_expedition: '원정 중에는 안 된다',
+  same_place: '지금 선 돌이다',
+  mist_wall: '안개 벽 너머로는 건너뛸 수 없다',
+  no_mount: '탈것이 없다(마구간에서 산다)',
+  riding: '이미 타고 있다',
+  not_riding: '타고 있지 않다',
+  not_sold_here: '이 마구간에서는 팔지 않는다',
+  owned: '이미 있다',
   too_many_orders: '걸어 둘 수 있는 주문이 꽉 참',
   no_order: '없는 주문',
   nothing_to_deliver: '넘길 물건이 없음(별·내구도 확인)',
@@ -289,7 +299,7 @@ export function describeEvent(ev, game) {
     case 'skin.done':
       return `${p}🔪 ${data.creatures[ev.species]?.name ?? ev.species} 손질: ${ev.items.map((x) => `${itemName(data, x.item)} ${x.qty}`).join(' · ')}`;
     case 'actor.down':
-      return `${p}💀 ${ev.by ? `${game?.state?.actors?.[ev.by]?.name ?? '사람'}에게 ` : ev.species ? `${data.creatures[ev.species]?.name ?? ev.species}에게 ` : ''}쓰러짐 — 가까운 마을에서 다시 일어난다(낀 장비 내구 −10%)`;
+      return `${p}💀 ${ev.by ? `${game?.state?.actors?.[ev.by]?.name ?? '사람'}에게 ` : ev.species ? `${data.creatures[ev.species]?.name ?? ev.species}에게 ` : ''}쓰러짐 — 가까운 마을이나 익힌 길잡이 돌에서 다시 일어난다(낀 장비 내구 −10%)`;
     case 'equip': {
       const SLOT = { weapon: '무기', weapon2: '등 무기', head: '머리', chest: '몸통', legs: '다리', ring: '반지', neck: '목걸이' };
       return ev.uid ? `${p}🛡️ ${SLOT[ev.slot]}: ${itemName(data, ev.item)} 낌` : `${p}${SLOT[ev.slot]} 장비를 벗음`;

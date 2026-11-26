@@ -940,6 +940,32 @@ def arrows(s, metal):
         a += P('M32,46 L27,52 L27,57 L32,52 Z', '#e8e2d0', 1.2) + P('M32,46 L37,52 L37,57 L32,52 Z', '#c8c0b0', 1.2)
         s.add(G(a, f'rotate({ang} 32 54) translate({dx} 0)'))
 
+# 탈것 장비(v3.2): 안장(옆에서 본 깔개·앉을 자리·등자), 편자(U자 쇠와 못 구멍)
+def saddle(s, fine):
+    seat = '#6e2a22' if fine else LEATHER
+    pad = '#23406a' if fine else '#a8946a'
+    s.shadow(32, 57, 22, 3.2)
+    s.add(P('M8,30 Q8,26 14,26 L50,26 Q56,26 56,30 L56,38 Q56,42 50,42 L14,42 Q8,42 8,38 Z', s.lin(pad, 0.25, -0.3)))
+    if fine:
+        s.add(L('M12,39 L52,39', '#d8b04a', 1.4, 0.9))
+    s.add(P('M12,30 Q14,16 22,18 Q30,24 34,24 Q40,24 46,14 Q52,12 52,22 Q52,30 46,32 L18,32 Q12,32 12,30 Z', s.lin(seat, 0.35, -0.35)))
+    s.add(HL('M20,21 Q28,25 36,25'))
+    s.add(L('M30,32 L30,48', INK, 2.6) + L('M30,32 L30,48', '#4a3020', 1.4))
+    s.add(P('M24,48 L36,48 L34,55 L26,55 Z', s.lin('#8a8a86', 0.35, -0.3), 1.6))
+    if fine:
+        s.add(C(47, 16, 2.6, '#ffd24a', 1.2))
+
+def horseshoe(s, metal):
+    base, hi = METAL[metal]
+    s.shadow(32, 57, 18, 3)
+    d = 'M14,52 L14,30 Q14,10 32,10 Q50,10 50,30 L50,52 L41,52 L41,31 Q41,20 32,20 Q23,20 23,31 L23,52 Z'
+    s.add(P(d, s.lin(base, 0.4, -0.35)))
+    s.add(HL('M18,40 L18,30 Q18,15 32,14'))
+    for (x, y) in [(18.5, 44), (18.5, 33), (24, 20), (40, 20), (45.5, 33), (45.5, 44)]:
+        s.add(R(x - 1.6, y - 1.6, 3.2, 3.2, '#2a2420', 0.6, 0.8))
+    if metal == 'mist':
+        s.add(C(32, 14, 2.4, s.glow('#9fe6ff', 0.9), 0))
+
 def stone_lamp(s):
     s.shadow(32, 57, 16, 3)
     s.add(R(24, 46, 16, 9, s.lin('#a8a59a'), 1.5))
@@ -1032,6 +1058,8 @@ ICONS.update({
     'neck_iron_con': lambda s: amulet(s, 'iron', '#d04a5a'), 'neck_gather': gather_amulet,
     'tool_rod_wood': lambda s: rod(s, 'wood'), 'tool_rod_copper': lambda s: rod(s, 'copper'), 'tool_rod_iron': lambda s: rod(s, 'iron'),
     'arrows_copper': lambda s: arrows(s, 'copper'), 'arrows_iron': lambda s: arrows(s, 'iron'),
+    'mg_saddle_leather': lambda s: saddle(s, False), 'mg_saddle_fine': lambda s: saddle(s, True),
+    'mg_shoes_iron': lambda s: horseshoe(s, 'iron'), 'mg_shoes_mist': lambda s: horseshoe(s, 'mist'),
 })
 
 def build():

@@ -1,3 +1,5 @@
+import { finishTravel } from './waystones.js';
+import { finishSummon, mountSpeed } from './mounts.js';
 // 이동(30Hz)과 채집 행동 진행.
 // 이동은 두 가지다: 입력 방향(actor.move, 플레이어 조작)과 목적지(actor.dest, 봇·클릭 이동).
 
@@ -89,7 +91,7 @@ export function movementTick(ctx, dt) {
       a.z = round3(nz);
       continue;
     }
-    const step = cfg.move.speed * dt * cm.mult * equipLoad(ctx, a).tier.move;
+    const step = cfg.move.speed * dt * cm.mult * equipLoad(ctx, a).tier.move * (a.riding ? mountSpeed(ctx, a) : 1);
     if (a.move) {
       const [nx, nz] = resolve(ctx, a, a.x + a.move[0] * step, a.z + a.move[1] * step);
       a.yaw = round3(Math.atan2(a.move[0], a.move[1]));
@@ -134,6 +136,8 @@ export function actionsTick(ctx) {
   for (const a of Object.values(ctx.state.actors)) {
     if (!a.action || a.action.endsAt > ctx.state.t) continue;
     if (a.action.type === 'recall') resolveRecall(ctx, a);
+    else if (a.action.type === 'travel') finishTravel(ctx, a);
+    else if (a.action.type === 'mount') finishSummon(ctx, a);
     else if (a.action.type === 'skin') finishSkin(ctx, a);
     else resolveGather(ctx, a);
   }

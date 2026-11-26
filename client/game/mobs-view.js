@@ -17,12 +17,12 @@ const lerpAngle = (a, b, k) => {
 // ── 네발 걸음새(v0.4.8): 속도에 따라 걷기(네 박자)·속보(대각선 짝)·질주(앞뒤 짝)를 고른다 ──
 // 다리마다 위상 오프셋 [왼앞, 오른앞, 왼뒤, 오른뒤] 순서는 creatures.js의 legs 순서(-x=오른쪽)와 맞춘다.
 // duty: 한 주기에서 발이 땅에 닿아 있는 비율. stride: 몸길이 대비 한 주기 보폭. lift: 다리 길이 대비 발 드는 높이
-const GAITS = {
+export const GAITS = {
   walk: { off: [0.75, 0.25, 0.5, 0.0], duty: 0.64, stride: 0.95, lift: 0.1, bob: 0.012, pitch: 0.0 },
   trot: { off: [0.0, 0.5, 0.5, 0.0], duty: 0.46, stride: 1.55, lift: 0.16, bob: 0.025, pitch: 0.02 },
   gallop: { off: [0.55, 0.45, 0.1, 0.0], duty: 0.32, stride: 2.5, lift: 0.22, bob: 0.05, pitch: 0.09 },
 };
-const smooth = (x) => {
+export const smooth = (x) => {
   const t = Math.min(1, Math.max(0, x));
   return t * t * (3 - 2 * t);
 };
@@ -32,7 +32,7 @@ function gaitOf(type, sp) {
   return 'gallop';
 }
 // 다리 두 마디 IK(옆에서 본 평면): 엉덩이 기준 발 목표 (z 앞, y 위) → [엉덩이 각, 무릎 각]
-function legIK(l1, l2, z, y, front) {
+export function legIK(l1, l2, z, y, front) {
   const d = Math.min(l1 + l2 - 1e-3, Math.max(Math.abs(l1 - l2) + 1e-3, Math.hypot(z, y)));
   const th = Math.atan2(-z, -y);
   const a = Math.acos(Math.min(1, Math.max(-1, (l1 * l1 + d * d - l2 * l2) / (2 * l1 * d))));
@@ -40,6 +40,9 @@ function legIK(l1, l2, z, y, front) {
   // 앞다리: 관절이 앞으로 나와 발이 뒤로 접힌다. 뒷다리: 관절이 뒤로 나와 발이 앞으로 접힌다
   return front ? [th - a, Math.PI - b] : [th + a, -(Math.PI - b)];
 }
+
+// 걸음 세기(0~1): 멈추면 다리를 모은다
+export const gaitWeight = (sp) => Math.min(1, sp / 0.6);
 
 // 석상 앉은 자세(v0.5.1, 돌 해태): 몸 앞을 들고 엉덩이를 땅에 붙인다. 앞다리는 곧게, 뒷다리는 접는다
 const SIT_PITCH = 0.55;

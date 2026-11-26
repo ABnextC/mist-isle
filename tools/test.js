@@ -42,6 +42,8 @@ import { SFX } from '../client/game/audio/sfx.js';
 import { gapMult, needXp as lvNeed, mobLevel } from '../core/systems/level.js';
 import { questXp } from '../core/systems/quests.js';
 import { levelTone } from '../client/game/level-color.js';
+import { wayStatic, wayLanding, travelCost } from '../core/systems/waystones.js';
+import { mountSpeed } from '../core/systems/mounts.js';
 
 const LH = 's_lighthouse';
 const FR = 's_forest';
@@ -1233,7 +1235,10 @@ test('1~3장(등대섬 → 본섬)을 처음부터: 생활 단계·대장간 사
   ok(a.marks?.lantern_mark != null && events.some((e) => e.type === 'quest.grant'), '등불의 각인');
   ok(events.some((e) => e.type === 'quest.stepReward' && e.reward.items.some((x) => x.item === 'wpn_sword_copper')), '강두의 구리 검');
   ok(a.bag.some((e) => e.item === 'wpn_sword_iron' && e.crafter === '숲머리 대장장이'), '숲머리 대장장이의 철 검');
-  const un = events.find((e) => e.type === 'unlock');
+  const mt = events.find((e) => e.type === 'unlock');
+  eq(mt?.quest, 'q4_forest', '탈것(v3.2)은 1장 숲머리로 뒤');
+  eq(mt.ids.join(), 'mount');
+  const un = events.find((e) => e.type === 'unlock' && e.quest === 'c3_wall');
   eq(un?.quest, 'c3_wall', '본섬에 건너가면 열린다');
   eq([...un.ids].sort().join(), 'orders,projects,rumors,transport', '경제 넷이 열린다');
   ok(g.dispatch({ type: 'ORDER_DELIVER', actor: 'p1', order: 'x' }).error !== 'locked', '주문 열림');
@@ -1337,7 +1342,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '3.1.0');
+  eq(st.meta.engine, '3.2.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1529,7 +1534,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '3.1.0');
+  eq(st.meta.engine, '3.2.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -2802,6 +2807,213 @@ test('1장 손보기(v3.1): 등대를 지켜라는 세 물결(한 번에 셋까�
   ok(st.waves.every((w) => Object.values(w).reduce((s, n) => s + n, 0) <= 3), '물결 크기');
   for (const k of ['raider', 'raider_spear', 'raider_axe', 'raider_thrower', 'raider_scout']) ok(data.creatures[k].assist <= 7, k);
   eq(data.creatures.first_keeper.phases.map((p) => Object.values(p.summon).reduce((s, n) => s + n, 0)).join(','), '1,2', '첫 등지기가 부르는 망령');
+});
+
+console.log('길잡이 돌·탈것 (v3.2)');
+function travelGame(seed = 3) {
+  const g = createGame({ data, seed, actors: [{ id: 'p1', kind: 'player' }] });
+  g.state.econ = null;
+  const a = g.state.actors.p1;
+  // 둘레 짐승이 덤비지 않게 치운다
+  for (const m of Object.values(g.state.mobs)) m.mode = 'away';
+  return { g, a, C: g._ctx };
+}
+const standAt = (g, a, id) => {
+  const p = wayLanding(g._ctx, id);
+  Object.assign(a, { x: p.x, z: p.z, move: null, dest: null, nav: null });
+};
+
+test('길잡이 돌 16개: 자리마다 돌이 서 있고, 내리는 자리는 뭍이며 건물·작업대와 겹치지 않는다', () => {
+  const { g, C } = travelGame();
+  eq(data.lists.waystones.length, 16);
+  for (const w of data.lists.waystones) {
+    const o = wayStatic(C, w.id);
+    ok(o, `${w.id} 돌`);
+    const p = wayLanding(C, w.id);
+    ok(C.terrain.height(p.x, p.z) > 0.2, `${w.id} 내리는 자리가 물`);
+    for (const s of C.statics) {
+      if (s === o || !s.r) continue;
+      ok(Math.hypot(s.x - p.x, s.z - p.z) > s.r + 0.3, `${w.id} 내리는 자리가 ${s.kind}와 겹침`);
+      ok(Math.hypot(s.x - o.x, s.z - o.z) > s.r + o.r + 0.4, `${w.id} 돌이 ${s.kind}와 겹침`);
+    }
+    for (const st of Object.values(g.state.settlements)) for (const x of st.stations) ok(Math.hypot(x.x - o.x, x.z - o.z) > 2.4, `${w.id} 작업대 ${x.type}와 붙음`);
+  }
+  // 마구간도 겹치지 않는다
+  const stables = C.statics.filter((s) => s.kind === 'stable');
+  eq(stables.length, 3);
+  for (const o of stables) for (const s of C.statics) if (s !== o && s.r) ok(Math.hypot(s.x - o.x, s.z - o.z) > s.r + o.r, `마구간이 ${s.kind}와 겹침`);
+});
+
+test('길잡이 돌: 가까이 가면 길을 익히고, 익힌 돌로 건너뛴다(시전 4초·은화·움직이면 끊김)', () => {
+  const { g, a, C } = travelGame();
+  const ev = [];
+  for (const k of ['way.found', 'travel.done', 'travel.cancelled', 'cmd.rejected']) g.on(k, (e) => ev.push(e));
+  standAt(g, a, 'w_forest');
+  g.advance(1.2);
+  ok(a.ways.w_forest != null && ev.some((e) => e.type === 'way.found' && e.way === 'w_forest'), '숲머리 돌을 익힘');
+  eq(g.dispatch({ type: 'FAST_TRAVEL', actor: 'p1', to: 'w_lighthouse' }).error, 'unknown_way');
+  standAt(g, a, 'w_lighthouse');
+  g.advance(1.2);
+  Object.assign(a, { x: a.x + 30 });
+  eq(g.dispatch({ type: 'FAST_TRAVEL', actor: 'p1', to: 'w_forest' }).error, 'too_far');
+  standAt(g, a, 'w_lighthouse');
+  // 움직이면 끊긴다
+  ok(g.dispatch({ type: 'FAST_TRAVEL', actor: 'p1', to: 'w_forest' }).ok);
+  g.dispatch({ type: 'MOVE_INPUT', actor: 'p1', dx: 1, dz: 0 });
+  g.advance(0.2);
+  g.dispatch({ type: 'MOVE_INPUT', actor: 'p1', dx: 0, dz: 0 });
+  ok(ev.some((e) => e.type === 'travel.cancelled'), '움직여서 끊김');
+  standAt(g, a, 'w_lighthouse');
+  const s0 = a.silver;
+  const cost = travelCost(C, a, 'w_forest');
+  ok(cost > 0 && cost < 40, `값 ${cost}`);
+  ok(g.dispatch({ type: 'FAST_TRAVEL', actor: 'p1', to: 'w_forest' }).ok);
+  g.advance(3.5);
+  eq(a.silver, s0, '시전 중엔 아직 안 낸다');
+  g.advance(1);
+  eq(a.silver, s0 - cost);
+  const p = wayLanding(C, 'w_forest');
+  ok(Math.hypot(a.x - p.x, a.z - p.z) < 1, '숲머리에 닿음');
+  // 귀환 지점 마을로는 반값
+  a.home = 's_lighthouse';
+  const full = travelCost(C, { ...a, home: 's_forest' }, 'w_lighthouse');
+  ok(travelCost(C, a, 'w_lighthouse') <= Math.ceil(full * 0.5) + 1, '귀환 지점 반값');
+  // 맞은 지 얼마 안 됐으면 못 쓴다
+  a.cb.lastHitAt = g.state.t - 1;
+  eq(g.dispatch({ type: 'FAST_TRAVEL', actor: 'p1', to: 'w_lighthouse' }).error, 'in_combat');
+  a.cb.lastHitAt = -1e9;
+  a.silver = 0;
+  eq(g.dispatch({ type: 'FAST_TRAVEL', actor: 'p1', to: 'w_lighthouse' }).error, 'no_silver');
+});
+
+test('길잡이 돌: 안개 벽은 못 넘고, 본섬의 다른 섬(능선)으로는 뱃삯을 내고 건너뛴다(화면은 새 섬을 그린다)', () => {
+  const { g, a, C } = travelGame();
+  a.ways.w_lighthouse = 1;
+  a.ways.w_port = 1;
+  a.ways.w_ash = 1;
+  a.silver = 500;
+  standAt(g, a, 'w_lighthouse');
+  eq(g.dispatch({ type: 'FAST_TRAVEL', actor: 'p1', to: 'w_port' }).error, 'mist_wall');
+  standAt(g, a, 'w_port');
+  const cross = [];
+  g.on('cross', (e) => cross.push(e));
+  const cost = travelCost(C, a, 'w_ash');
+  ok(cost >= data.config.fastTravel.crossFee, `뱃삯 ${cost}`);
+  ok(g.dispatch({ type: 'FAST_TRAVEL', actor: 'p1', to: 'w_ash' }).ok);
+  g.advance(4.5);
+  eq(regionAt(data.lists.regions, a.x).id, 'ember_ridge');
+  ok(cross.length === 1 && cross[0].travel, '섬 바뀜 알림');
+  eq(g.dispatch({ type: 'FAST_TRAVEL', actor: 'p1', to: 'w_lighthouse' }).error, 'mist_wall');
+});
+
+test('탈것: 1장 「숲머리로」 뒤 마구간에서 산다 → V로 부르고(1.5초) 타면 빨라진다', () => {
+  const { g, a, C } = travelGame();
+  const sb = C.statics.find((o) => o.kind === 'stable' && o.at === 's_lighthouse');
+  Object.assign(a, { x: sb.x + Math.sin(sb.rot) * 3.6, z: sb.z + Math.cos(sb.rot) * 3.6 });
+  a.silver = 1000;
+  eq(g.dispatch({ type: 'MOUNT_BUY', actor: 'p1', mount: 'pony' }).error, 'locked');
+  a.quests.done.q4_forest = 1;
+  eq(g.dispatch({ type: 'MOUNT_BUY', actor: 'p1', mount: 'horse' }).error, 'not_sold_here');
+  eq(g.dispatch({ type: 'MOUNT', actor: 'p1' }).error, 'no_mount');
+  ok(g.dispatch({ type: 'MOUNT_BUY', actor: 'p1', mount: 'pony' }).ok);
+  eq(a.silver, 1000 - data.mounts.pony.price);
+  eq(g.dispatch({ type: 'MOUNT_BUY', actor: 'p1', mount: 'pony' }).error, 'owned');
+  ok(g.dispatch({ type: 'MOUNT', actor: 'p1' }).ok);
+  g.advance(1);
+  eq(a.riding, null, '부르는 중');
+  g.advance(0.6);
+  eq(a.riding, 'pony');
+  // 빠르기: 걷기의 1.45배
+  const pace = (ride) => {
+    a.riding = ride ? 'pony' : null;
+    const x0 = a.x;
+    g.dispatch({ type: 'MOVE_INPUT', actor: 'p1', dx: -1, dz: 0 });
+    g.advance(1);
+    g.dispatch({ type: 'MOVE_INPUT', actor: 'p1', dx: 0, dz: 0 });
+    return Math.abs(a.x - x0);
+  };
+  const walk = pace(false);
+  const ride = pace(true);
+  near(ride / walk, data.mounts.pony.speed, 0.08, `빠르기 ${ride.toFixed(2)} / ${walk.toFixed(2)}`);
+  near(mountSpeed(C, a), data.mounts.pony.speed, 1e-9);
+  // 안장·편자를 달면 더 빨라진다
+  a.bag.push({ item: 'mg_saddle_leather', lot: null, bonus: null, qty: 1 });
+  ok(g.dispatch({ type: 'MOUNT_GEAR', actor: 'p1', item: 'mg_saddle_leather' }).ok);
+  near(mountSpeed(C, a), data.mounts.pony.speed * 1.04, 1e-9);
+  ok(!a.bag.some((e) => e.item === 'mg_saddle_leather'), '가방에서 빠짐');
+  ok(g.dispatch({ type: 'MOUNT_UNGEAR', actor: 'p1', slot: 'saddle' }).ok);
+  ok(a.bag.some((e) => e.item === 'mg_saddle_leather'), '가방으로 돌아옴');
+  // V를 다시 누르면 내린다
+  ok(g.dispatch({ type: 'MOUNT', actor: 'p1' }).ok);
+  eq(a.riding, null);
+});
+
+test('탈것: 휘두르거나 캐면 내리고, 맞아도 내린다. 싸우는 중엔 못 부른다', () => {
+  const { g, a, C } = travelGame();
+  a.mounts.own.push('pony');
+  a.mounts.pick = 'pony';
+  a.riding = 'pony';
+  ok(g.dispatch({ type: 'ATTACK', actor: 'p1', kind: 'light', yaw: 0 }).ok);
+  eq(a.riding, null, '휘두르면 내림');
+  g.advance(1);
+  a.riding = 'pony';
+  const wolf = Object.values(g.state.mobs).find((m) => m.type === 'wolf');
+  hurtActor(C, a, wolf, 5, {});
+  eq(a.riding, null, '맞으면 내림');
+  eq(g.dispatch({ type: 'MOUNT', actor: 'p1' }).error, 'in_combat');
+  g.advance(data.config.mount.combatLockSec + 0.5);
+  ok(g.dispatch({ type: 'MOUNT', actor: 'p1' }).ok, '숨 돌린 뒤엔 부른다');
+});
+
+test('쓰러지면 마을과 익힌 길잡이 돌 가운데 가까운 곳에서 일어난다', () => {
+  const { g, a, C } = travelGame();
+  const p = wayLanding(C, 'w_hermit_hut');
+  const wolf = Object.values(g.state.mobs).find((m) => m.type === 'wolf');
+  const knock = () => {
+    Object.assign(a, { x: p.x + 8, z: p.z + 3 });
+    a.cb.hp = 1;
+    hurtActor(C, a, wolf, 999, { unblockable: true });
+    g.advance(data.config.combat.downSec + 0.5);
+  };
+  knock();
+  ok(Math.hypot(a.x - p.x, a.z - p.z) > 40, '모르는 돌이면 마을에서');
+  a.ways.w_hermit_hut = 1;
+  const ups = [];
+  g.on('actor.up', (e) => ups.push(e));
+  knock();
+  ok(Math.hypot(a.x - p.x, a.z - p.z) < 0.5, `익힌 돌 앞에서 ${Math.round(Math.hypot(a.x - p.x, a.z - p.z))}m`);
+  eq(ups[0].way, 'w_hermit_hut');
+});
+
+test('범돌의 부탁 「안개 사슴 길들이기」를 끝내면 안개 사슴을 얻는다', () => {
+  const { g, a } = travelGame();
+  const q = data.quests.sq_lodge_deer;
+  ok(q && q.reward.mount === 'mist_deer');
+  ok(q.steps.some((s) => s.type === 'kill' && s.mobs.includes('mist_wolf')), '밤 늑대');
+  a.quests.active.sq_lodge_deer = { step: q.steps.length - 1, n: 0, used: [], t: 0 };
+  const np = npcPos(g._ctx, 'beomdol');
+  Object.assign(a, { x: np.x + 1, z: np.z });
+  ok(g.dispatch({ type: 'TALK', actor: 'p1', npc: 'beomdol' }).ok);
+  ok(a.quests.done.sq_lodge_deer != null, '끝남');
+  ok(a.mounts.own.includes('mist_deer'), '사슴');
+  eq(a.mounts.pick, 'mist_deer');
+});
+
+test('이주 34→35: 탈것·길잡이 돌 자리를 만들고, 지금 섬의 마을 돌과 귀환 지점 돌을 익힌 것으로 친다', () => {
+  const g = createGame({ data, seed: 3, actors: [{ id: 'p1', kind: 'player' }] });
+  const obj = JSON.parse(g.save());
+  const a0 = obj.state.actors.p1;
+  delete a0.ways;
+  delete a0.mounts;
+  delete a0.riding;
+  obj.dataVersion = 34;
+  obj.state.meta.dataVersion = 34;
+  const g2 = loadGame({ data, save: JSON.stringify(obj) });
+  const a = g2.state.actors.p1;
+  eq(g2.state.meta.engine, '3.2.0');
+  ok(a.mounts && a.mounts.own.length === 0 && a.riding === null);
+  ok(a.ways.w_lighthouse != null && a.ways.w_forest != null && a.ways.w_gull != null, '등대섬 마을 돌');
+  ok(a.ways.w_port == null && a.ways.w_hermit_hut == null, '본섬·쉼터 돌은 아직');
 });
 
 console.log('멀티 시험 (v3.0)');

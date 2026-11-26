@@ -134,6 +134,20 @@
             "dz": -3,
             "r": 1.5,
             "rot": 0.6
+          },
+          {
+            "kind": "waystone",
+            "dx": 1.6,
+            "dz": 7.8,
+            "r": 0.7,
+            "way": "w_lighthouse"
+          },
+          {
+            "kind": "stable",
+            "dx": 0.0,
+            "dz": 26.0,
+            "r": 2.4,
+            "rot": -3.14
           }
         ],
         "pop": 60,
@@ -280,6 +294,13 @@
             "r": 2.6,
             "rot": 0.7,
             "build": "pj_f_house2"
+          },
+          {
+            "kind": "waystone",
+            "dx": 4.3,
+            "dz": 4.9,
+            "r": 0.7,
+            "way": "w_forest"
           }
         ]
       },
@@ -361,6 +382,13 @@
             "dz": 10,
             "r": 1.9,
             "rot": 2.2
+          },
+          {
+            "kind": "waystone",
+            "dx": 8.0,
+            "dz": 0.0,
+            "r": 0.7,
+            "way": "w_gull"
           }
         ]
       }
@@ -644,7 +672,8 @@
             "rot": 0.5,
             "name": "떠밀려 온 궤짝"
           }
-        ]
+        ],
+        "structures": []
       },
       {
         "id": "lookout",
@@ -994,7 +1023,8 @@
         "x": 236,
         "z": 88,
         "r": 12,
-        "event": true
+        "event": true,
+        "structures": []
       },
       {
         "id": "lighthouse_top",
@@ -1012,7 +1042,8 @@
             "name": "등대 꼭대기 등잔",
             "verb": "등대에 오르기"
           }
-        ]
+        ],
+        "structures": []
       },
       {
         "id": "mainland_wreck",
@@ -1299,6 +1330,13 @@
             "dz": 2,
             "r": 0.8,
             "rot": 0.6
+          },
+          {
+            "kind": "waystone",
+            "dx": 6.0,
+            "dz": 0.0,
+            "r": 0.7,
+            "way": "w_hermit_hut"
           }
         ]
       },
@@ -1512,6 +1550,20 @@
             "dz": -21,
             "r": 1.2,
             "rot": -0.3
+          },
+          {
+            "kind": "waystone",
+            "dx": 0.0,
+            "dz": 8.0,
+            "r": 0.7,
+            "way": "w_port"
+          },
+          {
+            "kind": "stable",
+            "dx": 0.0,
+            "dz": 26.0,
+            "r": 2.4,
+            "rot": -3.14
           }
         ],
         "pop": 70,
@@ -1640,6 +1692,13 @@
             "r": 2.6,
             "rot": 0.7,
             "build": "pj_v_house2"
+          },
+          {
+            "kind": "waystone",
+            "dx": 0.0,
+            "dz": 8.0,
+            "r": 0.7,
+            "way": "w_valley"
           }
         ]
       },
@@ -1733,6 +1792,13 @@
             "dz": 12,
             "r": 0.8,
             "rot": 0.6
+          },
+          {
+            "kind": "waystone",
+            "dx": 0.0,
+            "dz": 8.0,
+            "r": 0.7,
+            "way": "w_willow"
           }
         ]
       }
@@ -2076,6 +2142,13 @@
             "dz": -5,
             "r": 0.25,
             "rot": 0.4
+          },
+          {
+            "kind": "waystone",
+            "dx": 6.0,
+            "dz": 0.0,
+            "r": 0.7,
+            "way": "w_mist_village"
           }
         ]
       },
@@ -2644,7 +2717,8 @@
         "name": "갈대 나루 동문",
         "x": 1226,
         "z": 66,
-        "r": 8
+        "r": 8,
+        "structures": []
       },
       {
         "id": "port_dock",
@@ -2750,6 +2824,13 @@
             "dz": -5,
             "r": 1.9,
             "rot": -0.6
+          },
+          {
+            "kind": "waystone",
+            "dx": 1.6,
+            "dz": -5.8,
+            "r": 0.7,
+            "way": "w_ferry_inn"
           }
         ]
       },
@@ -2788,6 +2869,13 @@
             "dz": 1,
             "r": 0.8,
             "rot": 0.2
+          },
+          {
+            "kind": "waystone",
+            "dx": 1.6,
+            "dz": -5.8,
+            "r": 0.7,
+            "way": "w_hunter_lodge"
           }
         ]
       }
@@ -2946,6 +3034,20 @@
             "dz": -14,
             "r": 2.6,
             "rot": 0.7
+          },
+          {
+            "kind": "waystone",
+            "dx": 0.0,
+            "dz": 8.0,
+            "r": 0.7,
+            "way": "w_ash"
+          },
+          {
+            "kind": "stable",
+            "dx": 4.6,
+            "dz": -13.2,
+            "r": 2.4,
+            "rot": -0.34
           }
         ]
       },
@@ -3033,6 +3135,13 @@
             "dz": 12,
             "r": 0.8,
             "rot": 0.2
+          },
+          {
+            "kind": "waystone",
+            "dx": 3.1,
+            "dz": 7.4,
+            "r": 0.7,
+            "way": "w_kiln"
           }
         ]
       }
@@ -3336,6 +3445,13 @@
             "dz": 2,
             "r": 0.8,
             "rot": 0.4
+          },
+          {
+            "kind": "waystone",
+            "dx": 0.0,
+            "dz": 6.0,
+            "r": 0.7,
+            "way": "w_frost_pass"
           }
         ]
       },
@@ -3462,6 +3578,13 @@
             "dz": -4,
             "r": 0,
             "rot": 0.3
+          },
+          {
+            "kind": "waystone",
+            "dx": 0.0,
+            "dz": 6.0,
+            "r": 0.7,
+            "way": "w_miner_camp"
           }
         ]
       }
@@ -3620,6 +3743,13 @@
             "dz": -14,
             "r": 2.6,
             "rot": 0.7
+          },
+          {
+            "kind": "waystone",
+            "dx": 0.0,
+            "dz": 8.0,
+            "r": 0.7,
+            "way": "w_gate"
           }
         ]
       }
@@ -4074,6 +4204,13 @@
             "dz": -1.5,
             "r": 0.7,
             "rot": 0
+          },
+          {
+            "kind": "waystone",
+            "dx": 6.0,
+            "dz": 0.0,
+            "r": 0.7,
+            "way": "w_pilgrim_cairn"
           }
         ]
       }

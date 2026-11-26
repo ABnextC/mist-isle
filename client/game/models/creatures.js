@@ -476,3 +476,6 @@ export function makeCreature(type, seed) {
   q.type = type;
   return q;
 }
+
+// 탈것(v3.2)이 같은 몸 짜기를 쓴다
+export { quadruped, material, mesh, ell, cyl, cone };

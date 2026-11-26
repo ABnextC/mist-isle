@@ -76,7 +76,7 @@ export function layoutStatics(region, terrain, built = null, npcs = []) {
   for (const s of region.settlements) {
     for (const st of s.structures || []) {
       if (st.build && !(built && built.has(st.build))) continue;
-      out.push({ kind: st.kind, x: s.x + st.dx, z: s.z + st.dz, r: st.r, rot: st.rot || 0, at: s.id, build: st.build || null });
+      out.push({ kind: st.kind, x: s.x + st.dx, z: s.z + st.dz, r: st.r, rot: st.rot || 0, at: s.id, build: st.build || null, ...(st.way ? { way: st.way } : null) });
     }
   }
   for (const d of region.decor || []) {
@@ -86,7 +86,7 @@ export function layoutStatics(region, terrain, built = null, npcs = []) {
   // 자리(v0.5): 야영지 소품과 퀘스트 물체(궤짝·보급 상자·탁자)
   for (const s of region.sites || []) {
     const [sx, sz] = siteXZ(terrain, s);
-    for (const st of s.structures || []) out.push({ kind: st.kind, x: sx + st.dx, z: sz + st.dz, r: st.r || 0, rot: st.rot || 0, site: s.id, len: st.len || null });
+    for (const st of s.structures || []) out.push({ kind: st.kind, x: sx + st.dx, z: sz + st.dz, r: st.r || 0, rot: st.rot || 0, site: s.id, len: st.len || null, ...(st.way ? { way: st.way } : null) });
     for (const o of s.objects || []) out.push({ kind: o.kind, x: sx + o.dx, z: sz + o.dz, r: OBJ_R[o.kind] ?? 0.5, rot: o.rot || 0, site: s.id, obj: o.id });
   }
   // NPC(v0.5): 서 있는 자리에 작은 원(몸이 겹치지 않게). 정착지(at)나 자리(site, v0.5.1) 기준

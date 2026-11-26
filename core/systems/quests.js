@@ -1,3 +1,4 @@
+import { gainMount } from './mounts.js';
 // 퀘스트(v0.5): 장(章)마다 이어지는 메인 퀘스트와 게시판 현상금.
 // 행위자마다 a.quests = { active: { id: { step, n, used, ev? } }, done: { id: 끝낸 시각 }, items: { 물건: 수 }, track, daily: { id: 날 } }
 // 진행은 모두 코어가 한다: 대화(TALK)·물체(QUEST_USE)는 명령으로, 쓰러뜨리기는 짐승이 쓰러질 때, 가기·막기는 1초마다 본다.
@@ -204,6 +205,8 @@ export function giveReward(ctx, a, q) {
   const silver = Math.round((r.silver || 0) * dailyMult(ctx, a, q));
   const out = { silver, items: [], stored: [] };
   if (silver) a.silver += silver;
+  // 탈것 보상(v3.2)
+  if (q.reward?.mount && gainMount(ctx, a, q.reward.mount)) out.mount = q.reward.mount;
   for (const it of r.items || []) {
     const entry = rewardEntry(ctx, q, it);
     const qty = entry.qty ?? 1;

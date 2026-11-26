@@ -13,7 +13,7 @@ import { initMobs } from './systems/mobs.js';
 import { newSettlement, initProjects, settlementsDaily } from './settlements.js';
 import { emptyQuests, startQuest, firstQuest } from './systems/quests.js';
 
-export const ENGINE_VERSION = '3.1.0';
+export const ENGINE_VERSION = '3.2.0';
 
 export function spawnPoint(region, terrain) {
   const [x, inland] = region.spawn;
@@ -50,6 +50,9 @@ export function newActor(data, spec, at) {
     known: {},
     loadout: {},
     quests: emptyQuests(),
+    ways: {},
+    mounts: { own: [], pick: null, gear: { saddle: null, shoes: null } },
+    riding: null,
   };
 }
 

@@ -29,6 +29,9 @@ import { runOf, expUnlocked, nearEntrance, firstToday, expHint } from '../../cor
 import { seasonOf, dayOfMonth, isMarketDay } from '../../core/systems/calendar.js';
 import { questCtx, lifeSteps } from './quest.js';
 import { isUnlocked, allowedProject, chapterReached } from '../../core/systems/unlocks.js';
+import { wayList, wayNear, travelError } from '../../core/systems/waystones.js';
+import { mountsOf, stableAt, stableMounts, buyError, gearSpeed } from '../../core/systems/mounts.js';
+import { paintMinimap } from './minimap.js';
 
 const PID = 'p1';
 const FAMILY = { wood: '나무', metal: '금속', stone: '돌', fiber: '섬유', food: '식재료', herb: '약초' };
@@ -76,7 +79,7 @@ export function createHud(root, game, { touch, onAct }) {
       <div class="skillbar" data-k="skillbar"></div>
       ${touch ? '' : '<div class="keys">E 상호작용 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기 · 1·2·3 스킬 · X 무기 바꾸기 · G 물약 · T 영지 · <b>Esc 메뉴</b></div>'}
     </div>
-    ${touch ? '<button class="act-btn" data-act="interact" data-k="actbtn">✋</button><div class="cbtns"><button data-hold="attack" title="공격(길게 강공)">⚔️</button><button data-hold="block" title="막기">🛡️</button><button data-tap="dodge" title="구르기">🌀</button><button data-tap="potion" title="물약">🧪</button></div>' : ''}
+    ${touch ? '<button class="act-btn" data-act="interact" data-k="actbtn">✋</button><div class="cbtns"><button data-hold="attack" title="공격(길게 강공)">⚔️</button><button data-hold="block" title="막기">🛡️</button><button data-tap="dodge" title="구르기">🌀</button><button data-tap="potion" title="물약">🧪</button><button data-tap="mount" title="탈것">🐎</button></div>' : ''}
     <div class="downed" data-k="downed"></div>
     <div class="hurtfx" data-k="hurtfx"></div>
     <div class="joy"><div class="knob"></div></div>
@@ -286,6 +289,22 @@ export function createHud(root, game, { touch, onAct }) {
       pushFeed(`🪙 상인에게 ${ev.qty}개 · +${ev.qty * ev.price}은화`);
     } else if (ev.type === 'order.delivered' && ev.owner === PID) {
       toast(`📋 주문 납품 ${itemName(data, ev.item)} ${ev.qty}개 · +${ev.pay}은화${ev.done ? ' · 주문 끝' : ''}`, 'good');
+    } else if (ev.type === 'way.found' && ev.actor === PID) {
+      banner(`🪨 길을 익혔다 · ${data.waystones[ev.way]?.name ?? ''}`, 3600);
+      pushFeed('🪨 길잡이 돌 앞에서 E — 익힌 돌로 건너뛸 수 있다');
+    } else if (ev.type === 'travel.done' && ev.actor === PID) {
+      toast(`🪨 ${data.waystones[ev.to]?.name ?? ''}에 닿았다 · 🪙${ev.cost}`, 'good');
+    } else if (ev.type === 'travel.cancelled' && ev.actor === PID) {
+      toast(`🪨 길이 끊겼다${ev.reason === 'hit' ? ' — 맞았다' : ev.reason === 'no_silver' ? ' — 은화가 모자라다' : ''}`);
+    } else if (ev.type === 'mount.gained' && ev.actor === PID) {
+      banner(`🐎 ${data.mounts[ev.mount]?.name ?? '탈것'}을(를) 얻었다 — ${touch ? '🐎 단추' : 'V'}로 부른다`, 4200);
+    } else if (ev.type === 'mount.bought' && ev.actor === PID) {
+      pushFeed(`🐎 ${data.mounts[ev.mount].name} · 🪙${ev.price}`);
+      if (panel?.kind === 'stable') renderPanel(true);
+    } else if ((ev.type === 'mount.pick' || ev.type === 'mount.gear') && ev.actor === PID) {
+      if (panel?.kind === 'stable') renderPanel(true);
+    } else if (ev.type === 'mount.off' && ev.actor === PID && ev.why === 'hit') {
+      toast('🐎 맞아서 탈것에서 내렸다');
     } else if (ev.type === 'recall.done') {
       toast(`🏠 ${game.state.settlements[ev.settlement]?.name ?? '마을'} 창고 앞으로 돌아왔다`, 'good');
     } else if (ev.type === 'ship') {
@@ -353,7 +372,7 @@ export function createHud(root, game, { touch, onAct }) {
       el.vitals.classList.toggle('low', a.cb.hp < a.cb.maxHp * 0.3);
       const down = a.cb.downUntil > 0;
       el.downed.classList.toggle('on', down);
-      if (down) set(el.downed, `쓰러졌다 — ${Math.max(0, Math.ceil(a.cb.downUntil - game.state.t))}초 뒤 가까운 마을에서 일어난다`);
+      if (down) set(el.downed, `쓰러졌다 — ${Math.max(0, Math.ceil(a.cb.downUntil - game.state.t))}초 뒤 가까운 마을이나 익힌 길잡이 돌에서 일어난다`);
     }
     const ld = equipLoad({ data, cfg: data.config, state: game.state }, a);
     const ldTag = ld.tier.id === 'medium' ? [] : [`${ld.tier.id === 'light' ? '🪶' : '🏋️'} ${ld.tier.name} ${ld.kg}kg`];
@@ -411,6 +430,8 @@ export function createHud(root, game, { touch, onAct }) {
     let ok = false;
     if (a.ai?.on) prompt = '🤖 봇이 대신 움직이는 중 — 움직이면 돌아온다';
     else if (a.action?.type === 'recall') prompt = `🏠 ${townName(a.home)}(으)로 귀환하는 중… 움직이면 취소된다`;
+    else if (a.action?.type === 'travel') prompt = `🪨 ${data.waystones[a.action.to]?.name ?? ''}(으)로 길을 여는 중… 움직이면 취소된다`;
+    else if (a.action?.type === 'mount') prompt = `🐎 ${data.mounts[a.action.mount]?.name ?? '탈것'}을(를) 부르는 중…`;
     else if (target) {
       ok = !target.why && !target.idle;
       const key = touch ? '' : '[E] ';
@@ -661,10 +682,11 @@ export function createHud(root, game, { touch, onAct }) {
       ${tile('skills', icon('skills'), '생활 스킬', 'K')}
       ${tile('journal', icon('journal'), '일지', 'J')}
       ${tile('log', icon('log'), '기록', 'L')}
+      ${isUnlocked(qctxL(), a, 'mount') || mountsOf(a).own.length ? tile('mount', '🐎', '탈것', 'V', mountsOf(a).pick ? esc(data.mounts[mountsOf(a).pick].name) : '마구간에서', !mountsOf(a).pick) : ''}
       ${tile('recall', icon('recall'), '귀환', 'H', cd > 0 ? `${Math.ceil(cd / 60)}분 뒤` : esc(townName(a.home)), cd > 0 || a.action?.type === 'recall')}
       ${tile('menu', icon('settings'), '설정', '')}
     </div>
-    ${touch ? '' : `<h3>조작</h3><p class="muted keyhelp">WASD 이동 · 마우스 끌기 시점 · 휠 거리 · E 상호작용 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기 · 1·2·3 무기 스킬 · X 무기 바꾸기 · G 물약 · T 영지 · Esc 창 닫기/메뉴</p>`}
+    ${touch ? '' : `<h3>조작</h3><p class="muted keyhelp">WASD 이동 · 마우스 끌기 시점 · 휠 거리 · E 상호작용 · 왼쪽 클릭 공격(길게 강공) · 오른쪽·Q 막기 · Space 구르기 · 1·2·3 무기 스킬 · X 무기 바꾸기 · G 물약 · V 탈것 · T 영지 · Esc 창 닫기/메뉴</p>`}
     <div class="row"><a href="patchnotes.html">패치노트</a><span class="muted">v${ENGINE_VERSION}</span></div>`;
   }
 
@@ -1509,12 +1531,98 @@ export function createHud(root, game, { touch, onAct }) {
       <h3>저장</h3><div class="row"><button data-act="save">💾 지금 저장</button>
         <button data-act="reset" class="${armed ? 'warn' : ''}">${armed ? '한 번 더 누르면 새 섬' : '↺ 새 섬에서 시작'}</button></div>
       <p class="muted">30초마다, 그리고 창을 닫을 때 자동 저장한다. 화면 약 ${Math.round(fps)}fps.</p>
-      <h3>조작</h3><p class="muted">${touch ? '왼쪽 엄지로 이동, 오른쪽을 끌어 시점, 두 손가락으로 거리. 손 단추로 상호작용.' : 'WASD 이동 · 마우스 끌기 시점 · 휠 거리 · E 상호작용 · H 귀환 · I 가방 · C 제작 · K 스킬 · L 기록 · Esc 닫기'}</p>
+      <h3>조작</h3><p class="muted">${touch ? '왼쪽 엄지로 이동, 오른쪽을 끌어 시점, 두 손가락으로 거리. 손 단추로 상호작용.' : 'WASD 이동 · 마우스 끌기 시점 · 휠 거리 · E 상호작용 · H 귀환 · V 탈것 · I 가방 · C 제작 · K 스킬 · L 기록 · Esc 닫기'}</p>
       <div class="row"><a href="patchnotes.html">패치노트</a><a href="debug.html">엔진 점검판</a><span class="muted">v${ENGINE_VERSION}</span></div>`;
   }
 
+  // ── 길잡이 돌(v3.2): 섬 지도에 돌을 찍고, 익힌 돌로 건너뛴다 ──
+  const mapImg = {};
+  function islandMap(r) {
+    if (!mapImg[r.id]) {
+      const c = document.createElement('canvas');
+      c.width = c.height = 160;
+      try {
+        paintMinimap(c.getContext('2d'), game.terrain, r.bounds, 160);
+        mapImg[r.id] = c.toDataURL();
+      } catch (e) {
+        mapImg[r.id] = '';
+      }
+    }
+    return mapImg[r.id];
+  }
+  function travelHtml(a) {
+    const C = qctxL();
+    const here = wayNear(C, a, data.config.fastTravel.useRange);
+    const reg = regionAt(data.lists.regions, a.x);
+    const group = reg.id === 'wreck_coast' ? [reg] : data.lists.regions.filter((r) => r.id !== 'wreck_coast');
+    const ways = wayList(C, a);
+    const maps = group.map((r) => {
+      const [x0, z0, x1, z1] = r.bounds;
+      const pct = (x, z) => [((x - x0) / (x1 - x0)) * 100, ((z1 - z) / (z1 - z0)) * 100];
+      const dots = ways.filter((w) => w.region === r.id).map((w) => {
+        const [px, py] = pct(w.x, w.z);
+        const cur = here?.way === w.id;
+        const cls = cur ? 'here' : w.known ? 'known' : 'unknown';
+        const tip = w.known ? `${w.name} · 🪙${w.cost}` : '아직 못 가 본 곳';
+        return w.known && !cur
+          ? `<button class="wdot ${cls}" style="left:${px}%;top:${py}%" data-act="travel-go" data-v="${w.id}" title="${esc(tip)}"><i></i><span>${esc(w.name)}</span></button>`
+          : `<span class="wdot ${cls}" style="left:${px}%;top:${py}%" title="${esc(tip)}"><i></i>${cur ? `<span>${esc(w.name)}</span>` : ''}</span>`;
+      }).join('');
+      const [mx, my] = pct(a.x, a.z);
+      const me = r.id === reg.id ? `<span class="wme" style="left:${mx}%;top:${my}%"></span>` : '';
+      return `<div class="tmapw"><div class="tmap" style="background-image:url(${mapImg[r.id] ?? islandMap(r)})">${dots}${me}</div><small>${esc(r.name)}</small></div>`;
+    }).join('');
+    const rows = ways.filter((w) => w.known && w.id !== here?.way && group.some((r) => r.id === w.region))
+      .sort((x, y) => x.cost - y.cost)
+      .map((w) => {
+        const err = travelError(C, a, w.id);
+        const why = err && err !== 'no_silver' ? ERR[err] || err : '';
+        const r = data.lists.regions.find((g) => g.id === w.region);
+        return `<li><div><b>🪨 ${esc(w.name)}</b><small>${esc(r.name)}${w.region !== reg.id ? ' · 다른 섬(뱃삯 포함)' : ''}${w.at && w.at === a.home ? ' · 🏠 귀환 지점(반값)' : ''}</small></div>
+          <button ${err ? 'disabled' : ''} data-act="travel-go" data-v="${w.id}" title="${esc(why)}">🪙${w.cost} 건너뛰기</button></li>`;
+      }).join('');
+    const unknown = ways.filter((w) => !w.known && group.some((r) => r.id === w.region)).length;
+    const F = data.config.fastTravel;
+    const status = !here ? '<p class="warn">길잡이 돌 앞에서만 건너뛸 수 있다.</p>' : '';
+    return `${status}<div class="tmaps">${maps}</div>
+      <ul class="list">${rows || '<li><small>아직 익힌 다른 돌이 없다. 마을과 쉼터의 돌에 다가가면 길을 익힌다.</small></li>'}</ul>
+      <p class="muted">🪙 ${Math.floor(a.silver).toLocaleString('ko-KR')}은화 · 돌 앞에서 ${F.castSec}초 동안 길을 연다(움직이거나 맞으면 끊긴다). 싸운 지 ${F.combatLockSec}초 안에는 못 쓴다.${unknown ? ` · 아직 못 가 본 돌 ${unknown}개` : ''}${reg.id === 'wreck_coast' ? ' · 안개 벽 너머로는 건너뛸 수 없다' : ''}</p>`;
+  }
+
+  // ── 마구간(v3.2): 탈것 사기·고르기, 안장·편자 ──
+  function stableHtml(a) {
+    const C = qctxL();
+    const M = mountsOf(a);
+    const st = stableAt(C, a);
+    const pctOf = (m) => Math.round((m.speed * (1 + gearSpeed(C, a)) - 1) * 100);
+    const sale = st ? stableMounts(C, st).map((m) => {
+      const own = M.own.includes(m.id);
+      const err = buyError(C, a, m.id);
+      const lock = m.need?.quest && a.quests?.done?.[m.need.quest] == null ? `🔒 ${esc(data.quests[m.need.quest]?.name || '')} 뒤` : '';
+      const btn = own ? '<button disabled>이미 있다</button>' : `<button ${err ? 'disabled' : ''} data-act="mount-buy" data-v="${m.id}">🪙${m.price.toLocaleString('ko-KR')} 사기</button>`;
+      return `<li><div><b>🐎 ${esc(m.name)}</b> <em class="ok">+${Math.round((m.speed - 1) * 100)}% 빠르기</em><small>${esc(m.desc)}</small>${lock ? `<small class="warn">${lock}</small>` : ''}</div>${btn}</li>`;
+    }).join('') : '<li><small>마구간 앞에서 연다.</small></li>';
+    const mine = M.own.map((id) => {
+      const m = data.mounts[id];
+      const on = M.pick === id;
+      return `<li><div><b>${on ? '⭐ ' : ''}${esc(m.name)}</b> <em class="ok">+${pctOf(m)}%</em><small>${esc(m.desc)}</small></div>${on ? '<button disabled>타는 놈</button>' : `<button data-act="mount-pick" data-v="${id}">이놈을 탄다</button>`}</li>`;
+    }).join('');
+    const slot = (s, name) => {
+      const cur = M.gear[s];
+      const have = [...new Set(a.bag.filter((e) => !e.uid && data.items[e.item]?.mountGear?.slot === s).map((e) => e.item))];
+      const curTxt = cur ? `${ii(data.items[cur])} ${esc(data.items[cur].name)} <em class="ok">+${Math.round(data.items[cur].mountGear.speed * 100)}%</em> <button class="mini" data-act="mount-ungear" data-v="${s}">떼기</button>` : '<small class="muted">없음</small>';
+      const puts = have.map((it) => `<button class="mini" data-act="mount-gear" data-v="${it}">${ii(data.items[it])} ${esc(data.items[it].name)} 달기</button>`).join('');
+      return `<li><div><b>${name}</b> ${curTxt}</div><div class="btns row">${puts}</div></li>`;
+    };
+    return `<p class="muted">🪙 ${Math.floor(a.silver).toLocaleString('ko-KR')}은화 · ${touch ? '🐎 단추' : 'V'}로 부르고 내린다. 맞거나, 휘두르거나, 캐거나, 만들면 내린다. 싸운 지 ${data.config.mount.combatLockSec}초 안에는 못 부른다.</p>
+      <h3>이 마구간에서 파는 탈것</h3><ul class="list">${sale}</ul>
+      <h3>내 탈것</h3><ul class="list">${mine || '<li><small>아직 탈것이 없다.</small></li>'}</ul>
+      <h3>안장·편자</h3><ul class="list">${slot('saddle', '안장')}${slot('shoes', '편자')}</ul>
+      <p class="muted">안장은 갑옷대(가죽), 편자는 대장간(쇠)에서 만든다. 어느 탈것에 달든 같이 빨라진다.</p>`;
+  }
+
   const TITLE_ICON = { '☰': 'menu', '⚔️': 'mastery', '🎒': 'bag', '📈': 'skills', '📜': 'log', '📋': 'board', '⚖️': 'market', '⚙️': 'settings', '📖': 'journal', '💬': 'talk', '🏠': 'home' };
-  const TITLES = { hub: '☰ 메뉴', char: '⭐ 능력치', exped: '🔥 원정', territory: '🏰 영지', mastery: '⚔️ 무기 숙련', bag: '🎒 가방', skills: '📈 생활 스킬', log: '📜 기록', board: '📋 마을 게시판', market: '⚖️ 등대 마을 거래소', menu: '⚙️ 설정', journal: '📖 일지' };
+  const TITLES = { hub: '☰ 메뉴', char: '⭐ 능력치', exped: '🔥 원정', territory: '🏰 영지', mastery: '⚔️ 무기 숙련', bag: '🎒 가방', skills: '📈 생활 스킬', log: '📜 기록', board: '📋 마을 게시판', market: '⚖️ 등대 마을 거래소', menu: '⚙️ 설정', journal: '📖 일지', travel: '🪨 길잡이 돌', stable: '🐎 마구간' };
 
   function renderPanel(force) {
     if (!panel) return;
@@ -1552,6 +1660,10 @@ export function createHud(root, game, { touch, onAct }) {
     } else if (panel.kind === 'house') {
       title = '🏠 집';
       html = houseHtml(a, panel.plot);
+    } else if (panel.kind === 'travel') html = travelHtml(a);
+    else if (panel.kind === 'stable') {
+      title = `🐎 ${game.state.settlements[panel.at]?.name ?? ''} 마구간`;
+      html = stableHtml(a);
     } else if (panel.kind === 'cross' && data.objects[panel.obj].ferry) {
       // 오가는 배(v0.9): 짐·귀환 지점은 그대로, 언제든 되돌아온다
       const to = data.lists.regions.find((r) => r.id === data.objects[panel.obj].cross);

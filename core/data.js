@@ -3,7 +3,7 @@
 
 // 퀘스트 단계 종류(v0.5.2에 생활 단계를 더했다)
 export const STEP_TYPES = ['talk', 'go', 'kill', 'use', 'defend', 'have', 'eat', 'store', 'repair', 'sell', 'project', 'faction'];
-export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects', 'npcs', 'quests', 'unlocks', 'factions', 'housing', 'guilds', 'weapons', 'expeditions', 'rivals', 'territory'];
+export const DATA_FILES = ['config', 'items', 'recipes', 'nodes', 'skills', 'regions', 'stations', 'agents', 'creatures', 'projects', 'npcs', 'quests', 'unlocks', 'factions', 'housing', 'guilds', 'weapons', 'expeditions', 'rivals', 'territory', 'travel'];
 
 export function buildData(raw) {
   const problems = [];
@@ -297,9 +297,25 @@ export function buildData(raw) {
     if (h.owner.startsWith('ai:') && !T.aiGuilds.some((g) => `ai:${g.id}` === h.owner)) problems.push(`영지 ${h.settlement}: 주인 ${h.owner} 없음`);
   }
   for (const s of T.supply) if (s.item && !items[s.item]) problems.push(`전쟁 물자 ${s.item} 없음`);
+  // 길잡이 돌·탈것(v3.2)
+  const TR = raw.travel || { waystones: [], mounts: [], stables: {} };
+  for (const w of TR.waystones) {
+    if (!regions[w.region]) problems.push(`길잡이 돌 ${w.id}: 지역 ${w.region} 없음`);
+    if (w.at && !sids.has(w.at)) problems.push(`길잡이 돌 ${w.id}: 마을 ${w.at} 없음`);
+    if (w.site && !sites[w.site]) problems.push(`길잡이 돌 ${w.id}: 자리 ${w.site} 없음`);
+  }
+  for (const [sid, ms] of Object.entries(TR.stables)) {
+    if (!sids.has(sid)) problems.push(`마구간 ${sid}: 마을 없음`);
+    for (const m of ms) if (!TR.mounts.some((x) => x.id === m)) problems.push(`마구간 ${sid}: 탈것 ${m} 없음`);
+  }
+  for (const m of TR.mounts) if (m.quest && !quests[m.quest]) problems.push(`탈것 ${m.id}: 퀘스트 ${m.quest} 없음`);
+  for (const q of Object.values(quests)) if (q.reward?.mount && !TR.mounts.some((x) => x.id === q.reward.mount)) problems.push(`퀘스트 ${q.id}: 탈것 ${q.reward.mount} 없음`);
   if (problems.length) throw new Error('데이터 오류\n- ' + problems.join('\n- '));
 
   return {
+    waystones: Object.fromEntries(TR.waystones.map((w) => [w.id, w])),
+    mounts: Object.fromEntries(TR.mounts.map((m) => [m.id, m])),
+    stables: TR.stables,
     territory: T,
     rivals: raw.rivals || { bands: [], names: ['이름 없음'], respawnSec: 240, aggro: 16, leash: 42, fallSec: 2.5 },
     weapons,
@@ -329,6 +345,8 @@ export function buildData(raw) {
     expeditions: Object.fromEntries((raw.expeditions?.list || []).map((e) => [e.id, e])),
     expeditionCfg: raw.expeditions || { list: [], mercs: { list: [] } },
     lists: {
+      waystones: TR.waystones,
+      mounts: TR.mounts,
       projects: projectList,
       unlocks: unlockList,
       creatures: raw.creatures || [],

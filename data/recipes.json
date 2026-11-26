@@ -3032,5 +3032,106 @@
     },
     "seconds": 8,
     "xp": 50
+  },
+  {
+    "id": "rc_saddle_leather",
+    "type": "refine",
+    "name": "가죽 안장",
+    "skill": "armoring",
+    "level": 8,
+    "station": "armorbench",
+    "slots": [
+      {
+        "key": "seat",
+        "item": "leather",
+        "qty": 6
+      },
+      {
+        "key": "pad",
+        "item": "cloth_reed",
+        "qty": 2
+      }
+    ],
+    "output": {
+      "item": "mg_saddle_leather",
+      "qty": 1
+    },
+    "seconds": 10,
+    "xp": 50
+  },
+  {
+    "id": "rc_saddle_fine",
+    "type": "refine",
+    "name": "수놓은 안장",
+    "skill": "armoring",
+    "level": 30,
+    "station": "armorbench",
+    "slots": [
+      {
+        "key": "seat",
+        "item": "leather",
+        "qty": 10
+      },
+      {
+        "key": "pad",
+        "item": "cloth_reed",
+        "qty": 4
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "output": {
+      "item": "mg_saddle_fine",
+      "qty": 1
+    },
+    "seconds": 14,
+    "xp": 120
+  },
+  {
+    "id": "rc_shoes_iron",
+    "type": "refine",
+    "name": "쇠 편자",
+    "skill": "smithing",
+    "level": 18,
+    "station": "forge",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "main",
+        "item": "ingot_iron",
+        "qty": 3
+      }
+    ],
+    "output": {
+      "item": "mg_shoes_iron",
+      "qty": 1
+    },
+    "seconds": 9,
+    "xp": 60
+  },
+  {
+    "id": "rc_shoes_mist",
+    "type": "refine",
+    "name": "안개강 편자",
+    "skill": "smithing",
+    "level": 40,
+    "station": "forge",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "main",
+        "item": "ingot_mist",
+        "qty": 2
+      }
+    ],
+    "output": {
+      "item": "mg_shoes_mist",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 140
   }
 ]

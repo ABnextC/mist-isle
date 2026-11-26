@@ -115,6 +115,33 @@ export function createMinimap(canvas, game, terrain) {
       g.font = '10px sans-serif';
       g.fillText(s.name, px + 6, py + 3);
     }
+    // 길잡이 돌(v3.2): 익힌 돌은 푸른 마름모, 아직이면 흐린 마름모. 마구간은 말굽(탈것이 열린 뒤)
+    for (const o of game.statics) {
+      if (o.kind !== 'waystone' && o.kind !== 'stable') continue;
+      if (o.x < x0 || o.x > x1) continue;
+      const [px, py] = toPx(o.x, o.z);
+      if (o.kind === 'stable') {
+        if (!isUnlocked({ state, data }, a, 'mount')) continue;
+        g.strokeStyle = '#f2d49a';
+        g.lineWidth = 1.6;
+        g.beginPath();
+        g.arc(px, py, 3.2, Math.PI * 0.15, Math.PI * 1.85, true);
+        g.stroke();
+        g.lineWidth = 1;
+        continue;
+      }
+      const known = a.ways?.[o.way] != null;
+      g.fillStyle = known ? '#8fdcff' : 'rgba(150, 150, 150, 0.55)';
+      g.strokeStyle = known ? '#123040' : 'rgba(30, 30, 30, 0.5)';
+      g.beginPath();
+      g.moveTo(px, py - 4);
+      g.lineTo(px + 3, py);
+      g.lineTo(px, py + 4);
+      g.lineTo(px - 3, py);
+      g.closePath();
+      g.fill();
+      g.stroke();
+    }
     // NPC: 할 이야기가 있으면 금빛
     for (const n of data.lists.npcs || []) {
       const np = npcPos(game, n.id);

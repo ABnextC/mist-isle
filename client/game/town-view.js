@@ -5,7 +5,8 @@
 
 import * as THREE from 'three';
 import { STATIONS, house, lighthouse, board, market, campfire, wreck, pier, lampPost, fence, bake, tent, cabin, site, pennant, torch,
-  banner, palisade, crates, watchtower, shipBlack, chest, supply, papers, altar, pillar, arch, mural, rubble, brazier, towerOld, pump, heartCrystal, drillRig } from './models/town.js';
+  banner, palisade, crates, watchtower, shipBlack, chest, supply, papers, altar, pillar, arch, mural, rubble, brazier, towerOld, pump, heartCrystal, drillRig, waystone, stable } from './models/town.js';
+import { makeMount } from './models/mounts.js';
 
 const BEAM_V = `
 varying float vAlong;
@@ -175,7 +176,28 @@ export function createTownView(scene, game, hf, { mats, terrain, region, me = nu
       else if (o.kind === 'arch') place(arch(), o.x, o.z, o.rot, { dy: -0.06 });
       else if (o.kind === 'mural') place(mural(), o.x, o.z, o.rot, { dy: -0.06 });
       else if (o.kind === 'rubble') place(rubble(houseSeed++), o.x, o.z, o.rot);
-      else if (o.kind === 'brazier') {
+      else if (o.kind === 'waystone') {
+        // 길잡이 돌(v3.2): 마을 쪽을 보게. 익힌 돌과 아닌 돌을 둘 다 놓고 하나만 보인다
+        const w = game.data.waystones?.[o.way];
+        const c = w?.at ? game.data.settlements[w.at] : null;
+        const rot = c ? Math.atan2(c.x - o.x, c.z - o.z) : o.rot || 0;
+        const on = place(waystone(true), o.x, o.z, rot, { dy: -0.04 });
+        const off = place(waystone(false), o.x, o.z, rot, { dy: -0.04 });
+        ways.push({ way: o.way, on, off, lit: null });
+      } else if (o.kind === 'stable') {
+        place(stable(houseSeed++), o.x, o.z, o.rot);
+        // 마구간 안에 매어 둔 조랑말 한 마리
+        const q = makeMount('pony', houseSeed * 11);
+        const r = o.rot || 0;
+        const lx = -1.2;
+        const lz = 0.1;
+        const px = o.x + lx * Math.cos(r) + lz * Math.sin(r);
+        const pz = o.z - lx * Math.sin(r) + lz * Math.cos(r);
+        q.root.position.set(px, hf.height(px, pz), pz);
+        q.root.rotation.y = r + Math.PI; // 여물통(뒷벽) 쪽을 본다
+        q.neck.rotation.x += 0.5; // 고개를 숙여 여물을 먹는다
+        scene.add(q.root);
+      } else if (o.kind === 'brazier') {
         // 켠 것과 꺼진 것을 둘 다 놓고, 내 퀘스트 진행에 맞춰 하나만 보인다
         const on = place(brazier(true), o.x, o.z, o.rot);
         const off = place(brazier(false), o.x, o.z, o.rot);
@@ -184,7 +206,18 @@ export function createTownView(scene, game, hf, { mats, terrain, region, me = nu
     }
   }
   const braziers = [];
+  const ways = [];
   syncStatics();
+  function syncWays() {
+    const W = me?.()?.ways || {};
+    for (const w of ways) {
+      const lit = W[w.way] != null;
+      if (lit === w.lit) continue;
+      w.lit = lit;
+      w.on.visible = lit;
+      w.off.visible = !lit;
+    }
+  }
   // 내 집(v0.8): 집터마다 팻말 → 오두막 → 집 → 큰 집. 바뀌면 그 자리만 다시 놓는다
   const homes = {};
   function syncHomes() {
@@ -291,6 +324,7 @@ export function createTownView(scene, game, hf, { mats, terrain, region, me = nu
     if (syncT <= 0) {
       syncT = 0.5;
       syncBraziers();
+      syncWays();
       const b = beaconState(me?.());
       if (b !== beacon) {
         beacon = b;

@@ -156,6 +156,12 @@ export function createAudio(game, { pid, heightAt, regionOf, zoneOf, townOf, cam
   on('potion', (ev) => { if (mine(ev)) play('drink', null); });
   on('equip', (ev) => { if (mine(ev)) play('equip', null, { gain: 0.8 }); });
   on('recall.done', (ev) => { if (mine(ev)) play('recall', null); });
+  // 길잡이 돌·탈것(v3.2)
+  on('travel.started', (ev) => { if (mine(ev)) play('waystone', null); });
+  on('travel.done', (ev) => { if (mine(ev)) play('recall', null); });
+  on('way.found', (ev) => { if (mine(ev)) play('bell', null, { gain: 0.6 }); });
+  on('mount.summon', (ev) => { if (mine(ev)) play('whistle', null); });
+  on('mount.on', (ev) => { if (mine(ev)) play('neigh', null, { gain: 0.8 }); });
   on('tool.broken', (ev) => { if (mine(ev)) play('block', null, { gain: 0.6 }); });
   on('exp.clear', (ev) => { if (mine(ev)) play('quest', null); });
   on('exp.fail', (ev) => { if (mine(ev)) play('fail', null); });
@@ -185,13 +191,13 @@ export function createAudio(game, { pid, heightAt, regionOf, zoneOf, townOf, cam
     lastZ = a.z;
     if (d > 3 || a.cb?.dodge) { stepAcc = 0; return; }
     stepAcc += d;
-    const stride = 0.72;
+    const stride = a.riding ? 0.9 : 0.72; // 탈것(v3.2): 말굽은 더 자주, 더 무겁게
     if (stepAcc < stride) return;
     stepAcc -= stride;
     const h = heightAt(a.x, a.z);
     const zone = zoneOf(a)?.id;
     const surface = h < 0.02 ? 'water' : h < 1.4 && seaNear > 0.15 ? 'sand' : zone === 'snow' ? 'snow' : townOf(a) ? 'stone' : 'ground';
-    play('step', null, { surface, gain: 0.55 });
+    play(a.riding ? 'hoof' : 'step', null, { surface, gain: a.riding ? 0.7 : 0.55 });
   }
 
   // 바다가 얼마나 가까운가: 둘레 높이를 재어 물 아래 칸의 몫

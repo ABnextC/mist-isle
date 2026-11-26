@@ -11,6 +11,8 @@ import { tickLerp } from './interp.js';
 import { workSpots, npcPos } from '../../core/world.js';
 import { accompanying } from '../../core/systems/allies.js';
 import { makeActorModel } from './models/actor.js';
+import { makeMount } from './models/mounts.js';
+import { poseMount } from './mount-pose.js';
 import { loadClips, clips as animClips, sample as animSample, sampleOnce as animOnce, sampleTool, hasClip, blend as animBlend, smoothstep, NB } from './anim.js';
 
 loadClips(new URL('../assets/anim/clips.json', import.meta.url).href);
@@ -294,6 +296,51 @@ export function createActorsView(scene, game, hf, camera = null) {
       m.hips.quaternion.premultiply(tmpQ);
       m.hips.position.applyQuaternion(tmpQ);
     }
+  }
+
+  // 탈것(v3.2): 타고 있으면 발밑에 짐승을 두고 걸음새를 돌린다. 돌려주는 값: 안장 윗면 높이(땅 기준, 출렁임 포함)
+  let mountSeed = 1;
+  function syncMount(v, a, dt) {
+    const def = a.riding ? game.data.mounts?.[a.riding] : null;
+    const owner = a.kind === 'ally' ? game.state.actors[a.ally?.owner] : a;
+    const want = def ? `${def.look}|${owner?.mounts?.gear?.saddle || ''}` : null;
+    if (want !== v.mountKey) {
+      if (v.mount) {
+        scene.remove(v.mount.root);
+        v.mount.root.traverse((o) => o.geometry?.dispose());
+        v.mount = null;
+      }
+      v.mountKey = want;
+      if (def) {
+        v.mount = makeMount(def.look, mountSeed++ * 37, owner?.mounts?.gear);
+        v.mountSt = { cyc: 0, gait: 'walk', gaitK: 1, prevA: [], breathe: Math.random() * 6 };
+        v.mountIn = 0;
+        scene.add(v.mount.root);
+      }
+    }
+    if (!v.mount) return null;
+    v.mountIn = Math.min(1, v.mountIn + dt * 2.5);
+    const k = smoothstep(0, 1, v.mountIn);
+    v.mount.root.position.copy(v.pos);
+    v.mount.root.rotation.y = v.yaw;
+    v.mount.root.scale.setScalar(0.75 + 0.25 * k);
+    const r = poseMount(v.mount, v.mountSt, dt, v.rawSpeed ?? v.speed);
+    return { y: v.mount.saddleTop * (0.75 + 0.25 * k) + r.dy, pitch: r.pitch, cyc: r.cyc, gait: r.gait };
+  }
+  // 탄 자세: 'ride' 고리를 말 걸음 반 주기마다 한 번 들썩이게
+  function ridePose(v, A, rd) {
+    const m = v.m;
+    const ph = (rd.cyc * (rd.gait === 'gallop' ? 1 : 2)) % 1;
+    animSample('ride', ph, v.qi, v.hi);
+    const names = A.bones;
+    for (let i = 0; i < NB; i++) {
+      const b = m.bones[names[i]];
+      if (b) b.quaternion.fromArray(v.qi, i * 4);
+    }
+    m.hips.position.set(m.hipsRest.x + v.hi[0], m.hipsRest.y + v.hi[1], m.hipsRest.z + v.hi[2]);
+    // 엉덩이 마디가 안장 위 8cm에 오게 몸 전체를 올린다
+    m.root.position.y = v.pos.y + rd.y + 0.08 - (m.hipsRest.y + v.hi[1]);
+    m.root.rotation.x = rd.pitch * 0.6;
   }
 
   // 옷자락·머리카락 관성(v0.4.6): 달리면 뒤로 끌리고, 멈추면 앞으로 쏠렸다 돌아오고, 돌면 바깥으로 흔들린다
@@ -742,6 +789,7 @@ export function createActorsView(scene, game, hf, camera = null) {
     for (const [id, v] of views) {
       if (state.actors[id] || state.mobs[id] || id.startsWith('npc:')) continue;
       scene.remove(v.m.root);
+      if (v.mount) scene.remove(v.mount.root);
       views.delete(id);
       pseudo.delete(id);
     }
@@ -778,7 +826,7 @@ export function createActorsView(scene, game, hf, camera = null) {
       let yaw = a.yaw || 0;
       const node = a.action?.type === 'gather' ? state.nodes[a.action.node] : null;
       const corpse = a.action?.type === 'skin' ? state.mobs?.[a.action.mob] : null;
-      const casting = a.action?.type === 'recall';
+      const casting = a.action?.type === 'recall' || a.action?.type === 'travel' || a.action?.type === 'mount';
       const nodeDef = node ? data.nodes[node.type] : null;
       // 하는 일: 채집(노드마다 동작), 가죽 벗기기, 제작(작업대 곁에서 쉴 때)
       let work = null;
@@ -794,6 +842,8 @@ export function createActorsView(scene, game, hf, camera = null) {
       v.yaw = lerpAngle(v.yaw, yaw, 1 - Math.exp(-dt * 12));
       v.m.root.position.copy(v.pos);
       v.m.root.rotation.y = v.yaw;
+      v.m.root.rotation.x = 0;
+      const rd = syncMount(v, a, dt);
       // 쓰러진 약탈자: 한동안 누워 있다가 땅으로 꺼진다
       if (a.mob && a.mob.mode === 'dead') v.m.root.position.y -= Math.max(0, state.t - a.mob.deadAt - CORPSE_SEC) * 0.45;
 
@@ -826,7 +876,12 @@ export function createActorsView(scene, game, hf, camera = null) {
       let mode = null; // 손 동작이 덮는 범위: full(온몸) · upper(윗몸, 서 있으면 다리도) · arm(오른팔만)
       const cm = combatPose(v, a, p, wDef, dt, !!A);
       if (cm && (!mode || cm === 'full')) mode = cm;
-      if (A) {
+      if (A && rd && hasClip('ride')) {
+        ridePose(v, A, rd);
+        crossfade(v, 'ride', dt);
+        v.m.showProp(null);
+        if (skill || wDef) v.m.aimHeld(null);
+      } else if (A) {
         locomotion(v, dt, A);
         // 틱 사이 시각(위치 보간과 같게 틱 하나 늦춘다)
         const stI = state.t + ((game.alpha ?? 1) - 1) / HZ;

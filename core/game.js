@@ -34,6 +34,7 @@ import { expeditionsTick } from './systems/expeditions.js';
 import { dayOfMonth, seasonOf, isMarketDay } from './systems/calendar.js';
 import { agentsTick } from './systems/agents.js';
 import { questsTick } from './systems/quests.js';
+import { waystonesTick } from './systems/waystones.js';
 
 const DEFAULT_ACTORS = [{ id: 'p1', name: '개척자', kind: 'player' }];
 
@@ -104,6 +105,7 @@ function wrap(ctx, bus) {
       questsTick(ctx);
       expeditionsTick(ctx);
       territoryTick(ctx); // 영지전(v2.7)
+      waystonesTick(ctx); // 길잡이 돌(v3.2)
       const h = ctx.clock.hour(state.t);
       if (h !== state.clock.hour) {
         state.clock.hour = h;

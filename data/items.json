@@ -2479,5 +2479,57 @@
     "ammo": {
       "dmg": 0.22
     }
+  },
+  {
+    "id": "mg_saddle_leather",
+    "name": "가죽 안장",
+    "family": "leather",
+    "stage": "mountgear",
+    "tier": 1,
+    "value": 60,
+    "icon": "🐎",
+    "mountGear": {
+      "slot": "saddle",
+      "speed": 0.04
+    }
+  },
+  {
+    "id": "mg_saddle_fine",
+    "name": "수놓은 안장",
+    "family": "leather",
+    "stage": "mountgear",
+    "tier": 2,
+    "value": 220,
+    "icon": "🐎",
+    "mountGear": {
+      "slot": "saddle",
+      "speed": 0.07
+    }
+  },
+  {
+    "id": "mg_shoes_iron",
+    "name": "쇠 편자",
+    "family": "metal",
+    "stage": "mountgear",
+    "tier": 2,
+    "value": 70,
+    "icon": "🧲",
+    "mountGear": {
+      "slot": "shoes",
+      "speed": 0.04
+    }
+  },
+  {
+    "id": "mg_shoes_mist",
+    "name": "안개강 편자",
+    "family": "metal",
+    "stage": "mountgear",
+    "tier": 3,
+    "value": 260,
+    "icon": "🧲",
+    "mountGear": {
+      "slot": "shoes",
+      "speed": 0.07
+    }
   }
 ]

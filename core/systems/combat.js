@@ -1,3 +1,6 @@
+import { regionAt } from '../terrain.js';
+import { wayLanding } from './waystones.js';
+import { dismount } from './mounts.js';
 // 전투: 체력·기력·공격·회피·막기·쓰러짐 (설계 11장, 이번 범위는 docs/v0.3-combat.md).
 // 모든 판정은 코어가 30Hz로 한다. 화면은 이벤트(combat.*)를 보고 연출만 한다.
 
@@ -119,6 +122,8 @@ export function interrupt(ctx, a, reason) {
   if (!act) return;
   a.action = null;
   if (act.type === 'recall') ctx.emit('recall.cancelled', { actor: a.id });
+  else if (act.type === 'travel') ctx.emit('travel.cancelled', { actor: a.id, reason });
+  else if (act.type === 'mount') ctx.emit('mount.cancelled', { actor: a.id, reason });
   else if (act.type === 'skin') {
     const m = ctx.state.mobs[act.mob];
     if (m && m.skinning === a.id) m.skinning = null;
@@ -596,6 +601,7 @@ export function hurtActor(ctx, a, mob, raw, opts = null) {
   if (pieces.length) wear(ctx, a, ctx.rng.pick(pieces), 1);
   a.stats.dmgTaken = r2((a.stats.dmgTaken || 0) + dmg);
   interrupt(ctx, a, 'hit');
+  if (a.riding) dismount(ctx, a, 'hit'); // 탈것(v3.2): 맞으면 내린다
   ctx.emit('combat.hurt', { actor: a.id, mob: mob.id, dmg, blocked, hp: cb.hp, pvp: !!opts?.pvp, crit: !!opts?.crit });
   if (cb.hp <= 0) down(ctx, a, mob);
   return true;
@@ -614,6 +620,7 @@ function down(ctx, a, mob) {
   a.dest = null;
   a.nav = null;
   a.action = null;
+  a.riding = null;
   // 쓰러지면 낀 장비 내구가 10% 준다(설계 11.3). 물건은 잃지 않는다.
   for (const s of ['weapon', 'weapon2', ...SLOTS]) {
     const e = equipped(ctx, a, s);
@@ -631,13 +638,29 @@ function getUp(ctx, a) {
   const cb = a.cb;
   const s = nearestSettlement(ctx, a);
   const storage = s.stations.find((st) => st.type === 'storage') || s;
-  a.x = Math.round((storage.x + 2.2) * 1000) / 1000;
-  a.z = Math.round(storage.z * 1000) / 1000;
+  let x = storage.x + 2.2;
+  let z = storage.z;
+  // 길잡이 돌(v3.2): 익힌 돌이 마을보다 가까우면 그 돌 앞에서 일어난다(진행 페르소나 콩이)
+  let way = null;
+  if (a.ways) {
+    const reg = regionAt(ctx.data.lists.regions, a.x).id;
+    for (const w of ctx.data.lists.waystones || []) {
+      if (a.ways[w.id] == null || w.region !== reg) continue;
+      const p = wayLanding(ctx, w.id);
+      if (p && Math.hypot(p.x - a.x, p.z - a.z) < Math.hypot(x - a.x, z - a.z)) {
+        x = p.x;
+        z = p.z;
+        way = w.id;
+      }
+    }
+  }
+  a.x = Math.round(x * 1000) / 1000;
+  a.z = Math.round(z * 1000) / 1000;
   cb.downUntil = 0;
   cb.stunUntil = 0;
   cb.hp = cb.maxHp;
   cb.st = ctx.cfg.combat.stamina;
-  ctx.emit('actor.up', { actor: a.id, settlement: s.id });
+  ctx.emit('actor.up', { actor: a.id, settlement: s.id, way });
 }
 
 export function combatTick(ctx, dt) {

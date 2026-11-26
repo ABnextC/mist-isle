@@ -18,6 +18,7 @@ import { projectProgress } from '../settlements.js';
 import { bondTier, questBond, dailyMult, isBirthday } from './bonds.js';
 import { accompanying } from './allies.js';
 import { gainLevelXp, needXp } from './level.js';
+import { regionAt } from '../terrain.js';
 
 export const TALK_RANGE = 3.6;
 export const USE_RANGE = 2.6;
@@ -157,11 +158,33 @@ export function rewardGiver(ctx, q) {
 
 // 세력 지도자 대화(v0.7.1): npc '@leader'는 내가 든 세력의 지도자다(없으면 강두)
 export function stepNpc(ctx, a, st) {
-  if (st?.npc !== '@leader') return st?.npc;
+  if (st?.npc !== '@leader') return st?.npc ? localNpc(ctx, a, st.npc) : st?.npc;
   return factionDef(ctx, factionOf(a))?.leader || 'gangdu_port';
 }
+
+// 같은 사람(v3.3.2): 등대섬 강두와 갈대 나루 강두처럼 섬마다 따로 선 같은 이름의 NPC.
+// 그 사람이 내가 있는 섬에 없으면, 이 섬에 보이는 같은 이름의 NPC가 대신 이야기를 받는다(안개 벽을 건넌 뒤 막히지 않게)
+export function localNpc(ctx, a, id) {
+  const n = ctx.data.npcs[id];
+  if (!n || !a || !ctx.terrain) return id;
+  const R = ctx.data.lists.regions;
+  const p = npcPos(ctx, id);
+  if (!p) return id;
+  const mine = regionAt(R, a.x).island;
+  if (regionAt(R, p.x).island === mine) return id;
+  for (const m of ctx.data.lists.npcs || Object.values(ctx.data.npcs)) {
+    if (m.id === id || m.name !== n.name) continue;
+    const q = npcPos(ctx, m.id);
+    if (q && regionAt(R, q.x).island === mine && npcShown(ctx, a, m.id)) return m.id;
+  }
+  return id;
+}
 // 세력마다 다른 대사(sayBy)
-export const stepSay = (ctx, a, st) => st.sayBy?.[factionOf(a)] || st.say;
+// 대사는 늘 줄 목록으로 돌려준다(v3.3.2: 한 줄 글로 적힌 대사가 대화창을 멈추게 하던 것 고침)
+export const stepSay = (ctx, a, st) => {
+  const s = st.sayBy?.[factionOf(a)] || st.say;
+  return s == null ? [] : Array.isArray(s) ? s : [String(s)];
+};
 
 // 재료 보상은 퀘스트·품목마다 묶음 하나(속성은 모두 55로 고르게)
 function rewardLot(ctx, q, def) {
@@ -324,21 +347,22 @@ export const defendTotal = (st) => st.waves.reduce((s, w) => s + Object.values(w
 
 // ── 생활 단계(v0.5.2) ───────────────────────────────
 // 가방에서 센다(낀 장비도 가방에 있다). equip이면 낀 것만
-function haveCount(a, item, equipOnly = false) {
-  if (!equipOnly) return countItem([a.bag], item);
+// v3.3.2: 마을 안이면 그 마을 창고도 센다(건네기 talk.take와 같게)
+function haveCount(a, item, equipOnly = false, ctx = null) {
+  if (!equipOnly) return countItem(ctx ? reachable(ctx, a) : [a.bag], item);
   const uids = new Set(Object.values(a.equip || {}).filter(Boolean));
   return a.bag.filter((e) => e.uid && uids.has(e.uid) && e.item === item).length;
 }
 
-export function haveProgress(a, st) {
-  if (st.need) return Object.entries(st.need).map(([item, need]) => ({ item, need, got: Math.min(need, haveCount(a, item, st.equip)) }));
+export function haveProgress(a, st, ctx = null) {
+  if (st.need) return Object.entries(st.need).map(([item, need]) => ({ item, need, got: Math.min(need, haveCount(a, item, st.equip, ctx)) }));
   const need = st.count || 1;
-  const got = st.any.reduce((n, it) => n + haveCount(a, it, st.equip), 0);
+  const got = st.any.reduce((n, it) => n + haveCount(a, it, st.equip, ctx), 0);
   return [{ item: null, need, got: Math.min(need, got) }];
 }
 
 // orAny: 이미 다음 것을 가졌으면 이 단계는 지난 셈이다(돌 도구를 벌써 만들었다면 표류목·돌 줍기는 끝)
-const haveMet = (a, st) => (st.orAny || []).some((it) => haveCount(a, it) > 0) || haveProgress(a, st).every((x) => x.got >= x.need);
+const haveMet = (a, st, ctx) => (st.orAny || []).some((it) => haveCount(a, it, false, ctx) > 0) || haveProgress(a, st, ctx).every((x) => x.got >= x.need);
 
 // 고칠 수 있는 것(내구가 준 장비·도구)이 하나라도 있나
 function anyDamaged(ctx, a) {
@@ -433,7 +457,7 @@ export function questsTick(ctx) {
           const s = sitePos(ctx, st.site);
           if (Math.hypot(a.x - s.x, a.z - s.z) <= s.r) advance(ctx, a, id);
         } else if (st.type === 'defend') defendTick(ctx, a, id, st, p);
-        else if (st.type === 'have' && haveMet(a, st)) advance(ctx, a, id);
+        else if (st.type === 'have' && haveMet(a, st, ctx)) advance(ctx, a, id);
         else if (st.type === 'project' && ctx.state.projects[st.project]?.done) advance(ctx, a, id);
         else if (st.type === 'faction' && a.faction?.id) advance(ctx, a, id); // 세력을 골랐다(v0.7)
         else if (st.type === 'repair' && !anyDamaged(ctx, a)) advance(ctx, a, id);
@@ -491,7 +515,7 @@ export function stepGoal(ctx, a, id) {
     // 가지기 단계는 아직 모자란 물건의 노드부터
     let types = gl.node;
     if (st.type === 'have' && st.need && gl.nodeFor) {
-      const short = haveProgress(a, st).filter((x) => x.got < x.need).map((x) => x.item);
+      const short = haveProgress(a, st, ctx).filter((x) => x.got < x.need).map((x) => x.item);
       const pick = gl.node.filter((n, i) => short.includes(gl.nodeFor[i]));
       if (pick.length) types = pick;
     }
@@ -546,7 +570,7 @@ export function stepText(ctx, a, id) {
     return p.ev ? `${st.text} (${Math.min(p.n, total)}/${total} · ${p.ev.wave + 1}/${st.waves.length}물결)` : st.text;
   }
   if (st.type === 'have') {
-    const prog = haveProgress(a, st);
+    const prog = haveProgress(a, st, ctx);
     if (st.need) return `${st.text} (${prog.map((x) => `${ctx.data.items[x.item].name} ${x.got}/${x.need}`).join(' · ')})`;
     return `${st.text} (${prog[0].got}/${prog[0].need})`;
   }
@@ -565,7 +589,46 @@ export function npcMark(ctx, a, npc) {
 
 // 이 사람이 줄 수 있는 부가 퀘스트(v1.4)
 export function npcOffers(ctx, a, npc) {
-  return ctx.data.lists.quests.filter((q) => q.giver === npc && available(ctx, a, q));
+  return ctx.data.lists.quests.filter((q) => q.giver && q.giver !== 'board' && available(ctx, a, q) && (q.giver === npc || localNpc(ctx, a, q.giver) === npc));
+}
+// 이 퀘스트를 지금 누구에게서 받나(v3.3.2: 같은 사람이면 이 섬 쪽)
+export const giverNow = (ctx, a, q) => (q.giver && q.giver !== 'board' ? localNpc(ctx, a, q.giver) : q.giver);
+
+// 섬을 건너면 끝낼 수 없게 되는 퀘스트(v3.3.2): 남은 단계에 그 섬에 없는 사람·자리·물체가 있다(같은 이름의 사람이 있으면 괜찮다)
+export function strandedQuests(ctx, a, island) {
+  const R = ctx.data.lists.regions;
+  const isl = (p) => (p ? regionAt(R, p.x).island : island);
+  const out = [];
+  for (const id of Object.keys(a.quests?.active || {})) {
+    const q = ctx.data.quests[id];
+    if (!q || q.kind === 'main') continue;
+    const p = a.quests.active[id];
+    let lost = false;
+    for (let k = p.step; k < q.steps.length && !lost; k++) {
+      const st = q.steps[k];
+      if (st.type === 'talk' && st.npc && st.npc !== '@leader') {
+        const n = ctx.data.npcs[st.npc];
+        lost = !Object.values(ctx.data.npcs).some((m) => m.name === n.name && isl(npcPos(ctx, m.id)) === island);
+      }
+      if (st.site) lost = lost || isl(sitePos(ctx, st.site)) !== island;
+      if (st.objs) lost = lost || st.objs.some((o) => !(k === p.step && p.used.includes(o)) && isl(objPos(ctx, o)) !== island);
+    }
+    if (lost) out.push(id);
+  }
+  return out;
+}
+
+// 퀘스트 그만두기(v3.3.2): 메인이 아니면 언제든. 다시 받을 수 있다
+export function dropQuest(ctx, a, id, why = 'self') {
+  const q = ctx.data.quests[id];
+  const Q = a.quests;
+  if (!Q?.active[id]) return false;
+  delete Q.active[id];
+  for (const it of q.takes || []) delete Q.items[it];
+  for (const st of q.steps) if (st.gives) delete Q.items[st.gives];
+  if (Q.track === id) Q.track = Object.keys(Q.active).sort((x, y) => mainFirst(ctx, x, y))[0] || null;
+  ctx.emit('quest.drop', { actor: a.id, quest: id, why });
+  return true;
 }
 
 export const hasMark = (a, mark) => a?.marks?.[mark] != null;

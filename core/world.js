@@ -148,6 +148,9 @@ export function npcRoutine(ctx, n) {
 }
 
 export function npcPos(ctx, id) {
+  // 이야기 중(v3.3.2): 말을 건 사람이 있으면 그 자리에 멈춰 선다
+  const h = ctx.state?.npcHold?.[id];
+  if (h && h.until > ctx.state.t) return { x: h.x, z: h.z, yaw: h.yaw, what: '이야기하는 중', hold: true };
   const r = npcRoutine(ctx, ctx.data?.npcs[id]);
   if (r) return r;
   const o = ctx.statics?.find((x) => x.npc === id);
@@ -257,7 +260,8 @@ export function buildObstacles(ctx) {
   for (const s of Object.values(ctx.state.settlements)) {
     for (const st of s.stations) for (const o of stationSolids(ctx.data, st)) add(o.x, o.z, o.r);
   }
-  for (const o of ctx.statics) if (o.r > 0) add(o.x, o.z, o.r);
+  // 하루 동선이 있는 NPC(v1.5)는 제자리에 없으니 몸 자리를 막지 않는다(v3.3.2)
+  for (const o of ctx.statics) if (o.r > 0 && !(o.kind === 'npc' && ctx.data.npcs[o.npc]?.routine?.length)) add(o.x, o.z, o.r);
   return {
     near(x, z) {
       const cx = Math.floor(x / cell);

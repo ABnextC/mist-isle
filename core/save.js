@@ -654,6 +654,15 @@ const MIGRATIONS = [
       st.meta.engine = '3.3.1';
     },
   },
+  {
+    // v3.3.2 퀘스트·NPC 재점검: 이야기 중 멈춰 선 NPC(state.npcHold)는 없을 때 빈 것으로
+    from: 37,
+    to: 38,
+    run(st) {
+      st.npcHold ??= {};
+      st.meta.engine = '3.3.2';
+    },
+  },
 ];
 
 // v0.5.2: 1~2장 퀘스트에 생활 단계가 끼었다. 하던 단계 번호를 새 번호로(앞에 낀 단계는 건너뛴다)

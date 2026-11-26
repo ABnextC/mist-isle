@@ -24,9 +24,9 @@ import { addXp } from './systems/progress.js';
 import { startAttack, startDodge, interrupt, equipped, equipLoad, heavyCostOf, dodgeCostOf, weaponOf, startAbility, addAura } from './systems/combat.js';
 import { learnError, learn, loadoutOf, abilityOf, mOf, resetCost } from './systems/mastery.js';
 import { corpseOpen, skinLoot, skinSeconds } from './systems/mobs.js';
-import { talkDue, talk, useDue, useObj, available, startQuest, nearNpc, questNote, TALK_RANGE, USE_RANGE, BOARD_RANGE, talkReady, npcShown } from './systems/quests.js';
+import { talkDue, talk, useDue, useObj, available, startQuest, nearNpc, questNote, TALK_RANGE, USE_RANGE, BOARD_RANGE, talkReady, npcShown, giverNow, dropQuest } from './systems/quests.js';
 import { isUnlocked, allowedProject } from './systems/unlocks.js';
-import { objPos } from './world.js';
+import { objPos, npcPos } from './world.js';
 import { bondable, greetDue, greet, giftDue, giftable, gift, perkOf, inviteDue } from './systems/bonds.js';
 import { spawnAlly, dismissAlly, allyOf } from './systems/allies.js';
 import { spendError, spend, resetCost as attrResetCost, resetAttrs, spentOf, jewelStat } from './systems/level.js';
@@ -1250,7 +1250,7 @@ const FACTION_JOIN = {
     if (!f) return 'bad_args';
     if (!isUnlocked(ctx, a, 'faction')) return 'locked';
     if (factionOf(a) === f.id) return 'same_faction';
-    if (!nearNpc(ctx, a, f.leader, TALK_RANGE) || !npcShown(ctx, a, f.leader)) return 'too_far';
+    if (!nearNpc(ctx, a, f.leader, TALK_RANGE + 0.8) || !npcShown(ctx, a, f.leader)) return 'too_far';
     const wait = (a.faction?.since ?? -1e9) + ctx.data.factions.switchDays * ctx.clock.dayLen - ctx.state.t;
     if (factionOf(a) && wait > 0) return 'faction_cooldown';
     return { f };
@@ -1272,7 +1272,7 @@ const FACTION_TASK = {
     const task = tasksOf(ctx, fid).find((t) => t.id === c.task);
     if (!task) return 'bad_args';
     if (taskDone(ctx, a, task)) return 'task_done';
-    if (!nearNpc(ctx, a, f.leader, TALK_RANGE)) return 'too_far';
+    if (!nearNpc(ctx, a, f.leader, TALK_RANGE + 0.8)) return 'too_far';
     const lists = reachable(ctx, a);
     if (countItem(lists, task.item) < task.qty) return 'need_items';
     return { task, lists };
@@ -1299,19 +1299,77 @@ const FACTION_TASK = {
   },
 };
 
+// 이야기 중 멈춰 서기(v3.3.2): 말을 걸면 그 NPC는 하루 동선을 멈추고 그 자리에 선다(HOLD_SEC, 말할 때마다 늘어난다)
+const HOLD_SEC = 90;
+function holdNpc(ctx, a, npc) {
+  const st = ctx.state;
+  const p = npcPos(ctx, npc);
+  if (!p) return;
+  st.npcHold ??= {};
+  for (const [k, h] of Object.entries(st.npcHold)) if (h.until <= st.t) delete st.npcHold[k];
+  st.npcHold[npc] = { x: p.x, z: p.z, yaw: Math.atan2(a.x - p.x, a.z - p.z), until: st.t + HOLD_SEC, by: a.id };
+}
+const refreshHold = (ctx, a, npc) => {
+  const h = ctx.state.npcHold?.[npc];
+  if (h && h.by === a.id) h.until = ctx.state.t + HOLD_SEC;
+};
+const TALK_OPEN = {
+  validate(ctx, a, c) {
+    if (!ctx.data.npcs[c.npc]) return 'no_npc';
+    const bad = alive(ctx, a);
+    if (bad) return bad;
+    if (!npcShown(ctx, a, c.npc)) return 'not_here';
+    if (!nearNpc(ctx, a, c.npc, TALK_RANGE + 0.8)) return 'too_far';
+    return {};
+  },
+  execute(ctx, a, c) {
+    holdNpc(ctx, a, c.npc);
+  },
+};
+const TALK_CLOSE = {
+  validate(ctx, a, c) {
+    const h = ctx.state.npcHold?.[c.npc];
+    if (!h || h.by !== a.id) return 'no_hold';
+    return {};
+  },
+  execute(ctx, a, c) {
+    delete ctx.state.npcHold[c.npc];
+  },
+};
+
 const TALK = {
   validate(ctx, a, c) {
     if (!ctx.data.npcs[c.npc]) return 'no_npc';
     const bad = alive(ctx, a);
     if (bad) return bad;
-    if (!nearNpc(ctx, a, c.npc, TALK_RANGE) || !npcShown(ctx, a, c.npc)) return 'too_far';
-    const due = talkReady(ctx, a, c.npc);
+    if (!nearNpc(ctx, a, c.npc, TALK_RANGE + 0.8) || !npcShown(ctx, a, c.npc)) return 'too_far';
+    let due = talkReady(ctx, a, c.npc);
+    // 퀘스트를 골라 말하기(v3.3.2): 한 사람에게 걸린 이야기가 여럿이면 하나씩
+    if (c.quest) {
+      if (!talkDue(ctx, a, c.npc).includes(c.quest)) return 'not_due';
+      if (!due.includes(c.quest)) return 'need_items';
+      due = [c.quest];
+    }
     if (!due.length && talkDue(ctx, a, c.npc).length) return 'need_items';
     return { due };
   },
   execute(ctx, a, c, p) {
+    refreshHold(ctx, a, c.npc);
     talk(ctx, a, p.due);
     ctx.emit('talk', { actor: a.id, npc: c.npc, quests: p.due });
+  },
+};
+
+// 퀘스트 그만두기(v3.3.2): 메인 퀘스트는 못 그만둔다
+const QUEST_ABANDON = {
+  validate(ctx, a, c) {
+    const q = ctx.data.quests[c.quest];
+    if (!q || !a.quests?.active[c.quest]) return 'no_quest';
+    if (q.kind === 'main') return 'main_quest';
+    return {};
+  },
+  execute(ctx, a, c) {
+    dropQuest(ctx, a, c.quest, 'self');
   },
 };
 
@@ -1323,10 +1381,11 @@ const QUEST_ACCEPT = {
     if (!a.quests || !available(ctx, a, q)) return 'not_available';
     if (q.giver === 'board') {
       if (!ctx.statics.some((o) => o.kind === 'board' && Math.hypot(o.x - a.x, o.z - a.z) <= BOARD_RANGE)) return 'too_far';
-    } else if (q.giver && !nearNpc(ctx, a, q.giver)) return 'too_far';
+    } else if (q.giver && !nearNpc(ctx, a, giverNow(ctx, a, q), TALK_RANGE + 0.8)) return 'too_far';
     return { q };
   },
   execute(ctx, a, c, p) {
+    if (p.q.giver && p.q.giver !== 'board') refreshHold(ctx, a, giverNow(ctx, a, p.q));
     startQuest(ctx, a, p.q.id);
   },
 };
@@ -1369,7 +1428,7 @@ const QUEST_TRACK = {
 const GREET = {
   validate(ctx, a, c) {
     if (!bondable(ctx, c.npc)) return 'no_bond';
-    if (!nearNpc(ctx, a, c.npc, TALK_RANGE) || !npcShown(ctx, a, c.npc)) return 'too_far';
+    if (!nearNpc(ctx, a, c.npc, TALK_RANGE + 0.8) || !npcShown(ctx, a, c.npc)) return 'too_far';
     if (!greetDue(ctx, a, c.npc)) return 'already';
     return {};
   },
@@ -1382,7 +1441,7 @@ const GIFT = {
     if (!bondable(ctx, c.npc)) return 'no_bond';
     const bad = alive(ctx, a);
     if (bad) return bad;
-    if (!nearNpc(ctx, a, c.npc, TALK_RANGE) || !npcShown(ctx, a, c.npc)) return 'too_far';
+    if (!nearNpc(ctx, a, c.npc, TALK_RANGE + 0.8) || !npcShown(ctx, a, c.npc)) return 'too_far';
     if (!giftDue(ctx, a, c.npc)) return 'gifted_today';
     const e = a.bag.find((x) => keyOf(x) === c.key);
     if (!e) return 'no_item';
@@ -1405,7 +1464,7 @@ const INVITE = {
     const bad = alive(ctx, a);
     if (bad) return bad;
     if (allyOf(ctx, a)) return 'ally_out';
-    if (!nearNpc(ctx, a, c.npc, TALK_RANGE) || !npcShown(ctx, a, c.npc)) return 'too_far';
+    if (!nearNpc(ctx, a, c.npc, TALK_RANGE + 0.8) || !npcShown(ctx, a, c.npc)) return 'too_far';
     if (!inviteDue(ctx, a, c.npc)) return 'invited_today';
     return {};
   },
@@ -1589,7 +1648,7 @@ const MOUNT_UNGEAR = {
 
 const HANDLERS = {
   FAST_TRAVEL, MOUNT, DISMOUNT, MOUNT_BUY, MOUNT_PICK, MOUNT_GEAR, MOUNT_UNGEAR,
-  WAR_DECLARE, WAR_SUPPLY, SEED_PLANT, PVP_FLAG, EXP_START, EXP_LEAVE, LEARN_BP, ATTR_SPEND, ATTR_RESET, INVITE, DISMISS_ALLY, GREET, GIFT, TALK, QUEST_ACCEPT, QUEST_USE, QUEST_TRACK, FACTION_JOIN, FACTION_TASK,
+  WAR_DECLARE, WAR_SUPPLY, SEED_PLANT, PVP_FLAG, EXP_START, EXP_LEAVE, LEARN_BP, ATTR_SPEND, ATTR_RESET, INVITE, DISMISS_ALLY, GREET, GIFT, TALK, TALK_OPEN, TALK_CLOSE, QUEST_ACCEPT, QUEST_ABANDON, QUEST_USE, QUEST_TRACK, FACTION_JOIN, FACTION_TASK,
   HOUSE_BUY, HOUSE_UPGRADE, HOUSE_PLACE, HOUSE_TAKE, REST, GARDEN_PLANT, GARDEN_HARVEST,
   FERRY, GUILD_CREATE, GUILD_JOIN, GUILD_LEAVE, GUILD_HIRE, GUILD_DISMISS, GUILD_GIVE, GUILD_PUT, GUILD_TAKE,
   MOVE, MOVE_INPUT, GATHER, CRAFT, EAT, STORE, TAKE, SET_AUTOPILOT, RECALL,

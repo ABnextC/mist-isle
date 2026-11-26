@@ -301,6 +301,7 @@ async function boot() {
   }
 
   const ui = { gather: null, skin: null, walked: null, last: { x: 0, z: 0, moving: false }, target: null };
+  let talkWith = null; // 지금 말을 걸어 멈춰 세운 NPC(v3.3.2)
   window.__mist.ui = ui; // 확인 도구용
 
   function save(say) {
@@ -394,6 +395,13 @@ async function boot() {
       else hud.open('craft', { station: t.id });
     } else if (t.kind === 'npc') {
       game.dispatch({ type: 'MOVE_INPUT', actor: PID, dx: 0, dz: 0 });
+      // v3.3.2: 말을 걸면 그 사람이 멈춰 선다. 안 되면 까닭을 알린다
+      const r = game.dispatch({ type: 'TALK_OPEN', actor: PID, npc: t.id });
+      if (!r.ok) {
+        hud.toast(ERR[r.error] || r.error, 'bad');
+        return;
+      }
+      talkWith = t.id;
       // 호감도(v1.6): 말을 걸면 하루 한 번 인사로 정이 든다(못 하면 그냥 넘어간다)
       game.dispatch({ type: 'GREET', actor: PID, npc: t.id });
       hud.open('talk', { npc: t.id });
@@ -543,14 +551,29 @@ async function boot() {
       case 'talk-do': {
         // 이야기를 넘긴다: 끝난 퀘스트·이어진 퀘스트를 대화창 뒷장에 보여 준다
         doneBuf.length = 0;
-        const due = talkDue(questCtx(game), a, v);
+        // v3.3.2: data-v는 "npc|quest" — 고른 퀘스트 하나만 넘긴다
+        const [npc, qid] = String(v).split('|');
+        const due = talkDue(questCtx(game), a, npc).filter((id) => !qid || id === qid);
         const steps = due.map((id) => ({ id, step: a.quests.active[id].step }));
-        if (game.dispatch({ type: 'TALK', actor: PID, npc: v }).ok) hud.open('talk', { npc: v, after: { done: doneBuf.splice(0), steps } });
+        const r = game.dispatch({ type: 'TALK', actor: PID, npc, ...(qid ? { quest: qid } : {}) });
+        if (r.ok) hud.open('talk', { npc, after: { done: doneBuf.splice(0), steps } });
+        else hud.toast(ERR[r.error] || r.error, 'bad');
         break;
       }
-      case 'quest-accept':
-        if (game.dispatch({ type: 'QUEST_ACCEPT', actor: PID, quest: v }).ok) hud.toast(`📜 「${data.quests[v].name}」을(를) 받았다`, 'good');
+      case 'quest-accept': {
+        const r = game.dispatch({ type: 'QUEST_ACCEPT', actor: PID, quest: v });
+        if (r.ok) {
+          hud.toast(`📜 「${data.quests[v].name}」을(를) 받았다`, 'good');
+          if (hud.panel?.kind === 'talk') hud.open('talk', { npc: hud.panel.npc });
+        } else hud.toast(ERR[r.error] || r.error, 'bad');
         break;
+      }
+      case 'quest-abandon': {
+        const r = game.dispatch({ type: 'QUEST_ABANDON', actor: PID, quest: v });
+        if (r.ok) hud.toast(`📜 「${data.quests[v].name}」을(를) 그만뒀다. 다시 받을 수 있다`, 'info');
+        else hud.toast(ERR[r.error] || r.error, 'bad');
+        break;
+      }
       case 'invite': {
         const r = game.dispatch({ type: 'INVITE', actor: PID, npc: v });
         if (!r.ok) hud.toast(ERR[r.error] || r.error, 'bad');
@@ -862,10 +885,12 @@ async function boot() {
     // NPC(v0.5)와 지금 퀘스트에 필요한 물체(궤짝·보급 상자·탁자)
     for (const o of game.statics) {
       if (o.kind === 'npc') {
-        const dx = o.x - a.x;
-        const dz = o.z - a.z;
+        // v3.3.2: 하루 동선으로 움직이는 NPC는 지금 서 있는 자리(npcPos)로 찾는다(그려지는 자리와 같게)
+        const np = npcPos(game, o.npc) || o;
+        const dx = np.x - a.x;
+        const dz = np.z - a.z;
         const d = Math.hypot(dx, dz);
-        if (d <= 3.3 && npcShown(questCtx(game), me(), o.npc)) consider(d - 0.6, dx, dz, { kind: 'npc', id: o.npc, x: o.x, z: o.z });
+        if (d <= 3.6 && npcShown(questCtx(game), me(), o.npc)) consider(d - 0.6, dx, dz, { kind: 'npc', id: o.npc, x: np.x, z: np.z });
       } else if (o.obj) {
         const dx = o.x - a.x;
         const dz = o.z - a.z;
@@ -981,6 +1006,11 @@ async function boot() {
 
   // 퀘스트 알림(v0.5)
   const doneBuf = [];
+  // v3.3.2: 건너면서 내려놓은 의뢰를 알린다
+  game.on('quest.drop', (ev) => {
+    if (ev.actor !== PID || ev.why !== 'cross') return;
+    setTimeout(() => hud.toast(`📜 등대섬 의뢰 「${data.quests[ev.quest].name}」을(를) 내려놓았다`, 'info', 5000), 2600);
+  });
   game.on('quest.done', (ev) => {
     if (ev.actor !== PID) return;
     doneBuf.push(ev);
@@ -1262,6 +1292,11 @@ async function boot() {
     last = Math.max(last, now);
     const a = me();
     perf.begin(now);
+    // 대화창을 닫으면(어느 길로든) 멈춰 세운 NPC를 놓아준다(v3.3.2)
+    if (talkWith && !(hud.panel?.kind === 'talk' && hud.panel.npc === talkWith)) {
+      game.dispatch({ type: 'TALK_CLOSE', actor: PID, npc: talkWith });
+      talkWith = null;
+    }
 
     // 1) 입력 → 명령
     const inp = input.poll();

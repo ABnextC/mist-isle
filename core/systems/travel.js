@@ -4,6 +4,7 @@ import { regionAt } from '../terrain.js';
 import { storeOf, objPos, siteXZ } from '../world.js';
 import { addEntry } from '../inventory.js';
 import { cancelOrder } from '../market.js';
+import { strandedQuests, dropQuest } from './quests.js';
 
 export function crossTo(ctx, a, rid, { ferry = false } = {}) {
   const { state, data } = ctx;
@@ -43,6 +44,9 @@ export function crossTo(ctx, a, rid, { ferry = false } = {}) {
   a.home = port;
   const [x, z] = ctx.terrain.beachPoint(to.spawn[0], to.spawn[1]);
   Object.assign(a, { x, z, move: null, dest: null, nav: null, action: null, stuck: 0 });
-  ctx.emit('cross', { actor: a.id, from: from.id, to: to.id, moved, orders });
+  // 두고 온 섬에서만 끝낼 수 있는 의뢰(v3.3.2)는 내려놓는다(일지에 막힌 채 남지 않게)
+  const dropped = strandedQuests(ctx, a, to.island);
+  for (const id of dropped) dropQuest(ctx, a, id, 'cross');
+  ctx.emit('cross', { actor: a.id, from: from.id, to: to.id, moved, orders, dropped });
   return true;
 }

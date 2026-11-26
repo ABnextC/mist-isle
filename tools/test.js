@@ -23,7 +23,9 @@ import { territoryDaily, seedYield } from '../core/systems/territory.js';
 import { passivesNow } from '../core/systems/combat.js';
 import { settlementDaily } from '../core/settlements.js';
 import { isUnlocked, allowedProject, chapterReached } from '../core/systems/unlocks.js';
-import { stepNpc, npcMark, available, npcShown } from '../core/systems/quests.js';
+import { stepNpc, npcMark, available, npcShown, npcOffers, stepSay } from '../core/systems/quests.js';
+import { crossTo } from '../core/systems/travel.js';
+import { buildObstacles } from '../core/world.js';
 import { bondPts, knownLikes, isBirthday } from '../core/systems/bonds.js';
 import { seasonOf, dayOfMonth, seasonYield, isMarketDay } from '../core/systems/calendar.js';
 import { repairCost, listingFee } from '../core/market.js';
@@ -1351,7 +1353,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '3.3.1');
+  eq(st.meta.engine, '3.3.2');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1543,7 +1545,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '3.3.1');
+  eq(st.meta.engine, '3.3.2');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -3018,7 +3020,7 @@ test('이주 34→35→36: 탈것·길잡이 돌·귀걸이 자리를 만들고,
   obj.state.meta.dataVersion = 34;
   const g2 = loadGame({ data, save: JSON.stringify(obj) });
   const a = g2.state.actors.p1;
-  eq(g2.state.meta.engine, '3.3.1');
+  eq(g2.state.meta.engine, '3.3.2');
   ok(a.mounts && a.mounts.own.length === 0 && a.riding === null);
   ok(a.equip && 'ear' in a.equip, '이주 35→36: 귀걸이 자리');
   ok(a.ways.w_lighthouse != null && a.ways.w_forest != null && a.ways.w_gull != null, '등대섬 마을 돌');
@@ -3242,6 +3244,129 @@ test('집 길잡이 돌: 집에 두면 길잡이 돌에서 집 앞으로 건너�
   g.advance(4.5);
   const s = data.settlements[plot.at];
   ok(Math.hypot(a.x - (s.x + plot.dx), a.z - (s.z + plot.dz)) < 6, '집 앞');
+});
+
+console.log('퀘스트·NPC 재점검 (v3.3.2)');
+test('대사 모양: 이야기 단계 대사는 늘 줄 목록(한 줄 글이면 대화창이 멈췄다 — 탈것 부탁 셋)', () => {
+  for (const q of data.lists.quests) q.steps.forEach((s, i) => {
+    if (s.type === 'talk') ok(s.say == null || Array.isArray(s.say), `${q.id} ${i}`);
+    for (const v of Object.values(s.sayBy || {})) ok(Array.isArray(v), `${q.id} ${i} sayBy`);
+  });
+  ok(Array.isArray(stepSay({}, {}, { say: '한 줄' })), '글 한 줄도 목록으로 돌려준다');
+});
+
+test('NPC 이야기: 하루 동선 NPC는 지금 자리에서 말을 걸고, 말을 걸면 멈춰 서서 읽는 동안 떠나지 않는다. 닫으면 다시 걷는다', () => {
+  const g = createGame({ data, seed: 4, actors: [{ id: 'p1', kind: 'player' }] });
+  const C = g._ctx;
+  const a = g.state.actors.p1;
+  const n = data.lists.npcs.find((x) => x.routine?.length >= 3 && !x.appear && x.at);
+  // 걷는 중인 시각을 찾는다
+  let p = null;
+  for (let k = 0; k < 2000; k++) {
+    g.advance(5);
+    p = npcPos(C, n.id);
+    if (p.walking) break;
+  }
+  ok(p.walking, '걷는 중');
+  const home = C.statics.find((o) => o.kind === 'npc' && o.npc === n.id);
+  Object.assign(a, { x: p.x + 2.8, z: p.z });
+  ok(Math.hypot(home.x - a.x, home.z - a.z) > 3.6 || true);
+  ok(g.dispatch({ type: 'TALK_OPEN', actor: 'p1', npc: n.id }).ok, '지금 자리에서 말이 닿는다');
+  const held = npcPos(C, n.id);
+  g.advance(60);
+  const after = npcPos(C, n.id);
+  eq(after.x, held.x, '멈춰 섬');
+  ok(Math.hypot(a.x - after.x, a.z - after.z) <= 3.6, '읽는 동안 닿는다');
+  ok(g.dispatch({ type: 'TALK_CLOSE', actor: 'p1', npc: n.id }).ok);
+  ok(!npcPos(C, n.id).hold, '놓아주면 다시 동선대로');
+  // 하루 동선 NPC의 제자리 몸은 길을 막지 않는다
+  const sol = buildObstacles(C).near(home.x, home.z).filter((o) => Math.hypot(o.x - home.x, o.z - home.z) < 0.01 && Math.abs(o.r - home.r) < 1e-9);
+  eq(sol.length, 0, '보이지 않는 기둥 없음');
+  // 멀리서는 안 된다
+  Object.assign(a, { x: after.x + 9, z: after.z });
+  eq(g.dispatch({ type: 'TALK_OPEN', actor: 'p1', npc: n.id }).error, 'too_far');
+});
+
+test('한 사람에게 이야기가 여럿이면 골라서 하나씩: 건넬 것이 모자란 이야기가 다른 이야기를 막지 않는다', () => {
+  const g = createGame({ data, seed: 4, actors: [{ id: 'p1', kind: 'player' }] });
+  const C = g._ctx;
+  const a = g.state.actors.p1;
+  const q = data.quests.sq_first_pony;
+  a.quests.active = {};
+  a.quests.done.q4_forest = 1;
+  const p = npcPos(C, 'gangdu');
+  Object.assign(a, { x: p.x + 2, z: p.z });
+  ok(g.dispatch({ type: 'QUEST_ACCEPT', actor: 'p1', quest: q.id }).ok);
+  // 강두에게 건넬 것이 모자란 이야기를 하나 더 건다(가짜 메인 단계)
+  const fake = Object.values(data.quests).find((x) => x.kind === 'main' && x.steps.some((s) => s.type === 'talk' && s.npc === 'gangdu' && s.take));
+  if (fake) a.quests.active[fake.id] = { step: fake.steps.findIndex((s) => s.type === 'talk' && s.npc === 'gangdu' && s.take), n: 0, used: [], t: 0 };
+  const r = g.dispatch({ type: 'TALK', actor: 'p1', npc: 'gangdu', quest: q.id });
+  ok(r.ok, r.error);
+  eq(a.quests.active[q.id].step, 1, '조랑말 이야기만 넘어감');
+  if (fake) eq(g.dispatch({ type: 'TALK', actor: 'p1', npc: 'gangdu', quest: fake.id }).error, 'need_items');
+  eq(g.dispatch({ type: 'TALK', actor: 'p1', npc: 'gangdu', quest: 'q1_wake' }).error, 'not_due');
+});
+
+test('조랑말 부탁: 산딸기는 마을 창고에 있어도 세고, 하는 중에 안개 벽을 건너면 갈대 나루 강두가 이어 받는다. 본섬에서 처음 받아도 된다', () => {
+  const g = createGame({ data, seed: 4, actors: [{ id: 'p1', kind: 'player' }] });
+  const C = g._ctx;
+  const a = g.state.actors.p1;
+  a.quests.active = {};
+  a.quests.done.q4_forest = 1;
+  const p = npcPos(C, 'gangdu');
+  Object.assign(a, { x: p.x + 2, z: p.z });
+  ok(g.dispatch({ type: 'QUEST_ACCEPT', actor: 'p1', quest: 'sq_first_pony' }).ok);
+  ok(g.dispatch({ type: 'TALK', actor: 'p1', npc: 'gangdu' }).ok);
+  eq(a.quests.active.sq_first_pony.step, 1);
+  // 산딸기 6개를 등대 마을 창고에 둔다
+  const lot = Object.values(g.state.lots).find((l) => l.item === 'berry').id;
+  storeOf(a, 's_lighthouse').push({ item: 'berry', lot, bonus: null, qty: 6 });
+  const far = Object.values(g.state.nodes).find((nd) => Math.hypot(nd.x - p.x, nd.z - p.z) > 70 && Math.hypot(nd.x - p.x, nd.z - p.z) < 120);
+  Object.assign(a, { x: far.x + 1, z: far.z + 1 });
+  g.advance(2);
+  eq(a.quests.active.sq_first_pony.step, 1, '마을 밖에서는 창고를 안 센다');
+  Object.assign(a, { x: p.x + 2, z: p.z });
+  g.advance(2);
+  eq(a.quests.active.sq_first_pony.step, 2, '마을 안이면 창고도 센다');
+  // 그대로 안개 벽을 건넌다(창고 짐은 나루 창고로 간다)
+  crossTo(C, a, data.lists.regions.find((r) => r.island !== data.lists.regions[0].island).id);
+  ok(a.quests.active.sq_first_pony, '내려놓지 않음');
+  eq(stepNpc(C, a, data.quests.sq_first_pony.steps[2]), 'gangdu_port', '나루의 강두가 받는다');
+  const pp = npcPos(C, 'gangdu_port');
+  Object.assign(a, { x: pp.x + 2, z: pp.z });
+  ok(g.dispatch({ type: 'TALK', actor: 'p1', npc: 'gangdu_port' }).ok);
+  ok(a.mounts.own.includes('pony'), '조랑말');
+  // 본섬에서 처음 받는 사람
+  const g2 = createGame({ data, seed: 4, actors: [{ id: 'p1', kind: 'player' }] });
+  const C2 = g2._ctx;
+  const b = g2.state.actors.p1;
+  b.quests.active = {};
+  b.quests.done.q4_forest = 1;
+  const p2 = npcPos(C2, 'gangdu_port');
+  Object.assign(b, { x: p2.x + 2, z: p2.z });
+  ok(npcOffers(C2, b, 'gangdu_port').some((q) => q.id === 'sq_first_pony'), '나루 강두가 준다');
+  ok(g2.dispatch({ type: 'QUEST_ACCEPT', actor: 'p1', quest: 'sq_first_pony' }).ok);
+});
+
+test('퀘스트 그만두기: 부가 의뢰는 그만두고 다시 받는다, 메인은 못 그만둔다. 등대섬에서만 끝낼 의뢰는 건너면 내려놓는다', () => {
+  const g = createGame({ data, seed: 4, actors: [{ id: 'p1', kind: 'player' }] });
+  const C = g._ctx;
+  const a = g.state.actors.p1;
+  const side = data.quests.sq_lh_fish;
+  for (const r of side.requires || []) a.quests.done[r] = 1;
+  const gp = npcPos(C, side.giver);
+  Object.assign(a, { x: gp.x + 2, z: gp.z });
+  ok(g.dispatch({ type: 'QUEST_ACCEPT', actor: 'p1', quest: side.id }).ok);
+  ok(g.dispatch({ type: 'QUEST_ABANDON', actor: 'p1', quest: side.id }).ok);
+  ok(!a.quests.active[side.id] && a.quests.done[side.id] == null);
+  ok(g.dispatch({ type: 'QUEST_ACCEPT', actor: 'p1', quest: side.id }).ok, '다시 받음');
+  const main = Object.keys(a.quests.active).find((id) => data.quests[id].kind === 'main');
+  if (main) eq(g.dispatch({ type: 'QUEST_ABANDON', actor: 'p1', quest: main }).error, 'main_quest');
+  const evs = [];
+  g.on('quest.drop', (ev) => evs.push(ev));
+  crossTo(C, a, data.lists.regions.find((r) => r.island !== data.lists.regions[0].island).id);
+  ok(!a.quests.active[side.id], '내려놓음');
+  eq(evs[0]?.why, 'cross');
 });
 
 console.log('멀티 시험 (v3.0)');

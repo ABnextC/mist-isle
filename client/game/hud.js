@@ -16,7 +16,7 @@ import { settlementAt, storeOf, standingTier, reachable } from '../../core/world
 import { openProjects, projectOpen, needLeft, silverLeft, projectProgress, shipFee, upkeepOf } from '../../core/settlements.js';
 import { zoneAt, regionAt } from '../../core/terrain.js';
 import { ENGINE_VERSION } from '../../core/state.js';
-import { stepText, talkDue, boardOffers, available, TALK_RANGE, takeMet, takeProgress, stepSay, npcOffers, npcShown } from '../../core/systems/quests.js';
+import { giverNow, strandedQuests, stepText, talkDue, talkReady, boardOffers, available, TALK_RANGE, takeMet, takeProgress, stepSay, npcOffers, npcShown } from '../../core/systems/quests.js';
 import { factionOf, rankOf, tasksOf, taskDone } from '../../core/systems/factions.js';
 import { comfortOf, restValue } from '../../core/systems/housing.js';
 import { guildLevel, aiRoom, hireable } from '../../core/systems/guilds.js';
@@ -174,6 +174,10 @@ export function createHud(root, game, { touch, onAct }) {
       if (panel) panel.slotPick = panel.slotPick === +b.dataset.v ? null : +b.dataset.v;
     } else if (b.dataset.act === 'ui-talk-next') {
       if (panel) panel.after = null;
+    } else if (b.dataset.act === 'ui-talk-pick') {
+      if (panel) panel.pick = b.dataset.v;
+    } else if (b.dataset.act === 'ui-drop-ask') {
+      if (panel) panel.dropAsk = b.dataset.v;
     } else if (b.dataset.act === 'ui-price') {
       // 내놓을 값 조정: 한 번에 시세의 약 5%씩
       const key = b.dataset.v;
@@ -1115,7 +1119,11 @@ export function createHud(root, game, { touch, onAct }) {
     const p = a.quests.active[id];
     const steps = q.steps.map((st, i) => (i < p.step ? `<li class="done">✔ ${esc(st.text)}</li>` : i === p.step ? `<li class="now">▶ ${esc(stepText(ctx, a, id))}</li>` : '')).join('');
     const track = a.quests.track === id ? ' <small class="tracking">📍 따라가는 중</small>' : ` <button class="mini" data-act="quest-track" data-v="${id}">따라가기</button>`;
-    return `<li class="qactive"><b>${qLv(q)}${esc(q.name)}</b>${track}<p class="muted">${esc(q.summary)}</p><ul class="steps">${steps}</ul><small>보상: ${rewardText(q.reward)} · ✨ 경험치 ${questXp(qctxL(), game.state.actors[PID], q)}</small></li>`;
+    // 그만두기(v3.3.2): 메인이 아니면. 한 번 더 눌러야 그만둔다
+    const drop = q.kind === 'main' ? '' : panel?.dropAsk === id
+      ? ` <button class="mini" data-act="quest-abandon" data-v="${id}">정말 그만두기</button>`
+      : ` <button class="mini" data-act="ui-drop-ask" data-v="${id}">그만두기</button>`;
+    return `<li class="qactive"><b>${qLv(q)}${esc(q.name)}</b>${track}${drop}<p class="muted">${esc(q.summary)}</p><ul class="steps">${steps}</ul><small>보상: ${rewardText(q.reward)} · ✨ 경험치 ${questXp(qctxL(), game.state.actors[PID], q)}</small></li>`;
   }
   function bountyHtml(a) {
     const ctx = questCtx(game);
@@ -1222,8 +1230,17 @@ export function createHud(root, game, { touch, onAct }) {
       return `${head}${html}<div class="btns">${more ? '<button data-act="ui-talk-next">이야기 더 듣기</button>' : ''}<button data-act="close">알겠다</button></div>`;
     }
     const due = talkDue(ctx, a, panel.npc);
-    if (due.length) {
-      const id = due[0];
+    const offers0 = npcOffers(ctx, a, panel.npc);
+    // v3.3.2: 한 사람에게 걸린 이야기·의뢰가 여럿이면 고를 수 있게 한다(건넬 것이 모자란 이야기가 다른 이야기를 가리지 않게)
+    const ready = talkReady(ctx, a, panel.npc);
+    const pick = panel.pick && (due.includes(panel.pick) || offers0.some((q) => q.id === panel.pick)) ? panel.pick : null;
+    const others = (cur) => {
+      const list = [...due, ...offers0.map((q) => q.id)].filter((id) => id !== cur);
+      if (!list.length) return '';
+      return `<p class="muted">이 사람과 할 이야기 더 있음</p><div class="btns">${list.map((id) => `<button data-act="ui-talk-pick" data-v="${id}">${due.includes(id) ? (ready.includes(id) ? '💬' : '📦') : '📜'} ${esc(data.quests[id].name)}</button>`).join('')}</div>`;
+    };
+    if (due.length && !(pick && !due.includes(pick))) {
+      const id = pick || ready[0] || due[0];
       const q = data.quests[id];
       const st = q.steps[a.quests.active[id].step];
       const ch = data.chapters.find((c) => c.id === q.chapter);
@@ -1231,20 +1248,20 @@ export function createHud(root, game, { touch, onAct }) {
       // 건네기(v0.6): 모자라면 첫마디와 필요한 것만 보인다
       if (st.take && !takeMet(ctx, a, st)) {
         const need = takeProgress(ctx, a, st).map((x) => `<li>${esc(data.items[x.item].name)} <b>${x.got}/${x.need}</b></li>`).join('');
-        return `${tag}<p class="say">${esc(stepSay(ctx, a, st)[0])}</p><p class="muted">건넬 것(가방·이 마을 창고):</p><ul class="list">${need}</ul><div class="btns"><button data-act="close">모아 오겠습니다</button></div>`;
+        return `${tag}<p class="say">${esc(stepSay(ctx, a, st)[0])}</p><p class="muted">건넬 것(가방·이 마을 창고):</p><ul class="list">${need}</ul><div class="btns"><button data-act="close">모아 오겠습니다</button></div>${others(id)}`;
       }
-      return `${tag}${stepSay(ctx, a, st).map((l) => `<p class="say">${esc(l)}</p>`).join('')}<div class="btns"><button data-act="talk-do" data-v="${panel.npc}">${esc(st.reply || '알겠다')}</button></div>`;
+      return `${tag}${stepSay(ctx, a, st).map((l) => `<p class="say">${esc(l)}</p>`).join('')}<div class="btns"><button data-act="talk-do" data-v="${panel.npc}|${id}">${esc(st.reply || '알겠다')}</button></div>${others(id)}`;
     }
     // 부가 퀘스트(v1.4): 이 사람이 줄 수 있는 의뢰
-    const offers = npcOffers(ctx, a, panel.npc);
+    const offers = offers0;
     if (offers.length) {
-      const q = offers[0];
+      const q = offers.find((x) => x.id === pick) || offers[0];
       const lines = chatLines(npc, a);
       panel.chat ??= Math.floor(Math.random() * lines.length);
       const tag = q.repeat === 'birthday' ? '🎂 생일 잔치' : q.bond ? `💗 마음의 부탁(${esc(tierName(ctx, q.bond))})` : q.repeat === 'daily' ? '오늘의 부탁' : q.faction ? `${data.factions.list.find((f) => f.id === q.faction).icon} 세력 의뢰` : q.chain ? `연작 · ${esc(q.chain)}` : '부가 의뢰';
       return `${head}<p class="say">${esc(lines[panel.chat % lines.length])}</p><div class="qtag">${tag} · ${qLv(q)}${esc(q.name)}${qWarn(q)}</div><p class="say">${esc(q.summary)}</p>
         <p class="muted">▶ ${q.steps.map((st) => esc(st.text)).join(' → ')}</p>${rewardHtml(q.reward)}<p class="muted">✨ 경험치 ${questXp(qctxL(), a, q)}</p>
-        <div class="btns"><button class="pri" data-act="quest-accept" data-v="${q.id}">맡겠습니다</button>${inviteBtn(a, panel.npc)}${giftBtn}<button data-act="close">다음에</button></div>`;
+        <div class="btns"><button class="pri" data-act="quest-accept" data-v="${q.id}">맡겠습니다</button>${inviteBtn(a, panel.npc)}${giftBtn}<button data-act="close">다음에</button></div>${others(q.id)}`;
     }
     // 세력 지도자(v0.7): 세력이 열렸으면 세력 창을 보인다
     const fdef = data.factions.list.find((f) => f.leader === panel.npc);
@@ -1392,7 +1409,7 @@ export function createHud(root, game, { touch, onAct }) {
       const qctx = questCtx(game);
       const act = Object.keys(Q.active).filter((id) => data.quests[id]?.kind === 'side');
       body = act.length ? `<h3>하는 중</h3><ul class="qlist">${act.map((id) => activeQuestHtml(a, id)).join('')}</ul>` : '<p class="muted">맡은 부가 의뢰가 없다. 머리 위에 초록 ! 가 뜬 사람에게 말을 걸어 보자.</p>';
-      const offers = data.lists.quests.filter((q) => q.kind === 'side' && available(qctx, a, q) && npcShown(qctx, a, q.giver));
+      const offers = data.lists.quests.filter((q) => q.kind === 'side' && available(qctx, a, q) && npcShown(qctx, a, giverNow(qctx, a, q))).map((q) => ({ ...q, giver: giverNow(qctx, a, q) }));
       if (offers.length) {
         const where = (npc) => { const n = data.npcs[npc]; return n.at ? data.settlements?.[n.at]?.name || game.state.settlements[n.at]?.name || '' : data.sites?.[n.site]?.name || ''; };
         const kindOf = (q) => (q.repeat === 'birthday' ? '🎂 ' : q.bond ? '💗 ' : q.repeat === 'daily' ? '🔁 ' : q.faction ? `${data.factions.list.find((f) => f.id === q.faction).icon} ` : q.chain ? '🔗 ' : '');
@@ -1727,7 +1744,12 @@ export function createHud(root, game, { touch, onAct }) {
       html = `<p>강두의 배로 안개 벽 너머 <b>${esc(to.island)}</b> ${esc(port)}에 간다. <b>등대섬으로는 돌아올 수 없다.</b></p>`
         + `<div class="btns"><button data-act="cross-go" data-v="${esc(panel.obj)}">⛵ 건너간다</button><button data-act="close">아직</button></div>`
         + `<p class="muted">📦 등대섬 두 마을 창고 짐은 ${esc(port)} 창고로 옮겨 준다. 가방과 입은 장비는 그대로 간다.</p>`
-        + '<p class="muted">⚖️ 등대섬 장터에 걸어 둔 내 주문은 거둬서 돌려준다.</p>';
+        + '<p class="muted">⚖️ 등대섬 장터에 걸어 둔 내 주문은 거둬서 돌려준다.</p>'
+        + (() => {
+          // v3.3.2: 등대섬에서만 끝낼 수 있는 의뢰는 건너면 내려놓는다
+          const lost = strandedQuests(questCtx(game), a, to.island);
+          return lost.length ? `<p class="muted">📜 등대섬에서만 끝낼 수 있는 의뢰 ${lost.length}개는 내려놓게 된다: ${lost.map((id) => `「${esc(data.quests[id].name)}」`).join(' ')}</p>` : '';
+        })();
     }
     // 창 제목(v2.1): 앞 이모지가 틀 아이콘에 있으면 선 아이콘으로 바꿔 단다
     {

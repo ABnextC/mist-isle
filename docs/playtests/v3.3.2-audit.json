@@ -1,0 +1,22 @@
+{
+ "note": "v3.3.2 퀘스트·NPC 재점검. audit=tools/audit.js(코어 명령), ui=브라우저 대화창 전수(받기·이야기 단계마다 창 열기)",
+ "audit": {
+  "summary": {
+   "carriedOnCross": 25,
+   "droppedOnCross": 31,
+   "carried": "b_crab,b_raider,b_mistwolf,bd_doseon,bd_pal,bd_okhwa,bd_hansol,bd_ggul,bd_beodeul,bd_jaegan,bd_miru,bd_jumo,bd_aksa,bd_beomdol,bd_nallae,bd_seoksu,bd_musoe,bd_danbi,bd_gangjang,bd_boreum,bd_suryeon,bd_lamp_aide,bd_boatswain,bd_scribe,sq_first_pony",
+   "npcs": 44,
+   "quests": 159,
+   "questFails": 0,
+   "crossQuest": "c3_wall",
+   "problems": 0,
+   "sec": 143
+  },
+  "problems": []
+ },
+ "ui": {
+  "n": 159,
+  "problems": [],
+  "pageerrors": []
+ }
+}

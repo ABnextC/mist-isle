@@ -92,10 +92,19 @@ export function refineStep(level, hasCatalyst, cfg) {
 }
 
 // 결과 점수 = Σ(슬롯 속성 × 가중치) + 숙련 보정 + 작업대 보정 (+ 조율, + 걸작)
+// 숙련 계수(v3.3.1): 장비는 레시피를 막 배웠을 때 재료 몫을 덜 살린다.
+// 레시피 레벨 그대로면 start배, 한 레벨마다 perLevel씩, max에서 멈춘다.
+export function proficiency(diff, cfg) {
+  const k = cfg.craft.proficiency;
+  if (!k) return 1;
+  return Math.min(k.max, k.start + Math.max(0, diff) * k.perLevel);
+}
+
 export function craftScores(recipe, slotProps, opt, cfg) {
   const diff = Math.max(0, opt.skillLevel - recipe.level);
   const skillAdd = Math.min(diff * cfg.craft.skillBonusPerLevel, cfg.craft.skillBonusMax);
   const stationAdd = Math.max(0, (opt.stationTier || 1) - 1) * cfg.craft.stationTierBonus;
+  const prof = opt.equip ? proficiency(opt.skillLevel - recipe.level, cfg) : 1;
   const scores = {};
   for (const [stat, weights] of Object.entries(recipe.stats)) {
     let s = 0;
@@ -103,7 +112,7 @@ export function craftScores(recipe, slotProps, opt, cfg) {
       const [slot, prop] = ref.split('.');
       s += (slotProps[slot]?.[prop] ?? 0) * w;
     }
-    s += skillAdd + stationAdd;
+    s = s * prof + skillAdd + stationAdd;
     if (opt.tuneStat === stat) s += opt.tuneValue || 0;
     if (opt.masterwork) s += cfg.craft.masterwork.statBonus;
     scores[stat] = round1(clamp(s, 0, 110));

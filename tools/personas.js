@@ -95,10 +95,19 @@ export function runPersona(data, prof, { days, seed }) {
     }
   });
   // 등급(v3.3): 만든 것마다 등급(별 1~5 → 일반~전설)을 센다
+  // v3.3.1: 장비와 그 밖(음식 등)을 나눠 센다. 장비는 레시피보다 몇 레벨 위에서 만들었는지(diff)도 남긴다.
   const gradeN = [0, 0, 0, 0, 0];
+  const gearN = [0, 0, 0, 0, 0];
+  const gearLog = [];
   game.on('craft.done', (ev) => {
     if (data.items[ev.item].tool) toolStars.push({ t: game.state.t, item: ev.item, star: ev.star, mw: ev.masterwork });
-    if (ev.actor === 'b1' && ev.star) gradeN[ev.star - 1] += ev.qty || 1;
+    if (ev.actor !== 'b1' || !ev.star) return;
+    gradeN[ev.star - 1] += ev.qty || 1;
+    if (data.items[ev.item].kind === 'equipment') {
+      gearN[ev.star - 1]++;
+      const r = data.recipes[ev.recipe];
+      gearLog.push({ day: Math.floor(game.state.t / data.config.time.secondsPerGameDay) + 1, item: ev.item, diff: r ? a.skills[r.skill].level - r.level : null, star: ev.star });
+    }
   });
 
   const total = days * data.config.time.secondsPerGameDay;
@@ -142,7 +151,7 @@ export function runPersona(data, prof, { days, seed }) {
     gathers, gathersPerHour: Math.round(gathers / days),
     crafts: a.stats.craft, eat: a.stats.eat, focusUsed: Math.round(a.stats.focusUsed), masterwork: a.stats.masterwork,
     lotsUsed: lots.size, rotatingLots: rotLots.size, rotatingShare: Math.round((rotGathers / Math.max(1, gathers)) * 100),
-    tools, toolStars: toolStars.map((x) => x.star), grades: gradeN,
+    tools, toolStars: toolStars.map((x) => x.star), grades: gradeN, gearGrades: gearN, gearLog,
     fails, rejects, blocked, recalls,
     silver: a.silver, money,
     openOrders: ordersOf({ state: game.state }, 'b1').length,
@@ -173,7 +182,7 @@ if (isMain) {
       console.log(`  전투: 시간 ${r.time.fight}% · 처치 ${JSON.stringify(F.kills)} · 쓰러짐 ${F.downs.length}${F.downs.length ? `(${F.downs.join(',')})` : ''} · 손질 ${F.skins}(${JSON.stringify(r.skinBy)}) · 준 피해 ${F.dmgDealt} · 받은 피해 ${F.dmgTaken} · 피함 ${F.evaded} · 막음 ${F.blockedHits}`);
       console.log(`  장비: ${JSON.stringify(F.equip)} · 만든 장비 ${JSON.stringify(F.gearCraft)} · 수리 ${JSON.stringify(F.repairs)}`);
       console.log(`  10/20/30 도달: ${Object.entries(r.reach).map(([k, v]) => `${data.skills[k].name} ${f(v[10])}/${f(v[20])}/${f(v[30])}`).join(' · ')}`);
-      console.log(`  도구: ${Object.entries(r.tools).map(([k, v]) => (v ? `${data.items[v.item].name}[${GN[(v.star || 1) - 1]}](×${v.speed}, +${Math.round(v.yield * 100)}%)` : `${data.skills[k].name} 없음`)).join(' · ')} · 만든 것 등급 ${GN.map((n, i) => `${n} ${r.grades[i]}`).join(' · ')}`);
+      console.log(`  도구: ${Object.entries(r.tools).map(([k, v]) => (v ? `${data.items[v.item].name}[${GN[(v.star || 1) - 1]}](×${v.speed}, +${Math.round(v.yield * 100)}%)` : `${data.skills[k].name} 없음`)).join(' · ')} · 만든 것 등급 ${GN.map((n, i) => `${n} ${r.grades[i]}`).join(' · ')} · 장비 ${GN.map((n, i) => `${n} ${r.gearGrades[i]}`).join(' · ')}`);
       console.log(`  귀환 ${r.recalls}번 · 실패 ${JSON.stringify(r.fails)} · 거절 ${JSON.stringify(r.rejects)} · 막힘 ${r.blocked} · 가장 좋은 산지 ${r.bestLot}`);
       const mo = r.money;
       console.log(`  은화 ${r.silver} · 주문 ${mo.ordersN}건 ${mo.ordersQty}개 ${mo.orders}은화 · 거래소 판매 ${mo.soldQty}개 ${mo.sold}은화 · 구매 ${mo.boughtQty}개 ${mo.spent}은화 · 상인 ${mo.npcQty}개 ${mo.npc}은화 · 수리 ${mo.repairs || 0}번 ${mo.repairSpent || 0}은화 · 걸린 주문 ${r.openOrders}`);

@@ -14,7 +14,7 @@ import { regionAt } from './terrain.js';
 import { crossTo } from './systems/travel.js';
 import {
   toolSpeed, gatherSeconds, refineStep, weightedProps, round2, round3,
-  craftScores, convertStats, starOf, masterworkChance, avg,
+  craftScores, convertStats, starOf, masterworkChance, avg, proficiency,
 } from './formulas.js';
 import { dist, settlementAt, stationFor, bestTool, localStore, storeOf, reachable } from './world.js';
 import { placeAsk, placeBid, cancelOrder, npcSell, tradable, repairCost, findOrder, ordersOf, listingFee, entryStar } from './market.js';
@@ -1627,6 +1627,13 @@ export function makeCommands(ctx) {
   }
 
   // 제작 결과 미리보기: 걸작·조율을 뺀 예상 수치. 상태는 바꾸지 않는다.
+  // 같은 재료로 몇 레벨에서 한 등급 오르나(v3.3.1). 40레벨 안에 없으면 null
+  function nextGradeAt(r, slotProps, level, tier) {
+    const at = (lv) => starOf(avg(Object.values(craftScores(r, slotProps, { skillLevel: lv, stationTier: tier, equip: true }, ctx.cfg))), ctx.cfg.stars);
+    const now = at(level);
+    for (let lv = level + 1; lv <= level + 40; lv++) if (at(lv) > now) return { level: lv, star: at(lv) };
+    return null;
+  }
   function preview(cmd) {
     const v = validate(cmd);
     if (!v.ok) return { ok: false, error: v.error };
@@ -1636,14 +1643,16 @@ export function makeCommands(ctx) {
     const a = ctx.state.actors[cmd.actor];
     const level = a.skills[r.skill].level;
     if (r.type === 'craft') {
-      const scores = craftScores(r, p.slotProps, { skillLevel: level, stationTier: p.station.tier }, ctx.cfg);
       const out = ctx.data.items[r.output.item];
+      const scores = craftScores(r, p.slotProps, { skillLevel: level, stationTier: p.station.tier, equip: out.kind === 'equipment' }, ctx.cfg);
       return {
         ok: true,
         scores,
         stats: convertStats(out.statConvert, scores),
         star: starOf(avg(Object.values(scores)), ctx.cfg.stars),
         masterwork: masterworkChance(Math.max(0, level - r.level), !!cmd.tune, ctx.cfg),
+        prof: out.kind === 'equipment' ? proficiency(level - r.level, ctx.cfg) : null,
+        next: out.kind === 'equipment' ? nextGradeAt(r, p.slotProps, level, p.station.tier) : null,
       };
     }
     const step = r.refineStep === false ? 0 : refineStep(level, !!p.catalyst, ctx.cfg);

@@ -1,5 +1,5 @@
 {
-  "dataVersion": 36,
+  "dataVersion": 37,
   "skillCap": 60,
   "time": {
     "secondsPerGameDay": 3600,
@@ -56,6 +56,11 @@
       "maxFromLevel": 0.05,
       "tuneBonus": 0.02,
       "statBonus": 10
+    },
+    "proficiency": {
+      "start": 0.55,
+      "perLevel": 0.03,
+      "max": 1.0
     }
   },
   "refine": {

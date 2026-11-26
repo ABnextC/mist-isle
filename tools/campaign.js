@@ -13,7 +13,7 @@ import { createGame } from '../core/game.js';
 import { npcPos, sitePos, objPos } from '../core/world.js';
 import { stepNpc, available, questXp } from '../core/systems/quests.js';
 import { startFight, stopFight } from '../core/ai/fighter.js';
-import { convertStats, starOf } from '../core/formulas.js';
+import { convertStats, starOf, proficiency } from '../core/formulas.js';
 import { keyOf } from '../core/inventory.js';
 import { regionAt } from '../core/terrain.js';
 import { isAlive } from '../core/systems/mobs.js';
@@ -179,7 +179,10 @@ export function runCampaign(data, pid, { seed }) {
     if (why) T[why] += sec;
   };
   // 장비: 손재주(quality)가 높을수록 별이 높다
-  const score = (ch) => Math.round(38 + prof.quality * 7 + Number(ch.slice(2)) * 3);
+  // v3.3.1 숙련 계수: CAMP_PROFDIFF=레시피보다 몇 레벨 위에서 만드는지(기본 15 = 깎지 않음).
+  // 재료 몫(38 + 손재주)에만 곱하고, 장마다 붙는 숙련 보너스(장×3)는 그대로 둔다.
+  const PD = Number(process.env.CAMP_PROFDIFF ?? 15);
+  const score = (ch) => Math.round((38 + prof.quality * 7) * proficiency(PD, data.config) + Number(ch.slice(2)) * 3);
   function gearItem(id, sc) {
     const def = data.items[id];
     const scores = Object.fromEntries(Object.keys(def.statConvert).map((k) => [k, sc]));

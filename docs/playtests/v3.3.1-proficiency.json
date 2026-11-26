@@ -1,0 +1,2653 @@
+{
+ "note": "생활 사흘(시드 2026·7) 숙련 계수 전/후, 진행은 레시피 +6·+0 레벨 제작 가정",
+ "life2026": {
+  "before": [
+   {
+    "name": "솔",
+    "gathersPerHour": 209,
+    "grades": [
+     0,
+     16,
+     13,
+     0,
+     0
+    ],
+    "gearGrades": [
+     0,
+     10,
+     1,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_axe_copper",
+      "diff": 2,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_copper",
+      "diff": 3,
+      "star": 3
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_copper",
+      "diff": 3,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "wpn_club",
+      "diff": 7,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "wpn_spear_copper",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 1,
+      "star": 2
+     }
+    ],
+    "levels": {
+     "logging": 20,
+     "mining": 20,
+     "harvesting": 20,
+     "hunting": 3,
+     "sawing": 12,
+     "smelting": 10,
+     "weaving": 5,
+     "smithing": 9,
+     "carpentry": 5,
+     "cooking": 3
+    },
+    "silver": 485
+   },
+   {
+    "name": "모루",
+    "gathersPerHour": 147,
+    "grades": [
+     0,
+     28,
+     22,
+     0,
+     0
+    ],
+    "gearGrades": [
+     0,
+     14,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 4,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "tool_axe_copper",
+      "diff": 3,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "tool_pick_copper",
+      "diff": 3,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "tool_sickle_copper",
+      "diff": 4,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "wpn_sword_copper",
+      "diff": 3,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 2,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 3,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 4,
+      "star": 2
+     }
+    ],
+    "levels": {
+     "logging": 16,
+     "mining": 15,
+     "harvesting": 16,
+     "hunting": 4,
+     "sawing": 13,
+     "smelting": 11,
+     "weaving": 10,
+     "smithing": 10,
+     "carpentry": 8,
+     "cooking": 5
+    },
+    "silver": 1261
+   },
+   {
+    "name": "하랑",
+    "gathersPerHour": 203,
+    "grades": [
+     1,
+     25,
+     25,
+     0,
+     0
+    ],
+    "gearGrades": [
+     1,
+     11,
+     3,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_axe_copper",
+      "diff": 1,
+      "star": 3
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_copper",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "wpn_club",
+      "diff": 5,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "tool_sickle_copper",
+      "diff": 3,
+      "star": 3
+     },
+     {
+      "day": 2,
+      "item": "tool_sickle_stone",
+      "diff": 6,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "wpn_spear_copper",
+      "diff": 1,
+      "star": 3
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 2,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 3,
+      "star": 2
+     }
+    ],
+    "levels": {
+     "logging": 19,
+     "mining": 19,
+     "harvesting": 19,
+     "hunting": 5,
+     "sawing": 13,
+     "smelting": 13,
+     "weaving": 6,
+     "smithing": 9,
+     "carpentry": 7,
+     "cooking": 5
+    },
+    "silver": 1192
+   },
+   {
+    "name": "새벽",
+    "gathersPerHour": 31,
+    "grades": [
+     0,
+     4,
+     10,
+     0,
+     0
+    ],
+    "gearGrades": [
+     0,
+     4,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 2
+     }
+    ],
+    "levels": {
+     "logging": 4,
+     "mining": 5,
+     "harvesting": 4,
+     "hunting": 2,
+     "sawing": 3,
+     "smelting": 1,
+     "weaving": 3,
+     "smithing": 3,
+     "carpentry": 2,
+     "cooking": 2
+    },
+    "silver": 123
+   },
+   {
+    "name": "무진",
+    "gathersPerHour": 57,
+    "grades": [
+     0,
+     10,
+     0,
+     0,
+     0
+    ],
+    "gearGrades": [
+     0,
+     6,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "wpn_club",
+      "diff": 2,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "wpn_club",
+      "diff": 3,
+      "star": 2
+     }
+    ],
+    "levels": {
+     "logging": 8,
+     "mining": 7,
+     "harvesting": 8,
+     "hunting": 6,
+     "sawing": 6,
+     "smelting": 2,
+     "weaving": 4,
+     "smithing": 4,
+     "carpentry": 3,
+     "cooking": 1
+    },
+    "silver": 129
+   },
+   {
+    "name": "렌",
+    "gathersPerHour": 105,
+    "grades": [
+     0,
+     16,
+     17,
+     2,
+     0
+    ],
+    "gearGrades": [
+     0,
+     6,
+     1,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "wpn_club",
+      "diff": 2,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "tool_axe_copper",
+      "diff": 0,
+      "star": 3
+     },
+     {
+      "day": 3,
+      "item": "wpn_club",
+      "diff": 5,
+      "star": 2
+     }
+    ],
+    "levels": {
+     "logging": 13,
+     "mining": 13,
+     "harvesting": 12,
+     "hunting": 5,
+     "sawing": 7,
+     "smelting": 5,
+     "weaving": 5,
+     "smithing": 6,
+     "carpentry": 3,
+     "cooking": 4
+    },
+    "silver": 40
+   },
+   {
+    "name": "콩이",
+    "gathersPerHour": 26,
+    "grades": [
+     0,
+     3,
+     4,
+     0,
+     0
+    ],
+    "gearGrades": [
+     0,
+     3,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 2
+     }
+    ],
+    "levels": {
+     "logging": 4,
+     "mining": 4,
+     "harvesting": 4,
+     "hunting": 1,
+     "sawing": 3,
+     "weaving": 3,
+     "smithing": 2,
+     "carpentry": 2,
+     "cooking": 1
+    },
+    "silver": 40
+   }
+  ],
+  "after": [
+   {
+    "name": "솔",
+    "gathersPerHour": 99,
+    "grades": [
+     6,
+     4,
+     8,
+     0,
+     0
+    ],
+    "gearGrades": [
+     6,
+     0,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "tool_sickle_stone",
+      "diff": 6,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "wpn_club",
+      "diff": 6,
+      "star": 1
+     }
+    ],
+    "levels": {
+     "logging": 12,
+     "mining": 12,
+     "harvesting": 13,
+     "hunting": 2,
+     "sawing": 5,
+     "smelting": 7,
+     "weaving": 6,
+     "smithing": 7,
+     "carpentry": 3,
+     "cooking": 2
+    },
+    "silver": 178
+   },
+   {
+    "name": "모루",
+    "gathersPerHour": 185,
+    "grades": [
+     12,
+     13,
+     20,
+     0,
+     0
+    ],
+    "gearGrades": [
+     12,
+     5,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "wpn_club",
+      "diff": 4,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "tool_axe_stone",
+      "diff": 5,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "tool_pick_stone",
+      "diff": 5,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "tool_axe_copper",
+      "diff": 3,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "tool_pick_copper",
+      "diff": 3,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "wpn_sword_copper",
+      "diff": 2,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "tool_sickle_copper",
+      "diff": 4,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "wpn_sword_copper",
+      "diff": 3,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 2,
+      "star": 1
+     }
+    ],
+    "levels": {
+     "logging": 18,
+     "mining": 18,
+     "harvesting": 18,
+     "hunting": 4,
+     "sawing": 12,
+     "smelting": 13,
+     "weaving": 6,
+     "smithing": 9,
+     "carpentry": 6,
+     "cooking": 4
+    },
+    "silver": 1112
+   },
+   {
+    "name": "하랑",
+    "gathersPerHour": 299,
+    "grades": [
+     14,
+     9,
+     18,
+     0,
+     0
+    ],
+    "gearGrades": [
+     14,
+     1,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_axe_copper",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_copper",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_copper",
+      "diff": 2,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 5,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "wpn_club",
+      "diff": 5,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "wpn_spear_copper",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 3,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 3,
+      "star": 1
+     }
+    ],
+    "levels": {
+     "logging": 24,
+     "mining": 24,
+     "harvesting": 24,
+     "hunting": 4,
+     "sawing": 15,
+     "smelting": 15,
+     "weaving": 5,
+     "smithing": 9,
+     "carpentry": 8,
+     "cooking": 4
+    },
+    "silver": 897
+   },
+   {
+    "name": "새벽",
+    "gathersPerHour": 76,
+    "grades": [
+     6,
+     4,
+     8,
+     0,
+     0
+    ],
+    "gearGrades": [
+     6,
+     2,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 4,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_axe_copper",
+      "diff": 2,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_copper",
+      "diff": 2,
+      "star": 2
+     }
+    ],
+    "levels": {
+     "logging": 10,
+     "mining": 10,
+     "harvesting": 11,
+     "hunting": 2,
+     "sawing": 8,
+     "smelting": 5,
+     "weaving": 4,
+     "smithing": 6,
+     "carpentry": 3,
+     "cooking": 2
+    },
+    "silver": 172
+   },
+   {
+    "name": "무진",
+    "gathersPerHour": 45,
+    "grades": [
+     6,
+     4,
+     0,
+     0,
+     0
+    ],
+    "gearGrades": [
+     6,
+     0,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "wpn_club",
+      "diff": 3,
+      "star": 1
+     }
+    ],
+    "levels": {
+     "logging": 7,
+     "mining": 6,
+     "harvesting": 6,
+     "hunting": 6,
+     "sawing": 3,
+     "smelting": 2,
+     "weaving": 5,
+     "smithing": 4,
+     "carpentry": 2,
+     "cooking": 1
+    },
+    "silver": 167
+   },
+   {
+    "name": "렌",
+    "gathersPerHour": 89,
+    "grades": [
+     9,
+     12,
+     18,
+     0,
+     0
+    ],
+    "gearGrades": [
+     9,
+     0,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "wpn_club",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "wpn_club",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "wpn_club",
+      "diff": 4,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "wpn_club",
+      "diff": 4,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "tool_axe_copper",
+      "diff": 1,
+      "star": 1
+     }
+    ],
+    "levels": {
+     "logging": 11,
+     "mining": 12,
+     "harvesting": 11,
+     "hunting": 5,
+     "sawing": 6,
+     "smelting": 4,
+     "weaving": 3,
+     "smithing": 6,
+     "carpentry": 3,
+     "cooking": 4
+    },
+    "silver": 40
+   },
+   {
+    "name": "콩이",
+    "gathersPerHour": 15,
+    "grades": [
+     3,
+     0,
+     2,
+     0,
+     0
+    ],
+    "gearGrades": [
+     3,
+     0,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 1
+     }
+    ],
+    "levels": {
+     "logging": 3,
+     "mining": 2,
+     "harvesting": 2,
+     "hunting": 1,
+     "sawing": 2,
+     "weaving": 1,
+     "smithing": 2,
+     "carpentry": 1,
+     "cooking": 1
+    },
+    "silver": 40
+   }
+  ]
+ },
+ "life7": {
+  "before": [
+   {
+    "name": "솔",
+    "gathersPerHour": 68,
+    "grades": [
+     0,
+     10,
+     4,
+     0,
+     0
+    ],
+    "gearGrades": [
+     0,
+     4,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 2
+     }
+    ],
+    "levels": {
+     "logging": 10,
+     "mining": 10,
+     "harvesting": 8,
+     "hunting": 2,
+     "sawing": 3,
+     "smelting": 2,
+     "weaving": 4,
+     "smithing": 3,
+     "carpentry": 2,
+     "cooking": 2
+    },
+    "silver": 234
+   },
+   {
+    "name": "모루",
+    "gathersPerHour": 182,
+    "grades": [
+     0,
+     20,
+     25,
+     0,
+     0
+    ],
+    "gearGrades": [
+     0,
+     18,
+     1,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "crate_wood",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "crate_wood",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 2,
+      "star": 3
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 3,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 3,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "tool_axe_copper",
+      "diff": 4,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "wpn_club",
+      "diff": 7,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 4,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 4,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "tool_sickle_stone",
+      "diff": 7,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "tool_pick_stone",
+      "diff": 8,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "tool_pick_copper",
+      "diff": 5,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "tool_sickle_copper",
+      "diff": 6,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "wpn_sword_copper",
+      "diff": 4,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 5,
+      "star": 2
+     }
+    ],
+    "levels": {
+     "logging": 19,
+     "mining": 19,
+     "harvesting": 19,
+     "hunting": 7,
+     "sawing": 14,
+     "smelting": 13,
+     "weaving": 5,
+     "smithing": 10,
+     "carpentry": 9,
+     "cooking": 4
+    },
+    "silver": 1586
+   },
+   {
+    "name": "하랑",
+    "gathersPerHour": 152,
+    "grades": [
+     0,
+     21,
+     7,
+     0,
+     0
+    ],
+    "gearGrades": [
+     0,
+     11,
+     1,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_axe_copper",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_copper",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_copper",
+      "diff": 2,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 5,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "wpn_club",
+      "diff": 5,
+      "star": 3
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "wpn_spear_copper",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 1,
+      "star": 2
+     }
+    ],
+    "levels": {
+     "logging": 17,
+     "mining": 16,
+     "harvesting": 16,
+     "hunting": 2,
+     "sawing": 11,
+     "smelting": 9,
+     "weaving": 5,
+     "smithing": 7,
+     "carpentry": 5,
+     "cooking": 3
+    },
+    "silver": 499
+   },
+   {
+    "name": "새벽",
+    "gathersPerHour": 65,
+    "grades": [
+     0,
+     4,
+     2,
+     0,
+     0
+    ],
+    "gearGrades": [
+     0,
+     4,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 2
+     }
+    ],
+    "levels": {
+     "logging": 10,
+     "mining": 9,
+     "harvesting": 8,
+     "hunting": 3,
+     "sawing": 5,
+     "smelting": 1,
+     "weaving": 4,
+     "smithing": 3,
+     "carpentry": 4,
+     "cooking": 1
+    },
+    "silver": 253
+   },
+   {
+    "name": "무진",
+    "gathersPerHour": 30,
+    "grades": [
+     0,
+     4,
+     0,
+     0,
+     0
+    ],
+    "gearGrades": [
+     0,
+     4,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 2
+     }
+    ],
+    "levels": {
+     "logging": 4,
+     "mining": 5,
+     "harvesting": 4,
+     "hunting": 6,
+     "sawing": 3,
+     "weaving": 3,
+     "smithing": 2,
+     "carpentry": 1
+    },
+    "silver": 106
+   },
+   {
+    "name": "렌",
+    "gathersPerHour": 112,
+    "grades": [
+     0,
+     7,
+     10,
+     0,
+     0
+    ],
+    "gearGrades": [
+     0,
+     7,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 4,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "tool_axe_copper",
+      "diff": 2,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "wpn_club",
+      "diff": 5,
+      "star": 2
+     }
+    ],
+    "levels": {
+     "logging": 14,
+     "mining": 13,
+     "harvesting": 14,
+     "hunting": 3,
+     "sawing": 9,
+     "smelting": 6,
+     "weaving": 5,
+     "smithing": 6,
+     "carpentry": 3,
+     "cooking": 2
+    },
+    "silver": 48
+   },
+   {
+    "name": "콩이",
+    "gathersPerHour": 58,
+    "grades": [
+     0,
+     6,
+     0,
+     0,
+     0
+    ],
+    "gearGrades": [
+     0,
+     4,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 2
+     }
+    ],
+    "levels": {
+     "logging": 9,
+     "mining": 8,
+     "harvesting": 8,
+     "hunting": 1,
+     "sawing": 5,
+     "smelting": 3,
+     "weaving": 3,
+     "smithing": 4,
+     "carpentry": 3,
+     "cooking": 1
+    },
+    "silver": 49
+   }
+  ],
+  "after": [
+   {
+    "name": "솔",
+    "gathersPerHour": 208,
+    "grades": [
+     15,
+     9,
+     22,
+     0,
+     0
+    ],
+    "gearGrades": [
+     15,
+     1,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 4,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_axe_copper",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_copper",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "crate_wood",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_copper",
+      "diff": 3,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 7,
+      "star": 2
+     },
+     {
+      "day": 1,
+      "item": "wpn_spear_copper",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "crate_wood",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "crate_wood",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 3,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 3,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 4,
+      "star": 1
+     }
+    ],
+    "levels": {
+     "logging": 19,
+     "mining": 20,
+     "harvesting": 20,
+     "hunting": 5,
+     "sawing": 14,
+     "smelting": 12,
+     "weaving": 8,
+     "smithing": 9,
+     "carpentry": 8,
+     "cooking": 5
+    },
+    "silver": 1126
+   },
+   {
+    "name": "모루",
+    "gathersPerHour": 143,
+    "grades": [
+     19,
+     0,
+     0,
+     0,
+     0
+    ],
+    "gearGrades": [
+     19,
+     0,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "wpn_club",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "wpn_club",
+      "diff": 4,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "tool_axe_copper",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "tool_axe_stone",
+      "diff": 5,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "tool_pick_copper",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "tool_sickle_copper",
+      "diff": 3,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "tool_sickle_stone",
+      "diff": 6,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "wpn_sword_copper",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 3,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "wpn_sword_copper",
+      "diff": 3,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 4,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 4,
+      "star": 1
+     }
+    ],
+    "levels": {
+     "logging": 16,
+     "mining": 16,
+     "harvesting": 16,
+     "hunting": 6,
+     "sawing": 12,
+     "smelting": 10,
+     "weaving": 5,
+     "smithing": 9,
+     "carpentry": 8
+    },
+    "silver": 934
+   },
+   {
+    "name": "하랑",
+    "gathersPerHour": 210,
+    "grades": [
+     15,
+     11,
+     14,
+     0,
+     0
+    ],
+    "gearGrades": [
+     15,
+     1,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "tool_axe_copper",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "tool_axe_stone",
+      "diff": 4,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "arm_leather_hood",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "tool_pick_copper",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "tool_sickle_copper",
+      "diff": 3,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "wpn_club",
+      "diff": 6,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "wpn_spear_copper",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "wpn_spear_copper",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 2,
+      "star": 1
+     }
+    ],
+    "levels": {
+     "logging": 20,
+     "mining": 20,
+     "harvesting": 20,
+     "hunting": 4,
+     "sawing": 10,
+     "smelting": 10,
+     "weaving": 5,
+     "smithing": 9,
+     "carpentry": 6,
+     "cooking": 4,
+     "armoring": 1
+    },
+    "silver": 445
+   },
+   {
+    "name": "새벽",
+    "gathersPerHour": 42,
+    "grades": [
+     5,
+     0,
+     4,
+     0,
+     0
+    ],
+    "gearGrades": [
+     5,
+     0,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 2,
+      "star": 1
+     }
+    ],
+    "levels": {
+     "logging": 6,
+     "mining": 6,
+     "harvesting": 6,
+     "hunting": 3,
+     "sawing": 3,
+     "smelting": 1,
+     "weaving": 4,
+     "smithing": 3,
+     "carpentry": 2,
+     "cooking": 1
+    },
+    "silver": 149
+   },
+   {
+    "name": "무진",
+    "gathersPerHour": 23,
+    "grades": [
+     5,
+     0,
+     0,
+     0,
+     0
+    ],
+    "gearGrades": [
+     5,
+     0,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "wpn_club",
+      "diff": 2,
+      "star": 1
+     }
+    ],
+    "levels": {
+     "logging": 4,
+     "mining": 4,
+     "harvesting": 3,
+     "hunting": 6,
+     "sawing": 2,
+     "weaving": 3,
+     "smithing": 3,
+     "carpentry": 1
+    },
+    "silver": 89
+   },
+   {
+    "name": "렌",
+    "gathersPerHour": 178,
+    "grades": [
+     16,
+     6,
+     34,
+     2,
+     0
+    ],
+    "gearGrades": [
+     16,
+     2,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "wpn_club",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "tool_axe_copper",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "tool_pick_copper",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "tool_sickle_copper",
+      "diff": 3,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "wpn_sword_copper",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "crate_wood",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "arm_leather_hood",
+      "diff": 0,
+      "star": 2
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "wpn_sword_copper",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "arm_leather_hood",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 2,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 3,
+      "star": 1
+     },
+     {
+      "day": 3,
+      "item": "crate_wood",
+      "diff": 3,
+      "star": 2
+     }
+    ],
+    "levels": {
+     "logging": 18,
+     "mining": 18,
+     "harvesting": 18,
+     "hunting": 11,
+     "sawing": 12,
+     "smelting": 9,
+     "weaving": 5,
+     "tanning": 2,
+     "smithing": 8,
+     "carpentry": 7,
+     "cooking": 6,
+     "armoring": 2
+    },
+    "silver": 187
+   },
+   {
+    "name": "콩이",
+    "gathersPerHour": 151,
+    "grades": [
+     8,
+     11,
+     4,
+     0,
+     0
+    ],
+    "gearGrades": [
+     8,
+     1,
+     0,
+     0,
+     0
+    ],
+    "gearLog": [
+     {
+      "day": 1,
+      "item": "tool_axe_stone",
+      "diff": 0,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_pick_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "tool_sickle_stone",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 1,
+      "star": 1
+     },
+     {
+      "day": 1,
+      "item": "wpn_club",
+      "diff": 2,
+      "star": 2
+     },
+     {
+      "day": 2,
+      "item": "tool_axe_stone",
+      "diff": 5,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "tool_pick_stone",
+      "diff": 5,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "tool_sickle_stone",
+      "diff": 6,
+      "star": 1
+     },
+     {
+      "day": 2,
+      "item": "wpn_club",
+      "diff": 6,
+      "star": 1
+     }
+    ],
+    "levels": {
+     "logging": 15,
+     "mining": 15,
+     "harvesting": 16,
+     "hunting": 4,
+     "sawing": 10,
+     "smelting": 4,
+     "weaving": 7,
+     "smithing": 7,
+     "carpentry": 3,
+     "cooking": 3
+    },
+    "silver": 45
+   }
+  ]
+ },
+ "campaign": {
+  "diff6": [
+   {
+    "name": "솔",
+    "hours": 5.1,
+    "level": 41,
+    "fails": [],
+    "downs": 17
+   },
+   {
+    "name": "모루",
+    "hours": 5.5,
+    "level": 40,
+    "fails": [],
+    "downs": 10
+   },
+   {
+    "name": "하랑",
+    "hours": 4.5,
+    "level": 39,
+    "fails": [],
+    "downs": 12
+   },
+   {
+    "name": "새벽",
+    "hours": 6.7,
+    "level": 43,
+    "fails": [],
+    "downs": 9
+   },
+   {
+    "name": "무진",
+    "hours": 6.2,
+    "level": 42,
+    "fails": [],
+    "downs": 4
+   },
+   {
+    "name": "렌",
+    "hours": 6.5,
+    "level": 43,
+    "fails": [],
+    "downs": 8
+   },
+   {
+    "name": "콩이",
+    "hours": 5.9,
+    "level": 40,
+    "fails": [],
+    "downs": 21
+   }
+  ],
+  "diff0": [
+   {
+    "name": "솔",
+    "hours": 6.6,
+    "level": 42,
+    "fails": [],
+    "downs": 24
+   },
+   {
+    "name": "모루",
+    "hours": 2.7,
+    "level": 27,
+    "fails": [
+     {
+      "quest": "c4_fort",
+      "name": "잿빛 요새",
+      "step": 2,
+      "level": 26,
+      "mine": 27,
+      "why": null
+     }
+    ],
+    "downs": 15
+   },
+   {
+    "name": "하랑",
+    "hours": 3.8,
+    "level": 40,
+    "fails": [],
+    "downs": 23
+   },
+   {
+    "name": "새벽",
+    "hours": 6.6,
+    "level": 43,
+    "fails": [],
+    "downs": 9
+   },
+   {
+    "name": "무진",
+    "hours": 6.3,
+    "level": 42,
+    "fails": [],
+    "downs": 4
+   },
+   {
+    "name": "렌",
+    "hours": 6.4,
+    "level": 43,
+    "fails": [],
+    "downs": 9
+   },
+   {
+    "name": "콩이",
+    "hours": 2.2,
+    "level": 13,
+    "fails": [
+     {
+      "quest": "q8_captain",
+      "name": "갈고리 도철",
+      "step": 1,
+      "level": 10,
+      "mine": 13,
+      "why": null
+     }
+    ],
+    "downs": 14
+   }
+  ]
+ }
+}

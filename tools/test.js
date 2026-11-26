@@ -6,7 +6,7 @@ import { startFight } from '../core/ai/fighter.js';
 import { equipLoad } from '../core/systems/combat.js';
 import { createGame, loadGame } from '../core/game.js';
 import {
-  craftScores, convertStats, starOf, masterworkChance, avg, refineStep, xpToNext, levelFromXp,
+  craftScores, convertStats, starOf, masterworkChance, avg, proficiency, refineStep, xpToNext, levelFromXp,
 } from '../core/formulas.js';
 import { keyOf, effectiveProps, countItem } from '../core/inventory.js';
 import { fitsHabitat, regionAt } from '../core/terrain.js';
@@ -232,6 +232,9 @@ test('미리보기는 걸작이 아니면 실제 결과와 같다', () => {
   const cmd = { type: 'CRAFT', actor: 'p1', recipe: 'rc_axe_stone' };
   const pv = g.preview(cmd);
   ok(pv.ok && pv.stats.gatherSpeed > 0, '미리보기 실패');
+  // v3.3.1: 숙련 계수와, 같은 재료로 한 등급 오르는 레벨
+  ok(pv.prof < 1, `숙련 ×${pv.prof}`);
+  ok(pv.next && pv.next.level > a.skills.smithing.level && pv.next.star === pv.star + 1, JSON.stringify(pv.next));
   g.dispatch(cmd);
   g.advance(10);
   const axe = a.bag.find((e) => e.item === 'tool_axe_stone');
@@ -1348,7 +1351,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '3.3.0');
+  eq(st.meta.engine, '3.3.1');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1540,7 +1543,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '3.3.0');
+  eq(st.meta.engine, '3.3.1');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -3015,7 +3018,7 @@ test('이주 34→35→36: 탈것·길잡이 돌·귀걸이 자리를 만들고,
   obj.state.meta.dataVersion = 34;
   const g2 = loadGame({ data, save: JSON.stringify(obj) });
   const a = g2.state.actors.p1;
-  eq(g2.state.meta.engine, '3.3.0');
+  eq(g2.state.meta.engine, '3.3.1');
   ok(a.mounts && a.mounts.own.length === 0 && a.riding === null);
   ok(a.equip && 'ear' in a.equip, '이주 35→36: 귀걸이 자리');
   ok(a.ways.w_lighthouse != null && a.ways.w_forest != null && a.ways.w_gull != null, '등대섬 마을 돌');
@@ -3030,6 +3033,27 @@ test('등급: 별 1~5가 일반·고급·희귀·영웅·전설(색)로, 글로�
   eq(stars(4), '[영웅]');
   eq(gradeOfEntry(data, { item: 'wpn_sword_keeper', star: 2 }).name, '전설', '이름난 물건은 데이터 등급');
   eq(gradeOfEntry(data, { item: 'wpn_sword_iron', star: 2 }).name, '고급');
+});
+
+test('숙련 계수(v3.3.1): 장비는 레시피를 막 배웠을 때 평균 재료로 일반, 레벨이 오르면 고급·희귀. 음식은 깎지 않는다', () => {
+  const k = cfg.craft.proficiency;
+  near(proficiency(0, cfg), k.start, 1e-12);
+  near(proficiency(-3, cfg), k.start, 1e-12, '레벨이 모자라도 바닥');
+  near(proficiency(5, cfg), k.start + 5 * k.perLevel, 1e-12);
+  eq(proficiency(40, cfg), k.max);
+  const r = { level: 10, stats: { attack: { 'm.hardness': 1 } } };
+  const sp = { m: { hardness: 50 } };
+  const at = (lv) => starOf(avg(Object.values(craftScores(r, sp, { skillLevel: lv, stationTier: 1, equip: true }, cfg))), cfg.stars);
+  eq(at(10), 1, '막 배움 → 일반');
+  eq(at(16), 2, '6레벨 위 → 고급');
+  ok(at(30) >= 3, '20레벨 위 → 희귀');
+  eq(craftScores(r, sp, { skillLevel: 10, stationTier: 1 }, cfg).attack, 50, '장비 아닌 것은 그대로');
+  // 실제 레시피: 갓 배운 구리 검, 모든 재료 속성 50
+  const rc = data.lists.recipes.find((x) => x.output.item === 'wpn_sword_copper');
+  const sp2 = {};
+  for (const w of Object.values(rc.stats)) for (const ref of Object.keys(w)) { const [sl, pr] = ref.split('.'); (sp2[sl] ||= {})[pr] = 50; }
+  const fresh = avg(Object.values(craftScores(rc, sp2, { skillLevel: rc.level, stationTier: 1, equip: true }, cfg)));
+  ok(fresh < cfg.stars[0], `갓 배운 구리 검 ${fresh.toFixed(1)} → 일반`);
 });
 
 test('종결 장비는 제작·원정·퀘스트로만: 심장 등급은 설계도(심장 아래 원정)로만 만들고, 이름난 물건은 원정·퀘스트 보상에만 있고, 귀속 재료는 사고팔 수 없다', () => {

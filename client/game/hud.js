@@ -885,7 +885,7 @@ export function createHud(root, game, { touch, onAct }) {
         return `<span class="${have >= s.qty ? 'ok' : 'no'}">${slotLabel(s)} ${Math.min(have, 999)}/${s.qty}</span>`;
       }).join(' · ');
       let result = '';
-      if (pv.ok && pv.stats) result = `예상 ${gchip(pv.star)} ${fmtStats(pv.stats)} · 걸작 ${(pv.masterwork * 100).toFixed(1)}%`;
+      if (pv.ok && pv.stats) result = `예상 ${gchip(pv.star)} ${fmtStats(pv.stats)} · 걸작 ${(pv.masterwork * 100).toFixed(1)}%${pv.prof != null && pv.prof < 1 ? ` · 숙련 ×${pv.prof.toFixed(2)}` : ''}${pv.next ? ` · 이 재료로 Lv${pv.next.level}부터 ${gchip(pv.next.star)}` : ''}`;
       else if (pv.ok && pv.props) result = `예상 ${fmtProps(pv.props, data)}${pv.step ? ` · 약한 속성 +${pv.step}` : ''}`;
       const why = pv.ok ? '' : `<small class="no">${ERR[pv.error] || pv.error}</small>`;
       const outIcon = r.output?.item && data.items[r.output.item] ? ii(data.items[r.output.item]) : sk.icon;

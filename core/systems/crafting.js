@@ -55,7 +55,7 @@ function completeJob(ctx, actor, job) {
     const tuneValue = job.tune ? rng.int(cfg.craft.tune.min, cfg.craft.tune.max) : 0;
     const scores = craftScores(r, job.slotProps, {
       skillLevel: job.level, stationTier: job.stationTier,
-      tuneStat: job.tune, tuneValue, masterwork: mw,
+      tuneStat: job.tune, tuneValue, masterwork: mw, equip: outDef.kind === 'equipment',
     }, cfg);
     const stats = convertStats(outDef.statConvert, scores);
     const star = starOf(avg(Object.values(scores)), cfg.stars);

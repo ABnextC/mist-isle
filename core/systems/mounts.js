@@ -4,6 +4,7 @@
 import { isUnlocked } from './unlocks.js';
 import { runOf } from './expeditions.js';
 import { addEntry, takeQty, keyOf } from '../inventory.js';
+import { jewelStat } from './level.js';
 
 export const mountsOf = (a) => (a.mounts ||= { own: [], pick: null, gear: { saddle: null, shoes: null } });
 
@@ -22,7 +23,7 @@ export function mountSpeed(ctx, a) {
   const who = a.kind === 'ally' ? ctx.state.actors[a.ally?.owner] || a : a;
   const m = ctx.data.mounts[a.riding] || ctx.data.mounts[who.riding];
   if (!m) return 1;
-  return m.speed * (1 + (who.mounts ? gearSpeed(ctx, who) : 0));
+  return m.speed * (1 + (who.mounts ? gearSpeed(ctx, who) : 0) + (who.equip ? jewelStat(ctx, who, 'ride') : 0)); // 말발굽 귀걸이(v3.3)
 }
 
 export function inCombat(ctx, a, sec) {

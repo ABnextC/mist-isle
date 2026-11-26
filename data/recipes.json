@@ -3034,6 +3034,834 @@
     "xp": 50
   },
   {
+    "id": "rc_ring_copper_int",
+    "type": "craft",
+    "name": "구리 지혜 반지",
+    "skill": "jewelcraft",
+    "level": 8,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_copper",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attr": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "ring_copper_int",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 92
+  },
+  {
+    "id": "rc_ring_copper_foc",
+    "type": "craft",
+    "name": "구리 집중 반지",
+    "skill": "jewelcraft",
+    "level": 8,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_copper",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attr": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "ring_copper_foc",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 92
+  },
+  {
+    "id": "rc_ring_copper_con",
+    "type": "craft",
+    "name": "구리 체질 반지",
+    "skill": "jewelcraft",
+    "level": 6,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_copper",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attr": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "ring_copper_con",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 84
+  },
+  {
+    "id": "rc_neck_copper_life",
+    "type": "craft",
+    "name": "구리 생명 목걸이",
+    "skill": "jewelcraft",
+    "level": 8,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_copper",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "hp": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "neck_copper_life",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 92
+  },
+  {
+    "id": "rc_ear_copper_potion",
+    "type": "craft",
+    "name": "구리 물약 귀걸이",
+    "skill": "jewelcraft",
+    "level": 10,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_copper",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "potion": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "ear_copper_potion",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 100
+  },
+  {
+    "id": "rc_ear_copper_ride",
+    "type": "craft",
+    "name": "구리 말발굽 귀걸이",
+    "skill": "jewelcraft",
+    "level": 10,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_copper",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "ride": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "ear_copper_ride",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 100
+  },
+  {
+    "id": "rc_ring_iron_str",
+    "type": "craft",
+    "name": "철 힘 반지",
+    "skill": "jewelcraft",
+    "level": 20,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_iron",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attr": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "ring_iron_str",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 140
+  },
+  {
+    "id": "rc_ring_iron_dex",
+    "type": "craft",
+    "name": "철 민첩 반지",
+    "skill": "jewelcraft",
+    "level": 20,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_iron",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attr": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "ring_iron_dex",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 140
+  },
+  {
+    "id": "rc_ring_iron_int",
+    "type": "craft",
+    "name": "철 지혜 반지",
+    "skill": "jewelcraft",
+    "level": 22,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_iron",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attr": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "ring_iron_int",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 148
+  },
+  {
+    "id": "rc_ring_iron_con",
+    "type": "craft",
+    "name": "철 체질 반지",
+    "skill": "jewelcraft",
+    "level": 20,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_iron",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attr": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "ring_iron_con",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 140
+  },
+  {
+    "id": "rc_neck_iron_life",
+    "type": "craft",
+    "name": "철 생명 목걸이",
+    "skill": "jewelcraft",
+    "level": 22,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_iron",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "hp": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "neck_iron_life",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 148
+  },
+  {
+    "id": "rc_ear_iron_potion",
+    "type": "craft",
+    "name": "철 물약 귀걸이",
+    "skill": "jewelcraft",
+    "level": 24,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_iron",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "potion": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "ear_iron_potion",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 156
+  },
+  {
+    "id": "rc_ear_iron_ride",
+    "type": "craft",
+    "name": "철 말발굽 귀걸이",
+    "skill": "jewelcraft",
+    "level": 24,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_iron",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "ride": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "ear_iron_ride",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 156
+  },
+  {
+    "id": "rc_ring_mist_str",
+    "type": "craft",
+    "name": "안개강 힘 반지",
+    "skill": "jewelcraft",
+    "level": 34,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_mist",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attr": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "ring_mist_str",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 196
+  },
+  {
+    "id": "rc_ring_mist_dex",
+    "type": "craft",
+    "name": "안개강 민첩 반지",
+    "skill": "jewelcraft",
+    "level": 34,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_mist",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attr": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "ring_mist_dex",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 196
+  },
+  {
+    "id": "rc_ring_mist_int",
+    "type": "craft",
+    "name": "안개강 지혜 반지",
+    "skill": "jewelcraft",
+    "level": 36,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_mist",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attr": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "ring_mist_int",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 204
+  },
+  {
+    "id": "rc_ring_mist_foc",
+    "type": "craft",
+    "name": "안개강 집중 반지",
+    "skill": "jewelcraft",
+    "level": 36,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_mist",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attr": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "ring_mist_foc",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 204
+  },
+  {
+    "id": "rc_ring_mist_con",
+    "type": "craft",
+    "name": "안개강 체질 반지",
+    "skill": "jewelcraft",
+    "level": 34,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_mist",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attr": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "ring_mist_con",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 196
+  },
+  {
+    "id": "rc_neck_mist_life",
+    "type": "craft",
+    "name": "안개강 생명 목걸이",
+    "skill": "jewelcraft",
+    "level": 36,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_mist",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "hp": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "neck_mist_life",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 204
+  },
+  {
+    "id": "rc_ear_mist_potion",
+    "type": "craft",
+    "name": "안개강 물약 귀걸이",
+    "skill": "jewelcraft",
+    "level": 38,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_mist",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "potion": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "ear_mist_potion",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 212
+  },
+  {
+    "id": "rc_ear_mist_ride",
+    "type": "craft",
+    "name": "안개강 말발굽 귀걸이",
+    "skill": "jewelcraft",
+    "level": 38,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_mist",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "ride": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "ear_mist_ride",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 212
+  },
+  {
+    "id": "rc_neck_copper_gather",
+    "type": "craft",
+    "name": "구리 채집꾼 목걸이",
+    "skill": "jewelcraft",
+    "level": 10,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_copper",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "gather": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "neck_copper_gather",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 100
+  },
+  {
+    "id": "rc_neck_mist_gather",
+    "type": "craft",
+    "name": "안개강 채집꾼 목걸이",
+    "skill": "jewelcraft",
+    "level": 38,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_mist",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "gather": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.toughness": 1
+      }
+    },
+    "output": {
+      "item": "neck_mist_gather",
+      "qty": 1
+    },
+    "seconds": 12,
+    "xp": 212
+  },
+  {
     "id": "rc_saddle_leather",
     "type": "refine",
     "name": "가죽 안장",
@@ -3133,5 +3961,916 @@
     },
     "seconds": 12,
     "xp": 140
+  },
+  {
+    "id": "rc_ingot_heart",
+    "type": "refine",
+    "name": "심장강 제련",
+    "skill": "smelting",
+    "level": 45,
+    "station": "smelter",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "main",
+        "item": "ingot_mist",
+        "qty": 2
+      },
+      {
+        "key": "core",
+        "item": "heart_core",
+        "qty": 1
+      }
+    ],
+    "output": {
+      "item": "ingot_heart",
+      "qty": 1
+    },
+    "seconds": 14,
+    "xp": 160
+  },
+  {
+    "id": "rc_sword_heart",
+    "type": "craft",
+    "name": "심장강 검과 방패",
+    "skill": "smithing",
+    "level": 46,
+    "station": "forge",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "blade",
+        "item": "ingot_heart",
+        "qty": 3
+      },
+      {
+        "key": "grip",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "attack": {
+        "blade.hardness": 0.7,
+        "grip.strength": 0.3
+      },
+      "durability": {
+        "blade.toughness": 0.6,
+        "grip.flex": 0.4
+      }
+    },
+    "output": {
+      "item": "wpn_sword_heart",
+      "qty": 1
+    },
+    "seconds": 20,
+    "xp": 260,
+    "blueprint": "bp_sword_heart"
+  },
+  {
+    "id": "rc_battleaxe_heart",
+    "type": "craft",
+    "name": "심장강 대도끼",
+    "skill": "smithing",
+    "level": 48,
+    "station": "forge",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "head",
+        "item": "ingot_heart",
+        "qty": 4
+      },
+      {
+        "key": "haft",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "attack": {
+        "head.hardness": 0.7,
+        "haft.strength": 0.3
+      },
+      "durability": {
+        "head.toughness": 0.6,
+        "haft.flex": 0.4
+      }
+    },
+    "output": {
+      "item": "wpn_battleaxe_heart",
+      "qty": 1
+    },
+    "seconds": 20,
+    "xp": 260,
+    "blueprint": "bp_battleaxe_heart"
+  },
+  {
+    "id": "rc_spear_heart",
+    "type": "craft",
+    "name": "심장강 창",
+    "skill": "smithing",
+    "level": 47,
+    "station": "forge",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "tip",
+        "item": "ingot_heart",
+        "qty": 2
+      },
+      {
+        "key": "shaft",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 3
+      }
+    ],
+    "stats": {
+      "attack": {
+        "tip.hardness": 0.7,
+        "shaft.strength": 0.3
+      },
+      "durability": {
+        "tip.toughness": 0.6,
+        "shaft.flex": 0.4
+      }
+    },
+    "output": {
+      "item": "wpn_spear_heart",
+      "qty": 1
+    },
+    "seconds": 20,
+    "xp": 260,
+    "blueprint": "bp_spear_heart"
+  },
+  {
+    "id": "rc_hammer_heart",
+    "type": "craft",
+    "name": "심장강 전투 망치",
+    "skill": "smithing",
+    "level": 49,
+    "station": "forge",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "head",
+        "item": "ingot_heart",
+        "qty": 5
+      },
+      {
+        "key": "haft",
+        "family": "wood",
+        "stage": "refined",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "attack": {
+        "head.hardness": 0.7,
+        "haft.strength": 0.3
+      },
+      "durability": {
+        "head.toughness": 0.6,
+        "haft.flex": 0.4
+      }
+    },
+    "output": {
+      "item": "wpn_hammer_heart",
+      "qty": 1
+    },
+    "seconds": 20,
+    "xp": 260,
+    "blueprint": "bp_hammer_heart"
+  },
+  {
+    "id": "rc_bow_heart",
+    "type": "craft",
+    "name": "심장빛 뿔 활",
+    "skill": "carpentry",
+    "level": 47,
+    "station": "workbench",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "limb",
+        "item": "lumber_oak",
+        "qty": 4
+      },
+      {
+        "key": "core",
+        "item": "ingot_heart",
+        "qty": 1
+      },
+      {
+        "key": "string",
+        "item": "cloth_reed",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "attack": {
+        "limb.strength": 0.7,
+        "string.tenacity": 0.3
+      },
+      "durability": {
+        "limb.flex": 0.6,
+        "string.softness": 0.4
+      }
+    },
+    "output": {
+      "item": "wpn_bow_heart",
+      "qty": 1
+    },
+    "seconds": 20,
+    "xp": 260,
+    "blueprint": "bp_bow_heart"
+  },
+  {
+    "id": "rc_staff_heart",
+    "type": "craft",
+    "name": "심장빛 결정 지팡이",
+    "skill": "carpentry",
+    "level": 48,
+    "station": "workbench",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "shaft",
+        "item": "lumber_oak",
+        "qty": 4
+      },
+      {
+        "key": "band",
+        "item": "ingot_heart",
+        "qty": 2
+      },
+      {
+        "key": "core",
+        "item": "gem_cut",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "attack": {
+        "shaft.strength": 0.7,
+        "band.hardness": 0.3
+      },
+      "durability": {
+        "shaft.flex": 0.6,
+        "band.toughness": 0.4
+      }
+    },
+    "output": {
+      "item": "wpn_staff_heart",
+      "qty": 1
+    },
+    "seconds": 20,
+    "xp": 260,
+    "blueprint": "bp_staff_heart"
+  },
+  {
+    "id": "rc_heart_helm",
+    "type": "craft",
+    "name": "심장강 투구",
+    "skill": "armoring",
+    "level": 46,
+    "station": "armorbench",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "plate",
+        "item": "ingot_heart",
+        "qty": 3
+      },
+      {
+        "key": "lining",
+        "item": "leather",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "armor": {
+        "plate.hardness": 0.7,
+        "plate.toughness": 0.3
+      },
+      "durability": {
+        "plate.toughness": 0.6,
+        "lining.suppleness": 0.4
+      }
+    },
+    "output": {
+      "item": "arm_heart_helm",
+      "qty": 1
+    },
+    "seconds": 20,
+    "xp": 250,
+    "blueprint": "bp_heart_helm"
+  },
+  {
+    "id": "rc_heart_cuirass",
+    "type": "craft",
+    "name": "심장강 흉갑",
+    "skill": "armoring",
+    "level": 48,
+    "station": "armorbench",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "plate",
+        "item": "ingot_heart",
+        "qty": 5
+      },
+      {
+        "key": "lining",
+        "item": "leather",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "armor": {
+        "plate.hardness": 0.7,
+        "plate.toughness": 0.3
+      },
+      "durability": {
+        "plate.toughness": 0.6,
+        "lining.suppleness": 0.4
+      }
+    },
+    "output": {
+      "item": "arm_heart_cuirass",
+      "qty": 1
+    },
+    "seconds": 20,
+    "xp": 250,
+    "blueprint": "bp_heart_cuirass"
+  },
+  {
+    "id": "rc_heart_greaves",
+    "type": "craft",
+    "name": "심장강 다리갑",
+    "skill": "armoring",
+    "level": 47,
+    "station": "armorbench",
+    "stationTier": 2,
+    "slots": [
+      {
+        "key": "plate",
+        "item": "ingot_heart",
+        "qty": 4
+      },
+      {
+        "key": "lining",
+        "item": "leather",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "armor": {
+        "plate.hardness": 0.7,
+        "plate.toughness": 0.3
+      },
+      "durability": {
+        "plate.toughness": 0.6,
+        "lining.suppleness": 0.4
+      }
+    },
+    "output": {
+      "item": "arm_heart_greaves",
+      "qty": 1
+    },
+    "seconds": 20,
+    "xp": 250,
+    "blueprint": "bp_heart_greaves"
+  },
+  {
+    "id": "rc_tr_wolf",
+    "type": "craft",
+    "name": "늑대 머리 박제",
+    "skill": "carpentry",
+    "level": 22,
+    "station": "workbench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "board",
+        "item": "lumber_oak",
+        "qty": 3
+      },
+      {
+        "key": "hide",
+        "item": "hide_raw",
+        "qty": 10
+      },
+      {
+        "key": "gem",
+        "item": "gem_rough",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "board.flex": 0.5,
+        "board.strength": 0.5
+      },
+      "durability": {
+        "board.strength": 1
+      }
+    },
+    "output": {
+      "item": "tr_wolf",
+      "qty": 1
+    },
+    "seconds": 14,
+    "xp": 138
+  },
+  {
+    "id": "rc_tr_pick",
+    "type": "craft",
+    "name": "금빛 곡괭이 걸이",
+    "skill": "smithing",
+    "level": 24,
+    "station": "forge",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "board",
+        "item": "lumber_oak",
+        "qty": 2
+      },
+      {
+        "key": "head",
+        "item": "ingot_iron",
+        "qty": 4
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "board.flex": 0.5,
+        "board.strength": 0.5
+      },
+      "durability": {
+        "board.strength": 1
+      }
+    },
+    "output": {
+      "item": "tr_pick",
+      "qty": 1
+    },
+    "seconds": 14,
+    "xp": 146
+  },
+  {
+    "id": "rc_tr_axe",
+    "type": "craft",
+    "name": "나무꾼 도끼 걸이",
+    "skill": "smithing",
+    "level": 18,
+    "station": "forge",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "board",
+        "item": "lumber_birch",
+        "qty": 3
+      },
+      {
+        "key": "head",
+        "item": "ingot_iron",
+        "qty": 3
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "board.flex": 0.5,
+        "board.strength": 0.5
+      },
+      "durability": {
+        "board.strength": 1
+      }
+    },
+    "output": {
+      "item": "tr_axe",
+      "qty": 1
+    },
+    "seconds": 14,
+    "xp": 122
+  },
+  {
+    "id": "rc_tr_trout",
+    "type": "craft",
+    "name": "큰 송어 박제",
+    "skill": "carpentry",
+    "level": 26,
+    "station": "workbench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "board",
+        "item": "lumber_oak",
+        "qty": 2
+      },
+      {
+        "key": "fish",
+        "item": "fish_trout",
+        "qty": 3
+      },
+      {
+        "key": "glow",
+        "item": "fish_glow",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "board.flex": 0.5,
+        "board.strength": 0.5
+      },
+      "durability": {
+        "board.strength": 1
+      }
+    },
+    "output": {
+      "item": "tr_trout",
+      "qty": 1
+    },
+    "seconds": 14,
+    "xp": 154
+  },
+  {
+    "id": "rc_tr_sickle",
+    "type": "craft",
+    "name": "약초꾼 낫 걸이",
+    "skill": "smithing",
+    "level": 16,
+    "station": "forge",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "board",
+        "item": "lumber_birch",
+        "qty": 2
+      },
+      {
+        "key": "head",
+        "item": "ingot_copper",
+        "qty": 3
+      },
+      {
+        "key": "herb",
+        "item": "herb_moon",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "board.flex": 0.5,
+        "board.strength": 0.5
+      },
+      "durability": {
+        "board.strength": 1
+      }
+    },
+    "output": {
+      "item": "tr_sickle",
+      "qty": 1
+    },
+    "seconds": 14,
+    "xp": 114
+  },
+  {
+    "id": "rc_furn_hearthstone",
+    "type": "craft",
+    "name": "집 길잡이 돌",
+    "skill": "masonry",
+    "level": 28,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "body",
+        "item": "stone_cut",
+        "qty": 12
+      },
+      {
+        "key": "core",
+        "item": "shard_mist",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "body.density": 1
+      },
+      "durability": {
+        "body.grain": 1
+      }
+    },
+    "output": {
+      "item": "furn_hearthstone",
+      "qty": 1
+    },
+    "seconds": 20,
+    "xp": 200
+  },
+  {
+    "id": "rc_furn_screen",
+    "type": "craft",
+    "name": "대나무 병풍",
+    "skill": "carpentry",
+    "level": 14,
+    "station": "workbench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "board",
+        "item": "lumber_birch",
+        "qty": 4
+      },
+      {
+        "key": "cloth",
+        "item": "cloth_reed",
+        "qty": 4
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "board.flex": 0.6,
+        "cloth.softness": 0.4
+      },
+      "durability": {
+        "board.flex": 1
+      }
+    },
+    "output": {
+      "item": "furn_screen",
+      "qty": 1
+    },
+    "seconds": 14,
+    "xp": 106
+  },
+  {
+    "id": "rc_furn_scroll",
+    "type": "craft",
+    "name": "등대 족자 그림",
+    "skill": "weaving",
+    "level": 12,
+    "station": "loom",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "cloth",
+        "item": "cloth_reed",
+        "qty": 5
+      },
+      {
+        "key": "board",
+        "item": "lumber_birch",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "cloth.softness": 0.6,
+        "board.flex": 0.4
+      },
+      "durability": {
+        "cloth.softness": 1
+      }
+    },
+    "output": {
+      "item": "furn_scroll",
+      "qty": 1
+    },
+    "seconds": 14,
+    "xp": 98
+  },
+  {
+    "id": "rc_furn_plant",
+    "type": "craft",
+    "name": "돌 화분",
+    "skill": "masonry",
+    "level": 6,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "body",
+        "item": "stone_cut",
+        "qty": 4
+      },
+      {
+        "key": "herb",
+        "item": "herb_moon",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "body.density": 0.5,
+        "body.grain": 0.5
+      },
+      "durability": {
+        "body.density": 1
+      }
+    },
+    "output": {
+      "item": "furn_plant",
+      "qty": 1
+    },
+    "seconds": 14,
+    "xp": 74
+  },
+  {
+    "id": "rc_furn_bookcase",
+    "type": "craft",
+    "name": "책장",
+    "skill": "carpentry",
+    "level": 18,
+    "station": "workbench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "board",
+        "item": "lumber_oak",
+        "qty": 6
+      },
+      {
+        "key": "nail",
+        "item": "nails_copper",
+        "qty": 10
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "board.strength": 0.6,
+        "board.flex": 0.4
+      },
+      "durability": {
+        "board.strength": 1
+      }
+    },
+    "output": {
+      "item": "furn_bookcase",
+      "qty": 1
+    },
+    "seconds": 14,
+    "xp": 122
+  },
+  {
+    "id": "rc_furn_chime",
+    "type": "craft",
+    "name": "바람종",
+    "skill": "jewelcraft",
+    "level": 12,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "band",
+        "item": "ingot_copper",
+        "qty": 3
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "band.hardness": 0.5,
+        "band.toughness": 0.5
+      },
+      "durability": {
+        "band.hardness": 1
+      }
+    },
+    "output": {
+      "item": "furn_chime",
+      "qty": 1
+    },
+    "seconds": 14,
+    "xp": 98
+  },
+  {
+    "id": "rc_furn_bearskin",
+    "type": "craft",
+    "name": "털가죽 깔개",
+    "skill": "tanning",
+    "level": 16,
+    "station": "tannery",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "hide",
+        "item": "leather",
+        "qty": 8
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "hide.suppleness": 0.6,
+        "hide.thickness": 0.4
+      },
+      "durability": {
+        "hide.suppleness": 1
+      }
+    },
+    "output": {
+      "item": "furn_bearskin",
+      "qty": 1
+    },
+    "seconds": 14,
+    "xp": 114
+  },
+  {
+    "id": "rc_furn_armorstand",
+    "type": "craft",
+    "name": "갑옷 거치대",
+    "skill": "smithing",
+    "level": 20,
+    "station": "forge",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "head",
+        "item": "ingot_iron",
+        "qty": 4
+      },
+      {
+        "key": "board",
+        "item": "lumber_oak",
+        "qty": 2
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "head.hardness": 0.5,
+        "board.strength": 0.5
+      },
+      "durability": {
+        "head.hardness": 1
+      }
+    },
+    "output": {
+      "item": "furn_armorstand",
+      "qty": 1
+    },
+    "seconds": 14,
+    "xp": 130
+  },
+  {
+    "id": "rc_furn_tank",
+    "type": "craft",
+    "name": "안개 물고기 어항",
+    "skill": "masonry",
+    "level": 24,
+    "station": "stonebench",
+    "stationTier": 1,
+    "slots": [
+      {
+        "key": "body",
+        "item": "stone_cut",
+        "qty": 6
+      },
+      {
+        "key": "fish",
+        "item": "fish_glow",
+        "qty": 2
+      },
+      {
+        "key": "gem",
+        "item": "gem_cut",
+        "qty": 1
+      }
+    ],
+    "stats": {
+      "comfort": {
+        "body.density": 0.5,
+        "body.grain": 0.5
+      },
+      "durability": {
+        "body.density": 1
+      }
+    },
+    "output": {
+      "item": "furn_tank",
+      "qty": 1
+    },
+    "seconds": 14,
+    "xp": 146
   }
 ]

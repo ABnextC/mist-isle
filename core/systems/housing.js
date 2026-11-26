@@ -51,3 +51,42 @@ export function homeStation(ctx, a, type) {
 }
 
 export const plantDef = (ctx, item) => H(ctx).plants.find((p) => p.item === item) || null;
+
+// 트로피(v3.3): 집에 놓은 트로피가 그 갈래(짐승·사람·영 피해, 벌목·채광·채취·낚시 몫)를 올린다.
+// 같은 갈래는 하나만 치고, 집 단계마다 앞에 놓은 것부터 trophies.max개까지만 듣는다.
+export function trophiesOf(ctx, a) {
+  const h = homeOf(ctx, a);
+  if (!h) return [];
+  const max = H(ctx).trophies?.max?.[h.tier] ?? 0;
+  const out = [];
+  for (const e of h.furniture) {
+    const tr = ctx.data.items[e.item]?.trophy;
+    if (!tr || out.some((x) => x.kind === tr.kind)) continue;
+    if (out.length >= max) break;
+    out.push({ kind: tr.kind, value: tr.value, item: e.item });
+  }
+  return out;
+}
+export function trophyBonus(ctx, a, kind) {
+  if (!a?.house) return 0;
+  return trophiesOf(ctx, a).find((x) => x.kind === kind)?.value || 0;
+}
+export const trophyCount = (ctx, h) => h.furniture.filter((e) => ctx.data.items[e.item]?.trophy).length;
+export const trophyMax = (ctx, h) => H(ctx).trophies?.max?.[h.tier] ?? 0;
+
+// 집 길잡이 돌(v3.3): 놓여 있으면 길잡이 돌에서 집 앞으로 건너뛴다
+export function hasHearthstone(ctx, a) {
+  const h = homeOf(ctx, a);
+  return !!h && h.furniture.some((e) => ctx.data.items[e.item]?.hearthstone);
+}
+export function homeLanding(ctx, a) {
+  const p = plotDef(ctx, a.house);
+  if (!p) return null;
+  const q = plotPos(ctx, p);
+  const s = ctx.data.settlements[p.at];
+  // 집 앞(마을 쪽) 3.8m
+  const dx = s.x - q.x;
+  const dz = s.z - q.z;
+  const d = Math.hypot(dx, dz) || 1;
+  return { x: Math.round((q.x + (dx / d) * 4.2) * 1000) / 1000, z: Math.round((q.z + (dz / d) * 4.2) * 1000) / 1000, at: p.at };
+}

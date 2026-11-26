@@ -228,7 +228,7 @@ L['questFrac'] = {'main': 0.55, 'side': 0.28, 'faction': 0.35, 'bounty': 0.45, '
 L['gap'] = {'grace': 2, 'lowPer': 0.06, 'lowMin': 0.45, 'highPer': 0.03, 'highMax': 1.3, 'maxGap': 10}
 # 창: 같은 레벨 두목 승률이 다른 무기보다 낮았다(진행 페르소나) → 배율 0.95 → 1.0
 cfg['combat']['weapons']['spear']['mult'] = 1.0
-cfg['dataVersion'] = 34
+cfg['dataVersion'] = max(cfg.get('dataVersion', 0), 34)
 save('config', cfg)
 
 side_lv = sorted((q['level'], q['id']) for q in QL if q['kind'] == 'side' and q.get('level') and not q.get('faction'))

@@ -1,0 +1,766 @@
+{
+ "version": "v3.3",
+ "note": "진행 페르소나(tools/campaign.js)로 탈것 티어를 얻는 때를 쟀다. before는 손보기 전(같은 3티어 산양을 또 삼), after는 같은 티어면 안 산다. 생활 페르소나(tools/personas.js --days 3 --seed 2026)로 만든 것의 등급 분포를 쟀다. 두 도구 모두 원정·장신구 제작·집 꾸미기는 아직 하지 않는다.",
+ "mountsBefore": [
+  {
+   "id": "persona_sol",
+   "name": "솔",
+   "hours": 6,
+   "level": 41,
+   "time": {
+    "life": 57,
+    "travel": 105,
+    "fight": 20,
+    "grind": 29,
+    "rest": 18,
+    "wait": 130
+   },
+   "mounts": [
+    {
+     "id": "pony",
+     "ch": "ch1",
+     "lv": 5,
+     "quest": true
+    },
+    {
+     "id": "horse",
+     "ch": "ch3",
+     "lv": 19,
+     "quest": false
+    },
+    {
+     "id": "mist_deer",
+     "ch": "ch4",
+     "lv": 30,
+     "quest": true
+    },
+    {
+     "id": "goat",
+     "ch": "ch5",
+     "lv": 30,
+     "quest": false
+    },
+    {
+     "id": "storm_steed",
+     "ch": "ch6",
+     "lv": 41,
+     "quest": true
+    }
+   ],
+   "silver": 17350
+  },
+  {
+   "id": "persona_moru",
+   "name": "모루",
+   "hours": 4.3,
+   "level": 40,
+   "time": {
+    "life": 60,
+    "travel": 70,
+    "fight": 19,
+    "grind": 19,
+    "rest": 4,
+    "wait": 85
+   },
+   "mounts": [
+    {
+     "id": "pony",
+     "ch": "ch1",
+     "lv": 6,
+     "quest": true
+    },
+    {
+     "id": "horse",
+     "ch": "ch3",
+     "lv": 20,
+     "quest": false
+    },
+    {
+     "id": "mist_deer",
+     "ch": "ch4",
+     "lv": 30,
+     "quest": true
+    },
+    {
+     "id": "goat",
+     "ch": "ch5",
+     "lv": 30,
+     "quest": false
+    },
+    {
+     "id": "storm_steed",
+     "ch": "ch6",
+     "lv": 39,
+     "quest": true
+    }
+   ],
+   "silver": 16612
+  },
+  {
+   "id": "persona_harang",
+   "name": "하랑",
+   "hours": 4.5,
+   "level": 39,
+   "time": {
+    "life": 39,
+    "travel": 83,
+    "fight": 17,
+    "grind": 33,
+    "rest": 14,
+    "wait": 82
+   },
+   "mounts": [
+    {
+     "id": "pony",
+     "ch": "ch1",
+     "lv": 5,
+     "quest": true
+    },
+    {
+     "id": "horse",
+     "ch": "ch3",
+     "lv": 18,
+     "quest": false
+    },
+    {
+     "id": "mist_deer",
+     "ch": "ch4",
+     "lv": 27,
+     "quest": true
+    },
+    {
+     "id": "goat",
+     "ch": "ch5",
+     "lv": 28,
+     "quest": false
+    },
+    {
+     "id": "storm_steed",
+     "ch": "ch6",
+     "lv": 39,
+     "quest": true
+    }
+   ],
+   "silver": 13745
+  },
+  {
+   "id": "persona_saebyeok",
+   "name": "새벽",
+   "hours": 6.6,
+   "level": 43,
+   "time": {
+    "life": 76,
+    "travel": 115,
+    "fight": 22,
+    "grind": 36,
+    "rest": 15,
+    "wait": 133
+   },
+   "mounts": [
+    {
+     "id": "pony",
+     "ch": "ch1",
+     "lv": 7,
+     "quest": true
+    },
+    {
+     "id": "horse",
+     "ch": "ch3",
+     "lv": 21,
+     "quest": false
+    },
+    {
+     "id": "mist_deer",
+     "ch": "ch4",
+     "lv": 31,
+     "quest": true
+    },
+    {
+     "id": "goat",
+     "ch": "ch5",
+     "lv": 32,
+     "quest": false
+    },
+    {
+     "id": "storm_steed",
+     "ch": "ch6",
+     "lv": 43,
+     "quest": true
+    }
+   ],
+   "silver": 21642
+  },
+  {
+   "id": "persona_mujin",
+   "name": "무진",
+   "hours": 6,
+   "level": 42,
+   "time": {
+    "life": 60,
+    "travel": 80,
+    "fight": 19,
+    "grind": 90,
+    "rest": 9,
+    "wait": 103
+   },
+   "mounts": [
+    {
+     "id": "pony",
+     "ch": "ch1",
+     "lv": 7,
+     "quest": true
+    },
+    {
+     "id": "horse",
+     "ch": "ch3",
+     "lv": 20,
+     "quest": false
+    },
+    {
+     "id": "mist_deer",
+     "ch": "ch4",
+     "lv": 30,
+     "quest": true
+    },
+    {
+     "id": "goat",
+     "ch": "ch5",
+     "lv": 31,
+     "quest": false
+    },
+    {
+     "id": "storm_steed",
+     "ch": "ch6",
+     "lv": 42,
+     "quest": true
+    }
+   ],
+   "silver": 19110
+  },
+  {
+   "id": "persona_ren",
+   "name": "렌",
+   "hours": 5.9,
+   "level": 43,
+   "time": {
+    "life": 68,
+    "travel": 95,
+    "fight": 23,
+    "grind": 48,
+    "rest": 8,
+    "wait": 112
+   },
+   "mounts": [
+    {
+     "id": "pony",
+     "ch": "ch1",
+     "lv": 6,
+     "quest": true
+    },
+    {
+     "id": "horse",
+     "ch": "ch3",
+     "lv": 20,
+     "quest": false
+    },
+    {
+     "id": "mist_deer",
+     "ch": "ch4",
+     "lv": 31,
+     "quest": true
+    },
+    {
+     "id": "goat",
+     "ch": "ch5",
+     "lv": 31,
+     "quest": false
+    },
+    {
+     "id": "storm_steed",
+     "ch": "ch6",
+     "lv": 43,
+     "quest": true
+    }
+   ],
+   "silver": 20857
+  },
+  {
+   "id": "persona_kongi",
+   "name": "콩이",
+   "hours": 5.3,
+   "level": 42,
+   "time": {
+    "life": 75,
+    "travel": 96,
+    "fight": 22,
+    "grind": 40,
+    "rest": 26,
+    "wait": 62
+   },
+   "mounts": [
+    {
+     "id": "pony",
+     "ch": "ch1",
+     "lv": 6,
+     "quest": true
+    },
+    {
+     "id": "horse",
+     "ch": "ch3",
+     "lv": 19,
+     "quest": false
+    },
+    {
+     "id": "mist_deer",
+     "ch": "ch4",
+     "lv": 29,
+     "quest": true
+    },
+    {
+     "id": "goat",
+     "ch": "ch5",
+     "lv": 30,
+     "quest": false
+    },
+    {
+     "id": "storm_steed",
+     "ch": "ch6",
+     "lv": 41,
+     "quest": true
+    }
+   ],
+   "silver": 16847
+  }
+ ],
+ "mountsAfter": [
+  {
+   "id": "persona_sol",
+   "name": "솔",
+   "hours": 6,
+   "level": 41,
+   "time": {
+    "life": 56,
+    "travel": 106,
+    "fight": 20,
+    "grind": 29,
+    "rest": 18,
+    "wait": 130
+   },
+   "mounts": [
+    {
+     "id": "pony",
+     "ch": "ch1",
+     "lv": 5,
+     "quest": true
+    },
+    {
+     "id": "horse",
+     "ch": "ch3",
+     "lv": 19,
+     "quest": false
+    },
+    {
+     "id": "mist_deer",
+     "ch": "ch4",
+     "lv": 30,
+     "quest": true
+    },
+    {
+     "id": "storm_steed",
+     "ch": "ch6",
+     "lv": 41,
+     "quest": true
+    }
+   ],
+   "silver": 20150
+  },
+  {
+   "id": "persona_moru",
+   "name": "모루",
+   "hours": 4.3,
+   "level": 40,
+   "time": {
+    "life": 59,
+    "travel": 71,
+    "fight": 19,
+    "grind": 19,
+    "rest": 4,
+    "wait": 85
+   },
+   "mounts": [
+    {
+     "id": "pony",
+     "ch": "ch1",
+     "lv": 6,
+     "quest": true
+    },
+    {
+     "id": "horse",
+     "ch": "ch3",
+     "lv": 20,
+     "quest": false
+    },
+    {
+     "id": "mist_deer",
+     "ch": "ch4",
+     "lv": 30,
+     "quest": true
+    },
+    {
+     "id": "storm_steed",
+     "ch": "ch6",
+     "lv": 39,
+     "quest": true
+    }
+   ],
+   "silver": 19412
+  },
+  {
+   "id": "persona_harang",
+   "name": "하랑",
+   "hours": 4.5,
+   "level": 39,
+   "time": {
+    "life": 38,
+    "travel": 85,
+    "fight": 17,
+    "grind": 33,
+    "rest": 14,
+    "wait": 82
+   },
+   "mounts": [
+    {
+     "id": "pony",
+     "ch": "ch1",
+     "lv": 5,
+     "quest": true
+    },
+    {
+     "id": "horse",
+     "ch": "ch3",
+     "lv": 18,
+     "quest": false
+    },
+    {
+     "id": "mist_deer",
+     "ch": "ch4",
+     "lv": 27,
+     "quest": true
+    },
+    {
+     "id": "storm_steed",
+     "ch": "ch6",
+     "lv": 39,
+     "quest": true
+    }
+   ],
+   "silver": 16545
+  },
+  {
+   "id": "persona_saebyeok",
+   "name": "새벽",
+   "hours": 6.6,
+   "level": 43,
+   "time": {
+    "life": 75,
+    "travel": 117,
+    "fight": 22,
+    "grind": 36,
+    "rest": 15,
+    "wait": 133
+   },
+   "mounts": [
+    {
+     "id": "pony",
+     "ch": "ch1",
+     "lv": 7,
+     "quest": true
+    },
+    {
+     "id": "horse",
+     "ch": "ch3",
+     "lv": 21,
+     "quest": false
+    },
+    {
+     "id": "mist_deer",
+     "ch": "ch4",
+     "lv": 31,
+     "quest": true
+    },
+    {
+     "id": "storm_steed",
+     "ch": "ch6",
+     "lv": 43,
+     "quest": true
+    }
+   ],
+   "silver": 24442
+  },
+  {
+   "id": "persona_mujin",
+   "name": "무진",
+   "hours": 6,
+   "level": 42,
+   "time": {
+    "life": 59,
+    "travel": 81,
+    "fight": 19,
+    "grind": 90,
+    "rest": 9,
+    "wait": 103
+   },
+   "mounts": [
+    {
+     "id": "pony",
+     "ch": "ch1",
+     "lv": 7,
+     "quest": true
+    },
+    {
+     "id": "horse",
+     "ch": "ch3",
+     "lv": 20,
+     "quest": false
+    },
+    {
+     "id": "mist_deer",
+     "ch": "ch4",
+     "lv": 30,
+     "quest": true
+    },
+    {
+     "id": "storm_steed",
+     "ch": "ch6",
+     "lv": 42,
+     "quest": true
+    }
+   ],
+   "silver": 21910
+  },
+  {
+   "id": "persona_ren",
+   "name": "렌",
+   "hours": 5.9,
+   "level": 43,
+   "time": {
+    "life": 67,
+    "travel": 96,
+    "fight": 23,
+    "grind": 48,
+    "rest": 8,
+    "wait": 112
+   },
+   "mounts": [
+    {
+     "id": "pony",
+     "ch": "ch1",
+     "lv": 6,
+     "quest": true
+    },
+    {
+     "id": "horse",
+     "ch": "ch3",
+     "lv": 20,
+     "quest": false
+    },
+    {
+     "id": "mist_deer",
+     "ch": "ch4",
+     "lv": 31,
+     "quest": true
+    },
+    {
+     "id": "storm_steed",
+     "ch": "ch6",
+     "lv": 43,
+     "quest": true
+    }
+   ],
+   "silver": 23657
+  },
+  {
+   "id": "persona_kongi",
+   "name": "콩이",
+   "hours": 5.4,
+   "level": 42,
+   "time": {
+    "life": 74,
+    "travel": 99,
+    "fight": 22,
+    "grind": 40,
+    "rest": 26,
+    "wait": 62
+   },
+   "mounts": [
+    {
+     "id": "pony",
+     "ch": "ch1",
+     "lv": 6,
+     "quest": true
+    },
+    {
+     "id": "horse",
+     "ch": "ch3",
+     "lv": 19,
+     "quest": false
+    },
+    {
+     "id": "mist_deer",
+     "ch": "ch4",
+     "lv": 29,
+     "quest": true
+    },
+    {
+     "id": "storm_steed",
+     "ch": "ch6",
+     "lv": 41,
+     "quest": true
+    }
+   ],
+   "silver": 19647
+  }
+ ],
+ "craftGrades": [
+  {
+   "name": "솔",
+   "grades": [
+    0,
+    16,
+    13,
+    0,
+    0
+   ],
+   "equip": {
+    "weapon": "wpn_club[고급]",
+    "weapon2": null,
+    "head": null,
+    "chest": null,
+    "legs": null,
+    "ring": null,
+    "neck": null,
+    "ear": null
+   }
+  },
+  {
+   "name": "모루",
+   "grades": [
+    0,
+    28,
+    22,
+    0,
+    0
+   ],
+   "equip": {
+    "weapon": "wpn_sword_copper[고급]",
+    "weapon2": null,
+    "head": null,
+    "chest": null,
+    "legs": null,
+    "ring": null,
+    "neck": null,
+    "ear": null
+   }
+  },
+  {
+   "name": "하랑",
+   "grades": [
+    1,
+    25,
+    25,
+    0,
+    0
+   ],
+   "equip": {
+    "weapon": "wpn_spear_copper[희귀]",
+    "weapon2": null,
+    "head": null,
+    "chest": null,
+    "legs": null,
+    "ring": null,
+    "neck": null,
+    "ear": null
+   }
+  },
+  {
+   "name": "새벽",
+   "grades": [
+    0,
+    4,
+    10,
+    0,
+    0
+   ],
+   "equip": {
+    "weapon": "wpn_club[고급]",
+    "weapon2": null,
+    "head": null,
+    "chest": null,
+    "legs": null,
+    "ring": null,
+    "neck": null,
+    "ear": null
+   }
+  },
+  {
+   "name": "무진",
+   "grades": [
+    0,
+    10,
+    0,
+    0,
+    0
+   ],
+   "equip": {
+    "weapon": "wpn_club[고급]",
+    "weapon2": null,
+    "head": null,
+    "chest": null,
+    "legs": null,
+    "ring": null,
+    "neck": null,
+    "ear": null
+   }
+  },
+  {
+   "name": "렌",
+   "grades": [
+    0,
+    16,
+    17,
+    2,
+    0
+   ],
+   "equip": {
+    "weapon": "wpn_club[고급]",
+    "weapon2": null,
+    "head": null,
+    "chest": null,
+    "legs": null,
+    "ring": null,
+    "neck": null,
+    "ear": null
+   }
+  },
+  {
+   "name": "콩이",
+   "grades": [
+    0,
+    3,
+    4,
+    0,
+    0
+   ],
+   "equip": {
+    "weapon": null,
+    "weapon2": null,
+    "head": null,
+    "chest": null,
+    "legs": null,
+    "ring": null,
+    "neck": null,
+    "ear": null
+   }
+  }
+ ]
+}

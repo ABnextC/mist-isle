@@ -152,6 +152,6 @@ save('unlocks', un)
 cfg = load('config')
 cfg['fastTravel'] = {'castSec': 4, 'useRange': 4, 'attuneRange': 7, 'base': 5, 'perM': 0.04, 'crossFee': 30, 'homeMult': 0.5, 'combatLockSec': 8}
 cfg['mount'] = {'summonSec': 1.5, 'combatLockSec': 5, 'stableRange': 4.5}
-cfg['dataVersion'] = 35
+cfg['dataVersion'] = max(cfg.get('dataVersion', 0), 35)
 save('config', cfg)
 print('길잡이 돌', len(ways), '·', ', '.join(w['id'] for w in ways))

@@ -88,6 +88,7 @@ export function runCampaign(data, pid, { seed }) {
   g.on('actor.down', (ev) => { if (ev.actor === 'p1') fightLog.downs++; });
 
   const TR = { ft: 0, ftSilver: 0, mounts: [], rideM: 0, walkM: 0, upWay: 0, up: 0, upSaved: 0 };
+  g.on('mount.gained', (e) => { if (e.actor === 'p1') TR.mounts.push({ id: e.mount, ch: chNow, lv: a.clevel.lvl, quest: !data.mounts[e.mount].price }); });
   let downAt = null;
   g.on('actor.down', (e) => { if (e.actor === 'p1') downAt = { x: e.x, z: e.z }; });
   g.on('actor.up', (e) => {
@@ -160,15 +161,15 @@ export function runCampaign(data, pid, { seed }) {
   // 마을에 들를 때: 탈것을 살 만하면 산다(조랑말 → 갈기 말 → 서리 산양)
   function buyMountMaybe() {
     if (!V32 || !isUnlocked(C, a, 'mount')) return;
-    for (const id of ['goat', 'horse', 'pony']) {
+    for (const id of ['goat', 'horse']) {
       const m = data.mounts[id];
       if (mountsOf(a).own.includes(id)) return; // 더 좋은 걸 이미 있다
+      if (mountsOf(a).own.some((x) => data.mounts[x].tier >= m.tier)) continue; // 같은 티어가 있으면 안 산다(v3.3)
       if (m.need?.quest && a.quests.done[m.need.quest] == null) continue;
       if (a.silver < m.price * MOUNT_SPARE[pid]) continue;
       a.silver -= m.price;
       gainMount(C, a, id);
       mountsOf(a).pick = id;
-      TR.mounts.push({ id, ch: chNow, lv: a.clevel.lvl });
       T.life += 60;
       return;
     }
@@ -528,7 +529,8 @@ export function runCampaign(data, pid, { seed }) {
       if (q.kind !== 'side' || q.repeat || q.bond || sideSeen.has(q.id)) continue;
       if (a.quests.done[q.id] || a.quests.active[q.id] || !available(C, a, q)) continue;
       sideSeen.add(q.id);
-      if (C.rng.next() > play.side) continue;
+      // 탈것을 주는 부탁(v3.3)은 다들 한다(마구간 창과 열림 알림이 알려 준다)
+      if (!(V32 && q.reward?.mount) && C.rng.next() > play.side) continue;
       if (q.faction && q.faction !== a.faction?.id) continue;
       const n = q.giver && q.giver !== 'board' ? npcPos(C, q.giver) : null;
       if (!n) continue;

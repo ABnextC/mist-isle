@@ -5,6 +5,7 @@ import { regionAt } from '../terrain.js';
 import { feeMult } from './factions.js';
 import { runOf } from './expeditions.js';
 import { inCombat, dismount } from './mounts.js';
+import { hasHearthstone, homeLanding } from './housing.js';
 
 export const waysOf = (a) => (a.ways ||= {});
 const TUTORIAL = 'wreck_coast'; // 안개 벽 바깥(돌아올 수 없는 섬)
@@ -47,7 +48,7 @@ export function waystonesTick(ctx) {
     const near = wayNear(ctx, a, R);
     if (!near) continue;
     const W = waysOf(a);
-    if (W[near.way]) continue;
+    if (W[near.way] != null) continue;
     W[near.way] = Math.round(ctx.state.t);
     ctx.emit('way.found', { actor: a.id, way: near.way });
   }
@@ -55,8 +56,22 @@ export function waystonesTick(ctx) {
 
 const crossing = (ctx, a, w) => regionAt(ctx.data.lists.regions, a.x).id !== w.region;
 
+// 집 길잡이 돌(v3.3): 'home'은 집 앞. 거리와 상관없이 기본값의 반(다른 섬이면 뱃삯)
+export const HOME = 'home';
+function homeWay(ctx, a) {
+  if (!hasHearthstone(ctx, a)) return null;
+  const p = homeLanding(ctx, a);
+  if (!p) return null;
+  return { id: HOME, name: '🏠 내 집', region: regionAt(ctx.data.lists.regions, p.x).id, at: p.at, x: p.x, z: p.z };
+}
+
 export function travelCost(ctx, a, to) {
   const F = ctx.cfg.fastTravel;
+  if (to === HOME) {
+    const h = homeWay(ctx, a);
+    if (!h) return null;
+    return Math.max(1, Math.round((F.base + (crossing(ctx, a, h) ? F.crossFee : 0)) * F.homeMult * feeMult(ctx, a, 'ship')));
+  }
   const w = ctx.data.waystones[to];
   const o = wayStatic(ctx, to);
   if (!w || !o) return null;
@@ -69,9 +84,10 @@ export function travelCost(ctx, a, to) {
 
 export function travelError(ctx, a, to) {
   const F = ctx.cfg.fastTravel;
-  const w = ctx.data.waystones[to];
-  if (!w || !wayStatic(ctx, to)) return 'bad_args';
-  if (!waysOf(a)[to]) return 'unknown_way';
+  const w = to === HOME ? homeWay(ctx, a) : ctx.data.waystones[to];
+  if (to === HOME && !w) return 'no_hearthstone';
+  if (!w || (to !== HOME && !wayStatic(ctx, to))) return 'bad_args';
+  if (to !== HOME && waysOf(a)[to] == null) return 'unknown_way';
   if (a.action) return 'busy';
   if (a.cb?.downUntil > 0) return 'down';
   if (runOf(ctx, a)) return 'in_expedition';
@@ -103,9 +119,9 @@ export function finishTravel(ctx, a) {
     ctx.emit('travel.cancelled', { actor: a.id, reason: 'no_silver' });
     return;
   }
-  const w = ctx.data.waystones[to];
+  const w = to === HOME ? homeWay(ctx, a) : ctx.data.waystones[to];
   const from = regionAt(ctx.data.lists.regions, a.x).id;
-  const p = wayLanding(ctx, to);
+  const p = to === HOME ? { x: w.x, z: w.z } : wayLanding(ctx, to);
   a.silver -= cost;
   const ox = a.x;
   const oz = a.z;
@@ -125,8 +141,11 @@ export function finishTravel(ctx, a) {
 // 지도에 그릴 돌 목록(익힌 것과 아닌 것)
 export function wayList(ctx, a) {
   const W = waysOf(a);
-  return ctx.data.lists.waystones.map((w) => {
+  const out = ctx.data.lists.waystones.map((w) => {
     const o = wayStatic(ctx, w.id);
-    return { ...w, x: o?.x ?? 0, z: o?.z ?? 0, known: !!W[w.id], cost: W[w.id] ? travelCost(ctx, a, w.id) : null };
+    return { ...w, x: o?.x ?? 0, z: o?.z ?? 0, known: W[w.id] != null, cost: W[w.id] != null ? travelCost(ctx, a, w.id) : null };
   });
+  const h = homeWay(ctx, a);
+  if (h) out.push({ ...h, known: true, cost: travelCost(ctx, a, HOME), home: true });
+  return out;
 }

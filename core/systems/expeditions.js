@@ -115,12 +115,28 @@ function reward(ctx, a, run) {
     bp = R.blueprints[ctx.rng.int(0, R.blueprints.length - 1)];
     items.push({ item: bp, qty: 1 });
   }
+  // 이름난 물건·트로피(v3.3): 처음 깨면 이름난 물건 하나(아직 없는 것)와 원정 트로피를 꼭 준다. 그 뒤엔 가끔
+  const E2 = expOf(a);
+  E2.ever = E2.ever || {};
+  const firstEver = !E2.ever[ex.id];
+  E2.ever[ex.id] = (E2.ever[ex.id] || 0) + 1;
+  let named = null;
+  const pool = R.named || [];
+  if (pool.length && (firstEver || ctx.rng.next() < (K.named || 0))) {
+    E2.got = E2.got || {};
+    const fresh = pool.filter((id) => !E2.got[id]);
+    const from = firstEver && fresh.length ? fresh : pool;
+    named = from[ctx.rng.int(0, from.length - 1)];
+    E2.got[named] = (E2.got[named] || 0) + 1;
+    items.push({ item: named, qty: 1 });
+  }
+  if (firstEver && R.firstTrophy) items.push({ item: R.firstTrophy, qty: 1, score: 70 });
   const got = giveReward(ctx, a, { id: `exp:${ex.id}`, steps: [], reward: { silver, items } });
   const xp = Math.round(R.xp * K.mult);
   gainLevelXp(ctx, a, xp, 'expedition');
   expOf(a).last[ex.id] = today(ctx);
   a.stats.expeditions = (a.stats.expeditions || 0) + 1;
-  ctx.emit('exp.clear', { actor: a.id, run: run.id, ex: ex.id, first, silver, items, bp, xp, stored: got.stored, sec: Math.round(ctx.state.t - run.startedAt) });
+  ctx.emit('exp.clear', { actor: a.id, run: run.id, ex: ex.id, first, firstEver, named, silver, items, bp, xp, stored: got.stored, sec: Math.round(ctx.state.t - run.startedAt) });
   return got;
 }
 

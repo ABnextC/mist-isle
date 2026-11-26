@@ -101,15 +101,18 @@
     {
       "id": "pony",
       "name": "조랑말",
-      "speed": 1.45,
-      "price": 450,
+      "tier": 1,
+      "speed": 1.4,
+      "price": null,
       "look": "pony",
-      "desc": "등대섬 들판에서 자란 작은 말. 겁이 많지만 순하고, 먹이를 가리지 않는다."
+      "quest": "sq_first_pony",
+      "desc": "강두가 경비대에서 내준 작은 말. 겁이 많지만 순하다. 살 수 없다."
     },
     {
       "id": "horse",
       "name": "갈기 말",
-      "speed": 1.6,
+      "tier": 2,
+      "speed": 1.55,
       "price": 1600,
       "look": "horse",
       "need": {
@@ -120,34 +123,42 @@
     {
       "id": "goat",
       "name": "서리 산양",
-      "speed": 1.7,
+      "tier": 3,
+      "speed": 1.65,
       "price": 2800,
       "look": "goat",
       "need": {
         "quest": "c5_ridge"
       },
-      "desc": "능선 광부들이 타는 굵은 뿔 산양. 비탈을 가리지 않는다."
+      "desc": "능선 광부들이 타는 굵은 뿔 산양. 「불의 능선」을 끝낸 개척자에게만 내준다."
     },
     {
       "id": "mist_deer",
       "name": "안개 사슴",
-      "speed": 1.7,
+      "tier": 3,
+      "speed": 1.65,
       "price": null,
       "look": "mist_deer",
       "quest": "sq_lodge_deer",
       "desc": "범돌이 길들인 안개 사슴. 뿔 끝에 옅은 빛이 돈다. 살 수 없다."
+    },
+    {
+      "id": "storm_steed",
+      "name": "폭풍 준마",
+      "tier": 4,
+      "speed": 1.8,
+      "price": null,
+      "look": "storm",
+      "quest": "sq_storm_steed",
+      "desc": "폭풍 늑대를 앞질러 달리는 검푸른 말. 갈기에 번개빛이 흐른다. 6장을 끝내야 만난다."
     }
   ],
   "stables": {
-    "s_lighthouse": [
-      "pony"
-    ],
+    "s_lighthouse": [],
     "s_port": [
-      "pony",
       "horse"
     ],
     "s_ash": [
-      "pony",
       "horse",
       "goat"
     ]

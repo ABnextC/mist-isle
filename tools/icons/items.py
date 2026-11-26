@@ -40,6 +40,7 @@ METAL = {
     'iron': ('#7f93a3', '#d6e2ea'),
     'bronze': ('#b0813a', '#ecc98a'),
     'mist': ('#6f93ae', '#dff4ff'),
+    'heart': ('#b8583a', '#ffd58a'),
 }
 LEATHER = '#8a5a33'
 CLOTH = '#c9b98d'
@@ -966,6 +967,130 @@ def horseshoe(s, metal):
     if metal == 'mist':
         s.add(C(32, 14, 2.4, s.glow('#9fe6ff', 0.9), 0))
 
+# ── v3.3: 귀걸이·심장 등급·트로피·꾸밈 ──
+def earring(s, metal, gem):
+    base, hi = METAL[metal]
+    s.shadow(32, 57, 10, 2.2)
+    s.add(E(32, 14, 7, 7, 'none', 4.6, INK))
+    s.add(E(32, 14, 7, 7, 'none', 2.4, base))
+    s.add(L('M32,21 L32,30', INK, 3.6) + L('M32,21 L32,30', base, 1.8))
+    s.add(P(poly([(32, 28), (41, 40), (32, 54), (23, 40)]), s.lin(gem, 0.45, -0.3), 1.8))
+    s.add(L('M28,38 l3,-6', '#fff', 1.3, 0.85))
+
+def heart_core(s):
+    s.shadow(32, 56, 15, 3)
+    s.add(C(32, 34, 17, s.glow('#ff7a3a', 0.55), 0))
+    s.add(P(poly([(32, 12), (46, 28), (40, 50), (24, 50), (18, 28)]), s.lin('#c0402a', 0.5, -0.4), 1.8))
+    s.add(P(poly([(32, 18), (40, 29), (36, 44), (28, 44), (24, 29)]), '#ffb36a', 0))
+    s.add(L('M28,26 l4,-6', '#fff7d8', 1.6, 0.9))
+
+def heart_bow(s):
+    bow_mist(s)
+    s.add(C(32, 32, 6, s.glow('#ff8a4a', 0.9), 0))
+
+def heart_staff(s):
+    staff_mist(s)
+    s.add(C(44, 16, 8, s.glow('#ff8a4a', 0.85), 0))
+
+def named_glow(fn, col):
+    def f(s):
+        s.add(C(32, 32, 26, s.glow(col, 0.35), 0))
+        fn(s)
+    return f
+
+def wolf_head(s):
+    s.shadow(32, 58, 18, 3)
+    s.add(P('M10,18 L54,18 L50,56 L14,56 Z', s.lin('#6a4528', 0.3, -0.3)))
+    s.add(P('M20,26 L16,12 L26,22 Z M44,26 L48,12 L38,22 Z', '#7a7a78'))
+    s.add(P('M18,28 Q32,18 46,28 L42,44 Q32,54 22,44 Z', s.lin('#8a8a86', 0.35, -0.3)))
+    s.add(P('M26,40 L32,50 L38,40 Z', '#d8d4c8'))
+    s.add(C(26, 33, 2.2, '#ffd24a', 1) + C(38, 33, 2.2, '#ffd24a', 1))
+    s.add(C(32, 46, 2.4, INK, 0))
+
+def flag(s):
+    s.shadow(32, 58, 16, 3)
+    s.add(L('M16,56 L16,8', INK, 4) + L('M16,56 L16,8', '#6a4528', 2.2))
+    s.add(P('M18,10 Q34,6 50,12 Q44,20 50,28 Q34,24 18,30 Z', s.lin('#2a2a30', 0.25, -0.3)))
+    s.add(P('M30,14 Q34,20 30,24 Q26,20 30,14 Z', '#d8d4c8', 0))
+
+def spirit_lamp(s):
+    crystal_lamp(s)
+    s.add(C(32, 30, 10, s.glow('#9fe6ff', 0.6), 0))
+
+def tool_rack(s, tool):
+    s.shadow(32, 58, 20, 3)
+    s.add(R(8, 14, 48, 34, s.lin('#7a5230', 0.3, -0.3), 4))
+    s.add(R(12, 18, 40, 26, '#5a3a20', 3, 0))
+    if tool == 'pick':
+        s.add(L('M20,40 L44,20', INK, 4) + L('M20,40 L44,20', '#c9a06a', 2.2))
+        s.add(P('M34,16 Q44,12 54,22 Q46,20 40,22 Z', s.lin('#ffd24a', 0.4, -0.3)))
+    elif tool == 'axe':
+        s.add(L('M18,42 L42,20', INK, 4) + L('M18,42 L42,20', '#c9a06a', 2.2))
+        s.add(P('M38,14 Q50,16 48,30 L40,24 Z', s.lin('#d6e2ea', 0.4, -0.3)))
+    else:
+        s.add(L('M22,42 L36,24', INK, 4) + L('M22,42 L36,24', '#c9a06a', 2.2))
+        s.add(P('M34,26 Q36,12 50,14 Q40,18 38,28 Z', s.lin('#d6a060', 0.4, -0.3)))
+        s.add(P('M44,36 Q48,30 52,34 Q48,40 44,36 Z', '#7fbf4a', 1))
+
+def trout_plaque(s):
+    s.shadow(32, 58, 22, 3)
+    s.add(E(32, 32, 26, 20, s.lin('#7a5230', 0.3, -0.3)))
+    s.add(E(32, 32, 21, 15, '#5a3a20', 0))
+    s.add(P('M12,32 Q24,20 40,26 L52,20 L50,32 L52,44 L40,38 Q24,44 12,32 Z', s.lin('#8f8a6a', 0.35, -0.3)))
+    s.add(C(18, 30, 1.8, INK, 0))
+    for x, y in ((28, 30), (34, 34), (24, 34)):
+        s.add(C(x, y, 1.4, '#3a2a1a', 0))
+
+def hearthstone(s):
+    s.shadow(32, 58, 14, 3)
+    s.add(P('M22,56 L24,14 Q32,6 40,14 L42,56 Z', s.lin('#9a968c', 0.3, -0.35)))
+    s.add(E(32, 26, 6, 6, 'none', 2.4, '#8fdcff'))
+    s.add(P('M28,40 L32,34 L36,40 L32,48 Z', '#8fdcff', 0))
+    s.add(P('M44,30 L50,24 L54,30 L48,36 Z', '#e0a050', 1.2))
+
+def screen(s):
+    s.shadow(32, 58, 24, 3)
+    for i, x in enumerate((8, 20, 32, 44)):
+        s.add(P(f'M{x},{12 + (i % 2) * 2} L{x + 12},{12 + ((i + 1) % 2) * 2} L{x + 12},{54 - ((i + 1) % 2) * 2} L{x},{54 - (i % 2) * 2} Z', s.lin('#e8dcb8', 0.25, -0.3), 1.6))
+        s.add(L(f'M{x + 6},{46} Q{x + 4},{30} {x + 8},{20}', '#5a8a4a', 1.6))
+
+def plant_pot(s):
+    s.shadow(32, 58, 14, 3)
+    s.add(P('M20,38 L44,38 L40,56 L24,56 Z', s.lin('#9a968c', 0.3, -0.35)))
+    for d, c in (('M32,38 Q22,24 14,22 Q24,30 32,38', '#4a8a3a'), ('M32,38 Q34,18 30,8 Q40,22 32,38', '#5aa04a'), ('M32,38 Q44,24 52,24 Q42,30 32,38', '#4a8a3a')):
+        s.add(P(d + ' Z', c, 1.4))
+    s.add(C(30, 12, 3, '#cfe8ff', 1))
+
+def bookcase(s):
+    s.shadow(32, 58, 20, 3)
+    s.add(R(12, 8, 40, 48, s.lin('#7a5230', 0.3, -0.3), 2))
+    for y in (10, 26, 42):
+        for i, c in enumerate(('#a0402a', '#3a6a8a', '#c9a64a', '#5a8a4a', '#7a4a8a')):
+            s.add(R(15 + i * 7, y + 2, 6, 12, c, 1, 0.9))
+        s.add(L(f'M12,{y + 14} L52,{y + 14}', INK, 1.6))
+
+def chime(s):
+    s.shadow(32, 58, 10, 2)
+    s.add(L('M32,4 L32,14', INK, 2))
+    s.add(P('M20,22 Q32,8 44,22 Z', s.lin(METAL['copper'][0], 0.4, -0.3)))
+    for x, h in ((24, 18), (30, 24), (36, 20), (42, 16)):
+        s.add(R(x - 1.6, 24, 3.2, h, s.lin('#d6e2ea', 0.4, -0.3), 1, 1))
+    s.add(P('M28,48 L36,48 L34,58 L30,58 Z', '#e8dcb8', 1.2))
+
+def armor_stand(s):
+    s.shadow(32, 58, 16, 3)
+    s.add(L('M32,56 L32,10', INK, 4) + L('M32,56 L32,10', '#6a4528', 2.2))
+    s.add(L('M20,56 L44,56', INK, 4))
+    cuirass(s, 'iron')
+
+def tank(s):
+    s.shadow(32, 58, 22, 3)
+    s.add(R(8, 16, 48, 38, s.lin('#8ab8d0', 0.15, -0.2, ), 4, 2))
+    s.add(R(8, 46, 48, 8, '#9a968c', 2))
+    s.add(P('M20,32 Q28,24 36,30 L42,26 L42,36 L36,32 Q28,38 20,32 Z', s.lin('#6fb8e0', 0.4, -0.3), 1.4))
+    s.add(C(24, 30, 1.4, INK, 0))
+    s.add(L('M46,40 Q44,30 48,22', '#4a8a3a', 2))
+
 def stone_lamp(s):
     s.shadow(32, 57, 16, 3)
     s.add(R(24, 46, 16, 9, s.lin('#a8a59a'), 1.5))
@@ -1043,6 +1168,34 @@ ICONS = {
     'arm_mist_helm': lambda s: helm(s, 'mist'), 'arm_mist_cuirass': lambda s: cuirass(s, 'mist'), 'arm_mist_greaves': lambda s: greaves(s, 'mist'),
 }
 for _k, _g in [('sword_mist', 'sword'), ('battleaxe_mist', 'battleaxe'), ('spear_mist', 'spear'), ('hammer_mist', 'hammer'), ('bow_mist', 'bow'), ('staff_mist', 'staff'), ('mist_helm', 'helm'), ('mist_cuirass', 'cuirass'), ('mist_greaves', 'greaves')]:
+    ICONS['bp_' + _k] = (lambda g: lambda s: blueprint(s, bp_glyph(g)))(_g)
+
+# v3.3
+_GEM = {'str': '#d04a3a', 'dex': '#4aa04a', 'int': '#4a8ad8', 'foc': '#9a6ad0', 'con': '#d0a04a'}
+for _m in ('copper', 'iron', 'mist'):
+    for _a, _c in _GEM.items():
+        ICONS.setdefault(f'ring_{_m}_{_a}', (lambda m, c: lambda s: ring(s, m, c))(_m, _c))
+    ICONS[f'neck_{_m}_life'] = (lambda m: lambda s: amulet(s, m, '#e0405a'))(_m)
+    ICONS[f'ear_{_m}_potion'] = (lambda m: lambda s: earring(s, m, '#e04a5a'))(_m)
+    ICONS[f'ear_{_m}_ride'] = (lambda m: lambda s: earring(s, m, '#e0b04a'))(_m)
+ICONS['neck_copper_gather'] = lambda s: (amulet(s, 'copper', '#7fbf4a'))
+ICONS['neck_mist_gather'] = lambda s: (amulet(s, 'mist', '#7fbf4a'))
+ICONS.update({
+    'heart_core': heart_core, 'ingot_heart': lambda s: ingot(s, 'heart'),
+    'wpn_sword_heart': lambda s: sword_shield(s, 'heart'), 'wpn_battleaxe_heart': lambda s: axe(s, 'heart', True), 'wpn_spear_heart': lambda s: spear(s, 'heart'),
+    'wpn_hammer_heart': lambda s: hammer(s, 'heart'), 'wpn_bow_heart': heart_bow, 'wpn_staff_heart': heart_staff,
+    'arm_heart_helm': lambda s: helm(s, 'heart'), 'arm_heart_cuirass': lambda s: cuirass(s, 'heart'), 'arm_heart_greaves': lambda s: greaves(s, 'heart'),
+    'wpn_staff_yeogang': named_glow(staff_mist, '#6ab4ff'), 'ear_yeogang': named_glow(lambda s: earring(s, 'mist', '#7fd0ff'), '#6ab4ff'),
+    'wpn_axe_yeomcheol': named_glow(lambda s: axe(s, 'iron', True), '#b876ff'), 'ring_marine': named_glow(lambda s: ring(s, 'iron', '#2a4a8a'), '#b876ff'),
+    'wpn_hammer_kiln': named_glow(lambda s: hammer(s, 'copper'), '#ff7a3a'), 'neck_ember': named_glow(lambda s: amulet(s, 'copper', '#ff7a3a'), '#ff7a3a'),
+    'wpn_sword_keeper': named_glow(lambda s: sword_shield(s, 'heart'), '#ffb347'), 'wpn_bow_keeper': named_glow(heart_bow, '#ffb347'),
+    'ring_covenant': named_glow(lambda s: ring(s, 'heart', '#ffe08a'), '#ffb347'),
+    'tr_wolf': wolf_head, 'tr_flag': flag, 'tr_lamp': spirit_lamp, 'tr_pick': lambda s: tool_rack(s, 'pick'), 'tr_axe': lambda s: tool_rack(s, 'axe'),
+    'tr_sickle': lambda s: tool_rack(s, 'sickle'), 'tr_trout': trout_plaque, 'furn_hearthstone': hearthstone,
+    'furn_screen': screen, 'furn_scroll': lambda s: scroll(s, '#3a6a8a', True), 'furn_plant': plant_pot, 'furn_bookcase': bookcase,
+    'furn_chime': chime, 'furn_bearskin': rug, 'furn_armorstand': armor_stand, 'furn_tank': tank,
+})
+for _k, _g in [('sword_heart', 'sword'), ('battleaxe_heart', 'battleaxe'), ('spear_heart', 'spear'), ('hammer_heart', 'hammer'), ('bow_heart', 'bow'), ('staff_heart', 'staff'), ('heart_helm', 'helm'), ('heart_cuirass', 'cuirass'), ('heart_greaves', 'greaves')]:
     ICONS['bp_' + _k] = (lambda g: lambda s: blueprint(s, bp_glyph(g)))(_g)
 
 ICONS.update({

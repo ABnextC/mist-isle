@@ -1,5 +1,5 @@
 {
-  "dataVersion": 35,
+  "dataVersion": 36,
   "skillCap": 60,
   "time": {
     "secondsPerGameDay": 3600,
@@ -1823,5 +1823,32 @@
     "summonSec": 1.5,
     "combatLockSec": 5,
     "stableRange": 4.5
-  }
+  },
+  "grades": [
+    {
+      "id": "common",
+      "name": "일반",
+      "color": "#c9c6bc"
+    },
+    {
+      "id": "uncommon",
+      "name": "고급",
+      "color": "#5fd36b"
+    },
+    {
+      "id": "rare",
+      "name": "희귀",
+      "color": "#4aa8ff"
+    },
+    {
+      "id": "epic",
+      "name": "영웅",
+      "color": "#b876ff"
+    },
+    {
+      "id": "legendary",
+      "name": "전설",
+      "color": "#ff9b3d"
+    }
+  ]
 }

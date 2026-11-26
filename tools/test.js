@@ -43,7 +43,13 @@ import { gapMult, needXp as lvNeed, mobLevel } from '../core/systems/level.js';
 import { questXp } from '../core/systems/quests.js';
 import { levelTone } from '../client/game/level-color.js';
 import { wayStatic, wayLanding, travelCost } from '../core/systems/waystones.js';
-import { mountSpeed } from '../core/systems/mounts.js';
+import { mountSpeed, gainMount } from '../core/systems/mounts.js';
+import { grade, gradeOfEntry } from '../core/grades.js';
+import { trophyBonus } from '../core/systems/housing.js';
+import { dealHit } from '../core/systems/combat.js';
+import { giveReward } from '../core/systems/quests.js';
+import { tradable } from '../core/market.js';
+import { stars } from '../core/text.js';
 
 const LH = 's_lighthouse';
 const FR = 's_forest';
@@ -1342,7 +1348,7 @@ test('v0.5 세이브(1장 끝)를 불러오면 2장이 이어지고, 옛 등불�
   const g = loadGame({ data, save: old });
   const st = g.state;
   eq(st.meta.dataVersion, cfg.dataVersion);
-  eq(st.meta.engine, '3.2.0');
+  eq(st.meta.engine, '3.3.0');
   const count = (groups, t) => Object.values(groups).filter((x) => x.type === t && !x.site && x.x < 600).length; // 등대섬만(v0.6 본섬 무리 빼고)
   for (const t of ['crab', 'deer', 'boar', 'wolf', 'mist_wolf']) eq(count(st.mobGroups, t), count(before.mobGroups, t), `${t} 무리 수`);
   eq(count(st.mobGroups, 'mist_wraith'), data.creatures.mist_wraith.groups, '밤 망령 무리');
@@ -1534,7 +1540,7 @@ test('v0.5.2 세이브(데이터 9)를 불러오면 본섬이 생기고 AI 개�
   for (const ag of s.econ.agents) ag.home = ag.home === 's_valley' ? 's_forest' : 's_lighthouse';
   const g = loadGame({ data, save: JSON.stringify(obj) });
   const st = g.state;
-  eq(st.meta.engine, '3.2.0');
+  eq(st.meta.engine, '3.3.0');
   eq(st.meta.dataVersion, data.config.dataVersion, '데이터 버전');
   ok(st.settlements.s_port && st.settlements.s_valley, '본섬 두 마을');
   ok(Object.values(st.nodes).filter((n) => onMain(n.x)).length > 150, '본섬 노드');
@@ -2906,18 +2912,17 @@ test('길잡이 돌: 안개 벽은 못 넘고, 본섬의 다른 섬(능선)으�
   eq(g.dispatch({ type: 'FAST_TRAVEL', actor: 'p1', to: 'w_lighthouse' }).error, 'mist_wall');
 });
 
-test('탈것: 1장 「숲머리로」 뒤 마구간에서 산다 → V로 부르고(1.5초) 타면 빨라진다', () => {
+test('탈것: 조랑말은 팔지 않고 퀘스트로 받는다 → V로 부르고(1.5초) 타면 빨라진다', () => {
   const { g, a, C } = travelGame();
   const sb = C.statics.find((o) => o.kind === 'stable' && o.at === 's_lighthouse');
   Object.assign(a, { x: sb.x + Math.sin(sb.rot) * 3.6, z: sb.z + Math.cos(sb.rot) * 3.6 });
   a.silver = 1000;
-  eq(g.dispatch({ type: 'MOUNT_BUY', actor: 'p1', mount: 'pony' }).error, 'locked');
   a.quests.done.q4_forest = 1;
+  eq(g.dispatch({ type: 'MOUNT_BUY', actor: 'p1', mount: 'pony' }).error, 'bad_args', '조랑말은 값이 없다');
   eq(g.dispatch({ type: 'MOUNT_BUY', actor: 'p1', mount: 'horse' }).error, 'not_sold_here');
   eq(g.dispatch({ type: 'MOUNT', actor: 'p1' }).error, 'no_mount');
-  ok(g.dispatch({ type: 'MOUNT_BUY', actor: 'p1', mount: 'pony' }).ok);
-  eq(a.silver, 1000 - data.mounts.pony.price);
-  eq(g.dispatch({ type: 'MOUNT_BUY', actor: 'p1', mount: 'pony' }).error, 'owned');
+  gainMount(C, a, 'pony');
+  eq(a.silver, 1000);
   ok(g.dispatch({ type: 'MOUNT', actor: 'p1' }).ok);
   g.advance(1);
   eq(a.riding, null, '부르는 중');
@@ -2999,7 +3004,7 @@ test('범돌의 부탁 「안개 사슴 길들이기」를 끝내면 안개 사�
   eq(a.mounts.pick, 'mist_deer');
 });
 
-test('이주 34→35: 탈것·길잡이 돌 자리를 만들고, 지금 섬의 마을 돌과 귀환 지점 돌을 익힌 것으로 친다', () => {
+test('이주 34→35→36: 탈것·길잡이 돌·귀걸이 자리를 만들고, 지금 섬의 마을 돌과 귀환 지점 돌을 익힌 것으로 친다', () => {
   const g = createGame({ data, seed: 3, actors: [{ id: 'p1', kind: 'player' }] });
   const obj = JSON.parse(g.save());
   const a0 = obj.state.actors.p1;
@@ -3010,10 +3015,209 @@ test('이주 34→35: 탈것·길잡이 돌 자리를 만들고, 지금 섬의 �
   obj.state.meta.dataVersion = 34;
   const g2 = loadGame({ data, save: JSON.stringify(obj) });
   const a = g2.state.actors.p1;
-  eq(g2.state.meta.engine, '3.2.0');
+  eq(g2.state.meta.engine, '3.3.0');
   ok(a.mounts && a.mounts.own.length === 0 && a.riding === null);
+  ok(a.equip && 'ear' in a.equip, '이주 35→36: 귀걸이 자리');
   ok(a.ways.w_lighthouse != null && a.ways.w_forest != null && a.ways.w_gull != null, '등대섬 마을 돌');
   ok(a.ways.w_port == null && a.ways.w_hermit_hut == null, '본섬·쉼터 돌은 아직');
+});
+
+console.log('등급 색·종결 장비·장신구·탈것 티어·하우징 (v3.3)');
+test('등급: 별 1~5가 일반·고급·희귀·영웅·전설(색)로, 글로만 보일 땐 [희귀] 꼴. 이름난 물건은 정해진 등급', () => {
+  eq(data.config.grades.map((x) => x.name).join(), '일반,고급,희귀,영웅,전설');
+  eq(grade(data, 3).name, '희귀');
+  eq(grade(data, 5).color, '#ff9b3d');
+  eq(stars(4), '[영웅]');
+  eq(gradeOfEntry(data, { item: 'wpn_sword_keeper', star: 2 }).name, '전설', '이름난 물건은 데이터 등급');
+  eq(gradeOfEntry(data, { item: 'wpn_sword_iron', star: 2 }).name, '고급');
+});
+
+test('종결 장비는 제작·원정·퀘스트로만: 심장 등급은 설계도(심장 아래 원정)로만 만들고, 이름난 물건은 원정·퀘스트 보상에만 있고, 귀속 재료는 사고팔 수 없다', () => {
+  const g = createGame({ data, seed: 3, actors: [{ id: 'p1', kind: 'player' }] });
+  const C = g._ctx;
+  const gear = data.lists.items.filter((x) => x.weapon || x.armor || x.jewel);
+  const top = gear.filter((x) => x.tier >= 4 || x.named);
+  ok(top.length >= 15, `종결 장비 ${top.length}`);
+  const exItems = new Set(data.expeditionCfg.list.flatMap((e) => [...(e.reward.named || []), ...e.reward.blueprints, ...e.reward.items.map((x) => x.item)]));
+  const questItems = new Set(data.lists.quests.flatMap((q) => (q.reward?.items || []).map((x) => x.item)));
+  for (const d of top) {
+    const r = data.lists.recipes.find((x) => x.output.item === d.id);
+    if (r) {
+      ok(r.blueprint && exItems.has(r.blueprint), `${d.id} 제작은 원정 설계도`);
+      ok(data.items[r.blueprint].bind, `${r.blueprint} 귀속`);
+    } else ok(d.named && (exItems.has(d.id) || questItems.has(d.id)), `${d.id} 원정·퀘스트 보상`);
+    ok(d.bind, `${d.id} 귀속`);
+  }
+  // 심장 조각은 마지막 원정에서만
+  ok(data.expeditions.ex_heart.reward.items.some((x) => x.item === 'heart_core'));
+  ok(!data.expeditionCfg.list.some((e) => e.id !== 'ex_heart' && e.reward.items.some((x) => x.item === 'heart_core')));
+  // 장비는 거래소에 안 나오고, 귀속 재료도 못 판다
+  ok(!tradable(C, { item: 'heart_core', qty: 1 }), '심장 조각');
+  ok(!tradable(C, { item: 'ingot_heart', qty: 1 }), '심장강 주괴');
+  ok(!tradable(C, { uid: 'x', item: 'wpn_sword_mist' }), '장비');
+  ok(tradable(C, { item: 'ingot_iron', qty: 1, lot: null }), '철은 판다');
+  // 6장 끝 「새 맹약」은 전설 반지
+  ok(data.quests.c6_covenant.reward.items.some((x) => x.item === 'ring_covenant'));
+  eq(data.items.ring_covenant.grade, 5);
+});
+
+test('원정 이름난 물건: 처음 깨면 그 원정의 이름난 물건 하나와 트로피를 꼭 받고, 등급이 정해져 있다', () => {
+  const g = createGame({ data, seed: 9, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  const C = g._ctx;
+  const ex = data.expeditions.ex_sunken;
+  const s = sitePos(C, ex.site);
+  Object.assign(a, { x: s.x + s.r + 4, z: s.z });
+  a.quests.done.c3_sunken = 1;
+  const evs = [];
+  g.on('exp.clear', (e) => evs.push(e));
+  const clear = () => {
+    ok(g.dispatch({ type: 'EXP_START', actor: 'p1', ex: ex.id }).ok);
+    for (let i = 0; i < 14 && evs.length < n + 1; i++) {
+      const run = Object.values(g.state.runs)[0];
+      a.cb.hp = a.cb.maxHp;
+      if (run) for (const id of [...g.state.mobGroups[run.group].mobs]) if (g.state.mobs[id] && g.state.mobs[id].hp > 0) hurtMob(C, g.state.mobs[id], a, 1e6);
+      g.advance(1.1);
+    }
+    n++;
+  };
+  let n = 0;
+  clear();
+  const e1 = evs[0];
+  ok(e1.firstEver && ex.reward.named.includes(e1.named), `이름난 물건 ${e1.named}`);
+  const got = [...a.bag, ...storeOf(a, a.home)].find((x) => x.item === e1.named);
+  ok(got?.uid, '장비로 받음');
+  eq(got.star, data.items[e1.named].grade, '정해진 등급');
+  ok([...a.bag, ...storeOf(a, a.home)].some((x) => x.item === ex.reward.firstTrophy), '원정 트로피');
+  Object.assign(a, { x: s.x + s.r + 4, z: s.z });
+  clear();
+  ok(!evs[1].firstEver, '두 번째');
+  ok(![...a.bag, ...storeOf(a, a.home)].filter((x) => x.item === ex.reward.firstTrophy)[1], '트로피는 한 번');
+});
+
+test('장신구: 귀걸이 자리가 생기고, 반지는 능력치(맹약 반지는 모두), 목걸이는 최대 체력, 귀걸이는 회복 물약·탈것 빠르기를 올린다', () => {
+  const g = createGame({ data, seed: 3, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  const C = g._ctx;
+  const put = (item, score = 60) => {
+    giveReward(C, a, { id: 't', steps: [], reward: { items: [{ item, qty: 1, score }] } });
+    const e = a.bag.filter((x) => x.item === item).at(-1);
+    ok(g.dispatch({ type: 'EQUIP', actor: 'p1', uid: e.uid }).ok, item);
+    return e;
+  };
+  ok('ear' in a.equip, '귀걸이 자리');
+  for (const m of ['copper', 'iron', 'mist']) for (const at of ['str', 'dex', 'int', 'foc', 'con']) ok(data.items[`ring_${m}_${at}`], `ring_${m}_${at}`);
+  const hp0 = a.cb.maxHp;
+  const neck = put('neck_mist_life');
+  g.advance(0.2);
+  near(a.cb.maxHp, hp0 + neck.stats.hp, 0.01, '최대 체력');
+  const ring = put('ring_covenant');
+  g.advance(0.2);
+  eq(a.equip.ring, ring.uid);
+  ok(ring.stats.attr >= 6, `맹약 반지 ${ring.stats.attr}`);
+  // 회복 물약: 귀걸이만큼 더 찬다
+  const heal = () => {
+    a.cb.hp = 10;
+    a.cb.potionAt = 0;
+    a.bag.push({ item: 'potion_heal', lot: null, bonus: null, qty: 1, stats: { power: 0.3, sec: 0 } });
+    ok(g.dispatch({ type: 'EAT', actor: 'p1', key: keyOf(a.bag.at(-1)) }).ok);
+    return a.cb.hp - 10;
+  };
+  const plain = heal();
+  const ear = put('ear_mist_potion');
+  near(heal(), plain * (1 + ear.stats.potion), 0.6, '물약 귀걸이');
+  // 탈것 빠르기
+  a.mounts.own.push('pony');
+  a.riding = 'pony';
+  const s0 = mountSpeed(C, a);
+  const ride = put('ear_iron_ride');
+  near(mountSpeed(C, a), data.mounts.pony.speed * (1 + ride.stats.ride), 1e-9, '말발굽 귀걸이');
+  ok(mountSpeed(C, a) > s0);
+});
+
+test('탈것 티어 1~4: 빠를수록 티어가 높고, 첫 말은 강두의 부탁, 3티어부터는 퀘스트를 깨야 열리며 4티어는 6장 뒤 퀘스트로만', () => {
+  const M = data.lists.mounts.slice().sort((x, y) => x.tier - y.tier);
+  for (let i = 1; i < M.length; i++) ok(M[i].speed >= M[i - 1].speed, `${M[i].id} 빠르기`);
+  eq(data.mounts.pony.tier, 1);
+  eq(data.mounts.pony.price, null, '조랑말은 살 수 없다');
+  eq(data.quests[data.mounts.pony.quest].reward.mount, 'pony');
+  for (const m of M) if (m.tier >= 3) ok(m.quest || m.need?.quest, `${m.id} 퀘스트로 열림`);
+  const top = M.filter((m) => m.tier === 4);
+  ok(top.length && top.every((m) => m.price == null && data.quests[m.quest].requires.includes('c6_covenant')), '4티어');
+  eq(data.stables.s_lighthouse.length, 0, '등대 마을 마구간은 팔지 않는다');
+  // 첫 조랑말 퀘스트를 끝내면 탄다
+  const g = createGame({ data, seed: 3, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  const q = data.quests.sq_first_pony;
+  a.quests.active.sq_first_pony = { step: q.steps.length - 1, n: 0, used: [], t: 0 };
+  a.bag.push({ item: 'berry', lot: null, bonus: null, qty: 6 });
+  const np = npcPos(g._ctx, 'gangdu');
+  Object.assign(a, { x: np.x + 1, z: np.z });
+  ok(g.dispatch({ type: 'TALK', actor: 'p1', npc: 'gangdu' }).ok);
+  ok(a.mounts.own.includes('pony') && a.mounts.pick === 'pony', '조랑말');
+});
+
+test('트로피: 집에 놓으면 그 갈래 피해·채집이 오르고, 같은 갈래는 하나, 집 단계마다 1·2·3개', () => {
+  const g = createGame({ data, seed: 3, actors: [{ id: 'p1', kind: 'player' }] });
+  g.state.econ = null;
+  const a = g.state.actors.p1;
+  const C = g._ctx;
+  const plot = data.housing.plots[0];
+  g.state.houses = { [plot.id]: { tier: 'hut', owner: 'p1', furniture: [], garden: [] } };
+  a.house = plot.id;
+  const s = data.settlements[plot.at];
+  Object.assign(a, { x: s.x + plot.dx + 2, z: s.z + plot.dz });
+  const give = (item) => {
+    giveReward(C, a, { id: 't', steps: [], reward: { items: [{ item, qty: 1, score: 60 }] } });
+    return a.bag.filter((x) => x.item === item).at(-1);
+  };
+  const wolf = give('tr_wolf');
+  ok(g.dispatch({ type: 'HOUSE_PLACE', actor: 'p1', uid: wolf.uid }).ok);
+  near(trophyBonus(C, a, 'beast'), 0.04, 1e-9);
+  eq(trophyBonus(C, a, 'human'), 0);
+  eq(g.dispatch({ type: 'HOUSE_PLACE', actor: 'p1', uid: give('tr_flag').uid }).error, 'trophy_full', '오두막은 하나');
+  g.state.houses[plot.id].tier = 'house';
+  eq(g.dispatch({ type: 'HOUSE_PLACE', actor: 'p1', uid: give('tr_wolf').uid }).error, 'same_trophy');
+  ok(g.dispatch({ type: 'HOUSE_PLACE', actor: 'p1', uid: a.bag.find((x) => x.item === 'tr_flag').uid }).ok);
+  near(trophyBonus(C, a, 'human'), 0.04, 1e-9);
+  // 피해에 들어간다
+  const m = Object.values(g.state.mobs).find((x) => x.type === 'wolf');
+  const hit = () => {
+    m.hp = data.creatures.wolf.hp;
+    m.mode = 'idle';
+    a.cb.counterUntil = 0;
+    dealHit(C, a, m, 20, { w: { type: 'club' }, P: {} });
+    return data.creatures.wolf.hp - m.hp;
+  };
+  const withT = hit();
+  const h = g.state.houses[plot.id];
+  const saved = h.furniture.splice(0);
+  const without = hit();
+  h.furniture.push(...saved);
+  ok(withT > without, `트로피 피해 ${withT} > ${without}`);
+});
+
+test('집 길잡이 돌: 집에 두면 길잡이 돌에서 집 앞으로 건너뛴다(반값)', () => {
+  const g = createGame({ data, seed: 3, actors: [{ id: 'p1', kind: 'player' }] });
+  const a = g.state.actors.p1;
+  const C = g._ctx;
+  for (const m of Object.values(g.state.mobs)) m.mode = 'away';
+  const plot = data.housing.plots[0];
+  g.state.houses = { [plot.id]: { tier: 'house', owner: 'p1', furniture: [], garden: [] } };
+  a.house = plot.id;
+  a.ways.w_valley = 1;
+  a.silver = 300;
+  const p = wayLanding(C, 'w_valley');
+  Object.assign(a, { x: p.x, z: p.z });
+  eq(g.dispatch({ type: 'FAST_TRAVEL', actor: 'p1', to: 'home' }).error, 'no_hearthstone');
+  giveReward(C, a, { id: 't', steps: [], reward: { items: [{ item: 'furn_hearthstone', qty: 1, score: 60 }] } });
+  g.state.houses[plot.id].furniture.push(a.bag.splice(a.bag.findIndex((x) => x.item === 'furn_hearthstone'), 1)[0]);
+  const cost = travelCost(C, a, 'home');
+  ok(cost <= Math.ceil(data.config.fastTravel.base * data.config.fastTravel.homeMult) + 1, `값 ${cost}`);
+  ok(g.dispatch({ type: 'FAST_TRAVEL', actor: 'p1', to: 'home' }).ok);
+  g.advance(4.5);
+  const s = data.settlements[plot.at];
+  ok(Math.hypot(a.x - (s.x + plot.dx), a.z - (s.z + plot.dz)) < 6, '집 앞');
 });
 
 console.log('멀티 시험 (v3.0)');

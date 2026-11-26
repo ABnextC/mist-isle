@@ -1,6 +1,7 @@
 // 안개섬 개척기 — 3D 클라이언트 (v0.1부터).
 // 코어(core/)를 브라우저에서 돌리고, 조작은 모두 명령(game.dispatch)으로 보낸다.
 
+import { grade } from '../../core/grades.js';
 import * as THREE from 'three';
 import { DATA_FILES, buildData } from '../../core/data.js';
 import { createGame, loadGame } from '../../core/game.js';
@@ -1117,6 +1118,8 @@ async function boot() {
     const parts = [`🪙 ${ev.silver}`, `⭐ ${ev.xp}`, ...ev.items.map((x) => `${data.items[x.item].name} ×${x.qty}`)];
     setTimeout(() => hud.toast(`${ev.first ? '오늘 첫 공략' : '다시 공략(보상 절반)'} · ${parts.join(' · ')}`, 'good', 8000), 1500);
     if (ev.bp) setTimeout(() => hud.banner(`📘 ${data.items[ev.bp].name}!`, 3400), 4200);
+    // 이름난 물건(v3.3)
+    if (ev.named) setTimeout(() => hud.banner(`✨ 이름난 물건 · ${data.items[ev.named].name} [${grade(data, data.items[ev.named].grade).name}]`, 4600), ev.bp ? 7800 : 4200);
   });
   game.on('exp.fail', (ev) => {
     if (ev.actor !== PID) return;

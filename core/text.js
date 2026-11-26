@@ -1,3 +1,4 @@
+import { FALLBACK } from './grades.js';
 // 한국어 표시 문구. 화면과 헤드리스 리포트가 같이 쓴다.
 
 import { avgProps, effectiveProps } from './inventory.js';
@@ -44,6 +45,10 @@ export const ERR = {
   bad_price: '값이 맞지 않음',
   bad_qty: '수량이 맞지 않음',
   no_silver: '은화가 모자람',
+  no_hearthstone: '집에 집 길잡이 돌이 없다',
+  same_trophy: '같은 갈래 트로피가 이미 있다',
+  trophy_full: '트로피 자리가 없다(오두막 1·집 2·큰 집 3)',
+  bound: '귀속된 물건이라 넘길 수 없다',
   unknown_way: '아직 길을 익히지 못한 돌이다(한 번 가 봐야 한다)',
   in_combat: '싸우는 중에는 안 된다(잠깐 숨을 돌리자)',
   in_expedition: '원정 중에는 안 된다',
@@ -174,9 +179,11 @@ export const STAT_NAMES = {
   gatherSpeed: '속도', yield: '산출', durability: '내구', comfort: '쾌적', buff: '효과', minutes: '지속',
   attack: '공격력', armor: '방어', heal: '회복',
   power: '세기', sec: '지속', attr: '능력치', gather: '채집량',
+  hp: '최대 체력', potion: '회복 물약', ride: '탈것 빠르기',
 };
 
-export const stars = (n) => '★'.repeat(n) + '☆'.repeat(5 - n);
+// 등급(v3.3): 별 대신 등급 이름. 글로만 쓰는 곳(기록·알림)은 [희귀] 꼴
+export const stars = (n) => (n ? `[${FALLBACK[Math.max(1, Math.min(5, n)) - 1].name}]` : '');
 
 export function fmtProps(props, data) {
   return Object.entries(props).map(([k, v]) => `${data.config.propNames[k] || k} ${Math.round(v)}`).join('·');
@@ -189,7 +196,8 @@ export function fmtStat(stat, v) {
   if (stat === 'power') return `${Math.round(v * 100)}%`;
   if (stat === 'sec') return `${v}초`;
   if (stat === 'gather') return `+${Math.round(v * 1000) / 10}%`;
-  if (stat === 'attr') return `+${v}`;
+  if (stat === 'attr' || stat === 'hp') return `+${v}`;
+  if (stat === 'potion' || stat === 'ride') return `+${Math.round(v * 1000) / 10}%`;
   return String(v);
 }
 
@@ -354,7 +362,7 @@ export function describeEvent(ev, game) {
     case 'repair':
       return `${p}🔧 ${itemName(data, ev.item)} 수리 · ${ev.cost}은화 · 최대 내구 ${ev.maxDur}`;
     case 'order.posted':
-      return `📋 ${ev.at ? townName(state, ev.at) + ' ' : ''}새 주문: ${itemName(data, ev.item)}${ev.minStar ? ` ★${ev.minStar} 이상` : ''} ${ev.qty}개 · 개당 ${ev.reward}은화`;
+      return `📋 ${ev.at ? townName(state, ev.at) + ' ' : ''}새 주문: ${itemName(data, ev.item)}${ev.minStar ? ` ${FALLBACK[ev.minStar - 1]?.name ?? ''} 이상` : ''} ${ev.qty}개 · 개당 ${ev.reward}은화`;
     case 'order.delivered': {
       const nm = state.actors[ev.owner]?.name;
       return nm ? `📋 주문 납품: ${itemName(data, ev.item)} ${ev.qty}개 · ${ev.pay}은화${ev.done ? ' · 주문 끝' : ''}` : null;

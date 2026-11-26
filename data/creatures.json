@@ -50,7 +50,8 @@
         "groups": 3
       }
     },
-    "level": 2
+    "level": 2,
+    "kin": "beast"
   },
   {
     "id": "deer",
@@ -102,7 +103,8 @@
         "groups": 4
       }
     },
-    "level": 3
+    "level": 3,
+    "kin": "beast"
   },
   {
     "id": "boar",
@@ -164,7 +166,8 @@
         "groups": 4
       }
     },
-    "level": 6
+    "level": 6,
+    "kin": "beast"
   },
   {
     "id": "wolf",
@@ -222,7 +225,8 @@
         "groups": 3
       }
     },
-    "level": 5
+    "level": 5,
+    "kin": "beast"
   },
   {
     "id": "mist_wolf",
@@ -291,7 +295,8 @@
         ]
       }
     },
-    "level": 8
+    "level": 8,
+    "kin": "beast"
   },
   {
     "id": "raider_scout",
@@ -379,7 +384,8 @@
       180,
       300
     ],
-    "level": 4
+    "level": 4,
+    "kin": "human"
   },
   {
     "id": "raider",
@@ -479,7 +485,8 @@
       180,
       300
     ],
-    "level": 6
+    "level": 6,
+    "kin": "human"
   },
   {
     "id": "raider_spear",
@@ -578,7 +585,8 @@
       0.8,
       3
     ],
-    "level": 6
+    "level": 6,
+    "kin": "human"
   },
   {
     "id": "raider_axe",
@@ -672,7 +680,8 @@
       180,
       300
     ],
-    "level": 8
+    "level": 8,
+    "kin": "human"
   },
   {
     "id": "raider_thrower",
@@ -769,7 +778,8 @@
       1.2,
       4
     ],
-    "level": 5
+    "level": 5,
+    "kin": "human"
   },
   {
     "id": "raider_lt",
@@ -882,7 +892,8 @@
       300,
       420
     ],
-    "level": 10
+    "level": 10,
+    "kin": "human"
   },
   {
     "id": "raider_captain",
@@ -1005,7 +1016,8 @@
       600,
       900
     ],
-    "level": 12
+    "level": 12,
+    "kin": "human"
   },
   {
     "id": "mist_wraith",
@@ -1097,7 +1109,8 @@
         ]
       }
     },
-    "level": 9
+    "level": 9,
+    "kin": "spirit"
   },
   {
     "id": "stone_haetae",
@@ -1195,7 +1208,8 @@
     ],
     "wake": "c2_haetae",
     "rise": 2.4,
-    "level": 14
+    "level": 14,
+    "kin": "spirit"
   },
   {
     "id": "imugi",
@@ -1288,7 +1302,8 @@
       900
     ],
     "wake": "c3_beast",
-    "level": 18
+    "level": 18,
+    "kin": "spirit"
   },
   {
     "id": "surveyor",
@@ -1382,7 +1397,8 @@
       180,
       300
     ],
-    "level": 15
+    "level": 15,
+    "kin": "human"
   },
   {
     "id": "surveyor_spear",
@@ -1481,7 +1497,8 @@
       0.8,
       3
     ],
-    "level": 15
+    "level": 15,
+    "kin": "human"
   },
   {
     "id": "yeogang_wraith",
@@ -1566,7 +1583,8 @@
       }
     ],
     "wake": "c3_sunken",
-    "level": 19
+    "level": 19,
+    "kin": "spirit"
   },
   {
     "id": "marine",
@@ -1660,7 +1678,8 @@
       180,
       300
     ],
-    "level": 20
+    "level": 20,
+    "kin": "human"
   },
   {
     "id": "marine_spear",
@@ -1759,7 +1778,8 @@
       0.8,
       3
     ],
-    "level": 20
+    "level": 20,
+    "kin": "human"
   },
   {
     "id": "marine_captain",
@@ -1883,7 +1903,8 @@
       900
     ],
     "wake": "c4_fort",
-    "level": 24
+    "level": 24,
+    "kin": "human"
   },
   {
     "id": "ash_wolf",
@@ -1950,7 +1971,8 @@
       }
     },
     "model": "wolf",
-    "level": 26
+    "level": 26,
+    "kin": "beast"
   },
   {
     "id": "frost_wolf",
@@ -2019,7 +2041,8 @@
         ]
       }
     },
-    "level": 28
+    "level": 28,
+    "kin": "beast"
   },
   {
     "id": "fire_guardian",
@@ -2117,7 +2140,8 @@
     ],
     "wake": "c5_fourth",
     "rise": 2.4,
-    "level": 32
+    "level": 32,
+    "kin": "spirit"
   },
   {
     "id": "frost_guardian",
@@ -2215,7 +2239,8 @@
     ],
     "wake": "c5_fifth",
     "rise": 2.4,
-    "level": 32
+    "level": 32,
+    "kin": "spirit"
   },
   {
     "id": "storm_wraith",
@@ -2308,7 +2333,8 @@
         ]
       }
     },
-    "level": 34
+    "level": 34,
+    "kin": "spirit"
   },
   {
     "id": "storm_wolf",
@@ -2377,7 +2403,8 @@
         ]
       }
     },
-    "level": 35
+    "level": 35,
+    "kin": "beast"
   },
   {
     "id": "gate_warden",
@@ -2470,7 +2497,8 @@
     ],
     "wake": "c6_gate",
     "rise": 2.4,
-    "level": 38
+    "level": 38,
+    "kin": "spirit"
   },
   {
     "id": "first_keeper",
@@ -2565,7 +2593,8 @@
     "wake": "c6_keeper",
     "statue": true,
     "rise": 2.6,
-    "level": 41
+    "level": 41,
+    "kin": "spirit"
   },
   {
     "id": "ex_yeogang",
@@ -2646,7 +2675,8 @@
     ],
     "wake": null,
     "level": 22,
-    "expedition": true
+    "expedition": true,
+    "kin": "spirit"
   },
   {
     "id": "ex_yeomcheol",
@@ -2767,7 +2797,8 @@
     "level": 28,
     "model": "marine_captain",
     "zone": null,
-    "expedition": true
+    "expedition": true,
+    "kin": "human"
   },
   {
     "id": "ex_forge",
@@ -2860,7 +2891,8 @@
     "wake": null,
     "rise": 2.4,
     "level": 36,
-    "expedition": true
+    "expedition": true,
+    "kin": "spirit"
   },
   {
     "id": "ex_keeper",
@@ -2953,6 +2985,7 @@
     "wake": null,
     "rise": 2.4,
     "level": 48,
-    "expedition": true
+    "expedition": true,
+    "kin": "spirit"
   }
 ]

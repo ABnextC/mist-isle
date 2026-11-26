@@ -7,7 +7,7 @@ import { DISMOUNT_ON, dismount, summonError, startSummon, buyError, buyMount, mo
 import { toggleError, toggle } from './systems/pvp.js';
 import { declareError, declareWar, supplyError, supply, plantError, plant, W as WAR, tagOf } from './systems/territory.js';
 import { guildOf, newGuild, trimAgents, aiRoom, hireable, rollJobs, jobProgress, storeCap } from './systems/guilds.js';
-import { plotDef, tierDef, nextTier, homeOf, nearPlot, comfortOf, restValue, plantDef } from './systems/housing.js';
+import { plotDef, tierDef, nextTier, homeOf, nearPlot, comfortOf, restValue, plantDef, trophyCount, trophyMax } from './systems/housing.js';
 import { feeMult, recipeAllowed, factionDef, factionOf, tasksOf, taskDone, gainInfluence } from './systems/factions.js';
 import { keyOf, findEntry, takeQty, addEntry, slotsNeeded, effectiveProps, avgProps, bonusKey, qtyOf, countItem } from './inventory.js';
 import { regionAt } from './terrain.js';
@@ -29,7 +29,7 @@ import { isUnlocked, allowedProject } from './systems/unlocks.js';
 import { objPos } from './world.js';
 import { bondable, greetDue, greet, giftDue, giftable, gift, perkOf, inviteDue } from './systems/bonds.js';
 import { spawnAlly, dismissAlly, allyOf } from './systems/allies.js';
-import { spendError, spend, resetCost as attrResetCost, resetAttrs, spentOf } from './systems/level.js';
+import { spendError, spend, resetCost as attrResetCost, resetAttrs, spentOf, jewelStat } from './systems/level.js';
 import { startError, startRun, leaveRun, runOf } from './systems/expeditions.js';
 
 // ── 도우미 ─────────────────────────────────────────────
@@ -359,7 +359,8 @@ function drinkPotion(ctx, a, def, stats) {
   let v = 0;
   if (def.potion === 'heal') {
     const before = cb.hp;
-    cb.hp = Math.round(Math.min(cb.maxHp, cb.hp + cb.maxHp * k) * 100) / 100;
+    const kk = k * (1 + jewelStat(ctx, a, 'potion')); // 물약 귀걸이(v3.3)
+    cb.hp = Math.round(Math.min(cb.maxHp, cb.hp + cb.maxHp * kk) * 100) / 100;
     v = Math.round(cb.hp - before);
   } else if (def.potion === 'mana') {
     const before = cb.mp ?? 0;
@@ -619,7 +620,7 @@ const EQUIP = {
 
 const UNEQUIP = {
   validate(ctx, a, c) {
-    if (!['weapon', 'weapon2', 'head', 'chest', 'legs', 'ring', 'neck'].includes(c.slot)) return 'bad_args';
+    if (!['weapon', 'weapon2', 'head', 'chest', 'legs', 'ring', 'neck', 'ear'].includes(c.slot)) return 'bad_args';
     return {};
   },
   execute(ctx, a, c) {
@@ -1143,6 +1144,13 @@ const HOUSE_PLACE = {
     const e = a.bag.find((x) => x.uid && x.uid === c.uid);
     if (!e || ctx.data.items[e.item].stage !== 'furniture') return 'not_furniture';
     if (h.furniture.length >= tierDef(ctx, h.tier).furniture) return 'house_full';
+    // 트로피(v3.3): 같은 갈래는 하나, 집 단계마다 1·2·3개
+    const tr = ctx.data.items[e.item].trophy;
+    if (tr) {
+      if (h.furniture.some((x) => ctx.data.items[x.item]?.trophy?.kind === tr.kind)) return 'same_trophy';
+      if (trophyCount(ctx, h) >= trophyMax(ctx, h)) return 'trophy_full';
+    }
+    if (ctx.data.items[e.item].hearthstone && h.furniture.some((x) => ctx.data.items[x.item]?.hearthstone)) return 'same_trophy';
     return { h, e };
   },
   execute(ctx, a, c, p) {

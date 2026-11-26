@@ -1,3 +1,4 @@
+import { trophyBonus } from './housing.js';
 import { regionAt } from '../terrain.js';
 import { wayLanding } from './waystones.js';
 import { dismount } from './mounts.js';
@@ -5,7 +6,7 @@ import { dismount } from './mounts.js';
 // 모든 판정은 코어가 30Hz로 한다. 화면은 이벤트(combat.*)를 보고 연출만 한다.
 
 import { hurtMob, isAlive, applyMobFx, fxOn } from './mobs.js';
-import { levelPassives, mergeP, gapMult } from './level.js';
+import { levelPassives, mergeP, gapMult, jewelStat } from './level.js';
 import { nearestSettlement } from '../world.js';
 import { foesNear, markFight, onPvpDown } from './pvp.js';
 import { masteryOf, passivesOf, gainXp, abilityOf } from './mastery.js';
@@ -24,7 +25,7 @@ export function initCombat(cfg) {
 }
 
 // weapon2(v1.1): 등에 멘 둘째 무기. 바꾸면 weapon과 자리를 맞바꾼다
-export const emptyEquip = () => ({ weapon: null, weapon2: null, head: null, chest: null, legs: null, ring: null, neck: null });
+export const emptyEquip = () => ({ weapon: null, weapon2: null, head: null, chest: null, legs: null, ring: null, neck: null, ear: null });
 
 export function angDiff(a, b) {
   let d = a - b;
@@ -79,7 +80,7 @@ export function addAura(ctx, a, src, b) {
 
 export const heavyCostOf = (ctx, a) => r2(ctx.cfg.combat.heavyCost * (1 - Math.min(0.6, passivesNow(ctx, a).heavyCost || 0)));
 export const dodgeCostOf = (ctx, a) => r2(ctx.cfg.combat.dodgeCost * equipLoad(ctx, a).tier.dodgeCost * (1 - Math.min(0.6, passivesNow(ctx, a).dodgeCost || 0)));
-export const maxHpOf = (ctx, a) => ctx.cfg.combat.hp + (passivesNow(ctx, a).maxHp || 0);
+export const maxHpOf = (ctx, a) => ctx.cfg.combat.hp + (passivesNow(ctx, a).maxHp || 0) + (a.equip ? jewelStat(ctx, a, 'hp') : 0);
 
 export function armorOf(ctx, a) {
   let sum = 0;
@@ -230,7 +231,9 @@ export function dealHit(ctx, a, m, raw, o) {
     crit = true;
     k *= 1.5 + (P.critDmg || 0);
   }
-  const dmg = Math.max(0.5, Math.round(mitigate(ctx, raw * k * gapMult(ctx, a, m), type.armor || 0) * 10) / 10);
+  // 트로피(v3.3): 집에 놓은 짐승·사람·영 트로피
+  const tro = a.house ? 1 + trophyBonus(ctx, a, type.kin || 'beast') : 1;
+  const dmg = Math.max(0.5, Math.round(mitigate(ctx, raw * k * gapMult(ctx, a, m) * tro, type.armor || 0) * 10) / 10);
   const done = hurtMob(ctx, m, a, dmg, o.heavy || o.guardBreak, { crit, ability: o.ability || null });
   if (!done) return 0;
   const steal = (P.lifesteal || 0) + (o.lifesteal || 0) + auraSum(a, t, 'lifesteal');
@@ -686,7 +689,7 @@ export function combatTick(ctx, dt) {
     if (cb.aura?.length && cb.aura.some((x) => x.until <= t)) cb.aura = cb.aura.filter((x) => x.until > t);
     // 최대 체력은 든 무기의 숙련 패시브를 따른다(바꾸면 넘치는 만큼 깎인다)
     const P = passivesNow(ctx, a);
-    const bonus = P.maxHp || 0;
+    const bonus = (P.maxHp || 0) + (a.equip ? jewelStat(ctx, a, 'hp') : 0); // 생명 목걸이(v3.3)
     if ((cb.hpBonus || 0) !== bonus) {
       cb.maxHp = r2(cb.maxHp + bonus - (cb.hpBonus || 0));
       cb.hpBonus = bonus;

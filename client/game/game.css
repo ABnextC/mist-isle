@@ -825,3 +825,18 @@ ul.attrs li.attr .btns button { min-width: 44px; }
 .wdot.unknown i { opacity: 0.6; }
 .wme { position: absolute; width: 7px; height: 7px; transform: translate(-50%, -50%); border-radius: 50%; background: #fff; border: 2px solid #e04a3a; }
 @keyframes wpulse { 50% { transform: scale(1.3); } }
+
+/* 등급 색(v3.3): 일반·고급·희귀·영웅·전설 */
+.gr { display: inline-block; padding: 0 5px; margin-left: 3px; border-radius: 4px; font-size: 10.5px; font-weight: 700; line-height: 16px; vertical-align: 1px; border: 1px solid currentColor; background: rgba(0, 0, 0, 0.35); }
+.gr.g1, .gn.g1 { color: #c9c6bc; }
+.gr.g2, .gn.g2 { color: #5fd36b; }
+.gr.g3, .gn.g3 { color: #4aa8ff; }
+.gr.g4, .gn.g4 { color: #b876ff; }
+.gr.g5, .gn.g5 { color: #ff9b3d; }
+.gr.g5 { box-shadow: 0 0 6px rgba(255, 155, 61, 0.45); }
+i.ic.g2 { box-shadow: inset 0 0 0 1.5px rgba(95, 211, 107, 0.75); }
+i.ic.g3 { box-shadow: inset 0 0 0 1.5px rgba(74, 168, 255, 0.8); }
+i.ic.g4 { box-shadow: inset 0 0 0 1.5px rgba(184, 118, 255, 0.85), inset 0 0 10px rgba(184, 118, 255, 0.25); }
+i.ic.g5 { box-shadow: inset 0 0 0 1.5px rgba(255, 155, 61, 0.9), inset 0 0 12px rgba(255, 155, 61, 0.35); }
+em.named { color: #ffd27a; font-style: normal; font-size: 10.5px; margin-left: 3px; }
+em.bind { color: #e89a9a; font-style: normal; font-size: 10.5px; margin-left: 3px; }

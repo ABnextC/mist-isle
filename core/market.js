@@ -22,6 +22,7 @@ export function entryStar(ctx, e) {
 
 export function tradable(ctx, e) {
   if (e.uid || e.broken) return false;
+  if (ctx.data.items[e.item].bind) return false; // 귀속(v3.3): 종결 재료는 사고팔지 않는다
   const kind = ctx.data.items[e.item].kind;
   return kind === 'material' || kind === 'consumable';
 }

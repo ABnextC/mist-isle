@@ -109,7 +109,12 @@
           "bp_sword_mist",
           "bp_spear_mist",
           "bp_mist_helm"
-        ]
+        ],
+        "named": [
+          "wpn_staff_yeogang",
+          "ear_yeogang"
+        ],
+        "firstTrophy": "tr_lamp"
       }
     },
     {
@@ -169,7 +174,12 @@
           "bp_battleaxe_mist",
           "bp_hammer_mist",
           "bp_mist_greaves"
-        ]
+        ],
+        "named": [
+          "wpn_axe_yeomcheol",
+          "ring_marine"
+        ],
+        "firstTrophy": "tr_flag"
       }
     },
     {
@@ -221,6 +231,10 @@
           "bp_bow_mist",
           "bp_staff_mist",
           "bp_mist_cuirass"
+        ],
+        "named": [
+          "wpn_hammer_kiln",
+          "neck_ember"
         ]
       }
     },
@@ -267,6 +281,13 @@
               3,
               4
             ]
+          },
+          {
+            "item": "heart_core",
+            "qty": [
+              1,
+              2
+            ]
           }
         ],
         "blueprints": [
@@ -278,18 +299,42 @@
           "bp_staff_mist",
           "bp_mist_helm",
           "bp_mist_cuirass",
-          "bp_mist_greaves"
+          "bp_mist_greaves",
+          "bp_heart_helm",
+          "bp_heart_cuirass",
+          "bp_heart_greaves",
+          "bp_heart_helm",
+          "bp_heart_cuirass",
+          "bp_heart_greaves",
+          "bp_heart_helm",
+          "bp_heart_cuirass",
+          "bp_heart_greaves",
+          "bp_sword_heart",
+          "bp_battleaxe_heart",
+          "bp_spear_heart",
+          "bp_hammer_heart",
+          "bp_bow_heart",
+          "bp_staff_heart",
+          "bp_heart_helm",
+          "bp_heart_cuirass",
+          "bp_heart_greaves"
+        ],
+        "named": [
+          "wpn_sword_keeper",
+          "wpn_bow_keeper"
         ]
       }
     }
   ],
   "firstOfDay": {
     "bp": 0.35,
-    "mult": 1.0
+    "mult": 1.0,
+    "named": 0.2
   },
   "again": {
     "bp": 0.08,
-    "mult": 0.5
+    "mult": 0.5,
+    "named": 0.06
   },
   "failM": 46
 }

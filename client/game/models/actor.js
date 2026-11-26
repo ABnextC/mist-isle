@@ -312,6 +312,9 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
     // 안개강(v2.3): 푸른 강철에 영맥 빛이 옅게 돈다
     mist: new THREE.MeshStandardMaterial({ color: 0x8fb2c8, roughness: 0.24, metalness: 0.92, emissive: 0x1b5a6e, emissiveIntensity: 0.35 }),
     mistWood: new THREE.MeshStandardMaterial({ color: 0x3a2a24, roughness: 0.55, emissive: 0x123848, emissiveIntensity: 0.4 }),
+    // 심장강(v3.3): 붉은 금빛 강철, 속에서 불씨가 비친다
+    heart: new THREE.MeshStandardMaterial({ color: 0xc87a4a, roughness: 0.22, metalness: 0.95, emissive: 0x8a2a10, emissiveIntensity: 0.55 }),
+    heartWood: new THREE.MeshStandardMaterial({ color: 0x3a1e18, roughness: 0.5, emissive: 0x6a2010, emissiveIntensity: 0.5 }),
     leather: new THREE.MeshStandardMaterial({ color: 0x4b3020, roughness: 0.62 }),
     stoneM: new THREE.MeshStandardMaterial({ color: 0x7d7870, roughness: 0.9 }),
     body: skinM,
@@ -359,7 +362,7 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
     [[P(new THREE.CylinderGeometry(0.03, 0.022, 0.62, 8), 0xffffff, { y: 0.23 })], M.wood],
     [[P(new THREE.DodecahedronGeometry(0.085, 0), 0xffffff, { y: 0.55, sx: 1.1, sz: 0.9 })], M.stoneM],
   ]);
-  for (const [tier, metal] of [[1, M.copper], [2, M.metal], [3, M.mist]]) {
+  for (const [tier, metal] of [[1, M.copper], [2, M.metal], [3, M.mist], [4, M.heart]]) {
     w(`sword_${tier}`, [
       [[P(new THREE.CylinderGeometry(0.02, 0.02, 0.16, 8), 0xffffff, { y: 0.0 })], M.leather],
       [[P(new THREE.BoxGeometry(0.17, 0.025, 0.04), 0xffffff, { y: 0.09 }), P(new THREE.BoxGeometry(0.05, 0.6, 0.012), 0xffffff, { y: 0.4 }), P(new THREE.ConeGeometry(0.025, 0.09, 4), 0xffffff, { y: 0.74, sz: 0.25 })], metal],
@@ -386,7 +389,7 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
   }
   // 방패(v1.1): 검과 방패를 들면 왼팔에 둥근 나무 방패
   const shields = {};
-  for (const [tier, metal] of [[1, M.copper], [2, M.metal], [3, M.mist]]) {
+  for (const [tier, metal] of [[1, M.copper], [2, M.metal], [3, M.mist], [4, M.heart]]) {
     const g = new THREE.Group();
     g.add(mesh(merge([P(new THREE.CylinderGeometry(0.25, 0.25, 0.035, 18), 0xffffff, { rx: Math.PI / 2 })]), M.wood));
     g.add(mesh(merge([P(new THREE.TorusGeometry(0.25, 0.018, 5, 22), 0xffffff, {}), P(new THREE.SphereGeometry(0.06, 10, 6), 0xffffff, { z: -0.03, sz: 0.6 })]), metal));
@@ -398,7 +401,7 @@ export function makeActorModel({ tunic = 0x2f7f78, trousers = 0x3e4452, seed = 1
   }
   // 활(v1.2): 왼손에 쥐는 굽은 활대와 시위
   // 활의 틀: y = 활대 세로, +z = 과녁 쪽(가운데 손잡이가 원점). 손 방향과 상관없이 몸 방향에 맞춰 세운다(upright)
-  for (const [tier, limb] of [[1, M.wood], [2, M.leather], [3, M.mistWood]]) {
+  for (const [tier, limb] of [[1, M.wood], [2, M.leather], [3, M.mistWood], [4, M.heartWood]]) {
     const g = new THREE.Group();
     const curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(0, -0.62, -0.16), new THREE.Vector3(0, 0, 0.16), new THREE.Vector3(0, 0.62, -0.16));
     const limbGeo = new THREE.TubeGeometry(curve, 16, 0.016, 5, false);

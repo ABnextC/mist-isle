@@ -9,6 +9,7 @@ import { createGame } from '../core/game.js';
 import { bestTool, settlementAt } from '../core/world.js';
 import { ordersOf } from '../core/market.js';
 import { fmtPlay } from '../core/clock.js';
+const GN = ['일반', '고급', '희귀', '영웅', '전설']; // 등급(v3.3)
 import { avgProps } from '../core/inventory.js';
 
 function parseArgs(argv) {
@@ -93,8 +94,11 @@ export function runPersona(data, prof, { days, seed }) {
       rotLots.add(ev.lot);
     }
   });
+  // 등급(v3.3): 만든 것마다 등급(별 1~5 → 일반~전설)을 센다
+  const gradeN = [0, 0, 0, 0, 0];
   game.on('craft.done', (ev) => {
     if (data.items[ev.item].tool) toolStars.push({ t: game.state.t, item: ev.item, star: ev.star, mw: ev.masterwork });
+    if (ev.actor === 'b1' && ev.star) gradeN[ev.star - 1] += ev.qty || 1;
   });
 
   const total = days * data.config.time.secondsPerGameDay;
@@ -131,14 +135,14 @@ export function runPersona(data, prof, { days, seed }) {
     reach: Object.fromEntries(['logging', 'mining', 'harvesting'].map((s) => [s, { 10: m[`${s}_10`] ?? null, 20: m[`${s}_20`] ?? null, 30: m[`${s}_30`] ?? null }])),
     skinBy: a.stats.skin,
     fight: { ...fight, kills: a.stats.kills, dmgDealt: Math.round(a.stats.dmgDealt), dmgTaken: Math.round(a.stats.dmgTaken), evaded: a.stats.evaded || 0, blockedHits: a.stats.blocked || 0,
-      equip: Object.fromEntries(Object.entries(a.equip).map(([k, uid]) => { const e = a.bag.find((x) => x.uid === uid); return [k, e ? `${e.item}★${e.star}` : null]; })) },
+      equip: Object.fromEntries(Object.entries(a.equip).map(([k, uid]) => { const e = a.bag.find((x) => x.uid === uid); return [k, e ? `${e.item}[${GN[(e.star || 1) - 1]}]` : null]; })) },
     levels: Object.fromEntries(Object.entries(a.skills).filter(([, s]) => s.xp > 0).map(([k, s]) => [k, s.level])),
     time: { gather: pct(time.gather), move: pct(time.move), wait: pct(time.wait), idle: pct(time.idle), fight: pct(time.fight) },
     distKm: Math.round(dist / 100) / 10,
     gathers, gathersPerHour: Math.round(gathers / days),
     crafts: a.stats.craft, eat: a.stats.eat, focusUsed: Math.round(a.stats.focusUsed), masterwork: a.stats.masterwork,
     lotsUsed: lots.size, rotatingLots: rotLots.size, rotatingShare: Math.round((rotGathers / Math.max(1, gathers)) * 100),
-    tools, toolStars: toolStars.map((x) => x.star),
+    tools, toolStars: toolStars.map((x) => x.star), grades: gradeN,
     fails, rejects, blocked, recalls,
     silver: a.silver, money,
     openOrders: ordersOf({ state: game.state }, 'b1').length,
@@ -169,7 +173,7 @@ if (isMain) {
       console.log(`  전투: 시간 ${r.time.fight}% · 처치 ${JSON.stringify(F.kills)} · 쓰러짐 ${F.downs.length}${F.downs.length ? `(${F.downs.join(',')})` : ''} · 손질 ${F.skins}(${JSON.stringify(r.skinBy)}) · 준 피해 ${F.dmgDealt} · 받은 피해 ${F.dmgTaken} · 피함 ${F.evaded} · 막음 ${F.blockedHits}`);
       console.log(`  장비: ${JSON.stringify(F.equip)} · 만든 장비 ${JSON.stringify(F.gearCraft)} · 수리 ${JSON.stringify(F.repairs)}`);
       console.log(`  10/20/30 도달: ${Object.entries(r.reach).map(([k, v]) => `${data.skills[k].name} ${f(v[10])}/${f(v[20])}/${f(v[30])}`).join(' · ')}`);
-      console.log(`  도구: ${Object.entries(r.tools).map(([k, v]) => (v ? `${data.items[v.item].name}★${v.star}(×${v.speed}, +${Math.round(v.yield * 100)}%)` : `${data.skills[k].name} 없음`)).join(' · ')} · 만든 도구 별 ${JSON.stringify(r.toolStars)}`);
+      console.log(`  도구: ${Object.entries(r.tools).map(([k, v]) => (v ? `${data.items[v.item].name}[${GN[(v.star || 1) - 1]}](×${v.speed}, +${Math.round(v.yield * 100)}%)` : `${data.skills[k].name} 없음`)).join(' · ')} · 만든 것 등급 ${GN.map((n, i) => `${n} ${r.grades[i]}`).join(' · ')}`);
       console.log(`  귀환 ${r.recalls}번 · 실패 ${JSON.stringify(r.fails)} · 거절 ${JSON.stringify(r.rejects)} · 막힘 ${r.blocked} · 가장 좋은 산지 ${r.bestLot}`);
       const mo = r.money;
       console.log(`  은화 ${r.silver} · 주문 ${mo.ordersN}건 ${mo.ordersQty}개 ${mo.orders}은화 · 거래소 판매 ${mo.soldQty}개 ${mo.sold}은화 · 구매 ${mo.boughtQty}개 ${mo.spent}은화 · 상인 ${mo.npcQty}개 ${mo.npc}은화 · 수리 ${mo.repairs || 0}번 ${mo.repairSpent || 0}은화 · 걸린 주문 ${r.openOrders}`);

@@ -1,23 +1,149 @@
 {
   "plots": [
-    {"id": "hp_port_1", "at": "s_port", "dx": -38, "dz": 12, "rot": 1.4},
-    {"id": "hp_port_2", "at": "s_port", "dx": -30, "dz": 30, "rot": 2.3},
-    {"id": "hp_port_3", "at": "s_port", "dx": 30, "dz": 28, "rot": -2.3},
-    {"id": "hp_port_4", "at": "s_port", "dx": 38, "dz": 8, "rot": -1.5},
-    {"id": "hp_valley_1", "at": "s_valley", "dx": -26, "dz": 6, "rot": 1.4},
-    {"id": "hp_valley_2", "at": "s_valley", "dx": 25, "dz": 12, "rot": -1.7},
-    {"id": "hp_valley_3", "at": "s_valley", "dx": 0, "dz": 27, "rot": 3.1}
+    {
+      "id": "hp_port_1",
+      "at": "s_port",
+      "dx": -38,
+      "dz": 12,
+      "rot": 1.4
+    },
+    {
+      "id": "hp_port_2",
+      "at": "s_port",
+      "dx": -30,
+      "dz": 30,
+      "rot": 2.3
+    },
+    {
+      "id": "hp_port_3",
+      "at": "s_port",
+      "dx": 30,
+      "dz": 28,
+      "rot": -2.3
+    },
+    {
+      "id": "hp_port_4",
+      "at": "s_port",
+      "dx": 38,
+      "dz": 8,
+      "rot": -1.5
+    },
+    {
+      "id": "hp_valley_1",
+      "at": "s_valley",
+      "dx": -26,
+      "dz": 6,
+      "rot": 1.4
+    },
+    {
+      "id": "hp_valley_2",
+      "at": "s_valley",
+      "dx": 25,
+      "dz": 12,
+      "rot": -1.7
+    },
+    {
+      "id": "hp_valley_3",
+      "at": "s_valley",
+      "dx": 0,
+      "dz": 27,
+      "rot": 3.1
+    }
   ],
   "tiers": [
-    {"id": "hut", "name": "오두막", "silver": 300, "needs": {"lumber_birch": 16, "stone": 30, "nails_copper": 30}, "furniture": 3, "garden": 2, "stations": []},
-    {"id": "house", "name": "집", "silver": 1000, "needs": {"lumber_oak": 16, "stone": 60, "nails_copper": 60, "cloth_reed": 10}, "furniture": 6, "garden": 4, "stations": ["kitchen"]},
-    {"id": "manor", "name": "큰 집", "silver": 2800, "needs": {"lumber_oak": 40, "ingot_iron": 12, "stone": 120, "leather": 10}, "furniture": 10, "garden": 6, "stations": ["kitchen", "workbench"]}
+    {
+      "id": "hut",
+      "name": "오두막",
+      "silver": 300,
+      "needs": {
+        "lumber_birch": 16,
+        "stone": 30,
+        "nails_copper": 30
+      },
+      "furniture": 3,
+      "garden": 2,
+      "stations": []
+    },
+    {
+      "id": "house",
+      "name": "집",
+      "silver": 1000,
+      "needs": {
+        "lumber_oak": 16,
+        "stone": 60,
+        "nails_copper": 60,
+        "cloth_reed": 10
+      },
+      "furniture": 6,
+      "garden": 4,
+      "stations": [
+        "kitchen"
+      ]
+    },
+    {
+      "id": "manor",
+      "name": "큰 집",
+      "silver": 2800,
+      "needs": {
+        "lumber_oak": 40,
+        "ingot_iron": 12,
+        "stone": 120,
+        "leather": 10
+      },
+      "furniture": 10,
+      "garden": 6,
+      "stations": [
+        "kitchen",
+        "workbench"
+      ]
+    }
   ],
-  "rest": {"every": 1800, "minutes": 45, "base": 0.05, "perComfort": 0.0006, "cap": 0.3},
+  "rest": {
+    "every": 1800,
+    "minutes": 45,
+    "base": 0.05,
+    "perComfort": 0.0006,
+    "cap": 0.3
+  },
   "range": 6,
   "plants": [
-    {"item": "seed_berry", "name": "산딸기", "grow": 1800, "out": "berry", "qty": [6, 10], "seed": 0.6},
-    {"item": "mushroom", "name": "들버섯", "grow": 1500, "out": "mushroom", "qty": [3, 5]},
-    {"item": "fiber_reed", "name": "갈대", "grow": 1200, "out": "fiber_reed", "qty": [4, 7]}
-  ]
+    {
+      "item": "seed_berry",
+      "name": "산딸기",
+      "grow": 1800,
+      "out": "berry",
+      "qty": [
+        6,
+        10
+      ],
+      "seed": 0.6
+    },
+    {
+      "item": "mushroom",
+      "name": "들버섯",
+      "grow": 1500,
+      "out": "mushroom",
+      "qty": [
+        3,
+        5
+      ]
+    },
+    {
+      "item": "fiber_reed",
+      "name": "갈대",
+      "grow": 1200,
+      "out": "fiber_reed",
+      "qty": [
+        4,
+        7
+      ]
+    }
+  ],
+  "trophies": {
+    "max": {
+      "hut": 1,
+      "house": 2,
+      "manor": 3
+    }
+  }
 }

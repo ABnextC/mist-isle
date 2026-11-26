@@ -179,12 +179,13 @@ function rewardLot(ctx, q, def) {
 function rewardEntry(ctx, q, it) {
   const { data, cfg } = ctx;
   const def = data.items[it.item];
-  const score = it.score ?? 40;
+  // 이름난 물건(v3.3)은 정해진 점수·등급
+  const score = it.score ?? def.score ?? 40;
   if (def.kind === 'equipment') {
     const scores = Object.fromEntries(Object.keys(def.statConvert).map((k) => [k, score]));
     const stats = convertStats(def.statConvert, scores);
     return {
-      uid: ctx.newId('it'), item: def.id, stats, scores, star: starOf(score, cfg.stars), masterwork: false,
+      uid: ctx.newId('it'), item: def.id, stats, scores, star: def.grade ?? starOf(score, cfg.stars), masterwork: false,
       crafter: it.crafter || rewardGiver(ctx, q), dur: stats.durability ?? null, maxDur: stats.durability ?? null, broken: false,
     };
   }

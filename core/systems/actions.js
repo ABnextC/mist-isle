@@ -1,3 +1,4 @@
+import { trophyBonus } from './housing.js';
 import { finishTravel } from './waystones.js';
 import { finishSummon, mountSpeed } from './mounts.js';
 // 이동(30Hz)과 채집 행동 진행.
@@ -182,7 +183,7 @@ function resolveGather(ctx, actor) {
   const skill = actor.skills[type.skill];
   const buff = actor.buffs.find((b) => b.type === 'gatherYield');
   // 계절(v1.8): 많이 나는 철과 덜 나는 철
-  const mult = (1 + skillYieldBonus(skill.level, type.level, cfg) + (tool?.stats.yield ?? 0) + (buff ? buff.value : 0) + jewelGather(ctx, actor) + pvpBonus(ctx, actor) + seedYield(ctx, actor)) * (ctx.clock ? seasonYield(ctx, item.id) : 1);
+  const mult = (1 + skillYieldBonus(skill.level, type.level, cfg) + (tool?.stats.yield ?? 0) + (buff ? buff.value : 0) + jewelGather(ctx, actor) + pvpBonus(ctx, actor) + seedYield(ctx, actor) + trophyBonus(ctx, actor, type.skill)) * (ctx.clock ? seasonYield(ctx, item.id) : 1);
   const base = rng.int(type.yield[0], type.yield[1]);
   // 세력 혜택(v0.7): 확률로 하나 더
   const fx = extraChance(ctx, actor, 'gather', type.skill);

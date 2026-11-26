@@ -635,6 +635,17 @@ const MIGRATIONS = [
       st.meta.engine = '3.2.0';
     },
   },
+  {
+    // v3.2 → v3.3: 귀걸이 자리. 길잡이 돌 0초에 익힌 것도 익힌 것으로(v3.2 이주가 0을 넣었다)
+    from: 35,
+    to: 36,
+    run(st) {
+      for (const a of Object.values(st.actors)) {
+        if (a.equip && !('ear' in a.equip)) a.equip.ear = null;
+      }
+      st.meta.engine = '3.3.0';
+    },
+  },
 ];
 
 // v0.5.2: 1~2장 퀘스트에 생활 단계가 끼었다. 하던 단계 번호를 새 번호로(앞에 낀 단계는 건너뛴다)

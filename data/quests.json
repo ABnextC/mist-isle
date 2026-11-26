@@ -2863,6 +2863,10 @@
           {
             "item": "seed_territory",
             "qty": 1
+          },
+          {
+            "item": "ring_covenant",
+            "qty": 1
           }
         ]
       },
@@ -7298,7 +7302,7 @@
       "kind": "side",
       "giver": "beomdol",
       "requires": [
-        "c3_mistfolk"
+        "c4_retreat"
       ],
       "name": "안개 사슴 길들이기",
       "summary": "사냥꾼 쉼터의 범돌이 다친 안개 사슴을 돌보고 있다. 사슴이 마음을 열면 태워 줄지도 모른다.",
@@ -7346,7 +7350,98 @@
       "reward": {
         "silver": 120,
         "mount": "mist_deer"
-      }
+      },
+      "level": 28
+    },
+    {
+      "id": "sq_first_pony",
+      "kind": "side",
+      "giver": "gangdu",
+      "requires": [
+        "q4_forest"
+      ],
+      "name": "첫 조랑말",
+      "summary": "숲머리까지 다녀온 개척자에게 강두가 경비대 조랑말을 맡기려 한다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "gangdu",
+          "text": "강두와 이야기하기",
+          "say": "숲머리까지 걸어서 다녀왔다고? 다리가 남아나겠나. 경비대 마구간에 놀고 있는 조랑말이 하나 있네. 먹이를 챙겨 오면 자네한테 맡기지.",
+          "reply": "먹이를 구해 오겠습니다"
+        },
+        {
+          "type": "have",
+          "need": {
+            "berry": 6
+          },
+          "text": "조랑말 먹이(산딸기 6개) 모으기"
+        },
+        {
+          "type": "talk",
+          "npc": "gangdu",
+          "text": "강두에게 먹이 건네기",
+          "take": {
+            "berry": 6
+          },
+          "say": "옳지. 이제 자네 말일세. 휘파람(V)을 불면 달려온다네. 맞으면 놀라서 내려놓으니 싸울 땐 내려서 싸우게.",
+          "reply": "고맙습니다"
+        }
+      ],
+      "reward": {
+        "silver": 30,
+        "mount": "pony"
+      },
+      "level": 6
+    },
+    {
+      "id": "sq_storm_steed",
+      "kind": "side",
+      "giver": "suryeon",
+      "requires": [
+        "c6_covenant"
+      ],
+      "name": "폭풍을 앞지르는 말",
+      "summary": "안개가 걷힌 뒤, 순례자 수련이 폭풍 속을 달리는 검푸른 말을 봤다고 한다.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "suryeon",
+          "text": "수련에게 말 이야기 듣기",
+          "say": "심장이 잠잠해진 밤, 폭풍 늑대 떼를 앞질러 달리는 말을 봤어요. 늑대들이 그 아이를 몰고 있었어요. 늑대를 흩어 주면 다가올지도 몰라요.",
+          "reply": "늑대를 흩겠습니다"
+        },
+        {
+          "type": "kill",
+          "mobs": [
+            "storm_wolf"
+          ],
+          "count": 6,
+          "text": "말을 모는 폭풍 늑대 6마리 잡기"
+        },
+        {
+          "type": "have",
+          "need": {
+            "shard_mist": 4
+          },
+          "text": "말을 달랠 안개 결정 4개 모으기"
+        },
+        {
+          "type": "talk",
+          "npc": "suryeon",
+          "text": "수련에게 돌아가기",
+          "take": {
+            "shard_mist": 4
+          },
+          "say": "결정 냄새를 맡고 왔네요. 봐요, 당신을 따라가겠대요. 이 섬에서 가장 빠른 아이예요.",
+          "reply": "잘 돌보겠습니다"
+        }
+      ],
+      "reward": {
+        "silver": 200,
+        "mount": "storm_steed"
+      },
+      "level": 41
     }
   ]
 }

@@ -75,6 +75,17 @@ const MAKERS = {
     const coat = C(coats[Math.floor(R() * coats.length)]);
     return horseLike(seed, { L: 1.65, H: 1.25, R: 0.35, lr: 0.075, legLen: 1.08, headLen: 0.52, coat, mane: C(0x1a1410), dark: C(0x1a1410), belly: coat.clone().lerp(C(0xe0d4c4), 0.2) });
   },
+  // 폭풍 준마(v3.3, 4티어): 검푸른 몸에 번개빛 갈기·꼬리, 발목에 흰 털
+  storm: (seed) => {
+    const coat = C(0x1e2a3e);
+    const q = horseLike(seed, { L: 1.75, H: 1.32, R: 0.36, lr: 0.075, legLen: 1.14, headLen: 0.54, coat, mane: C(0x9fd8ff), dark: C(0x0c1220), belly: C(0x2a3a52) });
+    const glow = new THREE.MeshStandardMaterial({ color: 0xcfeeff, emissive: 0x5ab4ff, emissiveIntensity: 1.1, roughness: 0.4 });
+    q.neck.add(new THREE.Mesh(merge([0, 1, 2, 3, 4, 5, 6].map((i) => ell(0.035, 0.09, 0.1, C(0xffffff), { y: 0.3 - i * 0.012, z: 0.06 + i * 0.12 }))), glow));
+    q.tail.add(new THREE.Mesh(merge([ell(0.04, 0.04, 0.3, C(0xffffff), { z: -0.14, y: -0.22, rx: 1.25 })]), glow));
+    for (const L of q.legs) L.kn.add(mesh(merge([ell(0.06, 0.07, 0.06, C(0xe8eef4), { y: -L.l2 * 0.78 })]), q.m));
+    q.glow = glow;
+    return q;
+  },
   goat: (seed) => {
     const coat = C(0xd8d0c4);
     const q = quadruped({ L: 1.25, H: 0.95, R: 0.33, lr: 0.075, body: coat, belly: C(0xbab0a2), dark: C(0x3a3430), legLen: 0.8, headLen: 0.36, neckUp: 0.7, seed });
